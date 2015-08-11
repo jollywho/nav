@@ -1,5 +1,5 @@
 /*
-** nrn-daemon.c
+** clam-daemon.c
 */
 
 #define _GNU_SOURCE

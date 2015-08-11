@@ -1,4 +1,4 @@
-#include "src/core/nrn.h"
+#include "src/core/clam.h"
 
 void open_fifo(char** argv) {
   fd = open("fifo", O_RDWR);

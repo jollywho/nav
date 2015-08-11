@@ -1,8 +1,8 @@
 /*
-** nrn-daemon.c
+** clam-daemon.c
 */
 
-#include "nrn.h"
+#include "clam.h"
 #define MAXBUFLEN 1000
 
 int
