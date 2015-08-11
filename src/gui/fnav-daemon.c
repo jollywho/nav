@@ -1,5 +1,5 @@
 /*
-** clam-daemon.c
+** fnav-daemon.c
 */
 
 #define _GNU_SOURCE

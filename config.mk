@@ -6,5 +6,5 @@ OBJECTDIR=obj
 BINDIR=bin
 OBJ=$(SRC:%.c=%.o)
 GOBJ=$(GSRC:%.c=%.o)
-CORE=bin/clam
+CORE=bin/fnav
 GUI=bin/gui

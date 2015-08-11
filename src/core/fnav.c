@@ -1,8 +1,8 @@
 /*
-** clam-daemon.c
+** fnav-daemon.c
 */
 
-#include "clam.h"
+#include "fnav.h"
 #define MAXBUFLEN 1000
 
 int
