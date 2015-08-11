@@ -1,17 +1,16 @@
 include config.mk
 
-all: $(EXECUTABLE) run
+all: $(CORE) $(GUI)
 
-%.o: $(SOURCEDIR)/%.c
-	@if [ ! -d $(OBJECTDIR) ]; then mkdir $(OBJECTDIR); fi; $(CC) $(CCFLAGS) -c $< -o $(OBJECTDIR)/$@
+$(CORE): $(OBJ)
+	@if [ ! -d $(BINDIR) ]; then mkdir $(BINDIR); fi; $(CC) $(CCFLAGS) $(OBJ) -o $@
 
-$(EXECUTABLE): $(OBJECTS)
-	@if [ ! -d $(BINDIR) ]; then mkdir $(BINDIR); fi; $(CC) $(CCFLAGS) $(addprefix $(OBJECTDIR)/,$(OBJECTS)) -o $@
+$(GUI): $(GOBJ)
+	@if [ ! -d $(BINDIR) ]; then mkdir $(BINDIR); fi; $(CC) $(CCFLAGS) $(GOBJ) -o $@
+
+%.o: %.c
+	@if [ ! -d $(OBJECTDIR) ]; then mkdir $(OBJECTDIR); fi; $(CC) $(CCFLAGS) -c $< -o $@
 
 .PHONY : clean
 clean:
 	@if [ -d $(BINDIR) ]; then rm -rfv $(BINDIR); fi; if [ -d $(OBJECTDIR) ]; then rm -rfv $(OBJECTDIR); fi;
-
-.PHONY : run
-run: $(EXECUTABLE)
-	@$(EXECUTABLE) ncmpcpp
