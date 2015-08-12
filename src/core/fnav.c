@@ -12,10 +12,8 @@ main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv) {
 
   FN_data *d = malloc(sizeof(FN_data));
   parse_file("dummy", d);
-  int s = sizeof(d->rec)/sizeof(d->rec[0]) + 1;
-  for (int n = 0; n < s; n++) {
-    int h = sizeof(d->rec[n]->fields)/sizeof(d->rec[n]->fields[0])+1;
-    for (int f = 0; f < h; f++) {
+  for (int n = 0; n < d->rec_num; n++) {
+    for (int f = 0; f < d->rec[n]->field_num; f++) {
       printf("%s\n", d->rec[n]->fields[f]->name);
       printf("%s\n", d->rec[n]->fields[f]->val);
     }
