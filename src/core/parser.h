@@ -6,15 +6,16 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
+#include <ctype.h>
 
-typedef union {
-  int ivalue;
-  char *cvalue;
+typedef struct {
+  int ival;
+  char *cval;
 } FN_fval;
 
 typedef struct {
+  FN_fval val;
   char *name;
-  FN_fval *val;
 } FN_field;
 
 typedef struct {

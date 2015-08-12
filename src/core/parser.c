@@ -10,25 +10,32 @@ parse_file(const char *path, FN_data *data) {
   FILE *fp;
   ssize_t size;
   size_t len = 0;
-  char *line, *spl;
+  char *line;
   fp = fopen(path, "r");
   int rcount = 0; int fcount = 0;
 
   if (fp == NULL)
     exit(EXIT_FAILURE);
 
+  data->list = malloc(sizeof(FN_rec));
+  data->list[rcount] = malloc(sizeof(FN_rec));
+  data->list[rcount]->fields = malloc(2 * sizeof(FN_field));
+  data->list[rcount]->id = rcount + 1;
   while ((size = getline(&line, &len, fp)) != -1) {
-    rcount++;
-    data->list = realloc(data->list, rcount * sizeof(FN_rec));
-    data->list[rcount - 1] = malloc(sizeof(FN_rec));
+    char *label = strtok(line, ":");
+    data->list[rcount]->fields[fcount] = malloc(sizeof(FN_field));
+    data->list[rcount]->fields[fcount]->name = malloc(sizeof(char)*strlen(label));
+    strncpy(data->list[rcount]->fields[fcount]->name, label, strlen(label));
 
-    //todo: iterate strtok
-    //todo: check unique fields
-    spl = strtok(line, ":");
-    data->list[rcount - 1]->id = rcount;
-    data->list[rcount - 1]->fields = malloc(sizeof(FN_field));
-    data->list[rcount - 1]->fields[fcount] = malloc(sizeof(FN_field));
-    data->list[rcount - 1]->fields[fcount]->name = spl;
+    char *val = strtok(NULL, ":");
+    int ival = strtol(val, NULL, 10);
+    if (ival)
+      data->list[rcount]->fields[fcount]->val.ival = ival;
+      else {
+      data->list[rcount]->fields[fcount]->val.cval = malloc(sizeof(char)*strlen(val));
+      strncpy(data->list[rcount]->fields[fcount]->val.cval, val, strlen(val));
+    }
+    fcount++;
   }
 
   fclose(fp);

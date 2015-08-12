@@ -10,10 +10,12 @@
 int
 main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv) {
 
-  printf("ini");
   FN_data *d = malloc(sizeof(FN_data));
   parse_file("dummy", d);
-  printf("%d", d->list[0]->id);
+  printf("%s\n", d->list[0]->fields[0]->name);
+  printf("%d\n", d->list[0]->fields[0]->val.ival);
+  printf("%s\n", d->list[0]->fields[1]->name);
+  printf("%s\n", d->list[0]->fields[1]->val.cval);
   exit(0);
 
   initscr();
