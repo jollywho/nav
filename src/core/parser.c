@@ -5,40 +5,46 @@
 #include "parser.h"
 
 void
+new_record(FN_rec **rec, int *rcount, int *fcount) {
+  (*rcount)++;
+  (*fcount) = 0;
+  rec[*rcount] = realloc(rec[*rcount], sizeof(FN_rec));
+}
+
+void
+new_attr(char *line, char **ptr) {
+  char *lbl = strtok(line, ":");
+  (*ptr) = malloc(sizeof(char)*strlen(lbl));
+  strncpy(*ptr, lbl, strlen(lbl));
+}
+
+void
 parse_file(const char *path, FN_data *data) {
-
   FILE *fp;
-  ssize_t size;
-  size_t len = 0;
   char *line;
+  ssize_t size; size_t len = 0;
+  int rcount = -1; int fcount = 0; int skip = 1;
   fp = fopen(path, "r");
-  int rcount = 0; int fcount = 0;
 
-  if (fp == NULL)
-    exit(EXIT_FAILURE);
+  if (fp == NULL) { exit(EXIT_FAILURE); }
 
-  data->list = malloc(sizeof(FN_rec));
-  data->list[rcount] = malloc(sizeof(FN_rec));
-  data->list[rcount]->fields = malloc(2 * sizeof(FN_field));
-  data->list[rcount]->id = rcount + 1;
+  data->rec = malloc(sizeof(FN_rec));
+
   while ((size = getline(&line, &len, fp)) != -1) {
-    char *label = strtok(line, ":");
-    data->list[rcount]->fields[fcount] = malloc(sizeof(FN_field));
-    data->list[rcount]->fields[fcount]->name = malloc(sizeof(char)*strlen(label));
-    strncpy(data->list[rcount]->fields[fcount]->name, label, strlen(label));
+    if (size == 1) { skip = 1; continue; } //todo: trim lines
+    if (size > 1 && skip) { new_record(data->rec, &rcount, &fcount); }
+    size_t ln = strlen(line) - 1;
+    line[ln] = '\0';
 
-    char *val = strtok(NULL, ":");
-    int ival = strtol(val, NULL, 10);
-    if (ival)
-      data->list[rcount]->fields[fcount]->val.ival = ival;
-      else {
-      data->list[rcount]->fields[fcount]->val.cval = malloc(sizeof(char)*strlen(val));
-      strncpy(data->list[rcount]->fields[fcount]->val.cval, val, strlen(val));
-    }
-    fcount++;
+    data->rec[rcount]->id = rcount + 1;
+    data->rec[rcount]->fields = realloc(data->rec[rcount]->fields, (fcount + 1) * sizeof(FN_field));
+    data->rec[rcount]->fields[fcount] = malloc(sizeof(FN_field));
+
+    new_attr(line, &data->rec[rcount]->fields[fcount]->name);
+    new_attr(NULL, &data->rec[rcount]->fields[fcount]->val);
+    fcount++; skip = 0;
   }
 
   fclose(fp);
-  if (line)
-    free(line);
+  if (line) { free(line); }
 }

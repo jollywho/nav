@@ -1,6 +1,6 @@
 /*
-** fnav.c
-*/
+ ** fnav.c
+ */
 
 #include "fnav.h"
 #define MAXBUFLEN 1000
@@ -12,54 +12,58 @@ main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv) {
 
   FN_data *d = malloc(sizeof(FN_data));
   parse_file("dummy", d);
-  printf("%s\n", d->list[0]->fields[0]->name);
-  printf("%d\n", d->list[0]->fields[0]->val.ival);
-  printf("%s\n", d->list[0]->fields[1]->name);
-  printf("%s\n", d->list[0]->fields[1]->val.cval);
+  int s = sizeof(d->rec)/sizeof(d->rec[0]) + 1;
+  for (int n = 0; n < s; n++) {
+    int h = sizeof(d->rec[n]->fields)/sizeof(d->rec[n]->fields[0])+1;
+    for (int f = 0; f < h; f++) {
+      printf("%s\n", d->rec[n]->fields[f]->name);
+      printf("%s\n", d->rec[n]->fields[f]->val);
+    }
+  }
   exit(0);
 
   initscr();
   curs_set(0);
   noecho();
   ////////////////////////////////
-    int sockfd;
-    struct addrinfo hints, *servinfo, *p;
-    int rv;
-    struct sockaddr_storage;
+  int sockfd;
+  struct addrinfo hints, *servinfo, *p;
+  int rv;
+  struct sockaddr_storage;
 
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC; // set to AF_INET to force IPv4
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_flags = AI_PASSIVE; // use my IP
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_UNSPEC; // set to AF_INET to force IPv4
+  hints.ai_socktype = SOCK_DGRAM;
+  hints.ai_flags = AI_PASSIVE; // use my IP
 
-    if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-        return 1;
+  if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
+    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+    return 1;
+  }
+
+  // loop through all the results and bind to the first we can
+  for(p = servinfo; p != NULL; p = p->ai_next) {
+    if ((sockfd = socket(p->ai_family, p->ai_socktype,
+            p->ai_protocol)) == -1) {
+      perror("listener: socket");
+      continue;
     }
 
-    // loop through all the results and bind to the first we can
-    for(p = servinfo; p != NULL; p = p->ai_next) {
-        if ((sockfd = socket(p->ai_family, p->ai_socktype,
-                p->ai_protocol)) == -1) {
-            perror("listener: socket");
-            continue;
-        }
-
-        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-            close(sockfd);
-            perror("listener: bind");
-            continue;
-        }
-
-        break;
+    if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+      close(sockfd);
+      perror("listener: bind");
+      continue;
     }
 
-    if (p == NULL) {
-        fprintf(stderr, "listener: failed to bind socket\n");
-        return 2;
-    }
+    break;
+  }
 
-    freeaddrinfo(servinfo);
+  if (p == NULL) {
+    fprintf(stderr, "listener: failed to bind socket\n");
+    return 2;
+  }
+
+  freeaddrinfo(servinfo);
   ///////////////////////////////////
   for(;;) {
     FD_ZERO(&set);

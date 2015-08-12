@@ -9,12 +9,7 @@
 #include <ctype.h>
 
 typedef struct {
-  int ival;
-  char *cval;
-} FN_fval;
-
-typedef struct {
-  FN_fval val;
+  char *val;
   char *name;
 } FN_field;
 
@@ -25,7 +20,7 @@ typedef struct {
 } FN_rec;
 
 typedef struct {
-  FN_rec **list;
+  FN_rec **rec;
 } FN_data;
 
 void parse_file(const char *path, FN_data *rec);
