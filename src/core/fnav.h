@@ -16,6 +16,7 @@
 #include <sysexits.h>
 #include <termios.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #define PORT "9034"
 struct winsize win;

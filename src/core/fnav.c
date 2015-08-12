@@ -1,12 +1,20 @@
 /*
-** fnav-daemon.c
+** fnav.c
 */
 
 #include "fnav.h"
 #define MAXBUFLEN 1000
 
+#include "parser.h"
+
 int
 main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv) {
+
+  printf("ini");
+  FN_data *d = malloc(sizeof(FN_data));
+  parse_file("dummy", d);
+  printf("%d", d->list[0]->id);
+  exit(0);
 
   initscr();
   curs_set(0);
