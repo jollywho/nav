@@ -37,10 +37,15 @@ int master;
 int
 main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv) {
 
-  FN_cntlr *simple = malloc(sizeof(FN_cntlr));
-  cntlr_create(simple, "simple");
+  FN_cntlr *simple = cntlr_create("simple");
   printf("%s\n", simple->name);
-  simple->callbacks[0]->func();
+
+  FN_cntlr_func *f = malloc(sizeof(FN_cntlr_func));
+  f->name = "showdat";
+  f->func = showdat;
+
+  simple->add(simple, f);
+  simple->call(simple, "showdat");
   exit(0);
 
   initscr();

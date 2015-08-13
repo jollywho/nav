@@ -6,13 +6,21 @@ typedef struct {
   void (*func)();
 } FN_cntlr_func;
 
-typedef struct {
+typedef struct _cntlr {
   char *name;
-  FN_cntlr_func **callbacks;
-  FN_cntlr_func *(*call)(char *name);
+  struct _cntlr *self;
+
   FN_data *dat;
+
+  int fcount;
+  FN_cntlr_func **callbacks;
+  void (*call)();
+  void (*add)();
 } FN_cntlr;
 
-int cntlr_create(FN_cntlr *cntlr, char *name);
+FN_cntlr *cntlr_create(const char *name);
+void add(struct _cntlr *self, FN_cntlr_func *f);
+void call(struct _cntlr *self, const char *name);
+
 void showdat();
 #endif
