@@ -2,12 +2,31 @@
  ** controller.c - data controller interface
  */
 
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
 #include "fnav.h"
 #include "parser.h"
 #include "controller.h"
+
+struct FN_cntlr_func {
+  char *name;
+  void (*func)();
+};
+
+struct FN_cntlr {
+  char *name;
+  FN_cntlr *self;
+
+  FN_data *dat;
+
+  int fcount;
+  FN_cntlr_func **callbacks;
+  void (*call)();
+  void (*add)();
+};
 
 FN_cntlr *cntlr_create(const char *name) {
   FN_cntlr *cntlr = malloc(sizeof(FN_cntlr));
@@ -16,15 +35,15 @@ FN_cntlr *cntlr_create(const char *name) {
   cntlr->call = call;
   cntlr->add = add;
   cntlr->fcount = 0;
-  strcpy(cntlr->name, name);
+  cntlr->name = strdup(name);
 
   //data
-  FN_data *d = malloc(sizeof(FN_data));
-  parse_file("dummy", d);
+  cntlr->dat = malloc(sizeof(FN_data));
+  parse_file("dummy", cntlr->dat);
   return cntlr;
 }
 
-void add(struct _cntlr *self, FN_cntlr_func *f) {
+void add(FN_cntlr *self, FN_cntlr_func *f) {
   int c = self->fcount * sizeof(FN_cntlr_func);
   self->callbacks = realloc(self->callbacks, c);
   self->callbacks[c] = malloc(sizeof(FN_cntlr_func));
@@ -33,7 +52,7 @@ void add(struct _cntlr *self, FN_cntlr_func *f) {
   self->fcount++;
 }
 
-void call(struct _cntlr *self, const char *name) {
+void call(FN_cntlr *self, const char *name) {
   for(int c = 0; c < self->fcount; c++) {
     if (self->callbacks[c]->name == name) {
       self->callbacks[0]->func();

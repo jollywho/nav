@@ -38,8 +38,6 @@ int
 main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv) {
 
   FN_cntlr *simple = cntlr_create("simple");
-  printf("%s\n", simple->name);
-
   FN_cntlr_func *f = malloc(sizeof(FN_cntlr_func));
   f->name = "showdat";
   f->func = showdat;

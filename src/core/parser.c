@@ -8,7 +8,26 @@
 #include <fcntl.h>
 #include <string.h>
 #include <ctype.h>
+
+#include "fnav.h"
 #include "parser.h"
+
+struct FN_field {
+  char *val;
+  char *name;
+};
+
+struct FN_rec {
+  int id;
+  char *parent;
+  FN_field **fields;
+  int field_num;
+};
+
+struct FN_data {
+  FN_rec **rec;
+  int rec_num;
+};
 
 void
 new_record(FN_data *data, int *rcount, int *fcount) {
