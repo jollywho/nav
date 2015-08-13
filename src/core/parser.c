@@ -20,10 +20,10 @@ new_attr(char *line, char **ptr) {
 }
 
 char *trim(char *c) {
-    char * e = c + strlen(c) - 1;
-    while(*c && isspace(*c)) c++;
-    while(e > c && isspace(*e)) *e-- = '\0';
-    return c;
+  char *e = c + strlen(c) - 1;
+  while(*c && isspace(*c)) c++;
+  while(e > c && isspace(*e)) *e-- = '\0';
+  return c;
 }
 
 void
@@ -32,20 +32,17 @@ parse_file(const char *path, FN_data *data) {
   char *line, *buf;
   ssize_t size; size_t len = 0;
   int rcount = -1; int fcount = 0; int skip = 1;
-  int csize;
   fp = fopen(path, "r");
 
   if (fp == NULL) { exit(EXIT_FAILURE); }
 
   data->rec = malloc(sizeof(FN_rec));
 
-  while ((size = getline(&line, &len, fp)) != -1) {
-    buf = malloc(sizeof(char)*strlen(line));
-    strncpy(buf, line, strlen(line));
-    buf = trim(buf);
-    csize = strlen(buf);
-    if (csize == 0) { skip = 1; continue; }
-    if (csize > 0 && skip) { new_record(data, &rcount, &fcount); }
+  while ((getline(&line, &len, fp)) != -1) {
+    buf = trim(line);
+    size = strlen(buf);
+    if (size == 0) { skip = 1; continue; }
+    if (size > 0 && skip) { new_record(data, &rcount, &fcount); }
     data->rec[rcount]->id = rcount + 1;
     FN_rec *f = data->rec[rcount];
     f->fields = realloc(f->fields, (fcount + 1) * sizeof(FN_field));
