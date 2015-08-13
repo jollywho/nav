@@ -23,15 +23,24 @@
 #include <stdlib.h>
 
 #include "fnav.h"
-#include "parser.h"
+#include "controller.h"
 
 #define MAXBUFLEN 1000
+struct winsize win;
+pid_t child;
+int fd, fd_max;
+fd_set set;
+int fd_in[2];
+sigset_t emptyset;
+int master;
 
 int
 main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv) {
 
-  FN_data *d = malloc(sizeof(FN_data));
-  parse_file("dummy", d);
+  FN_cntlr *simple = malloc(sizeof(FN_cntlr));
+  cntlr_create(simple, "simple");
+  printf("%s\n", simple->name);
+  simple->callbacks[0]->func();
   exit(0);
 
   initscr();
