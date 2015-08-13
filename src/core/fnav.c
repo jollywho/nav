@@ -2,22 +2,36 @@
  ** fnav.c
  */
 
-#include "fnav.h"
-#define MAXBUFLEN 1000
+#define _GNU_SOURCE
+#include <arpa/inet.h>
+#include <curses.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <pty.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sysexits.h>
+#include <termios.h>
+#include <unistd.h>
+#include <stdlib.h>
 
+#include "fnav.h"
 #include "parser.h"
+
+#define MAXBUFLEN 1000
 
 int
 main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv) {
 
   FN_data *d = malloc(sizeof(FN_data));
   parse_file("dummy", d);
-  for (int n = 0; n < d->rec_num; n++) {
-    for (int f = 0; f < d->rec[n]->field_num; f++) {
-      printf("%s\n", d->rec[n]->fields[f]->name);
-      printf("%s\n", d->rec[n]->fields[f]->val);
-    }
-  }
   exit(0);
 
   initscr();

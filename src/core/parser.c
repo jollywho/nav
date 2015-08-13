@@ -2,6 +2,12 @@
  ** parser.c - a primitive file parser
  */
 
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <string.h>
+#include <ctype.h>
 #include "parser.h"
 
 void
@@ -32,8 +38,8 @@ parse_file(const char *path, FN_data *data) {
   char *line, *buf;
   ssize_t size; size_t len = 0;
   int rcount = -1; int fcount = 0; int skip = 1;
-  fp = fopen(path, "r");
 
+  fp = fopen(path, "r");
   if (fp == NULL) { exit(EXIT_FAILURE); }
 
   data->rec = malloc(sizeof(FN_rec));
