@@ -1,5 +1,5 @@
-#ifndef _FNAV_H
-#define _FNAV_H
+#ifndef _FNAVD_H
+#define _FNAVD_H
 
 typedef struct {
   char *val;

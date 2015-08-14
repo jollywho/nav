@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "fnav.h"
+#include "fnavd.h"
 #include "controller.h"
 #include "net.h"
 

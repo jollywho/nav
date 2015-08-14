@@ -83,13 +83,6 @@ int net_max(fd_set *set) {
   return max_sd;
 }
 
-void net_select(fd_set *set) {
-  if (FD_ISSET(main_sock, set)) {
-    handle_new();
-  }
-  handle_socks(set);
-}
-
 void handle_new() {
   if ((new_socket = accept(main_sock, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) {
     perror("accept");
@@ -139,4 +132,11 @@ void handle_socks(fd_set *set) {
       }
     }
   }
+}
+
+void net_select(fd_set *set) {
+  if (FD_ISSET(main_sock, set)) {
+    handle_new();
+  }
+  handle_socks(set);
 }

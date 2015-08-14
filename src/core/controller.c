@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "fnav.h"
+#include "fnavd.h"
 #include "parser.h"
 #include "controller.h"
 

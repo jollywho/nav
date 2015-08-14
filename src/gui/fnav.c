@@ -14,7 +14,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#define SERVERPORT "9034"
+#define SERVERPORT "8888"
 
 int
 main(int argc, char *argv[])
