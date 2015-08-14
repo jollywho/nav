@@ -1,9 +1,7 @@
 #ifndef _CONTROLLER_H
 #define _CONTROLLER_H
 
-typedef struct FN_cntlr_func FN_cntlr_func;
-
-typedef struct FN_cntlr FN_cntlr;
+#include "fnav.h"
 
 FN_cntlr *cntlr_create(const char *name);
 void add(FN_cntlr *self, FN_cntlr_func *f);

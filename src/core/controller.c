@@ -11,23 +11,6 @@
 #include "parser.h"
 #include "controller.h"
 
-struct FN_cntlr_func {
-  char *name;
-  void (*func)();
-};
-
-struct FN_cntlr {
-  char *name;
-  FN_cntlr *self;
-
-  FN_data *dat;
-
-  int fcount;
-  FN_cntlr_func **callbacks;
-  void (*call)();
-  void (*add)();
-};
-
 FN_cntlr *cntlr_create(const char *name) {
   FN_cntlr *cntlr = malloc(sizeof(FN_cntlr));
   cntlr->name = malloc(sizeof(char)*strlen(name));

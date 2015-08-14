@@ -44,7 +44,6 @@ main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv) {
 
   simple->add(simple, f);
   simple->call(simple, "showdat");
-  exit(0);
 
   initscr();
   curs_set(0);

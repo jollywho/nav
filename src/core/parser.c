@@ -9,25 +9,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "fnav.h"
 #include "parser.h"
-
-struct FN_field {
-  char *val;
-  char *name;
-};
-
-struct FN_rec {
-  int id;
-  char *parent;
-  FN_field **fields;
-  int field_num;
-};
-
-struct FN_data {
-  FN_rec **rec;
-  int rec_num;
-};
 
 void
 new_record(FN_data *data, int *rcount, int *fcount) {
@@ -44,7 +26,8 @@ new_attr(char *line, char **ptr) {
   strncpy(*ptr, lbl, strlen(lbl));
 }
 
-char *trim(char *c) {
+char*
+trim(char *c) {
   char *e = c + strlen(c) - 1;
   while(*c && isspace(*c)) c++;
   while(e > c && isspace(*e)) *e-- = '\0';
