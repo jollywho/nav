@@ -1,16 +1,53 @@
-include config.mk
+# project name (generate executable with this name)
+CORE     = fnavd
+GUI      = fnav
 
-all: $(CORE) $(GUI)
+CC       = gcc
+# compiling flags here
+CFLAGS= -std=c99 -Wall -I. -Werror -Wextra -pedantic -Wno-unused-but-set-parameter -Wno-unused-parameter -Wno-unused-variable
 
-$(CORE): $(OBJ)
-	@if [ ! -d $(BINDIR) ]; then mkdir $(BINDIR); fi; $(CC) $(CCFLAGS) $(OBJ) -o $@
+LINKER   = gcc -o
+# linking flags here
+LFLAGS   = -lutil -lcurses
 
-$(GUI): $(GOBJ)
-	@if [ ! -d $(BINDIR) ]; then mkdir $(BINDIR); fi; $(CC) $(CCFLAGS) $(GOBJ) -o $@
+# change these to set the proper directories where each files shoould be
+SRCDIR   = src
+OBJDIR   = obj
+BINDIR   = bin
 
-%.o: %.c
-	@if [ ! -d $(OBJECTDIR) ]; then mkdir $(OBJECTDIR); fi; $(CC) $(CCFLAGS) -c $< -o $@
+SOURCES1  := $(wildcard $(SRCDIR)/core/*.c)
+INCLUDES1 := $(wildcard $(SRCDIR)/core/*.h)
+OBJECTS1  := $(SOURCES1:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 
-.PHONY : clean
+SOURCES2  := $(wildcard $(SRCDIR)/gui/*.c)
+INCLUDES2 := $(wildcard $(SRCDIR)/gui/*.h)
+OBJECTS2  := $(SOURCES2:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+rm       = rm -f
+
+all: bin/fnavd bin/fnav
+
+$(BINDIR)/$(CORE): $(OBJECTS1)
+	@$(LINKER) $@ $(LFLAGS) $(OBJECTS1)
+	@echo "Linking complete!"
+
+$(BINDIR)/$(GUI): $(OBJECTS2)
+	@$(LINKER) $@ $(LFLAGS) $(OBJECTS2)
+	@echo "Linking complete!"
+
+$(OBJECTS1): $(OBJDIR)/%.o : $(SRCDIR)/%.c
+	@$(CC) $(CFLAGS) -c $< -o $@
+	@echo "Compiled "$<" successfully!"
+
+$(OBJECTS2): $(OBJDIR)/%.o : $(SRCDIR)/%.c
+	@$(CC) $(CFLAGS) -c $< -o $@
+	@echo "Compiled "$<" successfully!"
+
+.PHONEY: clean
 clean:
-	@if [ -d $(BINDIR) ]; then rm -rfv $(BINDIR); fi; if [ -d $(OBJECTDIR) ]; then rm -rfv $(OBJECTDIR); fi;
+	@$(rm) $(OBJECTS1) $(OBJECTS2)
+	@echo "Cleanup complete!"
+
+.PHONEY: remove
+remove: clean
+	@$(rm) $(BINDIR)/$(CORE)
+	@echo "Executable removed!"
