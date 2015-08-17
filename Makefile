@@ -1,6 +1,5 @@
 # project name (generate executable with this name)
-CORE     = fnavd
-GUI      = fnav
+TARGET   = fnav
 
 CC       = gcc
 # compiling flags here
@@ -15,39 +14,25 @@ SRCDIR   = src
 OBJDIR   = obj
 BINDIR   = bin
 
-SOURCES1  := $(wildcard $(SRCDIR)/core/*.c)
-INCLUDES1 := $(wildcard $(SRCDIR)/core/*.h)
-OBJECTS1  := $(SOURCES1:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
-
-SOURCES2  := $(wildcard $(SRCDIR)/gui/*.c)
-INCLUDES2 := $(wildcard $(SRCDIR)/gui/*.h)
-OBJECTS2  := $(SOURCES2:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+SOURCES  := $(wildcard $(SRCDIR)/core/*.c)
+INCLUDES := $(wildcard $(SRCDIR)/core/*.h)
+OBJECTS  := $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 rm       = rm -f
 
-all: bin/fnavd bin/fnav
-
-$(BINDIR)/$(CORE): $(OBJECTS1)
-	@$(LINKER) $@ $(LFLAGS) $(OBJECTS1)
+$(BINDIR)/$(TARGET): $(OBJECTS)
+	@$(LINKER) $@ $(LFLAGS) $(OBJECTS)
 	@echo "Linking complete!"
 
-$(BINDIR)/$(GUI): $(OBJECTS2)
-	@$(LINKER) $@ $(LFLAGS) $(OBJECTS2)
-	@echo "Linking complete!"
-
-$(OBJECTS1): $(OBJDIR)/%.o : $(SRCDIR)/%.c
-	@$(CC) $(CFLAGS) -c $< -o $@
-	@echo "Compiled "$<" successfully!"
-
-$(OBJECTS2): $(OBJDIR)/%.o : $(SRCDIR)/%.c
+$(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.c
 	@$(CC) $(CFLAGS) -c $< -o $@
 	@echo "Compiled "$<" successfully!"
 
 .PHONEY: clean
 clean:
-	@$(rm) $(OBJECTS1) $(OBJECTS2)
+	@$(rm) $(OBJECTS)
 	@echo "Cleanup complete!"
 
 .PHONEY: remove
 remove: clean
-	@$(rm) $(BINDIR)/$(CORE)
+	@$(rm) $(BINDIR)/$(TARGET)
 	@echo "Executable removed!"

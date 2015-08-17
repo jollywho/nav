@@ -11,7 +11,8 @@
 #include "parser.h"
 #include "controller.h"
 
-FN_cntlr *cntlr_create(const char *name) {
+FN_cntlr*
+cntlr_create(const char* name) {
   FN_cntlr *cntlr = malloc(sizeof(FN_cntlr));
   cntlr->name = malloc(sizeof(char)*strlen(name));
   cntlr->self = cntlr;
@@ -26,7 +27,8 @@ FN_cntlr *cntlr_create(const char *name) {
   return cntlr;
 }
 
-void add(FN_cntlr *self, FN_cntlr_func *f) {
+void
+add(FN_cntlr* self, FN_cntlr_func* f) {
   int c = self->fcount * sizeof(FN_cntlr_func);
   self->callbacks = realloc(self->callbacks, c);
   self->callbacks[c] = malloc(sizeof(FN_cntlr_func));
@@ -35,7 +37,9 @@ void add(FN_cntlr *self, FN_cntlr_func *f) {
   self->fcount++;
 }
 
-void call(FN_cntlr *self, const char *name) {
+void
+call(FN_cntlr *self, const char *name) {
+
   for(int c = 0; c < self->fcount; c++) {
     if (self->callbacks[c]->name == name) {
       self->callbacks[0]->func();
@@ -43,6 +47,7 @@ void call(FN_cntlr *self, const char *name) {
   }
 }
 
-void showdat() {
+void
+showdat() {
   printf("dat shown\n");
 }
