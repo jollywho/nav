@@ -11,31 +11,31 @@
 
 #include "parser.h"
 
-void
-new_record(FN_data *data, int *rcount, int *fcount) {
+void new_record(FN_data *data, int *rcount, int *fcount)
+{
   (*rcount)++;
   (*fcount) = 0;
   data->rec[*rcount] = realloc(data->rec[*rcount], sizeof(FN_rec));
   data->rec_num++;
 }
 
-void
-new_attr(char *line, char **ptr) {
+void new_attr(char *line, char **ptr)
+{
   char *lbl = strtok(line, ":");
   (*ptr) = malloc(sizeof(char)*strlen(lbl));
   strncpy(*ptr, lbl, strlen(lbl));
 }
 
-char*
-trim(char *c) {
+char* trim(char *c)
+{
   char *e = c + strlen(c) - 1;
   while(*c && isspace(*c)) c++;
   while(e > c && isspace(*e)) *e-- = '\0';
   return c;
 }
 
-void
-parse_file(const char *path, FN_data *data) {
+void parse_file(const char *path, FN_data *data)
+{
   FILE *fp;
   char *line, *buf;
   ssize_t size; size_t len = 0;

@@ -7,7 +7,7 @@ CFLAGS= -std=c99 -Wall -I. -Werror -Wextra -pedantic -Wno-unused-but-set-paramet
 
 LINKER   = gcc -o
 # linking flags here
-LFLAGS   = -lutil -lcurses
+LFLAGS   = -lutil -lcurses -luv -lpthread
 
 # change these to set the proper directories where each files shoould be
 SRCDIR   = src

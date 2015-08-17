@@ -1,7 +1,7 @@
-#ifndef _PARSER_H
-#define _PARSER_H
+#ifndef FN_CORE_PARSER_H
+#define FN_CORE_PARSER_H
 
-#include "fnavd.h"
+#include "fnav.h"
 
 void parse_file(const char *path, FN_data *rec);
 

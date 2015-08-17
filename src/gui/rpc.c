@@ -19,13 +19,13 @@ typedef struct command {
   int flags;
 } command_t;
 
-void
-ipc_cmd_clist(cmd_ret_t *data, char **cmd) {
+void ipc_cmd_clist(cmd_ret_t *data, char **cmd)
+{
   printf("called clist\n");
 }
 
-void
-ipc_cmd_attr(cmd_ret_t *data, char **cmd) {
+void ipc_cmd_attr(cmd_ret_t *data, char **cmd)
+{
   printf("/*get attribute for each id*/\n");
   printf("%s(id_list, attr)\n", cmd[0]);
   printf("%s\n", cmd[1]);
@@ -41,14 +41,13 @@ ipc_cmd_attr(cmd_ret_t *data, char **cmd) {
   *data = *d;
 }
 
-static const
-command_t ipc_commands[] = {
+static const command_t ipc_commands[] = {
   { "clist",  0,  ipc_cmd_clist,  0 },
   { "attr",   2,  ipc_cmd_attr,   0 }
 };
 
-static void
-ipc_command_exec(cmd_ret_t *data, char **cmd, const command_t *commands) {
+static void ipc_command_exec(cmd_ret_t *data, char **cmd, const command_t *commands)
+{
   int i, j;
 
   if (!cmd[0]) {
@@ -67,8 +66,8 @@ ipc_command_exec(cmd_ret_t *data, char **cmd, const command_t *commands) {
   }
 }
 
-int
-main() {
+int main()
+{
   char **cmd_name;
   cmd_name = malloc(sizeof(char*));
   cmd_name[0] = "clist";
