@@ -44,7 +44,7 @@ ipc_cmd_attr(cmd_ret_t *data, char **cmd) {
 static const
 command_t ipc_commands[] = {
   { "clist",  0,  ipc_cmd_clist,  0 },
-  { "attr",   3,  ipc_cmd_attr,   0 }
+  { "attr",   2,  ipc_cmd_attr,   0 }
 };
 
 static void
@@ -55,15 +55,12 @@ ipc_command_exec(cmd_ret_t *data, char **cmd, const command_t *commands) {
     return;
   }
   for (i = 0; commands[i].command; i++) {
-    if (strcasecmp(commands[i].command, cmd[0]) == 0) {
-      /* There is no typo in this line: */
-      for (j = 1; cmd[j]; j++) {
-        ;
-      }
-      j--;
-      if (j < commands[i].required_parameters) {
-        break;
-      }
+    if (strcasecmp(commands[i].command, cmd[0]) != 0) {
+      continue;
+    }
+    for (j = 1; cmd[j]; j++) {} /*count*/
+    j--;
+    if (j >= commands[i].required_parameters) {
       commands[i].execute(data, cmd);
       break;
     }
@@ -73,12 +70,11 @@ ipc_command_exec(cmd_ret_t *data, char **cmd, const command_t *commands) {
 int
 main() {
   char **cmd_name;
-  cmd_name= calloc(1, sizeof(*cmd_name));
+  cmd_name = malloc(sizeof(char*));
   cmd_name[0] = "clist";
   cmd_ret_t *data;
   ipc_command_exec(data, cmd_name, ipc_commands);
 
-  cmd_name = calloc(1*2, sizeof(*cmd_name));
   cmd_name[0] = "attr";
   cmd_name[1] = "cmd[1]=\"2345 2583\"";
   cmd_name[2] = "cmd[2]=ModifyDate";
