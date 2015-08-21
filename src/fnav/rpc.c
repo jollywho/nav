@@ -12,10 +12,12 @@ typedef struct cmd_ret {
   char **ret;
 } cmd_ret_t;
 
+typedef void (*fn)(cmd_ret_t *, char **args);
+
 typedef struct command {
   char *command;
   int required_parameters;
-  void (*execute)(cmd_ret_t *, char **args);
+  fn exec;
   int flags;
 } command_t;
 
@@ -60,7 +62,7 @@ static void ipc_command_exec(cmd_ret_t *data, char **cmd, const command_t *comma
     for (j = 1; cmd[j]; j++) {} /*count*/
     j--;
     if (j >= commands[i].required_parameters) {
-      commands[i].execute(data, cmd);
+      commands[i].exec(data, cmd);
       break;
     }
   }

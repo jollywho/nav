@@ -1,4 +1,4 @@
-#include "src/core/fnav.h"
+#include "fnav.h"
 
 void open_fifo(char** argv) {
   fd = open("fifo", O_RDWR);

@@ -50,9 +50,7 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv)
 
   simple->add(simple, f);
   simple->call(simple, "showdat");
+  printf("init\n");
 
-  //  initscr();
-  //  curs_set(0);
-  //  noecho();
   slave_init();
 }
