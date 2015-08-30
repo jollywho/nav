@@ -25,24 +25,28 @@
 #include "controller.h"
 #include "event.h"
 
-void slave_init(void)
+struct termios oldtio,newtio;
+
+void init(void)
 {
+  printf("init\n");
+  initscr();
   event_init();
   //input_init
   //tui_init
   //rpc_init
-  //channel_init
 }
 
-void master_init(void)
+void sig_handler(int sig)
 {
-  //handler_init
-  //worker_init
-  //ctlr_init
+  printf("Signal received: %d\n", sig);
+  endwin();
+  exit(0);
 }
 
 int main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv)
 {
+  signal(SIGINT, sig_handler);
   FN_cntlr *simple = cntlr_create("simple");
   FN_cntlr_func *f = malloc(sizeof(FN_cntlr_func));
   f->name = "showdat";
@@ -50,7 +54,8 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char **argv)
 
   simple->add(simple, f);
   simple->call(simple, "showdat");
-  printf("init\n");
 
-  slave_init();
+  init();
+  start_event_loop();
+  endwin();
 }

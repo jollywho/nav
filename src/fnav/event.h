@@ -4,5 +4,6 @@
 #include "fnav.h"
 
 int event_init(void);
+void start_event_loop(void);
 
 #endif

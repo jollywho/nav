@@ -3,138 +3,119 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <uv.h>
-#include <unistd.h> //sleep
+#include <termkey.h>
+#include <inttypes.h>
+#include <curses.h>
 
 #define ERROR(msg, code) do {                                                         \
   fprintf(stderr, "%s: [%s: %s]\n", msg, uv_err_name((code)), uv_strerror((code)));   \
   assert(0);                                                                          \
 } while(0);
 
-typedef struct {
-  uv_write_t req;
-  uv_buf_t buf;
-} write_req_t;
-
-void alloc_cb(uv_handle_t *handle, size_t size, uv_buf_t *buf);
-void read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
-void write_cb(uv_write_t *req, int status);
-
-int total_read;
-int total_written;
-#define FIBMAX 25
-
 uv_loop_t *loop;
-uv_work_t work;
+uv_pipe_t stdin_pipe;
+uv_timer_t tick;
 
-void work_cb(uv_work_t* req) {
-  uv_stream_t *t = (uv_stream_t*)req->data;
+TermKey *tk;
+char buffer[50];
 
-  uv_read_start(t, alloc_cb, read_cb);
-}
+const char* path = "/home/chi/muu";
+uv_fs_t stat_req;
 
-void after_work_cb(uv_work_t* req, int status) {
-  if (status == UV_ECANCELED) {
-    fprintf(stderr, "Calculation of %d cancelled\n", *(int*)req->data);
-    return;
-  }
+void stat_cb(uv_fs_t* req);
 
-  if (status) ERROR("after work", status);
-
-  fprintf(stderr, "Finished calculating %dth fibonacci number\n", *(int*) req->data);
-}
-void connection_cb(uv_stream_t *server, int status)
-{
-  if (status) ERROR("async connect", status);
-
-  uv_tcp_t *client = (uv_tcp_t*) malloc(sizeof(uv_tcp_t));
-  uv_tcp_init(loop, client);
-
-  int r = uv_accept(server, (uv_stream_t*) client);
-  if (r) {
-    fprintf(stderr, "errror accepting connection %d", r);
-    uv_close((uv_handle_t*) client, NULL);
-  } else {
-    uv_work_t fib_reqs[1];
-    uv_tcp_t *t = client;
-    fib_reqs[0].data = (void*)t;
-    uv_queue_work(loop, &fib_reqs[0], work_cb, after_work_cb);
-  }
-}
-
-void alloc_cb(uv_handle_t *handle, size_t size, uv_buf_t *buf)
+void alloc_cb(__attribute__((unused)) uv_handle_t *handle, size_t size, uv_buf_t *buf)
 {
   buf->base = malloc(size);
   buf->len = size;
 }
 
-void read_cb(uv_stream_t *client, ssize_t nread, const uv_buf_t *buf)
+void read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf)
 {
-  if (nread == UV_EOF) {
-    uv_close((uv_handle_t*) client, NULL);
+  if (buf->base) free(buf->base);
+}
 
-    fprintf(stderr, "closed client connection\n");
-    total_read = total_written = 0;
-  } else if (nread > 0) {
-    fprintf(stderr, "%ld bytes read\n", nread);
-    fprintf(stderr, "Recv Val: %s\n", buf->base);
-    total_read += nread;
+void run_command(uv_fs_event_t *handle, const char *filename, int events, __attribute__((unused)) int status)
+{
+  char path[1024];
+  size_t size = 1023;
+  // Does not handle error if path is longer than 1023.
+  uv_fs_event_getpath(handle, path, &size);
+  path[size] = '\0';
 
-    write_req_t *wr = (write_req_t*) malloc(sizeof(write_req_t));
-    wr->buf =  uv_buf_init(buf->base, nread);
-    uv_write(&wr->req, client, &wr->buf, 1/*nbufs*/, write_cb);
+  fprintf(stderr, "Change detected in %s: ", path);
+  fprintf(stderr, "%s ", filename ? filename : "");
+  if (events & UV_RENAME)
+    fprintf(stderr, "renamed");
+  if (events & UV_CHANGE)
+    fprintf(stderr, "changed");
+  fprintf(stderr, "\n");
+}
+
+void update(uv_timer_t *req)
+{
+  TermKeyKey key;
+  TermKeyFormat format = TERMKEY_FORMAT_URWID;
+  TermKeyResult ret;
+  termkey_advisereadable(tk);
+  ret = termkey_getkey(tk, &key);
+  if(ret == TERMKEY_RES_KEY) {
+    termkey_strfkey(tk, buffer, sizeof buffer, &key, format);
+
+    if(key.type == TERMKEY_TYPE_UNKNOWN_CSI) {
+      long args[16];
+      size_t nargs = 16;
+      unsigned long command;
+      termkey_interpret_csi(tk, &key, args, &nargs, &command);
+      //keep this for testing
+      fprintf(stderr, "Unrecognised CSI %c %ld;%ld %c%c\n",
+          (char)(command >> 8), args[0], args[1], (char)(command >> 16), (char)command);
+    }
+    else {
+      mvwprintw(stdscr, 0, 0, "%s\n", key.utf8);
+      refresh();
+    }
+
+    if(key.type == TERMKEY_TYPE_UNICODE &&
+        key.modifiers & TERMKEY_KEYMOD_CTRL &&
+        (key.code.codepoint == 'C' || key.code.codepoint == 'c'))
+      exit(0);
+
+    if(key.type == TERMKEY_TYPE_UNICODE &&
+        key.modifiers == 0 &&
+        key.code.codepoint == '?') {
+      // printf("\033[?6n"); // DECDSR 6 == request cursor position
+      printf("\033[?1$p"); // DECRQM == request mode, DEC origin mode
+      fflush(stdout);
+    }
   }
-  if (nread == 0) free(buf->base);
-}
-
-void write_cb(uv_write_t *req, int status)
-{
-  write_req_t* wr;
-  wr = (write_req_t*) req;
-
-  int written = wr->buf.len;
-  if (status) ERROR("async write", status);
-  assert(wr->req.type == UV_WRITE);
-  total_written += written;
-  free(wr->buf.base);
-  free(wr);
-}
-
-void run_command(uv_fs_event_t *handle, const char *filename, int events, int status) {
-    char path[1024];
-    size_t size = 1023;
-    // Does not handle error if path is longer than 1023.
-    uv_fs_event_getpath(handle, path, &size);
-    path[size] = '\0';
-
-    fprintf(stderr, "Change detected in %s: ", path);
-    if (events & UV_RENAME)
-        fprintf(stderr, "renamed");
-    if (events & UV_CHANGE)
-        fprintf(stderr, "changed");
-
-    fprintf(stderr, " %s\n", filename ? filename : "");
 }
 
 int event_init(void)
 {
   loop = uv_default_loop();
-  uv_fs_event_t *fs_event_req = malloc(sizeof(uv_fs_event_t));
-  uv_fs_event_init(loop, fs_event_req);
-  uv_fs_event_start(fs_event_req, run_command, "a", UV_FS_EVENT_RECURSIVE);
+  uv_timer_init(loop, &tick);
+  uv_timer_start(&tick, update, 10, 10);
 
-  uv_tcp_t server;
-  uv_tcp_init(loop, &server);
+  tk = termkey_new(0,0);
+  termkey_set_flags(tk, TERMKEY_FLAG_UTF8);
 
-  struct sockaddr_in bind_addr;
-  int r = uv_ip4_addr("0.0.0.0", 7100, &bind_addr);
-  assert(!r);
-  uv_tcp_bind(&server, (struct sockaddr*)&bind_addr, 0);
+  uv_fs_event_t fs_event_req;
+  uv_fs_event_init(loop, &fs_event_req);
+  uv_fs_event_start(&fs_event_req, run_command, "a", UV_FS_EVENT_RECURSIVE);
 
-  r = uv_listen((uv_stream_t*) &server, 128 /*backlog*/, connection_cb);
-  if (r) ERROR("listen error", r)
-
-  fprintf(stderr, "Listening on localhost:7100\n");
-
-  uv_run(loop, UV_RUN_DEFAULT);
+ int r = uv_fs_stat(loop, &stat_req, "/home/chi/muu", stat_cb);
   return 0;
+}
+
+void stat_cb(uv_fs_t* req) {
+  uv_fs_t *s_req = req;
+  fprintf(stderr, "d: %d\n", s_req->statbuf.st_size);
+  fprintf(stderr, "d: %s\n", ctime(&s_req->statbuf.st_mtim.tv_sec));
+  uv_fs_req_cleanup(req);
+}
+
+void start_event_loop(void)
+{
+  uv_run(loop, UV_RUN_DEFAULT);
 }
