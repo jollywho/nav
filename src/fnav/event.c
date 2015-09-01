@@ -72,6 +72,7 @@ void update(uv_timer_t *req)
           (char)(command >> 8), args[0], args[1], (char)(command >> 16), (char)command);
     }
     else {
+      //TODO: send to RPC
       mvwprintw(stdscr, 0, 0, "%s\n", key.utf8);
       refresh();
     }
@@ -104,7 +105,7 @@ int event_init(void)
   uv_fs_event_init(loop, &fs_event_req);
   uv_fs_event_start(&fs_event_req, run_command, "a", UV_FS_EVENT_RECURSIVE);
 
- int r = uv_fs_stat(loop, &stat_req, "/home/chi/muu", stat_cb);
+  int r = uv_fs_stat(loop, &stat_req, "/home/chi/muu", stat_cb);
   return 0;
 }
 

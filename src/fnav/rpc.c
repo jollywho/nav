@@ -7,19 +7,7 @@
 #include <string.h>
 #include <strings.h>
 
-typedef struct cmd_ret {
-  int ret_num;
-  char **ret;
-} cmd_ret_t;
 
-typedef void (*fn)(cmd_ret_t *, char **args);
-
-typedef struct command {
-  char *command;
-  int required_parameters;
-  fn exec;
-  int flags;
-} command_t;
 
 void ipc_cmd_clist(cmd_ret_t *data, char **cmd)
 {
