@@ -1,11 +1,9 @@
-/*
-** cntlr.h : all rpc calls are run by a controller with a
-**           list of cmds.
-*/
+#ifndef FN_CORE_CNTLR_H
+#define FN_CORE_CNTLR_H
 
-typedef char* string;
+#include "fnav.h"
 
-typedef void (*fn)(string *, char **args);
+typedef void (*fn)(char **args);
 
 typedef struct cmd_s {
   string name;
@@ -16,5 +14,7 @@ typedef struct cmd_s {
 } cmd_t;
 
 typedef struct cntlr_s {
-  cmd_t *cmds;
+  cmd_t *cmd_lst;
 } cntlr_t;
+
+#endif

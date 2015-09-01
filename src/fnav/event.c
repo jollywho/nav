@@ -7,6 +7,8 @@
 #include <inttypes.h>
 #include <curses.h>
 
+#include "rpc.h"
+
 #define ERROR(msg, code) do {                                                         \
   fprintf(stderr, "%s: [%s: %s]\n", msg, uv_err_name((code)), uv_strerror((code)));   \
   assert(0);                                                                          \
@@ -24,7 +26,7 @@ uv_fs_t stat_req;
 
 void stat_cb(uv_fs_t* req);
 
-void alloc_cb(__attribute__((unused)) uv_handle_t *handle, size_t size, uv_buf_t *buf)
+void alloc_cb(uv_handle_t *handle, size_t size, uv_buf_t *buf)
 {
   buf->base = malloc(size);
   buf->len = size;
@@ -35,7 +37,7 @@ void read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf)
   if (buf->base) free(buf->base);
 }
 
-void run_command(uv_fs_event_t *handle, const char *filename, int events, __attribute__((unused)) int status)
+void run_command(uv_fs_event_t *handle, const char *filename, int events, int status)
 {
   char path[1024];
   size_t size = 1023;
@@ -72,9 +74,7 @@ void update(uv_timer_t *req)
           (char)(command >> 8), args[0], args[1], (char)(command >> 16), (char)command);
     }
     else {
-      //TODO: send to RPC
-      mvwprintw(stdscr, 0, 0, "%s\n", key.utf8);
-      refresh();
+      rpc(key.utf8);
     }
 
     if(key.type == TERMKEY_TYPE_UNICODE &&
@@ -105,13 +105,13 @@ int event_init(void)
   uv_fs_event_init(loop, &fs_event_req);
   uv_fs_event_start(&fs_event_req, run_command, "a", UV_FS_EVENT_RECURSIVE);
 
-  int r = uv_fs_stat(loop, &stat_req, "/home/chi/muu", stat_cb);
+  uv_fs_stat(loop, &stat_req, "/home/chi/muu", stat_cb);
   return 0;
 }
 
 void stat_cb(uv_fs_t* req) {
   uv_fs_t *s_req = req;
-  fprintf(stderr, "d: %d\n", s_req->statbuf.st_size);
+  fprintf(stderr, "d: %d\n", (int)s_req->statbuf.st_size);
   fprintf(stderr, "d: %s\n", ctime(&s_req->statbuf.st_mtim.tv_sec));
   uv_fs_req_cleanup(req);
 }

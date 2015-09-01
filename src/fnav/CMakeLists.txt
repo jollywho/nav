@@ -1,8 +1,10 @@
 set(SOURCES
   fnav.c
-  controller.c
   event.c
-  parser.c)
+  rpc.c
+  fm_cntlr.c
+  fsw_cntlr.c
+  )
 
 add_executable(fnav ${SOURCES})
 
