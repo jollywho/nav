@@ -1,18 +1,18 @@
 #ifndef FN_CORE_FNAV_H
 #define FN_CORE_FNAV_H
 
-typedef char* string;
+typedef char* String;
 
 typedef struct {
-  string name;
-  string val;
+  String name;
+  String val;
 } FN_field;
 
 typedef FN_field** FN_field_lst;
 
 typedef struct  {
   int id;
-  string parent;
+  String parent;
   FN_field_lst fields;
   int field_num;
 } FN_rec;

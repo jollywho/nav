@@ -6,9 +6,9 @@
 extern void up();
 extern void down();
 
-static const cmd_t fm_cmds_lst[] = {
-  { "up",     0,  up,    0 },
-  { "down",   0,  down,  0 },
+static Cmd fm_cmds_lst[] = {
+  { "j",    "down",   0,    down },
+  { "k",    "up",     0,    up,  },
 };
 
 #endif

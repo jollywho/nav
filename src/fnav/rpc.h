@@ -3,6 +3,6 @@
 
 #include "fnav.h"
 
-void rpc(string cmdstr);
+void rpc(String cmdstr);
 
 #endif

@@ -5,16 +5,16 @@
 // checked between jobs that runs the event queue so that
 // input is not blocked for too long.
 //
-//                   +------------+        +-----+
-//  STDIN----------->| Event Loop |------->| RPC |
-//          ^        +------------+        +-----+
-//          |              |                  |
-//       timeout        timeout               |
-//          |              |                  v
-//          |              v                  |
-//          |        +------------+           |
-//          +------->| Spin Loop  |<--------(Job#)
-//          |        +------------+
+//                    +------------+         +-----+
+//  STDIN------------>| Event Loop |-------->| RPC |
+//          ^         +------------+         +-----+
+//          |                |                  |
+//       timeout          timeout              job
+//          |                |                  |
+//          |                v                  v
+//          |         +------------+        +-------+
+//          +-------->| Spin Loop  |<-------| Queue |
+//          |         +------------+        +-------+
 //          |              |
 //          |         ##Run Job##
 //          |              |
@@ -22,8 +22,15 @@
 
 #include "cntlr.h"
 
-typedef struct job_s {
+typedef struct {
   int active;
-  cntlr_t *caller;
-  cmd_t *cmd;
-} job_t;
+  Cntlr *caller;
+  Cmd *cmd;
+  char** args;
+} Job;
+
+typedef struct {
+} Queue;
+
+void queue_push(Queue *queue, Job job);
+void queue_remove(Job job);

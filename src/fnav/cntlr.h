@@ -5,16 +5,15 @@
 
 typedef void (*fn)(char **args);
 
-typedef struct cmd_s {
-  string name;
+typedef struct {
+  String key;
+  String name;
   int required_parameters;
   fn exec;
-  int argc;
-  string argv;
-} cmd_t;
+} Cmd;
 
 typedef struct cntlr_s {
-  cmd_t *cmd_lst;
-} cntlr_t;
+  Cmd *cmd_lst;
+} Cntlr;
 
 #endif
