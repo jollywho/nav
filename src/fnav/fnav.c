@@ -28,6 +28,7 @@ void init(void)
 {
   printf("init\n");
 //  initscr();
+  fm_cntlr_init();
   event_init();
   //input_init
   //tui_init

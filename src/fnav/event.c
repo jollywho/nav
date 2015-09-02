@@ -74,7 +74,7 @@ void update(uv_timer_t *req)
           (char)(command >> 8), args[0], args[1], (char)(command >> 16), (char)command);
     }
     else {
-      rpc(key.utf8);
+      rpc_key_handle(key.utf8);
     }
 
     if(key.type == TERMKEY_TYPE_UNICODE &&

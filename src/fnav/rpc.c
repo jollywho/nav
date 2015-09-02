@@ -1,15 +1,18 @@
 #include <stdio.h>
 #include <strings.h>
+
 #include "rpc.h"
 #include "loop.h"
 #include "fm_cntlr.h"
 
-static Cmd* find_cmd(String *cmdkey, Cmd *lst)
+// this will be replaced by hash search
+static Cmd* find_cmd(String *cmdkey, Cntlr *cntlr)
 {
   int i, j;
+  Cmd *lst = cntlr->cmd_lst;
 
-  for (i = 0; lst[i].key; i++) {
-    if (strcasecmp(lst[i].key, cmdkey[0]) != 0) {
+  for (i = 0; lst[i].name; i++) {
+    if (strcasecmp(lst[i].name, cmdkey[0]) != 0) {
       continue;
     }
     for (j = 1; cmdkey[j]; j++) {} /*count*/
@@ -21,9 +24,20 @@ static Cmd* find_cmd(String *cmdkey, Cmd *lst)
   return NULL;
 }
 
-void rpc(String cmdstr)
+// Input handler
+void rpc_key_handle(String key)
 {
-  Cmd *cmd = find_cmd(&cmdstr, fm_cmds_lst);
+  //TODO: pass to client first
+  //      -ret 1 is consumed
+  //      -ret 0 is ignored
+  //TODO: set focus cntrl
+  fm_cntlr._input(key);
+}
+
+// Cmd handler
+void rpc_handle(String cmdstr)
+{
+  Cmd *cmd = find_cmd(&cmdstr, &fm_cntlr);
   if (cmd != NULL){
     cmd->exec(NULL);
   }
@@ -31,4 +45,11 @@ void rpc(String cmdstr)
   //
   //TODO: create job_t. dont exec here.
   //      add args to job
+}
+
+// Request a cntlr do a call
+// Useful for instructing another cntlr to do something
+void rpc_handle_for(String cntlr_name, String cmdstr)
+{
+  //get cntlr by name
 }

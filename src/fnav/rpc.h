@@ -3,6 +3,8 @@
 
 #include "fnav.h"
 
-void rpc(String cmdstr);
+void rpc_handle(String cmdstr);
+void rpc_key_handle(String key);
+void rpc_handle_for(String cntlr_name, String cmdstr);
 
 #endif
