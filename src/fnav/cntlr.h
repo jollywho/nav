@@ -3,12 +3,10 @@
 
 #include "fnav.h"
 
-typedef void (*fn)(char **args);
-
 typedef struct {
   String name;
   int required_parameters;
-  fn exec;
+  void (*fn)();
 } Cmd;
 
 // TOOD:  context for cntlr cmds.
@@ -43,7 +41,7 @@ typedef struct {
 
 typedef struct {
   Cmd *cmd_lst; //should be hash
-  void (*_cancel);
+  void (*_cancel)();
   int  (*_input)(String key);
 } Cntlr;
 

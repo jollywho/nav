@@ -2,7 +2,6 @@
 #include <strings.h>
 
 #include "rpc.h"
-#include "loop.h"
 #include "fm_cntlr.h"
 
 // this will be replaced by hash search
@@ -39,7 +38,7 @@ void rpc_handle(String cmdstr)
 {
   Cmd *cmd = find_cmd(&cmdstr, &fm_cntlr);
   if (cmd != NULL){
-    cmd->exec(NULL);
+    cmd->fn(NULL);
   }
   //TODO: check req args.
   //

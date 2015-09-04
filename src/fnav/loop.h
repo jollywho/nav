@@ -22,15 +22,32 @@
 
 #include "cntlr.h"
 
+struct uv_handle_t;
+
 typedef struct {
-  int active;
   Cntlr *caller;
-  Cmd *cmd;
-  char** args;
+  void(*cntlr_read_cb)();
+  void(*cntlr_after_cb)();
+  char **args;
+  void(*fn)();
 } Job;
 
 typedef struct {
+  int num;
+  Job *data;
+  Job *next;
+} QueueItem;
+
+typedef struct {
+  QueueItem *head;
+  QueueItem *tail;
 } Queue;
 
+typedef struct {
+  struct uv_handle_t* handle;
+  Job *job;
+  void(*close_cb)();
+} Channel;
+
 void queue_push(Queue *queue, Job job);
-void queue_remove(Job job);
+void queue_remove(Queue *queue);
