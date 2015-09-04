@@ -15,43 +15,15 @@
 } while(0);
 
 uv_loop_t *loop;
-uv_pipe_t stdin_pipe;
 uv_timer_t tick;
 
 TermKey *tk;
 char buffer[50];
 
-const char* path = "/home/chi/muu";
-uv_fs_t stat_req;
-
-void stat_cb(uv_fs_t* req);
-
 void alloc_cb(uv_handle_t *handle, size_t size, uv_buf_t *buf)
 {
   buf->base = malloc(size);
   buf->len = size;
-}
-
-void read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf)
-{
-  if (buf->base) free(buf->base);
-}
-
-void run_command(uv_fs_event_t *handle, const char *filename, int events, int status)
-{
-  char path[1024];
-  size_t size = 1023;
-  // Does not handle error if path is longer than 1023.
-  uv_fs_event_getpath(handle, path, &size);
-  path[size] = '\0';
-
-  fprintf(stderr, "Change detected in %s: ", path);
-  fprintf(stderr, "%s ", filename ? filename : "");
-  if (events & UV_RENAME)
-    fprintf(stderr, "renamed");
-  if (events & UV_CHANGE)
-    fprintf(stderr, "changed");
-  fprintf(stderr, "\n");
 }
 
 void update(uv_timer_t *req)
@@ -101,22 +73,16 @@ int event_init(void)
   tk = termkey_new(0,0);
   termkey_set_flags(tk, TERMKEY_FLAG_UTF8);
 
-  uv_fs_event_t fs_event_req;
-  uv_fs_event_init(loop, &fs_event_req);
-  uv_fs_event_start(&fs_event_req, run_command, "a", UV_FS_EVENT_RECURSIVE);
-
-  uv_fs_stat(loop, &stat_req, "/home/chi/muu", stat_cb);
   return 0;
-}
-
-void stat_cb(uv_fs_t* req) {
-  uv_fs_t *s_req = req;
-  fprintf(stderr, "d: %d\n", (int)s_req->statbuf.st_size);
-  fprintf(stderr, "d: %s\n", ctime(&s_req->statbuf.st_mtim.tv_sec));
-  uv_fs_req_cleanup(req);
 }
 
 void start_event_loop(void)
 {
   uv_run(loop, UV_RUN_DEFAULT);
+}
+
+void event_push(Channel channel)
+{
+  fprintf(stderr, "channel push\n");
+  channel.open_cb(loop, channel);
 }

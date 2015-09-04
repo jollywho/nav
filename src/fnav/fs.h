@@ -3,7 +3,6 @@
 
 #include "loop.h"
 
-void fs_init();
-void fs_open(String dir, Job job);
+void fs_open(String dir, Job *job);
 
 #endif

@@ -22,6 +22,7 @@
 //          |              |
 //          +------<-------+
 
+#include <uv.h>
 #include "lib/queue.h"
 #include "cntlr.h"
 
@@ -40,12 +41,14 @@ typedef struct {
   Job *data;
 } QueueItem;
 
-typedef void(*close_cb)();
+typedef void(*channel_cb)();
 
 typedef struct {
-  struct uv_handle_t* handle;
+  uv_handle_t* handle;
   Job *job;
-  close_cb cb;
+  channel_cb open_cb;
+  channel_cb close_cb;
+  String *args;
 } Channel;
 
 void queue_init();

@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <stdbool.h>
+
 #include "fm_cntlr.h"
+#include "fs.h"
 
 #define FORWARD  1
 #define BACKWARD (-1)
@@ -65,14 +67,30 @@ void cancel()
   fm_op = NULL;
 }
 
+void fm_read_scan(String name)
+{
+  fprintf(stderr, "async receive: %s\n", name);
+}
+
+void fm_after_scan()
+{
+  fprintf(stderr, "async done\n");
+}
+
 static void fm_up()
 {
-  fprintf(stderr, "up()");
+  fprintf(stderr, "cmd up + scan test\n");
+  Job job = {
+    .read_cb = fm_read_scan,
+    .after_cb = fm_after_scan,
+  };
+  fs_open("/home/chi/Downloads/", &job);
+  fprintf(stderr, "waiting on job\n");
 }
 
 static void fm_down()
 {
-  fprintf(stderr, "yank down");
+  fprintf(stderr, "cmd down\n");
 }
 
 /* Number of commands in nv_cmds[]. */
@@ -183,6 +201,7 @@ int input(String key)
 
 void fm_cntlr_init()
 {
+  init_cmds();
   fm_cntlr.cmd_lst = default_lst;
   fm_cntlr._cancel = cancel;
   fm_cntlr._input = input;
