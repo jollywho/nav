@@ -3,7 +3,8 @@ set(SOURCES
   event.c
   rpc.c
   fm_cntlr.c
-  fsw_cntlr.c
+  fs.c
+  loop.c
   )
 
 add_executable(fnav ${SOURCES})

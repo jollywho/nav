@@ -1,3 +1,5 @@
+#ifndef FN_CORE_LOOP_H
+#define FN_CORE_LOOP_H
 // Spin loop for selective async processing.
 //
 // Jobs are created by rpc and then pushed to the job queue.
@@ -20,34 +22,33 @@
 //          |              |
 //          +------<-------+
 
+#include "lib/queue.h"
 #include "cntlr.h"
 
-struct uv_handle_t;
+typedef void(*cntlr_cb)();
 
 typedef struct {
   Cntlr *caller;
-  void(*cntlr_read_cb)();
-  void(*cntlr_after_cb)();
+  cntlr_cb read_cb;
+  cntlr_cb after_cb;
   char **args;
   void(*fn)();
 } Job;
 
 typedef struct {
-  int num;
+  QUEUE node;
   Job *data;
-  Job *next;
 } QueueItem;
 
-typedef struct {
-  QueueItem *head;
-  QueueItem *tail;
-} Queue;
+typedef void(*close_cb)();
 
 typedef struct {
   struct uv_handle_t* handle;
   Job *job;
-  void(*close_cb)();
+  close_cb cb;
 } Channel;
 
-void queue_push(Queue *queue, Job job);
-void queue_remove(Queue *queue);
+void queue_init();
+void queue_push(Job job);
+
+#endif

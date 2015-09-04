@@ -21,13 +21,17 @@
 #include <stdlib.h>
 
 #include "fnav.h"
+#include "loop.h"
 #include "event.h"
 #include "fm_cntlr.h"
+#include "fs.h"
 
 void init(void)
 {
   printf("init\n");
 //  initscr();
+  queue_init();
+  fs_init();
   fm_cntlr_init();
   event_init();
   //input_init
