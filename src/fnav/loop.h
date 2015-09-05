@@ -22,9 +22,9 @@
 //          |              |
 //          +------<-------+
 
-#include "rpc.h"
+#include "fnav/rpc.h"
 
 void queue_init();
-void queue_push(Job job);
+void queue_push(Job *job);
 
 #endif

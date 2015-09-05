@@ -1,7 +1,8 @@
 #include <malloc.h>
 
-#include "loop.h"
-#include "event.h"
+#include "fnav/loop.h"
+#include "fnav/event.h"
+#include "fnav/log.h"
 
 QUEUE headtail;
 Loop *spin_loop;
@@ -18,10 +19,10 @@ void queue_init()
   QUEUE_INIT(&headtail);
 }
 
-void queue_push(Job job)
+void queue_push(Job *job)
 {
   QueueItem *item = malloc(sizeof(QueueItem));
-  item->data = &job;
+  item->data = job;
   QUEUE_INIT(&item->node);
   QUEUE_INSERT_TAIL(&headtail, &item->node);
   item_count++;
@@ -46,17 +47,17 @@ static Job *queue_pop()
 
 void loop_timeout(uv_timer_t *req)
 {
-  fprintf(stderr, "_spin timer check_\n");
+  log_msg("LOOP", "spin timer check");
   onetime_event_loop();
 }
 
 static void process_loop()
 {
+  log_msg("LOOP", "|+start--");
   stop_event_loop();
-  uv_timer_start(&spin_timer, loop_timeout, 10, 10);
+  uv_timer_start(&spin_timer, loop_timeout, 10, 0);
   while(item_count > 0)
   {
-    fprintf(stderr, "++job proc++\n");
     Job *job = queue_pop();
     job->fn(job);
     uv_run(spin_loop, UV_RUN_ONCE);
@@ -64,4 +65,5 @@ static void process_loop()
   uv_timer_stop(&spin_timer);
   uv_stop(spin_loop);
   start_event_loop();
+  log_msg("LOOP", "--STOP-|");
 }

@@ -10,4 +10,5 @@ include(CheckIncludeFiles)
 include(CheckFunctionExists)
 include(CheckSymbolExists)
 
+include_directories("${PROJECT_SOURCE_DIR}/src")
 add_subdirectory(src/fnav)

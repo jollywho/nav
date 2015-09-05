@@ -1,9 +1,10 @@
 #include <stdio.h>
-#include "table.h"
+#include "fnav/table.h"
+#include "fnav/log.h"
 
 void table_add(Job *job)
 {
-  fprintf(stderr, "table add\n");
+  log_msg("TABLE", "add");
   //dowork
   job->read_cb(job->args[0]);
 }

@@ -3,8 +3,9 @@
 #include <strings.h>
 #include <stdbool.h>
 
-#include "fm_cntlr.h"
-#include "fs.h"
+#include "fnav/fm_cntlr.h"
+#include "fnav/fs.h"
+#include "fnav/log.h"
 
 #define FORWARD  1
 #define BACKWARD (-1)
@@ -69,28 +70,24 @@ void cancel()
 
 void fm_read_scan(String name)
 {
-  fprintf(stderr, "async receive: %s\n", name);
+  log_msg("FM", "%s", name);
 }
 
 void fm_after_scan()
 {
-  fprintf(stderr, "async done\n");
+  log_msg("FM", "async done");
 }
 
 static void fm_up()
 {
-  fprintf(stderr, "cmd up + scan test\n");
-  Job job = {
-    .read_cb = fm_read_scan,
-    .after_cb = fm_after_scan,
-  };
-  fs_open("/home/chi/casper/YFS/ALL/", &job);
-  fprintf(stderr, "waiting on job\n");
+  log_msg("FM", "cmd up + scan test");
+  fs_open("/home/chi/casper/YFS/ALL/Chihayafuru", fm_read_scan, fm_after_scan);
+  log_msg("FM", "waiting on job...");
 }
 
 static void fm_down()
 {
-  fprintf(stderr, "cmd down\n");
+  log_msg("FM", "cmd down");
 }
 
 /* Number of commands in nv_cmds[]. */

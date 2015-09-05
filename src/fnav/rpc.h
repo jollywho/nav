@@ -2,9 +2,9 @@
 #define FN_CORE_RPC_H
 
 #include <uv.h>
-#include "lib/queue.h"
-#include "fnav.h"
-#include "cntlr.h"
+#include "fnav/lib/queue.h"
+#include "fnav/fnav.h"
+#include "fnav/cntlr.h"
 
 //  +----<-----+---->-----+----<-----+
 //  |  Event   |          |   Spin   |

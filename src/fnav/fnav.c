@@ -1,7 +1,3 @@
-/*
- ** fnav.c
- */
-
 #define _GNU_SOURCE
 #include <arpa/inet.h>
 #include <curses.h>
@@ -20,19 +16,19 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "fnav.h"
-#include "loop.h"
-#include "event.h"
-#include "fm_cntlr.h"
-#include "fs.h"
+#include "fnav/fnav.h"
+#include "fnav/loop.h"
+#include "fnav/event.h"
+#include "fnav/fm_cntlr.h"
+#include "fnav/fs.h"
 
 void init(void)
 {
   printf("init\n");
 //  initscr();
+  event_init();
   queue_init();
   fm_cntlr_init();
-  event_init();
   //input_init
   //tui_init
   //rpc_init

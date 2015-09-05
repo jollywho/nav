@@ -6,19 +6,30 @@
 #include <termkey.h>
 #include <curses.h>
 
-#include "event.h"
-
-#define ERROR(msg, code) do {                                                         \
-  fprintf(stderr, "%s: [%s: %s]\n", msg, uv_err_name((code)), uv_strerror((code)));   \
-  assert(0);                                                                          \
-} while(0);
+#include "fnav/event.h"
+#include "fnav/log.h"
 
 Loop *event_loop;
-uv_timer_t input_timer;
 uv_timer_t fast_timer;
+
+uv_poll_t poll_handle;
 
 TermKey *tk;
 char buffer[50];
+void event_input(uv_poll_t *req, int status, int events);
+
+int event_init(void)
+{
+  event_loop = uv_default_loop();
+  uv_timer_init(event_loop, &fast_timer);
+
+  tk = termkey_new(0,0);
+  termkey_set_flags(tk, TERMKEY_FLAG_UTF8);
+
+  uv_poll_init(event_loop, &poll_handle, 0);
+  uv_poll_start(&poll_handle, UV_READABLE, event_input);
+  return 0;
+}
 
 void alloc_cb(uv_handle_t *handle, size_t size, uv_buf_t *buf)
 {
@@ -26,13 +37,14 @@ void alloc_cb(uv_handle_t *handle, size_t size, uv_buf_t *buf)
   buf->len = size;
 }
 
-void update(uv_timer_t *req)
+void event_input(uv_poll_t *req, int status, int events)
 {
   TermKeyKey key;
   TermKeyFormat format = TERMKEY_FORMAT_URWID;
   TermKeyResult ret;
+
   termkey_advisereadable(tk);
-  ret = termkey_getkey(tk, &key);
+  ret = termkey_getkey_force(tk, &key);
   if(ret == TERMKEY_RES_KEY) {
     termkey_strfkey(tk, buffer, sizeof buffer, &key, format);
 
@@ -64,42 +76,34 @@ void update(uv_timer_t *req)
   }
 }
 
-int event_init(void)
-{
-  event_loop = uv_default_loop();
-  uv_timer_init(event_loop, &input_timer);
-  uv_timer_start(&input_timer, update, 10, 10);
-
-  tk = termkey_new(0,0);
-  termkey_set_flags(tk, TERMKEY_FLAG_UTF8);
-  return 0;
-}
-
 void loop_timeout(uv_timer_t *req)
 {
-  //
+  log_msg("EVENT", "++timeout++");
+  stop_event_loop();
 }
 
 void start_event_loop(void)
 {
-  uv_timer_init(event_loop, &fast_timer);
-  uv_timer_start(&fast_timer,loop_timeout, 10, 10);
+  log_msg("EVENT", "<<enable>>");
   uv_run(event_loop, UV_RUN_DEFAULT);
 }
 
 void stop_event_loop(void)
 {
+  log_msg("EVENT", "<<disable>>");
   uv_timer_stop(&fast_timer);
   uv_stop(event_loop);
 }
 
 void onetime_event_loop(void)
 {
-  uv_run(event_loop, UV_RUN_NOWAIT);
+  log_msg("EVENT", "<<enable>>");
+  uv_timer_start(&fast_timer, loop_timeout, 10, 0);
+  uv_run(event_loop, UV_RUN_DEFAULT);
 }
 
 void event_push(Channel channel)
 {
-  fprintf(stderr, "channel push\n");
-  channel.open_cb(event_loop, channel);
+  log_msg("EVENT", "channel push");
+  channel.open_cb(event_loop, &channel);
 }

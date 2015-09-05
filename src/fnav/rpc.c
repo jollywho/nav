@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <strings.h>
 
-#include "rpc.h"
-#include "fm_cntlr.h"
-#include "event.h"
+#include "fnav/rpc.h"
+#include "fnav/fm_cntlr.h"
+#include "fnav/event.h"
+#include "fnav/log.h"
 
 // Input handler
 void rpc_key_handle(String key)
@@ -18,11 +19,11 @@ void rpc_key_handle(String key)
 void rpc_push_channel(Channel channel)
 {
   //add to list
-  fprintf(stderr, "rpc push channel\n");
+  log_msg("RPC", "rpc push channel");
   event_push(channel);
 }
 
 void rpc_push_job(Job job)
 {
-  queue_push(job);
+  queue_push(&job);
 }
