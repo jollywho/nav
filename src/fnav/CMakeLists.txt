@@ -1,11 +1,7 @@
-set(SOURCES
-  fnav.c
-  event.c
-  rpc.c
-  fm_cntlr.c
-  fs.c
-  loop.c
-  )
+file(GLOB SOURCES
+    "*.h"
+    "*.c"
+)
 
 add_executable(fnav ${SOURCES})
 

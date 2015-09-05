@@ -1,21 +1,21 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <inttypes.h>
 #include <uv.h>
 #include <termkey.h>
-#include <inttypes.h>
 #include <curses.h>
 
-#include "rpc.h"
+#include "event.h"
 
 #define ERROR(msg, code) do {                                                         \
   fprintf(stderr, "%s: [%s: %s]\n", msg, uv_err_name((code)), uv_strerror((code)));   \
   assert(0);                                                                          \
 } while(0);
 
-uv_loop_t *loop;
-uv_timer_t tick;
+Loop *event_loop;
+uv_timer_t input_timer;
+uv_timer_t fast_timer;
 
 TermKey *tk;
 char buffer[50];
@@ -66,23 +66,40 @@ void update(uv_timer_t *req)
 
 int event_init(void)
 {
-  loop = uv_default_loop();
-  uv_timer_init(loop, &tick);
-  uv_timer_start(&tick, update, 10, 10);
+  event_loop = uv_default_loop();
+  uv_timer_init(event_loop, &input_timer);
+  uv_timer_start(&input_timer, update, 10, 10);
 
   tk = termkey_new(0,0);
   termkey_set_flags(tk, TERMKEY_FLAG_UTF8);
-
   return 0;
+}
+
+void loop_timeout(uv_timer_t *req)
+{
+  //
 }
 
 void start_event_loop(void)
 {
-  uv_run(loop, UV_RUN_DEFAULT);
+  uv_timer_init(event_loop, &fast_timer);
+  uv_timer_start(&fast_timer,loop_timeout, 10, 10);
+  uv_run(event_loop, UV_RUN_DEFAULT);
+}
+
+void stop_event_loop(void)
+{
+  uv_timer_stop(&fast_timer);
+  uv_stop(event_loop);
+}
+
+void onetime_event_loop(void)
+{
+  uv_run(event_loop, UV_RUN_NOWAIT);
 }
 
 void event_push(Channel channel)
 {
   fprintf(stderr, "channel push\n");
-  channel.open_cb(loop, channel);
+  channel.open_cb(event_loop, channel);
 }

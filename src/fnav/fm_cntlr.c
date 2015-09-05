@@ -84,7 +84,7 @@ static void fm_up()
     .read_cb = fm_read_scan,
     .after_cb = fm_after_scan,
   };
-  fs_open("/home/chi/Downloads/", &job);
+  fs_open("/home/chi/casper/YFS/ALL/", &job);
   fprintf(stderr, "waiting on job\n");
 }
 

@@ -22,34 +22,7 @@
 //          |              |
 //          +------<-------+
 
-#include <uv.h>
-#include "lib/queue.h"
-#include "cntlr.h"
-
-typedef void(*cntlr_cb)();
-
-typedef struct {
-  Cntlr *caller;
-  cntlr_cb read_cb;
-  cntlr_cb after_cb;
-  char **args;
-  void(*fn)();
-} Job;
-
-typedef struct {
-  QUEUE node;
-  Job *data;
-} QueueItem;
-
-typedef void(*channel_cb)();
-
-typedef struct {
-  uv_handle_t* handle;
-  Job *job;
-  channel_cb open_cb;
-  channel_cb close_cb;
-  String *args;
-} Channel;
+#include "rpc.h"
 
 void queue_init();
 void queue_push(Job job);

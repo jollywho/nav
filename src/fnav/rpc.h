@@ -1,8 +1,10 @@
 #ifndef FN_CORE_RPC_H
 #define FN_CORE_RPC_H
 
+#include <uv.h>
+#include "lib/queue.h"
 #include "fnav.h"
-#include "loop.h"
+#include "cntlr.h"
 
 //  +----<-----+---->-----+----<-----+
 //  |  Event   |          |   Spin   |
@@ -13,6 +15,31 @@
 //  +----------+----------+----------+
 //  | Channels |  Input   |   Jobs   |
 //  +----------+----------+----------+
+typedef uv_loop_t Loop;
+typedef void(*cntlr_cb)();
+
+typedef struct {
+  Cntlr *caller;
+  cntlr_cb read_cb;
+  cntlr_cb after_cb;
+  String *args;
+  void(*fn)();
+} Job;
+
+typedef struct {
+  QUEUE node;
+  Job *data;
+} QueueItem;
+
+typedef void(*channel_cb)();
+
+typedef struct {
+  uv_handle_t* handle;
+  Job *job;
+  channel_cb open_cb;
+  channel_cb close_cb;
+  String *args;
+} Channel;
 
 void rpc_handle(String cmdstr);
 void rpc_key_handle(String key);
