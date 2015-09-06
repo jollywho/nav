@@ -11,6 +11,7 @@ struct FM_cntlr {
   /* new fields */
   int op_count;
   int mo_count;
+  String cur_dir;
   FS_handle *fs;
 };
 

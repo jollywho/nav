@@ -6,8 +6,9 @@
 typedef struct FS_handle FS_handle;
 
 struct FS_handle {
-  Job *job;
   Channel *channel;
+  String cur_dir;
+  bool cancel;
 };
 
 FS_handle* fs_init(Cntlr *c, String dir, cntlr_cb read_cb, cntlr_cb after_cb);

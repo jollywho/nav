@@ -35,12 +35,13 @@ typedef struct {
 typedef void(*channel_cb)();
 
 typedef struct {
-  uv_handle_t* handle;
+  uv_handle_t* uv_handle;
   uv_fs_event_t *watcher;
   Job *job;
   channel_cb open_cb;
   channel_cb close_cb;
   String *args;
+  void *handle;
 } Channel;
 
 void rpc_temp_init();

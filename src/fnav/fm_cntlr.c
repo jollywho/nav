@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <strings.h>
-#include <stdbool.h>
+
+#include <ncurses.h>
 
 #include "fnav/fm_cntlr.h"
 #include "fnav/log.h"
@@ -42,6 +44,8 @@ Cmd default_lst[] = {
 
 static void fm_down();
 static void fm_up();
+static void cancel();
+static void fm_update();
 
 static const struct fm_cmd {
   int cmd_char;                 /* (first) command character */
@@ -52,18 +56,36 @@ static const struct fm_cmd {
 {
   {'j',     fm_down,        0,                        0},
   {'k',     fm_up,          0,                 BACKWARD},
+  {'u',     fm_update,      0,                 BACKWARD},
+  {'c',     cancel,         0,                 BACKWARD},
 };
 
 void cancel(Cntlr *cntlr)
 {
+  log_msg("FM", "<|_CANCEL_|>");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   self->op_count = 1;
   self->mo_count = 1;
+  self->fs->cancel = true;
 }
 
-void fm_read_scan(String name)
+String testlst[900];
+int testcount = 0;
+int curidx = 0;
+
+void fm_read_scan(Cntlr *cntlr, String dir, String name)
 {
-  log_msg("FM", "%s", name);
+  FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  if(strcmp(dir, "/home/chi/casper/YFS/ALL") == 0) {
+    strcat(dir, "/");
+    strcat(dir, name);
+    testlst[testcount] = dir;
+    testcount++;
+    log_msg("FM", "compiling %s", dir);
+  }
+  if (strcmp(dir, self->cur_dir) == 0) {
+    log_msg("FM", "%s", name);
+  }
 }
 
 void fm_after_scan()
@@ -71,17 +93,36 @@ void fm_after_scan()
   log_msg("FM", "async done");
 }
 
-static void fm_up(Cntlr *cntlr)
+static void fm_update(Cntlr *cntlr)
 {
+  log_msg("FM", "update dir");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  log_msg("FM", "****************cmd up scan test***************");
-  fs_open(self->fs, "/home/chi/casper/YFS/ALL/Chihayafuru");
+  fs_open(self->fs, self->cur_dir);
   log_msg("FM", "waiting on job...");
 }
 
-static void fm_down()
+static void fm_up(Cntlr *cntlr)
+{
+  log_msg("FM", "cmd up");
+  FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  if (curidx > 0)
+    curidx--;
+  self->cur_dir = testlst[curidx];
+  log_msg("FM", "set curdir: %s", testlst[curidx]);
+  fs_open(self->fs, self->cur_dir);
+  log_msg("FM", "waiting on job...");
+}
+
+static void fm_down(Cntlr *cntlr)
 {
   log_msg("FM", "cmd down");
+  FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  if (curidx < 900)
+    curidx++;
+  self->cur_dir = testlst[curidx];
+  log_msg("FM", "set curdir: %s", testlst[curidx]);
+  fs_open(self->fs, self->cur_dir);
+  log_msg("FM", "waiting on job...");
 }
 
 /* Number of commands in nv_cmds[]. */
@@ -193,16 +234,21 @@ int input(Cntlr *cntlr, String key)
 FM_cntlr* fm_cntlr_init()
 {
   init_cmds(); //TODO: cleanup loose parts
-  //TODO: init fs_handle
 
-  FM_cntlr *cntlr = malloc(sizeof(FM_cntlr));
-  cntlr->base.top = cntlr;
-  cntlr->base.cmd_lst = default_lst;
-  cntlr->base._cancel = cancel;
-  cntlr->base._input = input;
-  cntlr->op_count = 1;
-  cntlr->mo_count = 1;
-  cntlr->fs = fs_init(&cntlr->base, "", fm_read_scan, fm_after_scan);
+  FM_cntlr *c = malloc(sizeof(FM_cntlr));
+  c->base.top = c;
+  c->base.cmd_lst = default_lst;
+  c->base._cancel = cancel;
+  c->base._input = input;
+  c->op_count = 1;
+  c->mo_count = 1;
+  c->cur_dir = "/home/chi/casper/YFS/ALL";
+  c->fs = fs_init(&c->base, c->cur_dir, fm_read_scan, fm_after_scan);
 
-  return cntlr;
+  return c;
+}
+
+void fm_cntlr_cleanup(FM_cntlr *cntlr)
+{
+  // TODO: careful cleanup + cancel any pending cb
 }

@@ -24,6 +24,7 @@ typedef struct {
   int rec_count;
 } FN_data;
 
+#include <stdbool.h>
 #include "fnav/macros.h"
 
 #endif

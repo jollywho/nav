@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include "fnav/log.h"
 #include "fnav/fnav.h"
 #include "fnav/loop.h"
 #include "fnav/event.h"
@@ -24,6 +25,7 @@
 
 void init(void)
 {
+  log_set("FM");
   printf("init\n");
 //  initscr();
   event_init();

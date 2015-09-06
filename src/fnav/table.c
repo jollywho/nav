@@ -4,7 +4,6 @@
 
 void table_add(Job *job)
 {
-  log_msg("TABLE", "add");
   //dowork
-  job->read_cb(job->args[0]);
+  job->read_cb(job->caller, job->args[0], job->args[1]);
 }
