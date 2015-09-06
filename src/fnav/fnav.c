@@ -28,7 +28,7 @@ void init(void)
 //  initscr();
   event_init();
   queue_init();
-  fm_cntlr_init();
+  rpc_temp_init();
   //input_init
   //tui_init
   //rpc_init

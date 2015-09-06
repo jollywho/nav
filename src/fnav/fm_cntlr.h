@@ -2,8 +2,18 @@
 #define FN_CORE_FM_CNTLR_H
 
 #include "fnav/cntlr.h"
+#include "fnav/fs.h"
 
-extern Cntlr fm_cntlr;
-void fm_cntlr_init();
+typedef struct FM_cntlr FM_cntlr;
+
+struct FM_cntlr {
+  Cntlr base;
+  /* new fields */
+  int op_count;
+  int mo_count;
+  FS_handle *fs;
+};
+
+FM_cntlr* fm_cntlr_init();
 
 #endif

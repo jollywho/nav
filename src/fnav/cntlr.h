@@ -9,10 +9,13 @@ typedef struct {
   void (*fn)();
 } Cmd;
 
-typedef struct {
-  Cmd *cmd_lst; //should be hash
-  void (*_cancel)();
-  int  (*_input)(String key);
-} Cntlr;
+typedef struct Cntlr Cntlr;
+
+struct Cntlr {
+  Cmd *cmd_lst;
+  void *top;
+  void (*_cancel)(Cntlr *cntlr);
+  int  (*_input)(Cntlr *cntlr, String key);
+};
 
 #endif

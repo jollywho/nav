@@ -5,7 +5,7 @@
 
 int event_init(void);
 void start_event_loop(void);
-void event_push(Channel channel);
+void event_push(Channel *channel);
 void cycle_events(void);
 void stop_cycle(void);
 

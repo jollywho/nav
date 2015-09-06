@@ -6,6 +6,13 @@
 #include "fnav/event.h"
 #include "fnav/log.h"
 
+Cntlr *cntlr; //replace later with focus
+
+void rpc_temp_init()
+{
+  cntlr = (Cntlr*)fm_cntlr_init();
+}
+
 // Input handler
 void rpc_key_handle(String key)
 {
@@ -13,10 +20,10 @@ void rpc_key_handle(String key)
   //      -ret 1 is consumed
   //      -ret 0 is ignored
   //TODO: set focus cntrl
-  fm_cntlr._input(key);
+  cntlr->_input(cntlr, key);
 }
 
-void rpc_push_channel(Channel channel)
+void rpc_push_channel(Channel *channel)
 {
   //add to list
   log_msg("RPC", "rpc push channel");

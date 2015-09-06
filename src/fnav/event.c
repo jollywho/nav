@@ -37,6 +37,7 @@ void alloc_cb(uv_handle_t *handle, size_t size, uv_buf_t *buf)
   buf->len = size;
 }
 
+// TODO: reset after async if key held prior
 void event_input(uv_poll_t *req, int status, int events)
 {
   TermKeyKey key;
@@ -101,8 +102,8 @@ void cycle_events(void)
   uv_run(event_loop, UV_RUN_ONCE);
 }
 
-void event_push(Channel channel)
+void event_push(Channel *channel)
 {
   log_msg("EVENT", "channel push");
-  channel.open_cb(event_loop, &channel);
+  channel->open_cb(event_loop, channel);
 }

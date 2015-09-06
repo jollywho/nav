@@ -4,7 +4,6 @@
 #include <stdbool.h>
 
 #include "fnav/fm_cntlr.h"
-#include "fnav/fs.h"
 #include "fnav/log.h"
 
 #define FORWARD  1
@@ -22,12 +21,6 @@ typedef struct {
   void (*f)();
 } Key;
 
-Cntlr fm_cntlr;
-void (*fm_op)();
-
-int op_count = 1;
-int mo_count = 1;
-
 typedef struct {
   long lnum;        /* line number */
   int col;          /* column number */
@@ -39,7 +32,7 @@ typedef struct {
   long opcount;                 /* count before an operator */
 } Cmdarg;
 
-typedef void (*key_func)(Cmdarg *arg);
+typedef void (*key_func)(Cntlr *cntlr, Cmdarg *arg);
 
 Cmd default_lst[] = {
   { "open",  0,  NULL },
@@ -61,11 +54,11 @@ static const struct fm_cmd {
   {'k',     fm_up,          0,                 BACKWARD},
 };
 
-void cancel()
+void cancel(Cntlr *cntlr)
 {
-  op_count = 1;
-  mo_count = 1;
-  fm_op = NULL;
+  FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  self->op_count = 1;
+  self->mo_count = 1;
 }
 
 void fm_read_scan(String name)
@@ -78,10 +71,11 @@ void fm_after_scan()
   log_msg("FM", "async done");
 }
 
-static void fm_up()
+static void fm_up(Cntlr *cntlr)
 {
-  log_msg("FM", "cmd up + scan test");
-  fs_open("/home/chi/casper/YFS/ALL/Chihayafuru", fm_read_scan, fm_after_scan);
+  FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  log_msg("FM", "****************cmd up scan test***************");
+  fs_open(self->fs, "/home/chi/casper/YFS/ALL/Chihayafuru");
   log_msg("FM", "waiting on job...");
 }
 
@@ -187,20 +181,28 @@ static int find_command(int cmdchar)
   return idx;
 }
 
-int input(String key)
+int input(Cntlr *cntlr, String key)
 {
   int idx = find_command(key[0]);
   if (idx >= 0) {
-    fm_cmds[idx].cmd_func(NULL);
+    fm_cmds[idx].cmd_func(cntlr, NULL);
   }
   return 0;
 }
 
-void fm_cntlr_init()
+FM_cntlr* fm_cntlr_init()
 {
-  init_cmds();
-  fm_cntlr.cmd_lst = default_lst;
-  fm_cntlr._cancel = cancel;
-  fm_cntlr._input = input;
-  fm_op = NULL;
+  init_cmds(); //TODO: cleanup loose parts
+  //TODO: init fs_handle
+
+  FM_cntlr *cntlr = malloc(sizeof(FM_cntlr));
+  cntlr->base.top = cntlr;
+  cntlr->base.cmd_lst = default_lst;
+  cntlr->base._cancel = cancel;
+  cntlr->base._input = input;
+  cntlr->op_count = 1;
+  cntlr->mo_count = 1;
+  cntlr->fs = fs_init(&cntlr->base, "", fm_read_scan, fm_after_scan);
+
+  return cntlr;
 }

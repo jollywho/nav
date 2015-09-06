@@ -15,6 +15,7 @@
 //  +----------+----------+----------+
 //  | Channels |  Input   |   Jobs   |
 //  +----------+----------+----------+
+
 typedef uv_loop_t Loop;
 typedef void(*cntlr_cb)();
 
@@ -35,17 +36,19 @@ typedef void(*channel_cb)();
 
 typedef struct {
   uv_handle_t* handle;
+  uv_fs_event_t *watcher;
   Job *job;
   channel_cb open_cb;
   channel_cb close_cb;
   String *args;
 } Channel;
 
+void rpc_temp_init();
 void rpc_handle(String cmdstr);
 void rpc_key_handle(String key);
 void rpc_handle_for(String cntlr_name, String cmdstr);
 
 void rpc_push_job(Job job);
-void rpc_push_channel(Channel channel);
+void rpc_push_channel(Channel *channel);
 
 #endif
