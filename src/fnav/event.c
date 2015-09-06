@@ -78,28 +78,27 @@ void event_input(uv_poll_t *req, int status, int events)
 
 void loop_timeout(uv_timer_t *req)
 {
-  log_msg("EVENT", "++timeout++");
-  stop_event_loop();
+  log_msg("EVENT", "++cycle timeout++");
+  stop_cycle();
 }
 
 void start_event_loop(void)
 {
-  log_msg("EVENT", "<<enable>>");
+  log_msg("EVENT", "<<|MAIN EVENT LOOP|>>");
   uv_run(event_loop, UV_RUN_DEFAULT);
 }
 
-void stop_event_loop(void)
+void stop_cycle(void)
 {
   log_msg("EVENT", "<<disable>>");
   uv_timer_stop(&fast_timer);
-  uv_stop(event_loop);
 }
 
-void onetime_event_loop(void)
+void cycle_events(void)
 {
   log_msg("EVENT", "<<enable>>");
   uv_timer_start(&fast_timer, loop_timeout, 10, 0);
-  uv_run(event_loop, UV_RUN_DEFAULT);
+  uv_run(event_loop, UV_RUN_ONCE);
 }
 
 void event_push(Channel channel)

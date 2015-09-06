@@ -6,7 +6,7 @@
 int event_init(void);
 void start_event_loop(void);
 void event_push(Channel channel);
-void onetime_event_loop(void);
-void stop_event_loop(void);
+void cycle_events(void);
+void stop_cycle(void);
 
 #endif

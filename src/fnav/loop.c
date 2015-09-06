@@ -47,14 +47,15 @@ static Job *queue_pop()
 
 void loop_timeout(uv_timer_t *req)
 {
-  log_msg("LOOP", "spin timer check");
-  onetime_event_loop();
+  log_msg("LOOP", "++spin timeout++");
+  uv_stop(spin_loop);
+  uv_timer_stop(&spin_timer);
+  cycle_events();
 }
 
 static void process_loop()
 {
-  log_msg("LOOP", "|+start--");
-  stop_event_loop();
+  log_msg("LOOP", "|>START->");
   uv_timer_start(&spin_timer, loop_timeout, 10, 0);
   while(item_count > 0)
   {
@@ -62,8 +63,5 @@ static void process_loop()
     job->fn(job);
     uv_run(spin_loop, UV_RUN_ONCE);
   }
-  uv_timer_stop(&spin_timer);
-  uv_stop(spin_loop);
-  start_event_loop();
-  log_msg("LOOP", "--STOP-|");
+  log_msg("LOOP", "->STOP>|");
 }
