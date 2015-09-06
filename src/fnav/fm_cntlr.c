@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,6 +43,7 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
+String init_dir ="/home/chi/casper/YFS/ALL";
 static void fm_down();
 static void fm_up();
 static void cancel();
@@ -76,12 +78,14 @@ int curidx = 0;
 void fm_read_scan(Cntlr *cntlr, String dir, String name)
 {
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  if(strcmp(dir, "/home/chi/casper/YFS/ALL") == 0) {
-    strcat(dir, "/");
-    strcat(dir, name);
-    testlst[testcount] = dir;
+  if(strcmp(dir, init_dir) == 0) {
+    char temp[900]; temp[0] = '\0';
+    strcat(temp, dir);
+    strcat(temp, "/");
+    strcat(temp, name);
+    testlst[testcount] = strdup(temp);
     testcount++;
-    log_msg("FM", "compiling %s", dir);
+    log_msg("FM", "compiling %s", temp);
   }
   if (strcmp(dir, self->cur_dir) == 0) {
     log_msg("FM", "%s", name);
@@ -231,6 +235,7 @@ int input(Cntlr *cntlr, String key)
   return 0;
 }
 
+
 FM_cntlr* fm_cntlr_init()
 {
   init_cmds(); //TODO: cleanup loose parts
@@ -242,7 +247,7 @@ FM_cntlr* fm_cntlr_init()
   c->base._input = input;
   c->op_count = 1;
   c->mo_count = 1;
-  c->cur_dir = "/home/chi/casper/YFS/ALL";
+  c->cur_dir = init_dir;
   c->fs = fs_init(&c->base, c->cur_dir, fm_read_scan, fm_after_scan);
 
   return c;

@@ -22,12 +22,13 @@ void scan_cb(uv_fs_t* req)
     channel->job->args[1] = strdup(dent.name);
     queue_push(channel->job);
   }
-  uv_fs_req_cleanup((uv_fs_t*)channel->uv_handle);
+//  uv_fs_req_cleanup((uv_fs_t*)channel->uv_handle);
   channel->close_cb(fh);
 }
 
 void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)
 {
+  log_msg("FS", "--watch--");
   if (events & UV_RENAME)
     log_msg("FS", "=%s= renamed", filename);
   if (events & UV_CHANGE)
@@ -40,8 +41,8 @@ void fs_open_cb(Loop *loop, Channel *channel)
   uv_fs_t *fs_h = malloc(sizeof(uv_fs_t));
   channel->uv_handle = (uv_handle_t*)fs_h;
   fs_h->data = channel;
+  uv_fs_event_stop(channel->watcher);
   uv_fs_event_init(loop, channel->watcher);
-  uv_fs_event_start(channel->watcher, watch_cb, channel->args[0], 0);
   uv_fs_scandir(loop, (uv_fs_t*)channel->uv_handle, channel->args[0], 0, scan_cb);
 }
 
@@ -49,6 +50,7 @@ void fs_close_cb(FS_handle *h)
 {
   log_msg("FM", "reset");
   h->cancel = false;
+  uv_fs_event_start(h->channel->watcher, watch_cb, h->channel->args[0], 0);
 }
 
 void fs_open(FS_handle *h, String dir)

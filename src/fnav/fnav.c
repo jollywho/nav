@@ -25,7 +25,7 @@
 
 void init(void)
 {
-  log_set("FM");
+ // log_set("FM");
   printf("init\n");
 //  initscr();
   event_init();
