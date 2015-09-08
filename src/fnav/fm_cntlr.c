@@ -68,27 +68,38 @@ void cancel(Cntlr *cntlr)
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   self->op_count = 1;
   self->mo_count = 1;
-  self->fs->cancel = true;
+  self->fs.cancel = true;
 }
 
-String testlst[900];
+// TODO: replace with actual table structs
+typedef uv_dirent_type_t Ftype;
+typedef uv_timespec_t    Tm;
+typedef struct {
+  String name;
+  Ftype t;
+  Tm mtime;
+} File;
+File testfiles[900];
 int testcount = 0;
 int curidx = 0;
 
-void fm_read_scan(Cntlr *cntlr, String dir, String name)
+
+void fm_read_scan(Cntlr *cntlr, String dir, String name, Ftype t)
 {
+  log_msg("FM", "read");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   if(strcmp(dir, init_dir) == 0) {
-    char temp[900]; temp[0] = '\0';
+    char temp[256]; temp[0] = '\0';
     strcat(temp, dir);
     strcat(temp, "/");
     strcat(temp, name);
-    testlst[testcount] = strdup(temp);
+    testfiles[testcount].name = strdup(temp);
+    testfiles[testcount].t = t;
     testcount++;
-    log_msg("FM", "compiling %s", temp);
   }
   if (strcmp(dir, self->cur_dir) == 0) {
-    log_msg("FM", "%s", name);
+//    printw("%s", name);
+    log_msg("FM", "read %s", name);
   }
 }
 
@@ -101,7 +112,7 @@ static void fm_update(Cntlr *cntlr)
 {
   log_msg("FM", "update dir");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  fs_open(self->fs, self->cur_dir);
+  fs_open(&self->fs, self->cur_dir);
   log_msg("FM", "waiting on job...");
 }
 
@@ -109,24 +120,30 @@ static void fm_up(Cntlr *cntlr)
 {
   log_msg("FM", "cmd up");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  if (curidx > 0)
+  if (curidx - 1 > 0) {
     curidx--;
-  self->cur_dir = testlst[curidx];
-  log_msg("FM", "set curdir: %s", testlst[curidx]);
-  fs_open(self->fs, self->cur_dir);
+  self->cur_dir = testfiles[curidx].name;
+  log_msg("FM", "set cur: %s", testfiles[curidx].name);
+  if (testfiles[curidx].t == UV_DIRENT_DIR) {
+    fs_open(&self->fs, self->cur_dir);
+  }
   log_msg("FM", "waiting on job...");
+  }
 }
 
 static void fm_down(Cntlr *cntlr)
 {
   log_msg("FM", "cmd down");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  if (curidx < 900)
+  if (curidx < testcount - 1) {
     curidx++;
-  self->cur_dir = testlst[curidx];
-  log_msg("FM", "set curdir: %s", testlst[curidx]);
-  fs_open(self->fs, self->cur_dir);
+  self->cur_dir = testfiles[curidx].name;
+  log_msg("FM", "set cur: %s", testfiles[curidx].name);
+  if (testfiles[curidx].t == UV_DIRENT_DIR) {
+    fs_open(&self->fs, self->cur_dir);
+  }
   log_msg("FM", "waiting on job...");
+  }
 }
 
 /* Number of commands in nv_cmds[]. */
@@ -226,6 +243,14 @@ static int find_command(int cmdchar)
   return idx;
 }
 
+static void draw(Cntlr *cntlr)
+{
+  return;
+  clear();
+  printw("draw\n");
+  refresh();
+}
+
 int input(Cntlr *cntlr, String key)
 {
   int idx = find_command(key[0]);
@@ -235,9 +260,9 @@ int input(Cntlr *cntlr, String key)
   return 0;
 }
 
-
 FM_cntlr* fm_cntlr_init()
 {
+  printf("fm_cntlr init\n");
   init_cmds(); //TODO: cleanup loose parts
 
   FM_cntlr *c = malloc(sizeof(FM_cntlr));
@@ -245,11 +270,11 @@ FM_cntlr* fm_cntlr_init()
   c->base.cmd_lst = default_lst;
   c->base._cancel = cancel;
   c->base._input = input;
+  c->base._draw = draw;
   c->op_count = 1;
   c->mo_count = 1;
   c->cur_dir = init_dir;
-  c->fs = fs_init(&c->base, c->cur_dir, fm_read_scan, fm_after_scan);
-
+  c->fs = fs_init((Cntlr*)c, fm_read_scan, fm_after_scan);
   return c;
 }
 

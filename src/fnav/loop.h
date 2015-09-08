@@ -24,7 +24,17 @@
 
 #include "fnav/rpc.h"
 
+typedef struct {
+  Job *job;
+  char **args;
+} JobItem;
+
+typedef struct {
+  QUEUE node;
+  JobItem *item;
+} QueueItem;
+
 void queue_init();
-void queue_push(Job *job);
+void queue_push(Job *job, char **args);
 
 #endif

@@ -3,15 +3,30 @@
 
 #include "fnav/loop.h"
 
-typedef struct FS_handle FS_handle;
-
-struct FS_handle {
-  Channel *channel;
-  String cur_dir;
+typedef struct {
+  Job job;
+  uv_fs_event_t watcher;
+  Loop *loop;
   bool cancel;
-};
+} FS_handle;
 
-FS_handle* fs_init(Cntlr *c, String dir, cntlr_cb read_cb, cntlr_cb after_cb);
+typedef void(*req_cb)();
+
+typedef struct {
+  FS_handle *fs_h;
+
+  uv_stat_t uv_stat;
+  uv_fs_t uv_fs; //data->req_handle
+
+  req_cb stat_cb;
+  req_cb scan_cb;
+  req_cb close_cb;
+
+  String req_name;
+  String dir;
+} FS_req ;
+
+FS_handle fs_init(Cntlr *c, cntlr_cb read_cb, cntlr_cb after_cb);
 void fs_open(FS_handle *h, String dir);
 
 #endif

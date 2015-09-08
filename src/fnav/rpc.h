@@ -3,7 +3,6 @@
 
 #include <uv.h>
 #include "fnav/lib/queue.h"
-#include "fnav/fnav.h"
 #include "fnav/cntlr.h"
 
 //  +----<-----+---->-----+----<-----+
@@ -23,33 +22,13 @@ typedef struct {
   Cntlr *caller;
   cntlr_cb read_cb;
   cntlr_cb after_cb;
-  String *args;
   void(*fn)();
 } Job;
-
-typedef struct {
-  QUEUE node;
-  Job *data;
-} QueueItem;
-
-typedef void(*channel_cb)();
-
-typedef struct {
-  uv_handle_t* uv_handle;
-  uv_fs_event_t *watcher;
-  Job *job;
-  channel_cb open_cb;
-  channel_cb close_cb;
-  String *args;
-  void *handle;
-} Channel;
 
 void rpc_temp_init();
 void rpc_handle(String cmdstr);
 void rpc_key_handle(String key);
+void rpc_draw_handle();
 void rpc_handle_for(String cntlr_name, String cmdstr);
-
-void rpc_push_job(Job job);
-void rpc_push_channel(Channel *channel);
 
 #endif

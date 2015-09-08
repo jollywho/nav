@@ -1,7 +1,11 @@
 #ifndef FN_CORE_TABLE_H
 #define FN_CORE_TABLE_H
 
-#include "fnav/loop.h"
+#include "fnav/rpc.h"
 
-/*TODO: ret struct*/ void table_add(Job *job);
+struct TBL_handle {
+  //Rec_lst
+};
+
+void table_add(Job *job, char **args);
 #endif

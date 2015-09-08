@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <sysexits.h>
 #include <unistd.h>
@@ -25,15 +24,12 @@
 
 void init(void)
 {
- // log_set("FM");
+  log_set("FM");
   printf("init\n");
 //  initscr();
   event_init();
   queue_init();
   rpc_temp_init();
-  //input_init
-  //tui_init
-  //rpc_init
 }
 
 void sig_handler(int sig)

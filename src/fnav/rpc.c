@@ -23,14 +23,7 @@ void rpc_key_handle(String key)
   cntlr->_input(cntlr, key);
 }
 
-void rpc_push_channel(Channel *channel)
+void rpc_draw_handle()
 {
-  //add to list
-  log_msg("RPC", "rpc push channel");
-  event_push(channel);
-}
-
-void rpc_push_job(Job job)
-{
-  queue_push(&job);
+  cntlr->_draw(cntlr);
 }

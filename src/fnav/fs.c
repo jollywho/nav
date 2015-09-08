@@ -3,6 +3,8 @@
 #include <malloc.h>
 #include <stdio.h>
 
+#include <ncurses.h>
+
 #include "fnav/rpc.h"
 #include "fnav/fs.h"
 #include "fnav/event.h"
@@ -14,75 +16,70 @@ void scan_cb(uv_fs_t* req)
   log_msg("FS", "--scan--");
   log_msg("FS", "%s", req->path);
   uv_dirent_t dent;
-  Channel *channel = req->data;
-  FS_handle *fh = channel->handle;
-  while (UV_EOF != uv_fs_scandir_next(req, &dent) && !fh->cancel) {
-    channel->job->args = malloc(sizeof(String));
-    channel->job->args[0] = strdup(req->path);
-    channel->job->args[1] = strdup(dent.name);
-    queue_push(channel->job);
+  FS_req *fq = req->data;
+
+  while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
+    String args[3];
+    args[0] = (void*)strdup(req->path);
+    args[1] = (void*)strdup(dent.name);
+    args[2] = (void*)dent.type;
+//    channel->job->args[3] = (void*)&channel->statbuf.st_mtim;
+    queue_push(&fq->fs_h->job, args);
   }
 //  uv_fs_req_cleanup((uv_fs_t*)channel->uv_handle);
-  channel->close_cb(fh);
+  fq->close_cb(fq);
 }
 
 void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)
 {
-  log_msg("FS", "--watch--");
+  printw("watch proc\n");
+  log_msg("FM", "--watch--");
   if (events & UV_RENAME)
-    log_msg("FS", "=%s= renamed", filename);
+    log_msg("FM", "=%s= renamed", filename);
   if (events & UV_CHANGE)
-    log_msg("FS", "=%s= changed", filename);
+    log_msg("FM", "=%s= changed", filename);
 }
 
-void fs_open_cb(Loop *loop, Channel *channel)
+void stat_cb(uv_fs_t* req)
 {
-  log_msg("FS", "scan_cb");
-  uv_fs_t *fs_h = malloc(sizeof(uv_fs_t));
-  channel->uv_handle = (uv_handle_t*)fs_h;
-  fs_h->data = channel;
-  uv_fs_event_stop(channel->watcher);
-  uv_fs_event_init(loop, channel->watcher);
-  uv_fs_scandir(loop, (uv_fs_t*)channel->uv_handle, channel->args[0], 0, scan_cb);
+  log_msg("FS", "stat cb");
+  FS_req *fq= req->data;
+  fq->uv_stat = req->statbuf;
+  //table lookup
+
+  if (S_ISDIR(fq->uv_stat.st_mode))
+    uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);
 }
 
-void fs_close_cb(FS_handle *h)
+void fs_close_cb(FS_req *fq)
 {
-  log_msg("FM", "reset");
-  h->cancel = false;
-  uv_fs_event_start(h->channel->watcher, watch_cb, h->channel->args[0], 0);
+  log_msg("FS", "reset %s", (char*)fq->req_name);
 }
 
-void fs_open(FS_handle *h, String dir)
+void fs_open(FS_handle *fsh, String dir)
 {
-  if (h->cur_dir == dir)
-    return;
-  h->cur_dir = dir;
-  h->channel->args[0] = dir;
-  rpc_push_channel(h->channel);
+  log_msg("FS", "fs open");
+  FS_req *fq = malloc(sizeof(FS_req));
+  fq->fs_h= fsh;
+  fq->req_name = dir;
+  fq->uv_fs.data = fq;
+  fq->close_cb = fs_close_cb;
+
+  uv_fs_stat(fq->fs_h->loop, &fq->uv_fs, dir, stat_cb);
+  uv_fs_event_stop(&fq->fs_h->watcher);
+  uv_fs_event_init(fq->fs_h->loop, &fq->fs_h->watcher);
+  uv_fs_event_start(&fq->fs_h->watcher, watch_cb, dir, 0);
 }
 
-FS_handle* fs_init(Cntlr *c, String dir, cntlr_cb read_cb, cntlr_cb after_cb)
+FS_handle fs_init(Cntlr *c, cntlr_cb read_cb, cntlr_cb after_cb)
 {
   log_msg("FS", "open req");
-  String dirs[] = { dir };
-
-  FS_handle *fh = malloc(sizeof(FS_handle));
-  Job *job = malloc(sizeof(Job));
-  Channel *channel = malloc(sizeof(Channel));
-  channel->watcher = malloc(sizeof(uv_fs_event_t));
-
-  job->caller = c;
-  job->fn = table_add;
-  job->read_cb = read_cb;
-  job->after_cb = after_cb;
-
-  channel->args = dirs;
-  channel->open_cb = fs_open_cb;
-  channel->close_cb = fs_close_cb;
-  channel->job = job;
-  channel->handle = fh;
-
-  fh->channel = channel;
-  return fh;
+  FS_handle fsh = {
+    .loop = eventloop(),
+    .job.caller = c,
+    .job.fn = table_add,
+    .job.read_cb = read_cb,
+    .job.after_cb = after_cb,
+  };
+  return fsh;
 }

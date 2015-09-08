@@ -4,13 +4,14 @@
 #include <inttypes.h>
 #include <uv.h>
 #include <termkey.h>
-#include <curses.h>
+#include <ncurses.h>
 
 #include "fnav/event.h"
 #include "fnav/log.h"
 
 Loop *event_loop;
 uv_timer_t fast_timer;
+uv_timer_t draw_timer;
 
 uv_poll_t poll_handle;
 
@@ -20,8 +21,10 @@ void event_input(uv_poll_t *req, int status, int events);
 
 int event_init(void)
 {
+  printf("event init\n");
   event_loop = uv_default_loop();
   uv_timer_init(event_loop, &fast_timer);
+  uv_timer_init(event_loop, &draw_timer);
 
   tk = termkey_new(0,0);
   termkey_set_flags(tk, TERMKEY_FLAG_UTF8);
@@ -83,9 +86,15 @@ void loop_timeout(uv_timer_t *req)
   stop_cycle();
 }
 
+static void draw()
+{
+  rpc_draw_handle();
+}
+
 void start_event_loop(void)
 {
   log_msg("EVENT", "<<|MAIN EVENT LOOP|>>");
+  uv_timer_start(&draw_timer, draw, 30, 30);
   uv_run(event_loop, UV_RUN_DEFAULT);
 }
 
@@ -98,12 +107,11 @@ void stop_cycle(void)
 void cycle_events(void)
 {
   log_msg("EVENT", "<<enable>>");
-  uv_timer_start(&fast_timer, loop_timeout, 10, 0);
+//  uv_timer_start(&fast_timer, loop_timeout, 10, 0);
   uv_run(event_loop, UV_RUN_ONCE);
 }
 
-void event_push(Channel *channel)
+Loop *eventloop(void)
 {
-  log_msg("EVENT", "channel push");
-  channel->open_cb(event_loop, channel);
+  return event_loop;
 }

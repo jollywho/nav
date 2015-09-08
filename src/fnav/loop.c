@@ -19,12 +19,16 @@ void queue_init()
   QUEUE_INIT(&headtail);
 }
 
-void queue_push(Job *job)
+void queue_push(Job *job, char **args)
 {
-  QueueItem *item = malloc(sizeof(QueueItem));
-  item->data = job;
-  QUEUE_INIT(&item->node);
-  QUEUE_INSERT_TAIL(&headtail, &item->node);
+  log_msg("LOOP", "{{push}}");
+  JobItem *jobitem = malloc(sizeof(JobItem));
+  QueueItem *i = malloc(sizeof(QueueItem));
+  jobitem->job = job;
+  jobitem->args = args;
+  i->item = jobitem;
+  QUEUE_INIT(&i->node);
+  QUEUE_INSERT_TAIL(&headtail, &i->node);
   item_count++;
   item_count > 0 ? process_loop() : NULL;
 }
@@ -34,15 +38,15 @@ static QueueItem *queue_node_data(QUEUE *q)
   return QUEUE_DATA(q, QueueItem, node);
 }
 
-static Job *queue_pop()
+static JobItem* queue_pop()
 {
   QUEUE *h = QUEUE_HEAD(&headtail);
   QueueItem *i = queue_node_data(h);
-  Job *job = i->data;
+  JobItem *j = i->item;
   QUEUE_REMOVE(&i->node);
   item_count--;
   free(i);
-  return job;
+  return j;
 }
 
 void loop_timeout(uv_timer_t *req)
@@ -59,8 +63,8 @@ static void process_loop()
   uv_timer_start(&spin_timer, loop_timeout, 10, 0);
   while(item_count > 0)
   {
-    Job *job = queue_pop();
-    job->fn(job);
+    JobItem *j = queue_pop();
+    j->job->fn(j->job, j->args);
     uv_run(spin_loop, UV_RUN_ONCE);
   }
   log_msg("LOOP", "->STOP>|");
