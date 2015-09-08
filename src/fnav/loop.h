@@ -26,7 +26,7 @@
 
 typedef struct {
   Job *job;
-  char **args;
+  void **args;
 } JobItem;
 
 typedef struct {
@@ -35,6 +35,6 @@ typedef struct {
 } QueueItem;
 
 void queue_init();
-void queue_push(Job *job, char **args);
+void queue_push(Job *job, void **args);
 
 #endif

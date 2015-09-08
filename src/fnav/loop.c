@@ -19,7 +19,7 @@ void queue_init()
   QUEUE_INIT(&headtail);
 }
 
-void queue_push(Job *job, char **args)
+void queue_push(Job *job, void **args)
 {
   log_msg("LOOP", "{{push}}");
   JobItem *jobitem = malloc(sizeof(JobItem));

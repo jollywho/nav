@@ -26,7 +26,8 @@ void init(void)
 {
   log_set("FM");
   printf("init\n");
-//  initscr();
+  if (NCURSES_ENABLED)
+    initscr();
   event_init();
   queue_init();
   rpc_temp_init();

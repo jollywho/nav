@@ -7,6 +7,7 @@
 #include <ncurses.h>
 
 #include "fnav/fm_cntlr.h"
+#include "fnav/table.h"
 #include "fnav/log.h"
 
 #define FORWARD  1
@@ -43,7 +44,7 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir ="/home/chi/casper/YFS/ALL";
+String init_dir ="/etc";
 static void fm_down();
 static void fm_up();
 static void cancel();
@@ -72,34 +73,29 @@ void cancel(Cntlr *cntlr)
 }
 
 // TODO: replace with actual table structs
-typedef uv_dirent_type_t Ftype;
-typedef uv_timespec_t    Tm;
-typedef struct {
-  String name;
-  Ftype t;
-  Tm mtime;
-} File;
-File testfiles[900];
-int testcount = 0;
+TBL_rec *testrecs[900];
+int tcount = 0;
 int curidx = 0;
 
 
-void fm_read_scan(Cntlr *cntlr, String dir, String name, Ftype t)
+void fm_read_scan(Cntlr *cntlr, TBL_rec *rec)
 {
   log_msg("FM", "read");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  String dir =  (char*)rec->fields[0]->value;
+  String name = (char*)rec->fields[1]->value;
+
   if(strcmp(dir, init_dir) == 0) {
     char temp[256]; temp[0] = '\0';
     strcat(temp, dir);
     strcat(temp, "/");
     strcat(temp, name);
-    testfiles[testcount].name = strdup(temp);
-    testfiles[testcount].t = t;
-    testcount++;
+    rec->fields[1]->value = strdup(temp);
+    testrecs[tcount] = rec;
+    tcount++;
   }
   if (strcmp(dir, self->cur_dir) == 0) {
-//    printw("%s", name);
-    log_msg("FM", "read %s", name);
+    log_msg("FM", "%s", (char*)testrecs[tcount-1]->fields[1]->value);
   }
 }
 
@@ -122,11 +118,9 @@ static void fm_up(Cntlr *cntlr)
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   if (curidx - 1 > 0) {
     curidx--;
-  self->cur_dir = testfiles[curidx].name;
-  log_msg("FM", "set cur: %s", testfiles[curidx].name);
-  if (testfiles[curidx].t == UV_DIRENT_DIR) {
-    fs_open(&self->fs, self->cur_dir);
-  }
+  self->cur_dir = testrecs[curidx]->fields[1]->value;
+  log_msg("FM", "set cur: %s", self->cur_dir);
+  fs_open(&self->fs, self->cur_dir);
   log_msg("FM", "waiting on job...");
   }
 }
@@ -135,13 +129,11 @@ static void fm_down(Cntlr *cntlr)
 {
   log_msg("FM", "cmd down");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  if (curidx < testcount - 1) {
+  if (curidx < tcount - 1) {
     curidx++;
-  self->cur_dir = testfiles[curidx].name;
-  log_msg("FM", "set cur: %s", testfiles[curidx].name);
-  if (testfiles[curidx].t == UV_DIRENT_DIR) {
-    fs_open(&self->fs, self->cur_dir);
-  }
+  self->cur_dir = testrecs[curidx]->fields[1]->value;
+  log_msg("FM", "set cur: %s", self->cur_dir);
+  fs_open(&self->fs, self->cur_dir);
   log_msg("FM", "waiting on job...");
   }
 }
@@ -245,9 +237,9 @@ static int find_command(int cmdchar)
 
 static void draw(Cntlr *cntlr)
 {
-  return;
   clear();
-  printw("draw\n");
+  if (testrecs[tcount-1])
+    printw("%s\n", testrecs[tcount-1]->fields[1]->value);
   refresh();
 }
 
@@ -275,6 +267,22 @@ FM_cntlr* fm_cntlr_init()
   c->mo_count = 1;
   c->cur_dir = init_dir;
   c->fs = fs_init((Cntlr*)c, fm_read_scan, fm_after_scan);
+
+  c->base.tbl_handle = malloc(sizeof(TBL_handle));
+  c->base.tbl_handle->tbl_sig = malloc(sizeof(TBL_rec));
+
+  TBL_rec *h = c->base.tbl_handle->tbl_sig;
+  h->flds_num = 3;
+  h->fields = malloc(sizeof(TBL_field) * h->flds_num);
+  h->fields[0] = malloc(sizeof(TBL_field));
+  h->fields[0]->name = "dir";
+  h->fields[0]->type = TBL_STRING;
+  h->fields[1] = malloc(sizeof(TBL_field));
+  h->fields[1]->name = "name";
+  h->fields[1]->type = TBL_STRING;
+  h->fields[2] = malloc(sizeof(TBL_field));
+  h->fields[2]->name = "stat";
+  h->fields[2]->type = TBL_VOID;
   return c;
 }
 

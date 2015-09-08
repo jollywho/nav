@@ -1,5 +1,4 @@
 #define _GNU_SOURCE
-#include <string.h>
 #include <malloc.h>
 #include <stdio.h>
 
@@ -19,14 +18,12 @@ void scan_cb(uv_fs_t* req)
   FS_req *fq = req->data;
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
-    String args[3];
-    args[0] = (void*)strdup(req->path);
-    args[1] = (void*)strdup(dent.name);
-    args[2] = (void*)dent.type;
-//    channel->job->args[3] = (void*)&channel->statbuf.st_mtim;
+    void *args[3];
+    args[0] = (void*)req->path;
+    args[1] = (void*)dent.name;
+    args[2] = (void*)&fq->uv_stat;
     queue_push(&fq->fs_h->job, args);
   }
-//  uv_fs_req_cleanup((uv_fs_t*)channel->uv_handle);
   fq->close_cb(fq);
 }
 
