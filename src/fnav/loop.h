@@ -22,11 +22,11 @@
 //          |              |
 //          +------<-------+
 
-#include "fnav/rpc.h"
+#include "fnav/table.h"
 
 typedef struct {
   Job *job;
-  void **args;
+  JobArg *arg;
 } JobItem;
 
 typedef struct {
@@ -35,6 +35,6 @@ typedef struct {
 } QueueItem;
 
 void queue_init();
-void queue_push(Job *job, void **args);
+void queue_push(Job *job, JobArg *arg);
 
 #endif

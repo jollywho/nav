@@ -18,7 +18,6 @@ typedef struct {
   uv_stat_t uv_stat;
   uv_fs_t uv_fs; //data->req_handle
 
-  req_cb stat_cb;
   req_cb scan_cb;
   req_cb close_cb;
 

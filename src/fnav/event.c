@@ -88,7 +88,7 @@ void loop_timeout(uv_timer_t *req)
 
 static void draw()
 {
-  rpc_draw_handle();
+//  rpc_draw_handle();
 }
 
 void start_event_loop(void)
@@ -107,7 +107,7 @@ void stop_cycle(void)
 void cycle_events(void)
 {
   log_msg("EVENT", "<<enable>>");
-//  uv_timer_start(&fast_timer, loop_timeout, 10, 0);
+  uv_timer_start(&fast_timer, loop_timeout, 10, 0);
   uv_run(event_loop, UV_RUN_ONCE);
 }
 

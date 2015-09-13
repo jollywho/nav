@@ -44,7 +44,7 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir ="/etc";
+String init_dir ="/home/chi/casper/YFS/ALL";
 static void fm_down();
 static void fm_up();
 static void cancel();
@@ -72,31 +72,9 @@ void cancel(Cntlr *cntlr)
   self->fs.cancel = true;
 }
 
-// TODO: replace with actual table structs
-TBL_rec *testrecs[900];
-int tcount = 0;
-int curidx = 0;
-
-
-void fm_read_scan(Cntlr *cntlr, TBL_rec *rec)
+void fm_read_scan()
 {
   log_msg("FM", "read");
-  FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  String dir =  (char*)rec->fields[0]->value;
-  String name = (char*)rec->fields[1]->value;
-
-  if(strcmp(dir, init_dir) == 0) {
-    char temp[256]; temp[0] = '\0';
-    strcat(temp, dir);
-    strcat(temp, "/");
-    strcat(temp, name);
-    rec->fields[1]->value = strdup(temp);
-    testrecs[tcount] = rec;
-    tcount++;
-  }
-  if (strcmp(dir, self->cur_dir) == 0) {
-    log_msg("FM", "%s", (char*)testrecs[tcount-1]->fields[1]->value);
-  }
 }
 
 void fm_after_scan()
@@ -116,33 +94,25 @@ static void fm_up(Cntlr *cntlr)
 {
   log_msg("FM", "cmd up");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  if (curidx - 1 > 0) {
-    curidx--;
-  self->cur_dir = testrecs[curidx]->fields[1]->value;
   log_msg("FM", "set cur: %s", self->cur_dir);
   fs_open(&self->fs, self->cur_dir);
   log_msg("FM", "waiting on job...");
-  }
 }
 
 static void fm_down(Cntlr *cntlr)
 {
   log_msg("FM", "cmd down");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  if (curidx < tcount - 1) {
-    curidx++;
-  self->cur_dir = testrecs[curidx]->fields[1]->value;
   log_msg("FM", "set cur: %s", self->cur_dir);
   fs_open(&self->fs, self->cur_dir);
   log_msg("FM", "waiting on job...");
-  }
 }
 
 /* Number of commands in nv_cmds[]. */
-#define NV_CMDS_SIZE ARRAY_SIZE(fm_cmds)
+#define FM_CMDS_SIZE ARRAY_SIZE(fm_cmds)
 
 /* Sorted index of commands in nv_cmds[]. */
-static short nv_cmd_idx[NV_CMDS_SIZE];
+static short nv_cmd_idx[FM_CMDS_SIZE];
 
 /* The highest index for which
  * nv_cmds[idx].cmd_char == nv_cmd_idx[nv_cmds[idx].cmd_char] */
@@ -172,16 +142,16 @@ static int nv_compare(const void *s1, const void *s2)
 void init_cmds(void)
 {
   /* Fill the index table with a one to one relation. */
-  for (short int i = 0; i < (short int)NV_CMDS_SIZE; ++i) {
+  for (short int i = 0; i < (short int)FM_CMDS_SIZE; ++i) {
     nv_cmd_idx[i] = i;
   }
 
   /* Sort the commands by the command character.  */
-  qsort(&nv_cmd_idx, NV_CMDS_SIZE, sizeof(short), nv_compare);
+  qsort(&nv_cmd_idx, FM_CMDS_SIZE, sizeof(short), nv_compare);
 
   /* Find the first entry that can't be indexed by the command character. */
   short int i;
-  for (i = 0; i < (short int)NV_CMDS_SIZE; ++i) {
+  for (i = 0; i < (short int)FM_CMDS_SIZE; ++i) {
     if (i != fm_cmds[nv_cmd_idx[i]].cmd_char) {
       break;
     }
@@ -216,7 +186,7 @@ static int find_command(int cmdchar)
 
   /* Perform a binary search. */
   bot = nv_max_linear + 1;
-  top = NV_CMDS_SIZE - 1;
+  top = FM_CMDS_SIZE - 1;
   idx = -1;
   while (bot <= top) {
     i = (top + bot) / 2;
@@ -235,12 +205,12 @@ static int find_command(int cmdchar)
   return idx;
 }
 
+
 static void draw(Cntlr *cntlr)
 {
-  clear();
-  if (testrecs[tcount-1])
-    printw("%s\n", testrecs[tcount-1]->fields[1]->value);
-  refresh();
+  //FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  //clear();
+  //refresh();
 }
 
 int input(Cntlr *cntlr, String key)
@@ -268,21 +238,11 @@ FM_cntlr* fm_cntlr_init()
   c->cur_dir = init_dir;
   c->fs = fs_init((Cntlr*)c, fm_read_scan, fm_after_scan);
 
-  c->base.tbl_handle = malloc(sizeof(TBL_handle));
-  c->base.tbl_handle->tbl_sig = malloc(sizeof(TBL_rec));
-
-  TBL_rec *h = c->base.tbl_handle->tbl_sig;
-  h->flds_num = 3;
-  h->fields = malloc(sizeof(TBL_field) * h->flds_num);
-  h->fields[0] = malloc(sizeof(TBL_field));
-  h->fields[0]->name = "dir";
-  h->fields[0]->type = TBL_STRING;
-  h->fields[1] = malloc(sizeof(TBL_field));
-  h->fields[1]->name = "name";
-  h->fields[1]->type = TBL_STRING;
-  h->fields[2] = malloc(sizeof(TBL_field));
-  h->fields[2]->name = "stat";
-  h->fields[2]->type = TBL_VOID;
+  fn_tbl *t = tbl_mk();
+  c->base.tbl = t;
+  tbl_mk_fld(t, "dir", typSTRING);
+  tbl_mk_fld(t, "name", typSTRING);
+//  tbl_mk_fld(t, "stat", typSTRING);
   return c;
 }
 

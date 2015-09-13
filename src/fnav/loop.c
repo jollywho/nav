@@ -19,13 +19,13 @@ void queue_init()
   QUEUE_INIT(&headtail);
 }
 
-void queue_push(Job *job, void **args)
+void queue_push(Job *job, JobArg *arg)
 {
   log_msg("LOOP", "{{push}}");
   JobItem *jobitem = malloc(sizeof(JobItem));
   QueueItem *i = malloc(sizeof(QueueItem));
   jobitem->job = job;
-  jobitem->args = args;
+  jobitem->arg = arg;
   i->item = jobitem;
   QUEUE_INIT(&i->node);
   QUEUE_INSERT_TAIL(&headtail, &i->node);
@@ -60,12 +60,12 @@ void loop_timeout(uv_timer_t *req)
 static void process_loop()
 {
   log_msg("LOOP", "|>START->");
-  uv_timer_start(&spin_timer, loop_timeout, 10, 0);
+//  uv_timer_start(&spin_timer, loop_timeout, 10, 0);
   while(item_count > 0)
   {
     JobItem *j = queue_pop();
-    j->job->fn(j->job, j->args);
-    uv_run(spin_loop, UV_RUN_ONCE);
+    j->job->fn(j->job, j->arg);
+//    uv_run(spin_loop, UV_RUN_ONCE);
   }
   log_msg("LOOP", "->STOP>|");
 }

@@ -24,7 +24,7 @@
 
 void init(void)
 {
-  log_set("FM");
+//  log_set("TABLE");
   printf("init\n");
   if (NCURSES_ENABLED)
     initscr();

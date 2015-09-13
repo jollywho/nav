@@ -10,11 +10,11 @@ typedef struct {
 } Cmd;
 
 typedef struct Cntlr Cntlr;
-typedef struct TBL_handle TBL_handle;
+typedef struct fn_tbl fn_tbl;
 
 struct Cntlr {
   Cmd *cmd_lst;
-  TBL_handle *tbl_handle;
+  fn_tbl *tbl;
   void *top;
   void (*_draw)(Cntlr *cntlr);
   void (*_cancel)(Cntlr *cntlr);

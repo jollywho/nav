@@ -18,11 +18,14 @@ void scan_cb(uv_fs_t* req)
   FS_req *fq = req->data;
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
-    void *args[3];
-    args[0] = (void*)req->path;
-    args[1] = (void*)dent.name;
-    args[2] = (void*)&fq->uv_stat;
-    queue_push(&fq->fs_h->job, args);
+    JobArg *arg = malloc(sizeof(JobArg));
+    fn_rec *r = mk_rec(fq->fs_h->job.caller->tbl);
+    rec_edit(r, "dir", (void*)req->path);
+    rec_edit(r, "name", (void*)dent.name);
+    //args[2] = (void*)&fq->uv_stat;
+    arg->rec = r;
+    arg->state = REC_INS;
+    queue_push(&fq->fs_h->job, arg);
   }
   fq->close_cb(fq);
 }
@@ -42,22 +45,27 @@ void stat_cb(uv_fs_t* req)
   log_msg("FS", "stat cb");
   FS_req *fq= req->data;
   fq->uv_stat = req->statbuf;
-  //table lookup
+  fn_rec *rec = fnd_val(fq->fs_h->job.caller->tbl, "dir", fq->req_name);
 
-  if (S_ISDIR(fq->uv_stat.st_mode))
-    uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);
+  // TODO:  check file privledges
+  //        compare mtimes
+  if (!rec) {
+    if (S_ISDIR(fq->uv_stat.st_mode))
+      uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);
+  }
 }
 
 void fs_close_cb(FS_req *fq)
 {
   log_msg("FS", "reset %s", (char*)fq->req_name);
+  free(fq);
 }
 
 void fs_open(FS_handle *fsh, String dir)
 {
   log_msg("FS", "fs open");
   FS_req *fq = malloc(sizeof(FS_req));
-  fq->fs_h= fsh;
+  fq->fs_h = fsh;
   fq->req_name = dir;
   fq->uv_fs.data = fq;
   fq->close_cb = fs_close_cb;
@@ -74,7 +82,7 @@ FS_handle fs_init(Cntlr *c, cntlr_cb read_cb, cntlr_cb after_cb)
   FS_handle fsh = {
     .loop = eventloop(),
     .job.caller = c,
-    .job.fn = table_add,
+    .job.fn = commit,
     .job.read_cb = read_cb,
     .job.after_cb = after_cb,
   };
