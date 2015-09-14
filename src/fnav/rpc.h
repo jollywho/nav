@@ -2,6 +2,7 @@
 #define FN_CORE_RPC_H
 
 #include <uv.h>
+
 #include "fnav/lib/queue.h"
 #include "fnav/cntlr.h"
 

@@ -104,7 +104,6 @@ static void fm_down(Cntlr *cntlr)
   log_msg("FM", "cmd down");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   log_msg("FM", "set cur: %s", self->cur_dir);
-  fs_open(&self->fs, self->cur_dir);
   log_msg("FM", "waiting on job...");
 }
 
@@ -240,8 +239,9 @@ FM_cntlr* fm_cntlr_init()
 
   fn_tbl *t = tbl_mk();
   c->base.tbl = t;
-  tbl_mk_fld(t, "dir", typSTRING);
+  tbl_mk_fld(t, "parent", typSTRING);
   tbl_mk_fld(t, "name", typSTRING);
+  tbl_mk_fld(t, "fullpath", typSTRING);
 //  tbl_mk_fld(t, "stat", typSTRING);
   return c;
 }

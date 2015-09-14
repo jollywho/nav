@@ -10,18 +10,32 @@
 #include "fnav/table.h"
 #include "fnav/log.h"
 
+char* concatpath(const char *restrict str1, const char *restrict str2)
+{
+  size_t l = strlen(str1);
+  char *dest = malloc(l + strlen(str2) + 2);
+  strcpy(dest, str1);
+  strcpy(dest, "/");
+  strcpy(dest, str2);
+  return dest;
+}
+
 void scan_cb(uv_fs_t* req)
 {
   log_msg("FS", "--scan--");
   log_msg("FS", "%s", req->path);
   uv_dirent_t dent;
   FS_req *fq = req->data;
+  // TODO: delete all records with matching parent
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
     JobArg *arg = malloc(sizeof(JobArg));
     fn_rec *r = mk_rec(fq->fs_h->job.caller->tbl);
-    rec_edit(r, "dir", (void*)req->path);
+    char *fp = concatpath(req->path, dent.name);
+    rec_edit(r, "parent", (void*)req->path);
     rec_edit(r, "name", (void*)dent.name);
+    rec_edit(r, "fullpath", (void*)fp);
+    free(fp);
     //args[2] = (void*)&fq->uv_stat;
     arg->rec = r;
     arg->state = REC_INS;
@@ -32,7 +46,9 @@ void scan_cb(uv_fs_t* req)
 
 void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)
 {
+#ifdef NCURSES_ENABLED
   printw("watch proc\n");
+#endif
   log_msg("FM", "--watch--");
   if (events & UV_RENAME)
     log_msg("FM", "=%s= renamed", filename);
@@ -45,7 +61,7 @@ void stat_cb(uv_fs_t* req)
   log_msg("FS", "stat cb");
   FS_req *fq= req->data;
   fq->uv_stat = req->statbuf;
-  fn_rec *rec = fnd_val(fq->fs_h->job.caller->tbl, "dir", fq->req_name);
+  fn_rec **rec = fnd_val(fq->fs_h->job.caller->tbl, "parent", fq->req_name);
 
   // TODO:  check file privledges
   //        compare mtimes

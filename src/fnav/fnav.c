@@ -1,19 +1,5 @@
 #define _GNU_SOURCE
-#include <arpa/inet.h>
-#include <curses.h>
-#include <fcntl.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <pty.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/select.h>
-#include <sys/types.h>
-#include <sysexits.h>
-#include <unistd.h>
-#include <stdlib.h>
+#include <ncurses.h>
 
 #include "fnav/log.h"
 #include "fnav/fnav.h"
@@ -26,8 +12,9 @@ void init(void)
 {
 //  log_set("TABLE");
   printf("init\n");
-  if (NCURSES_ENABLED)
+#ifdef NCURSES_ENABLED
     initscr();
+#endif
   event_init();
   queue_init();
   rpc_temp_init();

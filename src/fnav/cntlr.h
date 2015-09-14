@@ -1,7 +1,7 @@
 #ifndef FN_CORE_CNTLR_H
 #define FN_CORE_CNTLR_H
 
-#include "fnav.h"
+#include "fnav/fnav.h"
 
 typedef struct {
   String name;

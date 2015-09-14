@@ -25,6 +25,7 @@ void rpc_key_handle(String key)
 
 void rpc_draw_handle()
 {
-  if (NCURSES_ENABLED)
-    cntlr->_draw(cntlr);
+#ifdef NCURSES_ENABLED
+  cntlr->_draw(cntlr);
+#endif
 }

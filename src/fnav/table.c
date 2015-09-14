@@ -6,7 +6,6 @@
 #include "fnav/table.h"
 #include "fnav/log.h"
 
-
 KBTREE_INIT(FNVAL, fn_val, elem_cmp)
 struct fn_fld {
   String key;
@@ -50,10 +49,9 @@ void rec_edit(fn_rec *rec, String fname, String val)
   //       no point running tree ops twice. do it
   //       in job->fn().
   // TODO: tFldType checking on void* final arg
-  for(int i = 0; i < rec->count; i++) { 
+  for(int i = 0; i < rec->fld_count; i++) { 
     if (strcmp(rec->fldvals[i]->fld->key, fname) == 0) {
       rec->fldvals[i]->val->key = strdup(val);
-      rec->fldvals[i]->val->rec = rec;
     }
   }
 }
@@ -61,9 +59,20 @@ void rec_edit(fn_rec *rec, String fname, String val)
 void tbl_insert(fn_tbl *t, fn_rec *rec)
 {
   // TODO: significant error checking
-  for (int i =0; i < rec->count; i++) {
+  for (int i =0; i < rec->fld_count; i++) {
     fn_fldval *fv = rec->fldvals[i];
-    kb_putp(FNVAL, fv->fld->vtree, fv->val);
+    fn_val *v = kb_getp(FNVAL, fv->fld->vtree, fv->val);
+    if (!v) {
+      fv->val->count = 1;
+      fv->val->rec = malloc(sizeof(fn_rec));
+      fv->val->rec[0] = rec;
+      kb_putp(FNVAL, fv->fld->vtree, fv->val);
+    }
+    else {
+      v->count++;
+      v->rec = realloc(v->rec, v->count * sizeof(fn_rec));
+      v->rec[v->count - 1] = rec;
+    }
     t->rec_count++;
     t->records = realloc(t->records, sizeof(fn_rec)*t->rec_count);
     t->records[t->rec_count] = rec;
@@ -72,10 +81,10 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
 
 void initflds(fn_fld *f, fn_rec *rec)
 {
-  rec->fldvals[rec->count] = malloc(sizeof(fn_fldval));
-  rec->fldvals[rec->count]->fld = f;
-  rec->fldvals[rec->count]->val = malloc(sizeof(fn_val));
-  rec->count++;
+  rec->fldvals[rec->fld_count] = malloc(sizeof(fn_fldval));
+  rec->fldvals[rec->fld_count]->fld = f;
+  rec->fldvals[rec->fld_count]->val = malloc(sizeof(fn_val));
+  rec->fld_count++;
 }
 
 /* TODO: make blank rec after fields set. */
@@ -85,12 +94,12 @@ fn_rec* mk_rec(fn_tbl *t)
   fn_rec *rec = malloc(sizeof(fn_rec));
   rec->fldvals = malloc(sizeof(fn_fldval)*t->count);
   rec->fldvals[t->count] = NULL;
-  rec->count = 0;
+  rec->fld_count = 0;
   __kb_traverse(fn_fld, t->fields, initflds, rec);
   return rec;
 }
 
-fn_rec* fnd_val(fn_tbl *t, String fname, String val)
+fn_rec** fnd_val(fn_tbl *t, String fname, String val)
 {
   log_msg("TABLE", "fnd_val %s: %s", fname, val);
   fn_fld f = { .key = fname };
@@ -107,6 +116,7 @@ fn_rec* fnd_val(fn_tbl *t, String fname, String val)
 
 void commit(Job *job, JobArg *arg)
 {
+  log_msg("TABLE", "commit");
   switch(arg->state) {
     case(REC_SEL):
       ;;

@@ -1,11 +1,11 @@
-#define _C  "\033[33m"
-#define _R  "\033[0m"
-
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
 
 #include "fnav/log.h"
+
+#define _C  "\033[33m"
+#define _R  "\033[0m"
 
 const char* listen_obj;
 
@@ -16,8 +16,9 @@ void log_set(const char* obj)
 
 void log_msg(const char* obj, const char* fmt, ...)
 {
-  if (NCURSES_ENABLED)
+#ifdef NCURSES_ENABLED
     return;
+#endif
   if (listen_obj && strcmp(listen_obj, obj) != 0)
     return;
   fprintf(stderr, "[" _C "%s" _R "] ", obj);

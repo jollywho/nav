@@ -30,7 +30,7 @@ void queue_push(Job *job, JobArg *arg)
   QUEUE_INIT(&i->node);
   QUEUE_INSERT_TAIL(&headtail, &i->node);
   item_count++;
-  item_count > 0 ? process_loop() : NULL;
+  process_loop();
 }
 
 static QueueItem *queue_node_data(QUEUE *q)
@@ -60,12 +60,12 @@ void loop_timeout(uv_timer_t *req)
 static void process_loop()
 {
   log_msg("LOOP", "|>START->");
-//  uv_timer_start(&spin_timer, loop_timeout, 10, 0);
+  uv_timer_start(&spin_timer, loop_timeout, 10, 0);
   while(item_count > 0)
   {
     JobItem *j = queue_pop();
     j->job->fn(j->job, j->arg);
-//    uv_run(spin_loop, UV_RUN_ONCE);
+    uv_run(spin_loop, UV_RUN_NOWAIT); // TODO: is this needed?
   }
   log_msg("LOOP", "->STOP>|");
 }
