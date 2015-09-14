@@ -28,6 +28,7 @@ typedef struct fn_rec fn_rec;
 
 struct fn_val {
   String key;
+  void *dat;
   fn_rec **rec;
   int count;
 };
@@ -39,8 +40,7 @@ struct fn_fldval {
 
 struct fn_rec {
   fn_fldval **fldvals;
-  int fld_count; //field count
-  int index;
+  int fld_count;
 };
 
 typedef struct {
@@ -50,9 +50,13 @@ typedef struct {
 
 fn_tbl* tbl_mk();
 fn_rec* mk_rec(fn_tbl *t);
-void rec_edit(fn_rec *rec, String fname, String val);
+void rec_edit(fn_rec *rec, String fname, void *val);
 void tbl_mk_fld(fn_tbl *t, String name, tFldType type);
+void tbl_delete(fn_tbl *t, String fname, String val);
 fn_rec** fnd_val(fn_tbl *t, String fname, String val);
 void commit(Job *job, JobArg *arg);
+
+void* rec_fld(fn_rec *rec, String fname);
+
 
 #endif

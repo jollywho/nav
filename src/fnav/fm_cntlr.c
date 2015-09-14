@@ -241,8 +241,7 @@ FM_cntlr* fm_cntlr_init()
   c->base.tbl = t;
   tbl_mk_fld(t, "parent", typSTRING);
   tbl_mk_fld(t, "name", typSTRING);
-  tbl_mk_fld(t, "fullpath", typSTRING);
-//  tbl_mk_fld(t, "stat", typSTRING);
+  tbl_mk_fld(t, "stat", typVOID);
   return c;
 }
 

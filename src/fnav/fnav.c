@@ -10,7 +10,7 @@
 
 void init(void)
 {
-//  log_set("TABLE");
+//  log_set("FS");
   printf("init\n");
 #ifdef NCURSES_ENABLED
     initscr();

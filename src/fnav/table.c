@@ -42,16 +42,33 @@ void tbl_mk_fld(fn_tbl *t, String name, tFldType type)
   kb_putp(FNFLD, t->fields, fld);
 }
 
-void rec_edit(fn_rec *rec, String fname, String val)
+void* rec_fld(fn_rec *rec, String fname)
 {
-  // TODO: tFldType checking on void* final arg
-  //       use temp struct to store intermediaries
-  //       no point running tree ops twice. do it
-  //       in job->fn().
-  // TODO: tFldType checking on void* final arg
   for(int i = 0; i < rec->fld_count; i++) { 
     if (strcmp(rec->fldvals[i]->fld->key, fname) == 0) {
-      rec->fldvals[i]->val->key = strdup(val);
+      if (rec->fldvals[i]->fld->type == typSTRING) {
+      return rec->fldvals[i]->val->key;
+      }
+      else
+        return rec->fldvals[i]->val->dat;
+    }
+  }
+  return NULL;
+}
+
+void rec_edit(fn_rec *rec, String fname, void *val)
+{
+  for(int i = 0; i < rec->fld_count; i++) { 
+    if (strcmp(rec->fldvals[i]->fld->key, fname) == 0) {
+      if (rec->fldvals[i]->fld->type == typSTRING) {
+        log_msg("FS", "%s_%s", fname, (String)val);
+        rec->fldvals[i]->val->key = strdup(val);
+      }
+      else {
+        log_msg("FS", "stat");
+        rec->fldvals[i]->val->key = NULL;
+        rec->fldvals[i]->val->dat = val;
+      }
     }
   }
 }
@@ -59,8 +76,9 @@ void rec_edit(fn_rec *rec, String fname, String val)
 void tbl_insert(fn_tbl *t, fn_rec *rec)
 {
   // TODO: significant error checking
-  for (int i =0; i < rec->fld_count; i++) {
+  for (int i = 0; i < rec->fld_count; i++) {
     fn_fldval *fv = rec->fldvals[i];
+    if (fv->fld->type == typVOID) continue;
     fn_val *v = kb_getp(FNVAL, fv->fld->vtree, fv->val);
     if (!v) {
       fv->val->count = 1;
@@ -75,7 +93,22 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
     }
     t->rec_count++;
     t->records = realloc(t->records, sizeof(fn_rec)*t->rec_count);
-    t->records[t->rec_count] = rec;
+    t->records[t->rec_count - 1] = rec;
+  }
+}
+
+void tbl_delete(fn_tbl *t, String fname, String val)
+{
+  log_msg("TABLE", "delete %s: %s", fname, val);
+  fn_fld f = { .key = fname };
+  fn_val v = { .key = val   };
+  fn_fld *ff = kb_get(FNFLD, t->fields, f);
+  if (ff) {
+    fn_val *vv = kb_get(FNVAL, ff->vtree, v);
+    if (vv) {
+      kb_delp(FNVAL, ff->vtree, vv);
+      free(vv->rec);
+    }
   }
 }
 
@@ -128,6 +161,5 @@ void commit(Job *job, JobArg *arg)
     case(REC_DEL):
       ;;
   };
-  free(arg->rec);
   job->read_cb(job->caller); // what do here?
 }

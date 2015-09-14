@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <malloc.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 #include <ncurses.h>
 
@@ -10,7 +11,7 @@
 #include "fnav/table.h"
 #include "fnav/log.h"
 
-char* concatpath(const char *restrict str1, const char *restrict str2)
+char* conspath(const char *restrict str1, const char *restrict str2)
 {
   size_t l = strlen(str1);
   char *dest = malloc(l + strlen(str2) + 2);
@@ -26,16 +27,16 @@ void scan_cb(uv_fs_t* req)
   log_msg("FS", "%s", req->path);
   uv_dirent_t dent;
   FS_req *fq = req->data;
-  // TODO: delete all records with matching parent
+
+  // clear outdated records
+  tbl_delete(fq->fs_h->job.caller->tbl, "parent", (String)req->path);
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
     JobArg *arg = malloc(sizeof(JobArg));
     fn_rec *r = mk_rec(fq->fs_h->job.caller->tbl);
-    char *fp = concatpath(req->path, dent.name);
     rec_edit(r, "parent", (void*)req->path);
     rec_edit(r, "name", (void*)dent.name);
-    rec_edit(r, "fullpath", (void*)fp);
-    free(fp);
+    rec_edit(r, "stat", (void*)&fq->uv_stat);
     //args[2] = (void*)&fq->uv_stat;
     arg->rec = r;
     arg->state = REC_INS;
@@ -63,12 +64,17 @@ void stat_cb(uv_fs_t* req)
   fq->uv_stat = req->statbuf;
   fn_rec **rec = fnd_val(fq->fs_h->job.caller->tbl, "parent", fq->req_name);
 
-  // TODO:  check file privledges
-  //        compare mtimes
-  if (!rec) {
-    if (S_ISDIR(fq->uv_stat.st_mode))
-      uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);
+  if (rec) {
+    uv_stat_t *st = (uv_stat_t*)rec_fld(rec[0], "stat");
+    struct timeval t;
+    timersub((struct timeval*)&fq->uv_stat.st_mtim, (struct timeval*)&st->st_mtim, &t);
+    if (t.tv_usec == 0) {
+        log_msg("FS", "NOP");
+      return;
+    }
   }
+  if (S_ISDIR(fq->uv_stat.st_mode))
+    uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);
 }
 
 void fs_close_cb(FS_req *fq)
