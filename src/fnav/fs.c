@@ -62,10 +62,10 @@ void stat_cb(uv_fs_t* req)
   log_msg("FS", "stat cb");
   FS_req *fq= req->data;
   fq->uv_stat = req->statbuf;
-  fn_rec **rec = fnd_val(fq->fs_h->job.caller->tbl, "parent", fq->req_name);
+  klist_t(kl_tentry) *rec = fnd_val(fq->fs_h->job.caller->tbl, "parent", fq->req_name);
 
   if (rec) {
-    uv_stat_t *st = (uv_stat_t*)rec_fld(rec[0], "stat");
+    uv_stat_t *st = (uv_stat_t*)rec_fld(rec->head->data->rec, "stat");
     struct timeval t;
     timersub((struct timeval*)&fq->uv_stat.st_mtim, (struct timeval*)&st->st_mtim, &t);
     if (t.tv_usec == 0) {

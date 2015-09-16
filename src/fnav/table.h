@@ -2,6 +2,7 @@
 #define FN_CORE_TABLE_H
 
 #include "fnav/lib/kbtree.h"
+#include "fnav/lib/klist.h"
 #include "fnav/rpc.h"
 
 typedef enum {
@@ -23,24 +24,29 @@ typedef enum {
 
 typedef struct fn_val fn_val;
 typedef struct fn_fld fn_fld;
-typedef struct fn_fldval fn_fldval;
 typedef struct fn_rec fn_rec;
+typedef struct tentry tentry;
+
+#define _NOP(x)
+KLIST_INIT(kl_tentry, tentry*, _NOP)
 
 struct fn_val {
   String key;
   void *dat;
-  fn_rec **rec;
+  klist_t(kl_tentry) *recs;
+  fn_fld *fld;
   int count;
 };
 
-struct fn_fldval {
-  fn_fld *fld;
-  fn_val *val;
+struct fn_rec {
+  fn_val **vals;
+  int fld_count;
 };
 
-struct fn_rec {
-  fn_fldval **fldvals;
-  int fld_count;
+struct tentry {
+  tentry *prev;
+  tentry *next;
+  fn_rec *rec;
 };
 
 typedef struct {
@@ -53,7 +59,7 @@ fn_rec* mk_rec(fn_tbl *t);
 void rec_edit(fn_rec *rec, String fname, void *val);
 void tbl_mk_fld(fn_tbl *t, String name, tFldType type);
 void tbl_delete(fn_tbl *t, String fname, String val);
-fn_rec** fnd_val(fn_tbl *t, String fname, String val);
+klist_t(kl_tentry)* fnd_val(fn_tbl *t, String fname, String val);
 void commit(Job *job, JobArg *arg);
 
 void* rec_fld(fn_rec *rec, String fname);
