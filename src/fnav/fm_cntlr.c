@@ -6,6 +6,7 @@
 
 #include <ncurses.h>
 
+#include "fnav/buffer.h"
 #include "fnav/fm_cntlr.h"
 #include "fnav/table.h"
 #include "fnav/log.h"
@@ -24,11 +25,6 @@ typedef struct {
   enum Type type;
   void (*f)();
 } Key;
-
-typedef struct {
-  long lnum;        /* line number */
-  int col;          /* column number */
-} pos_T;
 
 typedef struct {
   pos_T start;                  /* start of the operator */
@@ -204,14 +200,6 @@ static int find_command(int cmdchar)
   return idx;
 }
 
-
-static void draw(Cntlr *cntlr)
-{
-  //FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  //clear();
-  //refresh();
-}
-
 int input(Cntlr *cntlr, String key)
 {
   int idx = find_command(key[0]);
@@ -231,17 +219,19 @@ FM_cntlr* fm_cntlr_init()
   c->base.cmd_lst = default_lst;
   c->base._cancel = cancel;
   c->base._input = input;
-  c->base._draw = draw;
   c->op_count = 1;
   c->mo_count = 1;
   c->cur_dir = init_dir;
-  c->fs = fs_init((Cntlr*)c, fm_read_scan, fm_after_scan);
 
+  c->base.hndl = malloc(sizeof(fn_handle));
   fn_tbl *t = tbl_mk();
-  c->base.tbl = t;
   tbl_mk_fld(t, "parent", typSTRING);
   tbl_mk_fld(t, "name", typSTRING);
   tbl_mk_fld(t, "stat", typVOID);
+  c->base.hndl->tbl = t;
+  c->base.hndl->buf = buf_init();
+
+  c->fs = fs_init(&c->base, c->base.hndl, fm_read_scan, buf_inv);
   return c;
 }
 

@@ -32,9 +32,11 @@ typedef struct {
 typedef struct {
   QUEUE node;
   JobItem *item;
+  fn_buf *buf;
 } QueueItem;
 
 void queue_init();
 void queue_push(Job *job, JobArg *arg);
+void queue_push_buf(fn_buf *buf);
 
 #endif

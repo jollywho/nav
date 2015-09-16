@@ -11,12 +11,21 @@ typedef struct {
 
 typedef struct Cntlr Cntlr;
 typedef struct fn_tbl fn_tbl;
+typedef struct fn_buf fn_buf;
+typedef struct fn_handle fn_handle;
+
+struct fn_handle {
+  fn_handle *prev;
+  fn_handle *next;
+  fn_tbl *tbl;
+  fn_buf *buf;
+/*filter *fltr*/
+};
 
 struct Cntlr {
   Cmd *cmd_lst;
-  fn_tbl *tbl;
+  fn_handle *hndl;
   void *top;
-  void (*_draw)(Cntlr *cntlr);
   void (*_cancel)(Cntlr *cntlr);
   int  (*_input)(Cntlr *cntlr, String key);
 };

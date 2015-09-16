@@ -6,7 +6,7 @@
 #include "fnav/rpc.h"
 
 typedef enum {
-  typVOID, // for struct ptr
+  typVOID,
   typINT,
   typSTRING,
   typUINT64_T,
@@ -65,10 +65,10 @@ void commit(Job *job, JobArg *arg);
 
 void* rec_fld(fn_rec *rec, String fname);
 
-#define FN_KL_ITERBLK(typ, lst)    \
-  kliter_t(typ) *it;               \
-  for ( it = kl_begin(lst);        \
-        it != kl_end(lst);         \
-        it = kl_next(it))          \
+#define FN_KL_ITERBLK(typ, lst)      \
+  kliter_t(typ) *(it);               \
+  for ( (it) =  kl_begin( (lst) );   \
+        (it) != kl_end  ( (lst) );   \
+        (it) =  kl_next ( (it)  ))   \
 
 #endif

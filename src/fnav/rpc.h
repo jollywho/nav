@@ -18,11 +18,13 @@
 
 typedef uv_loop_t Loop;
 typedef void(*cntlr_cb)();
+typedef void(*buf_cb)();
 
 typedef struct {
   Cntlr *caller;
+  fn_handle *hndl;
   cntlr_cb read_cb;
-  cntlr_cb after_cb;
+  buf_cb   updt_cb;
   void(*fn)();
 } Job;
 

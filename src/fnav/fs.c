@@ -28,12 +28,13 @@ void scan_cb(uv_fs_t* req)
   uv_dirent_t dent;
   FS_req *fq = req->data;
 
-  // clear outdated records
-  tbl_del_val(fq->fs_h->job.caller->tbl, "parent", (String)req->path);
+  /* clear outdated records */
+  fn_tbl *t = fq->fs_h->job.caller->hndl->tbl;
+  tbl_del_val(t, "parent", (String)req->path);
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
     JobArg *arg = malloc(sizeof(JobArg));
-    fn_rec *r = mk_rec(fq->fs_h->job.caller->tbl);
+    fn_rec *r = mk_rec(t);
     rec_edit(r, "parent", (void*)req->path);
     rec_edit(r, "name", (void*)dent.name);
     rec_edit(r, "stat", (void*)&fq->uv_stat);
@@ -61,7 +62,8 @@ void stat_cb(uv_fs_t* req)
   log_msg("FS", "stat cb");
   FS_req *fq= req->data;
   fq->uv_stat = req->statbuf;
-  klist_t(kl_tentry) *rec = fnd_val(fq->fs_h->job.caller->tbl, "parent", fq->req_name);
+  fn_tbl *t = fq->fs_h->job.caller->hndl->tbl;
+  klist_t(kl_tentry) *rec = fnd_val(t, "parent", fq->req_name);
 
   // TODO: make klist details internal to table
   if (rec) {
@@ -98,15 +100,16 @@ void fs_open(FS_handle *fsh, String dir)
   uv_fs_event_start(&fq->fs_h->watcher, watch_cb, dir, 0);
 }
 
-FS_handle fs_init(Cntlr *c, cntlr_cb read_cb, cntlr_cb after_cb)
+FS_handle fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb, buf_cb updt_cb)
 {
   log_msg("FS", "open req");
   FS_handle fsh = {
     .loop = eventloop(),
     .job.caller = c,
+    .job.hndl = h,
     .job.fn = commit,
     .job.read_cb = read_cb,
-    .job.after_cb = after_cb,
+    .job.updt_cb = updt_cb,
   };
   return fsh;
 }

@@ -89,20 +89,21 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
     fn_val *fv = it->data;
     if (fv->fld->type == typVOID) continue;
     fn_val *v = kb_getp(FNVAL, fv->fld->vtree, fv);
-    // new value so create new tree node and rec list
+
+    /* new value so create new tree node and rec list */
     if (!v) {
       fv->count = 1;
       fv->recs = kl_init(kl_tentry);
       kl_push(kl_tentry, fv->recs, ent);
       kb_putp(FNVAL, fv->fld->vtree, fv);
     }
-    // value exists so just append
+    /* value exists so just append */
     else {
       v->count++;
       kl_push(kl_tentry, v->recs, ent);
     }
   }
-  // update cur to new rec
+  /* update cur to new rec */
   t->cur_entry->next = ent;
   t->cur_entry = ent;
 }
@@ -127,12 +128,12 @@ void tbl_del_val(fn_tbl *t, String fname, String val)
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
-      // iterate record ptrs
+      /* iterate record ptrs. */
       FN_KL_ITERBLK(kl_tentry, vv->recs) {
         destroy_tentry(it->data);
       }
       kb_delp(FNVAL, ff->vtree, vv);
-      // destroy entire list of record ptrs
+      /* destroy entire list of record ptrs. */
       kl_destroy(kl_tentry, vv->recs);
     }
   }
@@ -177,12 +178,13 @@ void commit(Job *job, JobArg *arg)
     case(REC_SEL):
       ;;
     case(REC_INS):
-      tbl_insert(job->caller->tbl, arg->rec);
+      tbl_insert(job->caller->hndl->tbl, arg->rec);
+      job->updt_cb(job->hndl);
       ;;
     case(REC_UPD):
       ;;
     case(REC_DEL):
       ;;
   };
-  job->read_cb(job->caller); // TODO: send invalidate
+  job->read_cb(job->caller);
 }

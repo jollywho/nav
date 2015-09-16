@@ -87,7 +87,7 @@ void loop_timeout(uv_timer_t *req)
 
 static void draw()
 {
-//  rpc_draw_handle();
+  rpc_draw_handle();
 }
 
 void start_event_loop(void)
