@@ -29,6 +29,7 @@ typedef struct tentry tentry;
 
 #define _NOP(x)
 KLIST_INIT(kl_tentry, tentry*, _NOP)
+KLIST_INIT(kl_val,    fn_val*, _NOP)
 
 struct fn_val {
   String key;
@@ -39,7 +40,7 @@ struct fn_val {
 };
 
 struct fn_rec {
-  fn_val **vals;
+  klist_t(kl_val) *vals;
   int fld_count;
 };
 
@@ -58,11 +59,16 @@ fn_tbl* tbl_mk();
 fn_rec* mk_rec(fn_tbl *t);
 void rec_edit(fn_rec *rec, String fname, void *val);
 void tbl_mk_fld(fn_tbl *t, String name, tFldType type);
-void tbl_delete(fn_tbl *t, String fname, String val);
+void tbl_del_val(fn_tbl *t, String fname, String val);
 klist_t(kl_tentry)* fnd_val(fn_tbl *t, String fname, String val);
 void commit(Job *job, JobArg *arg);
 
 void* rec_fld(fn_rec *rec, String fname);
 
+#define FN_KL_ITERBLK(typ, lst)    \
+  kliter_t(typ) *it;               \
+  for ( it = kl_begin(lst);        \
+        it != kl_end(lst);         \
+        it = kl_next(it))          \
 
 #endif

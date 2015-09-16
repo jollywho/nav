@@ -12,6 +12,7 @@ struct fn_fld {
   tFldType type;
   kbtree_t(FNVAL) *vtree;
 };
+
 KBTREE_INIT(FNFLD, fn_fld, elem_cmp)
 
 struct fn_tbl {
@@ -48,13 +49,13 @@ void tbl_mk_fld(fn_tbl *t, String name, tFldType type)
 
 void* rec_fld(fn_rec *rec, String fname)
 {
-  for(int i = 0; i < rec->fld_count; i++) { 
-    if (strcmp(rec->vals[i]->fld->key, fname) == 0) {
-      if (rec->vals[i]->fld->type == typSTRING) {
-      return rec->vals[i]->key;
+  FN_KL_ITERBLK(kl_val, rec->vals) {
+    if (strcmp(it->data->fld->key, fname) == 0) {
+      if (it->data->fld->type == typSTRING) {
+        return it->data->key;
       }
       else
-        return rec->vals[i]->dat;
+        return it->data->dat;
     }
   }
   return NULL;
@@ -62,15 +63,15 @@ void* rec_fld(fn_rec *rec, String fname)
 
 void rec_edit(fn_rec *rec, String fname, void *val)
 {
-  for(int i = 0; i < rec->fld_count; i++) { 
-    if (strcmp(rec->vals[i]->fld->key, fname) == 0) {
-      if (rec->vals[i]->fld->type == typSTRING) {
+  FN_KL_ITERBLK(kl_val, rec->vals) {
+    if (strcmp(it->data->fld->key, fname) == 0) {
+      if (it->data->fld->type == typSTRING) {
         log_msg("TABLE", "|%s|,|%s|", fname, (String)val);
-        rec->vals[i]->key = strdup(val);
+        it->data->key = strdup(val);
       }
       else {
-        rec->vals[i]->key = NULL;
-        rec->vals[i]->dat = val;
+        it->data->key = NULL;
+        it->data->dat = val;
       }
     }
   }
@@ -84,16 +85,18 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
   ent->prev = t->cur_entry;
   ent->next = NULL;
 
-  for (int i = 0; i < rec->fld_count; i++) {
-    fn_val *fv = rec->vals[i];
+  FN_KL_ITERBLK(kl_val, rec->vals) {
+    fn_val *fv = it->data;
     if (fv->fld->type == typVOID) continue;
     fn_val *v = kb_getp(FNVAL, fv->fld->vtree, fv);
+    // new value so create new tree node and rec list
     if (!v) {
       fv->count = 1;
       fv->recs = kl_init(kl_tentry);
       kl_push(kl_tentry, fv->recs, ent);
       kb_putp(FNVAL, fv->fld->vtree, fv);
     }
+    // value exists so just append
     else {
       v->count++;
       kl_push(kl_tentry, v->recs, ent);
@@ -111,10 +114,11 @@ void destroy_tentry(tentry *ent)
     ent->prev->next = ent->next;
     ent->next->prev = ent->prev;
   }
-  free(ent);
+  kl_destroy(kl_val, ent->rec->vals);
+  free(ent->rec);
 }
 
-void tbl_delete(fn_tbl *t, String fname, String val)
+void tbl_del_val(fn_tbl *t, String fname, String val)
 {
   log_msg("TABLE", "delete %s: %s", fname, val);
   fn_fld f = { .key = fname };
@@ -123,11 +127,12 @@ void tbl_delete(fn_tbl *t, String fname, String val)
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
-      kliter_t(kl_tentry) *it;
-	    for (it = kl_begin(vv->recs); it != kl_end(vv->recs); it = kl_next(it)) {
+      // iterate record ptrs
+      FN_KL_ITERBLK(kl_tentry, vv->recs) {
         destroy_tentry(it->data);
       }
       kb_delp(FNVAL, ff->vtree, vv);
+      // destroy entire list of record ptrs
       kl_destroy(kl_tentry, vv->recs);
     }
   }
@@ -135,16 +140,16 @@ void tbl_delete(fn_tbl *t, String fname, String val)
 
 void initflds(fn_fld *f, fn_rec *rec)
 {
-  rec->vals[rec->fld_count] = malloc(sizeof(fn_val));
-  rec->vals[rec->fld_count]->fld = f;
+  fn_val *v = malloc(sizeof(fn_val));
+  v->fld = f;
   rec->fld_count++;
+  kl_push(kl_val, rec->vals, v);
 }
 
 fn_rec* mk_rec(fn_tbl *t)
 {
   fn_rec *rec = malloc(sizeof(fn_rec));
-  rec->vals = malloc(sizeof(fn_val)*t->count);
-  rec->vals[t->count] = NULL;
+  rec->vals = kl_init(kl_val);
   rec->fld_count = 0;
   __kb_traverse(fn_fld, t->fields, initflds, rec);
   return rec;
@@ -179,5 +184,5 @@ void commit(Job *job, JobArg *arg)
     case(REC_DEL):
       ;;
   };
-  job->read_cb(job->caller); // what do here?
+  job->read_cb(job->caller); // TODO: send invalidate
 }

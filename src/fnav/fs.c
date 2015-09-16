@@ -29,7 +29,7 @@ void scan_cb(uv_fs_t* req)
   FS_req *fq = req->data;
 
   // clear outdated records
-  tbl_delete(fq->fs_h->job.caller->tbl, "parent", (String)req->path);
+  tbl_del_val(fq->fs_h->job.caller->tbl, "parent", (String)req->path);
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
     JobArg *arg = malloc(sizeof(JobArg));
@@ -37,7 +37,6 @@ void scan_cb(uv_fs_t* req)
     rec_edit(r, "parent", (void*)req->path);
     rec_edit(r, "name", (void*)dent.name);
     rec_edit(r, "stat", (void*)&fq->uv_stat);
-    //args[2] = (void*)&fq->uv_stat;
     arg->rec = r;
     arg->state = REC_INS;
     queue_push(&fq->fs_h->job, arg);
@@ -64,12 +63,13 @@ void stat_cb(uv_fs_t* req)
   fq->uv_stat = req->statbuf;
   klist_t(kl_tentry) *rec = fnd_val(fq->fs_h->job.caller->tbl, "parent", fq->req_name);
 
+  // TODO: make klist details internal to table
   if (rec) {
     uv_stat_t *st = (uv_stat_t*)rec_fld(rec->head->data->rec, "stat");
     struct timeval t;
     timersub((struct timeval*)&fq->uv_stat.st_mtim, (struct timeval*)&st->st_mtim, &t);
     if (t.tv_usec == 0) {
-        log_msg("FS", "NOP");
+      log_msg("FS", "NOP");
       return;
     }
   }
