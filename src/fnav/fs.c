@@ -39,8 +39,8 @@ void scan_cb(uv_fs_t* req)
     rec_edit(r, "name", (void*)dent.name);
     rec_edit(r, "stat", (void*)&fq->uv_stat);
     arg->rec = r;
-    arg->state = REC_INS;
-    queue_push(&fq->fs_h->job, arg);
+    arg->fn = commit;
+    QUEUE_PUT(work, &fq->fs_h->job, arg);
   }
   fq->close_cb(fq);
 }
@@ -100,16 +100,16 @@ void fs_open(FS_handle *fsh, String dir)
   uv_fs_event_start(&fq->fs_h->watcher, watch_cb, dir, 0);
 }
 
-FS_handle fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb, buf_cb updt_cb)
+FS_handle fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb, buf_cb updt_cb, buf_cb draw_cb)
 {
   log_msg("FS", "open req");
   FS_handle fsh = {
     .loop = eventloop(),
     .job.caller = c,
     .job.hndl = h,
-    .job.fn = commit,
     .job.read_cb = read_cb,
     .job.updt_cb = updt_cb,
+    .job.draw_cb = draw_cb,
   };
   return fsh;
 }

@@ -231,7 +231,7 @@ FM_cntlr* fm_cntlr_init()
   c->base.hndl->tbl = t;
   c->base.hndl->buf = buf_init();
 
-  c->fs = fs_init(&c->base, c->base.hndl, fm_read_scan, buf_inv);
+  c->fs = fs_init(&c->base, c->base.hndl, fm_read_scan, buf_inv, buf_draw);
   return c;
 }
 

@@ -25,7 +25,7 @@ typedef struct {
   fn_handle *hndl;
   cntlr_cb read_cb;
   buf_cb   updt_cb;
-  void(*fn)();
+  buf_cb   draw_cb;
 } Job;
 
 void rpc_temp_init();

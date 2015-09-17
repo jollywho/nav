@@ -24,19 +24,20 @@
 
 #include "fnav/table.h"
 
-typedef struct {
-  Job *job;
-  JobArg *arg;
-} JobItem;
+typedef struct queue Queue;
+struct queue {
+  Queue *parent;
+  QUEUE headtail;
+};
 
-typedef struct {
-  QUEUE node;
-  JobItem *item;
-  fn_buf *buf;
-} QueueItem;
+#define qhead(q) Queue qhead_##q
+qhead(work);
+qhead(draw);
 
 void queue_init();
-void queue_push(Job *job, JobArg *arg);
-void queue_push_buf(fn_buf *buf);
+void queue_push(Queue *queue, Job *job, JobArg *arg);
+
+#define QUEUE_PUT(q,j,ja) \
+  queue_push(&qhead_##q, j, ja)
 
 #endif

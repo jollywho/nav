@@ -13,13 +13,6 @@ typedef enum {
   //typTABLE /* record format for lists of tables */
 } tFldType;
 
-typedef enum {
-  REC_SEL,
-  REC_INS,
-  REC_UPD,
-  REC_DEL,
-} REC_STATE;
-
 #define elem_cmp(a, b) (strcmp((a).key, (b).key))
 
 typedef struct fn_val fn_val;
@@ -52,7 +45,7 @@ struct tentry {
 
 typedef struct {
   fn_rec *rec;
-  REC_STATE state;
+  void(*fn)();
 } JobArg;
 
 fn_tbl* tbl_mk();

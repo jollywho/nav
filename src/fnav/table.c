@@ -174,17 +174,7 @@ klist_t(kl_tentry)* fnd_val(fn_tbl *t, String fname, String val)
 void commit(Job *job, JobArg *arg)
 {
   log_msg("TABLE", "commit");
-  switch(arg->state) {
-    case(REC_SEL):
-      ;;
-    case(REC_INS):
-      tbl_insert(job->caller->hndl->tbl, arg->rec);
-      job->updt_cb(job->hndl);
-      ;;
-    case(REC_UPD):
-      ;;
-    case(REC_DEL):
-      ;;
-  };
+  tbl_insert(job->caller->hndl->tbl, arg->rec);
   job->read_cb(job->caller);
+  job->updt_cb(job, arg);
 }

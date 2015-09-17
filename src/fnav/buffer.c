@@ -11,7 +11,7 @@ struct fn_buf {
   pos_T b_curs_pos;
   pos_T b_size;
   tentry *b_entf;
-  int inval;
+  bool inval;
 };
 
 fn_buf* buf_init()
@@ -22,17 +22,18 @@ fn_buf* buf_init()
   return buf;
 }
 
-void buf_inv(fn_handle *h)
+void buf_inv(Job *job, JobArg *arg)
 {
   log_msg("BUFFER", "invalidated");
-  if (h->buf->inval == false) {
-    h->buf->inval = true;
-    queue_push_buf(h->buf);
+  if (job->hndl->buf->inval == false) {
+    job->hndl->buf->inval = true;
+    arg->fn = buf_draw;
+    QUEUE_PUT(draw, job, arg);
   }
 }
 
-void buf_draw(fn_buf *buf)
+void buf_draw(Job *job, JobArg *arg)
 {
   log_msg("BUFFER", "$_draw_$");
-  buf->inval = false;
+  job->hndl->buf->inval = false;
 }
