@@ -1,4 +1,5 @@
-#include <curses.h>
+#define _GNU_SOURCE
+#include <ncurses.h>
 
 #include "fnav/log.h"
 #include "fnav/table.h"
@@ -49,10 +50,11 @@ fn_buf* buf_init()
   return buf;
 }
 
-void buf_listen(fn_buf *buf, tentry *ent)
+void buf_listen(listener *listener)
 {
   log_msg("BUFFER", "listen cb");
-  buf->focus.ent = ent;
+  fn_buf *buf = listener->buf;
+  buf->focus.ent = listener->entry;
   if (buf->inval == false) {
     buf->inval = true;
     QUEUE_PUT(draw, buf->job, buf->arg);
@@ -62,7 +64,7 @@ void buf_listen(fn_buf *buf, tentry *ent)
 void buf_set(fn_buf *buf, fn_handle *th)
 {
   log_msg("BUFFER", "set");
-  buf->focus.ent = tbl_listen(th->tbl, buf, buf_listen);
+  tbl_listen(th->tbl, buf, buf_listen);
 }
 
 void buf_draw(Job *job, JobArg *arg)
@@ -70,7 +72,7 @@ void buf_draw(Job *job, JobArg *arg)
   log_msg("BUFFER", "$_draw_$");
   fn_buf *buf = job->caller;
 #ifndef NCURSES_ENABLED
-  String n = (String)rec_fld(buf->focus.ent->rec, "name");
+  String n = (String)rec_fld(buf->focus.ent, "name");
   log_msg("BUFFER", " %s", n);
   buf->inval = false;
   return;
@@ -78,7 +80,7 @@ void buf_draw(Job *job, JobArg *arg)
 
   // from curs_pos loop up while curs_pos - offset > 0
   // from curs_pos loop down while curs_pos - offset < b_size
-  clearok(buf->nc_win, TRUE);
+  wclear(buf->nc_win);
 
   pos_T p = {.lnum = 0, .col = 0};
   tentry *it = buf->focus.ent;

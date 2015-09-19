@@ -40,7 +40,7 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir ="/home/chi/casper/YFS/ALL";
+String init_dir ="/home/chi/Downloads";
 static void fm_down();
 static void fm_up();
 static void cancel();

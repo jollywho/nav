@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <string.h>
-#include <ncurses.h>
+#include <curses.h>
+#include <locale.h>
 
 #include "fnav/log.h"
 #include "fnav/fnav.h"
@@ -14,6 +15,7 @@ void init(void)
   log_set("BUFFER");
   printf("init\n");
 #ifdef NCURSES_ENABLED
+  setlocale(LC_CTYPE, "");
   initscr();
 #endif
   event_init();

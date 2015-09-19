@@ -5,6 +5,7 @@ file(GLOB SOURCES
 
 add_executable(fnav ${SOURCES})
 
+set(CURSES_NEED_WIDE true)
 find_package(Curses REQUIRED)
 find_package(LibTermkey REQUIRED)
 find_package(LibUV REQUIRED)

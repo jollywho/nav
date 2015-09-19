@@ -44,12 +44,12 @@ struct tentry {
   tentry *prev;
   tentry *next;
   fn_rec *rec;
-  listener *listener;
 };
 
 struct listener {
   fn_buf *buf;
   buf_cb cb;
+  tentry *entry;
 };
 
 typedef struct {
@@ -62,7 +62,7 @@ fn_rec* mk_rec(fn_tbl *t);
 void rec_edit(fn_rec *rec, String fname, void *val);
 void tbl_mk_fld(fn_tbl *t, String name, tFldType type);
 void tbl_del_val(fn_tbl *t, String fname, String val);
-tentry* tbl_listen(fn_tbl *t, fn_buf *buf, buf_cb cb);
+void tbl_listen(fn_tbl *t, fn_buf *buf, buf_cb cb);
 klist_t(kl_tentry)* fnd_val(fn_tbl *t, String fname, String val);
 void commit(Job *job, JobArg *arg);
 

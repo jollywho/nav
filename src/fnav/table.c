@@ -20,6 +20,7 @@ struct fn_tbl {
   tentry *records;
   int count;
   int rec_count;
+  listener *listeners;
 };
 
 fn_tbl* tbl_mk()
@@ -31,6 +32,7 @@ fn_tbl* tbl_mk()
   t->records = malloc(sizeof(tentry));
   t->records->prev = t->records;
   t->records->next = t->records;
+  t->listeners = NULL;
   return t;
 }
 
@@ -48,6 +50,7 @@ void tbl_mk_fld(fn_tbl *t, String name, tFldType type)
 void* rec_fld(fn_rec *rec, String fname)
 {
   if (!rec) return NULL;
+  log_msg("BUFFER", "$ooo$");
   FN_KL_ITERBLK(kl_val, rec->vals) {
     if (strcmp(it->data->fld->key, fname) == 0) {
       if (it->data->fld->type == typSTRING) {
@@ -95,7 +98,6 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
   ent->prev = t->records->prev;
   ent->next = t->records;
   rec->ent = ent;
-  ent->listener = NULL;
 
   FN_KL_ITERBLK(kl_val, rec->vals) {
     fn_val *fv = it->data;
@@ -120,18 +122,18 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
 
   // bump listener to first real record
   if (t->rec_count == 1) {
-    ent->listener = t->records->listener;
-    ent->listener->cb(ent->listener->buf, ent);
+    t->listeners->entry = t->records;
   }
+  t->listeners->cb(t->listeners);
 }
 
 void destroy_tentry(fn_tbl *t, tentry *ent)
 {
   ent->next->prev = ent->prev;
   ent->prev->next = ent->next;
-  if (ent->listener) {
-    ent->prev->listener = ent->listener;
-    ent->listener->cb(ent->listener->buf, ent->prev);
+  if (t->listeners->entry == ent) {
+    t->listeners->entry = ent->prev;
+    t->listeners->cb(t->listeners);
   }
   t->rec_count--;
   kl_destroy(kl_val, ent->rec->vals);
@@ -191,14 +193,13 @@ klist_t(kl_tentry)* fnd_val(fn_tbl *t, String fname, String val)
   return NULL;
 }
 
-tentry* tbl_listen(fn_tbl *t, fn_buf *buf, buf_cb cb)
+void tbl_listen(fn_tbl *t, fn_buf *buf, buf_cb cb)
 {
   log_msg("TABLE", "listen");
   listener *lis = malloc(sizeof(listener));
   lis->buf = buf;
   lis->cb = cb;
-  t->records->listener = lis;
-  return t->records;
+  t->listeners = lis;
 }
 
 void commit(Job *job, JobArg *arg)
