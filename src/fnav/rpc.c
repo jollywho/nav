@@ -22,12 +22,3 @@ void rpc_key_handle(String key)
   //TODO: set focus cntrl
   cntlr->_input(cntlr, key);
 }
-
-void rpc_draw_handle()
-{
-#ifdef NCURSES_ENABLED
-  // TODO:  pop queue
-  //        call buf_daw(item)
-  cntlr->_draw(cntlr);
-#endif
-}

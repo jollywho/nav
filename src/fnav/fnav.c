@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include <string.h>
 #include <ncurses.h>
 
 #include "fnav/log.h"
@@ -10,10 +11,10 @@
 
 void init(void)
 {
-//  log_set("FS");
+  log_set("BUFFER");
   printf("init\n");
 #ifdef NCURSES_ENABLED
-    initscr();
+  initscr();
 #endif
   event_init();
   queue_init();
@@ -22,7 +23,7 @@ void init(void)
 
 void sig_handler(int sig)
 {
-  printf("Signal received: %d\n", sig);
+  printf("Signal received: ***%d(%s)***\n", sig, strsignal(sig));
   endwin();
   exit(0);
 }
@@ -30,6 +31,7 @@ void sig_handler(int sig)
 int main(int argc, char **argv)
 {
   signal(SIGINT, sig_handler);
+  signal(SIGSEGV, sig_handler);
 
   init();
   start_event_loop();

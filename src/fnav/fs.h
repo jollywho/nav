@@ -22,10 +22,9 @@ typedef struct {
   req_cb close_cb;
 
   String req_name;
-  String dir;
 } FS_req ;
 
-FS_handle fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb, buf_cb updt_cb, buf_cb draw_cb);
+FS_handle fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb);
 void fs_open(FS_handle *h, String dir);
 
 #endif

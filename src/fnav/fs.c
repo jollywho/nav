@@ -29,7 +29,8 @@ void scan_cb(uv_fs_t* req)
   FS_req *fq = req->data;
 
   /* clear outdated records */
-  fn_tbl *t = fq->fs_h->job.caller->hndl->tbl;
+  Cntlr *c = fq->fs_h->job.caller;
+  fn_tbl *t = c->hndl->tbl;
   tbl_del_val(t, "parent", (String)req->path);
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
@@ -45,6 +46,30 @@ void scan_cb(uv_fs_t* req)
   fq->close_cb(fq);
 }
 
+void stat_cb(uv_fs_t* req)
+{
+  log_msg("FS", "stat cb");
+  FS_req *fq= req->data;
+  fq->uv_stat = req->statbuf;
+  Cntlr *c = fq->fs_h->job.caller;
+  fn_tbl *t = c->hndl->tbl;
+  klist_t(kl_tentry) *rec = fnd_val(t, "parent", fq->req_name);
+
+  // TODO: make klist details internal to table
+  if (rec) {
+    uv_stat_t *st = (uv_stat_t*)rec_fld(rec->head->data->rec, "stat");
+    struct timeval t;
+    timersub((struct timeval*)&fq->uv_stat.st_mtim, (struct timeval*)&st->st_mtim, &t);
+    // TODO: test~~
+    //if (t.tv_usec == 0) {
+    //  log_msg("FS", "NOP");
+    //  return;
+    //}
+  }
+  if (S_ISDIR(fq->uv_stat.st_mode))
+    uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);
+}
+
 void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)
 {
 #ifdef NCURSES_ENABLED
@@ -55,28 +80,6 @@ void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int statu
     log_msg("FM", "=%s= renamed", filename);
   if (events & UV_CHANGE)
     log_msg("FM", "=%s= changed", filename);
-}
-
-void stat_cb(uv_fs_t* req)
-{
-  log_msg("FS", "stat cb");
-  FS_req *fq= req->data;
-  fq->uv_stat = req->statbuf;
-  fn_tbl *t = fq->fs_h->job.caller->hndl->tbl;
-  klist_t(kl_tentry) *rec = fnd_val(t, "parent", fq->req_name);
-
-  // TODO: make klist details internal to table
-  if (rec) {
-    uv_stat_t *st = (uv_stat_t*)rec_fld(rec->head->data->rec, "stat");
-    struct timeval t;
-    timersub((struct timeval*)&fq->uv_stat.st_mtim, (struct timeval*)&st->st_mtim, &t);
-    if (t.tv_usec == 0) {
-      log_msg("FS", "NOP");
-      return;
-    }
-  }
-  if (S_ISDIR(fq->uv_stat.st_mode))
-    uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);
 }
 
 void fs_close_cb(FS_req *fq)
@@ -92,6 +95,7 @@ void fs_open(FS_handle *fsh, String dir)
   fq->fs_h = fsh;
   fq->req_name = dir;
   fq->uv_fs.data = fq;
+  fq->fs_h->watcher.data = fq;
   fq->close_cb = fs_close_cb;
 
   uv_fs_stat(fq->fs_h->loop, &fq->uv_fs, dir, stat_cb);
@@ -100,7 +104,7 @@ void fs_open(FS_handle *fsh, String dir)
   uv_fs_event_start(&fq->fs_h->watcher, watch_cb, dir, 0);
 }
 
-FS_handle fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb, buf_cb updt_cb, buf_cb draw_cb)
+FS_handle fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb)
 {
   log_msg("FS", "open req");
   FS_handle fsh = {
@@ -108,8 +112,6 @@ FS_handle fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb, buf_cb updt_cb, buf_
     .job.caller = c,
     .job.hndl = h,
     .job.read_cb = read_cb,
-    .job.updt_cb = updt_cb,
-    .job.draw_cb = draw_cb,
   };
   return fsh;
 }

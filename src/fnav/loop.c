@@ -74,12 +74,10 @@ void loop_timeout(uv_timer_t *req)
 
 static void process_loop(Queue *queue)
 {
-  log_msg("LOOP", "|>START->");
   uv_timer_start(&spin_timer, loop_timeout, 10, 0);
   while (!QUEUE_EMPTY(&queue->headtail)) {
     JobItem *j = queue_pop(queue);
     j->arg->fn(j->job, j->arg);
     uv_run(spin_loop, UV_RUN_NOWAIT); // TODO: is this needed?
   }
-  log_msg("LOOP", "->STOP>|");
 }

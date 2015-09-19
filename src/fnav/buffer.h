@@ -15,5 +15,6 @@ typedef struct {
 fn_buf* buf_init();
 void buf_inv(Job *job, JobArg *arg);
 void buf_draw(Job *job, JobArg *arg);
+void buf_set(fn_buf *buf, fn_handle *th);
 
 #endif

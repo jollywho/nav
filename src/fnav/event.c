@@ -10,7 +10,6 @@
 
 Loop *event_loop;
 uv_timer_t fast_timer;
-uv_timer_t draw_timer;
 
 uv_poll_t poll_handle;
 
@@ -23,7 +22,6 @@ int event_init(void)
   printf("event init\n");
   event_loop = uv_default_loop();
   uv_timer_init(event_loop, &fast_timer);
-  uv_timer_init(event_loop, &draw_timer);
 
   tk = termkey_new(0,0);
   termkey_set_flags(tk, TERMKEY_FLAG_UTF8);
@@ -85,15 +83,9 @@ void loop_timeout(uv_timer_t *req)
   stop_cycle();
 }
 
-static void draw()
-{
-  rpc_draw_handle();
-}
-
 void start_event_loop(void)
 {
   log_msg("EVENT", "<<|MAIN EVENT LOOP|>>");
-  uv_timer_start(&draw_timer, draw, 30, 30);
   uv_run(event_loop, UV_RUN_DEFAULT);
 }
 

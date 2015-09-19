@@ -21,7 +21,7 @@ typedef void(*cntlr_cb)();
 typedef void(*buf_cb)();
 
 typedef struct {
-  Cntlr *caller;
+  void *caller;
   fn_handle *hndl;
   cntlr_cb read_cb;
   buf_cb   updt_cb;

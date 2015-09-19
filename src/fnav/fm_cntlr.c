@@ -230,8 +230,9 @@ FM_cntlr* fm_cntlr_init()
   tbl_mk_fld(t, "stat", typVOID);
   c->base.hndl->tbl = t;
   c->base.hndl->buf = buf_init();
+  buf_set(c->base.hndl->buf, c->base.hndl);
 
-  c->fs = fs_init(&c->base, c->base.hndl, fm_read_scan, buf_inv, buf_draw);
+  c->fs = fs_init(&c->base, c->base.hndl, fm_read_scan);
   return c;
 }
 

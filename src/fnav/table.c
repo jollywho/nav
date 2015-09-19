@@ -18,7 +18,6 @@ KBTREE_INIT(FNFLD, fn_fld, elem_cmp)
 struct fn_tbl {
   kbtree_t(FNFLD) *fields;
   tentry *records;
-  tentry *cur_entry;
   int count;
   int rec_count;
 };
@@ -30,9 +29,8 @@ fn_tbl* tbl_mk()
   t->rec_count = 0;
   t->fields = kb_init(FNFLD, KB_DEFAULT_SIZE);
   t->records = malloc(sizeof(tentry));
-  t->records->prev = NULL;
-  t->records->next = NULL;
-  t->cur_entry = t->records;
+  t->records->prev = t->records;
+  t->records->next = t->records;
   return t;
 }
 
@@ -49,6 +47,7 @@ void tbl_mk_fld(fn_tbl *t, String name, tFldType type)
 
 void* rec_fld(fn_rec *rec, String fname)
 {
+  if (!rec) return NULL;
   FN_KL_ITERBLK(kl_val, rec->vals) {
     if (strcmp(it->data->fld->key, fname) == 0) {
       if (it->data->fld->type == typSTRING) {
@@ -61,12 +60,16 @@ void* rec_fld(fn_rec *rec, String fname)
   return NULL;
 }
 
+int tbl_count(fn_tbl *t)
+{
+  return t->rec_count;
+}
+
 void rec_edit(fn_rec *rec, String fname, void *val)
 {
   FN_KL_ITERBLK(kl_val, rec->vals) {
     if (strcmp(it->data->fld->key, fname) == 0) {
       if (it->data->fld->type == typSTRING) {
-        log_msg("TABLE", "|%s|,|%s|", fname, (String)val);
         it->data->key = strdup(val);
       }
       else {
@@ -77,13 +80,22 @@ void rec_edit(fn_rec *rec, String fname, void *val)
   }
 }
 
+void alert_listeners(klist_t(kl_listen) *lst)
+{
+  FN_KL_ITERBLK(kl_listen, lst) {
+    it->data->cb(it->data->buf);
+  }
+}
+
 void tbl_insert(fn_tbl *t, fn_rec *rec)
 {
   t->rec_count++;
   tentry *ent = malloc(sizeof(tentry));
   ent->rec = rec;
-  ent->prev = t->cur_entry;
-  ent->next = NULL;
+  ent->prev = t->records->prev;
+  ent->next = t->records;
+  rec->ent = ent;
+  ent->listener = NULL;
 
   FN_KL_ITERBLK(kl_val, rec->vals) {
     fn_val *fv = it->data;
@@ -103,25 +115,33 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
       kl_push(kl_tentry, v->recs, ent);
     }
   }
-  /* update cur to new rec */
-  t->cur_entry->next = ent;
-  t->cur_entry = ent;
+  t->records->prev->next = ent;
+  t->records->prev = ent;
+
+  // bump listener to first real record
+  if (t->rec_count == 1) {
+    ent->listener = t->records->listener;
+    ent->listener->cb(ent->listener->buf, ent);
+  }
 }
 
-void destroy_tentry(tentry *ent)
+void destroy_tentry(fn_tbl *t, tentry *ent)
 {
-  log_msg("TABLE", "del ent");
-  if (ent->prev && ent->next) {
-    ent->prev->next = ent->next;
-    ent->next->prev = ent->prev;
+  ent->next->prev = ent->prev;
+  ent->prev->next = ent->next;
+  if (ent->listener) {
+    ent->prev->listener = ent->listener;
+    ent->listener->cb(ent->listener->buf, ent->prev);
   }
+  t->rec_count--;
   kl_destroy(kl_val, ent->rec->vals);
   free(ent->rec);
+  free(ent);
 }
 
 void tbl_del_val(fn_tbl *t, String fname, String val)
 {
-  log_msg("TABLE", "delete %s: %s", fname, val);
+  log_msg("TABLE", "del");
   fn_fld f = { .key = fname };
   fn_val v = { .key = val   };
   fn_fld *ff = kb_get(FNFLD, t->fields, f);
@@ -130,10 +150,10 @@ void tbl_del_val(fn_tbl *t, String fname, String val)
     if (vv) {
       /* iterate record ptrs. */
       FN_KL_ITERBLK(kl_tentry, vv->recs) {
-        destroy_tentry(it->data);
+        destroy_tentry(t, it->data);
       }
       kb_delp(FNVAL, ff->vtree, vv);
-      /* destroy entire list of record ptrs. */
+      /* destroy entire list of tentry ptrs. */
       kl_destroy(kl_tentry, vv->recs);
     }
   }
@@ -171,10 +191,19 @@ klist_t(kl_tentry)* fnd_val(fn_tbl *t, String fname, String val)
   return NULL;
 }
 
+tentry* tbl_listen(fn_tbl *t, fn_buf *buf, buf_cb cb)
+{
+  log_msg("TABLE", "listen");
+  listener *lis = malloc(sizeof(listener));
+  lis->buf = buf;
+  lis->cb = cb;
+  t->records->listener = lis;
+  return t->records;
+}
+
 void commit(Job *job, JobArg *arg)
 {
-  log_msg("TABLE", "commit");
-  tbl_insert(job->caller->hndl->tbl, arg->rec);
+  Cntlr *c = job->caller;
+  tbl_insert(c->hndl->tbl, arg->rec);
   job->read_cb(job->caller);
-  job->updt_cb(job, arg);
 }
