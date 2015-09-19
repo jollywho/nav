@@ -40,9 +40,10 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir ="/home/chi/Downloads";
+String init_dir ="/home/chi/casper/YFS/ALL";
 static void fm_down();
 static void fm_up();
+static void fm_bottom();
 static void cancel();
 static void fm_update();
 
@@ -56,6 +57,7 @@ static const struct fm_cmd {
   {'j',     fm_down,        0,                        0},
   {'k',     fm_up,          0,                 BACKWARD},
   {'u',     fm_update,      0,                 BACKWARD},
+  {'G',     fm_bottom,      0,                 BACKWARD},
   {'c',     cancel,         0,                 BACKWARD},
 };
 
@@ -81,8 +83,6 @@ void fm_after_scan()
 static void fm_update(Cntlr *cntlr)
 {
   log_msg("FM", "update dir");
-  FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  fs_open(&self->fs, self->cur_dir);
   log_msg("FM", "waiting on job...");
 }
 
@@ -90,8 +90,8 @@ static void fm_up(Cntlr *cntlr)
 {
   log_msg("FM", "cmd up");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  buf_mv(self->base.hndl->buf, 0, -1);
   log_msg("FM", "set cur: %s", self->cur_dir);
-  fs_open(&self->fs, self->cur_dir);
   log_msg("FM", "waiting on job...");
 }
 
@@ -99,7 +99,16 @@ static void fm_down(Cntlr *cntlr)
 {
   log_msg("FM", "cmd down");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  buf_mv(self->base.hndl->buf, 0, 1);
   log_msg("FM", "set cur: %s", self->cur_dir);
+  log_msg("FM", "waiting on job...");
+}
+
+static void fm_bottom(Cntlr *cntlr)
+{
+  log_msg("FM", "cmd bottom");
+  FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  buf_mv(self->base.hndl->buf, 0, tbl_count(self->base.hndl->tbl));
   log_msg("FM", "waiting on job...");
 }
 
@@ -229,10 +238,11 @@ FM_cntlr* fm_cntlr_init()
   tbl_mk_fld(t, "name", typSTRING);
   tbl_mk_fld(t, "stat", typVOID);
   c->base.hndl->tbl = t;
-  c->base.hndl->buf = buf_init();
+  c->base.hndl->buf = buf_init(t);
   buf_set(c->base.hndl->buf, c->base.hndl);
 
   c->fs = fs_init(&c->base, c->base.hndl, fm_read_scan);
+  fs_open(&c->fs, c->cur_dir);
   return c;
 }
 

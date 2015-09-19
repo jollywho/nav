@@ -75,4 +75,9 @@ void* rec_fld(fn_rec *rec, String fname);
         (it) != kl_end  ( (lst) );   \
         (it) =  kl_next ( (it)  ))   \
 
+tentry* head(fn_tbl *t);
+
+#define FN_MV(t,e,d)                         \
+  (e) = (e->d != head(t)->prev) ? (e->d) : (e);    \
+
 #endif

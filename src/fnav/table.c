@@ -50,7 +50,6 @@ void tbl_mk_fld(fn_tbl *t, String name, tFldType type)
 void* rec_fld(fn_rec *rec, String fname)
 {
   if (!rec) return NULL;
-  log_msg("BUFFER", "$ooo$");
   FN_KL_ITERBLK(kl_val, rec->vals) {
     if (strcmp(it->data->fld->key, fname) == 0) {
       if (it->data->fld->type == typSTRING) {
@@ -120,10 +119,6 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
   t->records->prev->next = ent;
   t->records->prev = ent;
 
-  // bump listener to first real record
-  if (t->rec_count == 1) {
-    t->listeners->entry = t->records;
-  }
   t->listeners->cb(t->listeners);
 }
 
@@ -193,12 +188,18 @@ klist_t(kl_tentry)* fnd_val(fn_tbl *t, String fname, String val)
   return NULL;
 }
 
+tentry* head(fn_tbl *t)
+{
+  return (t->records);
+}
+
 void tbl_listen(fn_tbl *t, fn_buf *buf, buf_cb cb)
 {
   log_msg("TABLE", "listen");
   listener *lis = malloc(sizeof(listener));
   lis->buf = buf;
   lis->cb = cb;
+  lis->entry = t->records;
   t->listeners = lis;
 }
 

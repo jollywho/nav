@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include <ncurses.h>
+#include <limits.h>
 
 #include "fnav/log.h"
 #include "fnav/table.h"
@@ -21,6 +22,7 @@ struct fn_buf {
   Job *job;
   JobArg *arg;
   b_focus focus;
+  fn_tbl *t;
 };
 
 #define SET_POS(pos,x,y)       \
@@ -34,7 +36,7 @@ struct fn_buf {
 #define DRAW_AT(win,pos,str)   \
   mvwprintw(win, pos.lnum, pos.col, str);
 
-fn_buf* buf_init()
+fn_buf* buf_init(fn_tbl *t)
 {
   printf("buf init\n");
   fn_buf *buf = malloc(sizeof(fn_buf));
@@ -43,6 +45,7 @@ fn_buf* buf_init()
   SET_POS(buf->b_size,0,0);
   getmaxyx(stdscr, buf->nc_size.lnum, buf->nc_size.col);
   buf->nc_win = newwin(buf->nc_size.lnum, buf->nc_size.col, 0,0);
+  buf->t = t;
   buf->job = malloc(sizeof(Job));
   buf->arg = malloc(sizeof(JobArg));
   buf->job->caller = buf;
@@ -72,7 +75,7 @@ void buf_draw(Job *job, JobArg *arg)
   log_msg("BUFFER", "$_draw_$");
   fn_buf *buf = job->caller;
 #ifndef NCURSES_ENABLED
-  String n = (String)rec_fld(buf->focus.ent, "name");
+  String n = (String)rec_fld(buf->focus.ent->rec, "name");
   log_msg("BUFFER", " %s", n);
   buf->inval = false;
   return;
@@ -95,4 +98,18 @@ void buf_draw(Job *job, JobArg *arg)
   buf->inval = false;
   wrefresh(buf->nc_win);
   refresh();
+}
+
+void buf_mv(fn_buf *buf, int x, int y)
+{
+  if (buf->inval == true) return;
+
+  buf->inval = true;
+  for (int i = 0; i < y; i++) {
+    FN_MV(buf->t, buf->focus.ent, next);
+  }
+  for (int i = 0; i > y; i--) {
+    FN_MV(buf->t, buf->focus.ent, prev);
+  }
+  QUEUE_PUT(draw, buf->job, buf->arg);
 }
