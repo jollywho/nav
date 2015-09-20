@@ -12,7 +12,7 @@
 
 void init(void)
 {
-  log_set("BUFFER");
+//  log_set("BUFFER");
   printf("init\n");
 #ifdef NCURSES_ENABLED
   setlocale(LC_CTYPE, "");

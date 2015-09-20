@@ -19,6 +19,8 @@ struct fn_handle {
   fn_handle *next;
   fn_tbl *tbl;
   fn_buf *buf;
+  String fname;
+  String fval;
 /*filter *fltr*/
 };
 

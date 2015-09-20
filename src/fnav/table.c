@@ -17,10 +17,8 @@ KBTREE_INIT(FNFLD, fn_fld, elem_cmp)
 
 struct fn_tbl {
   kbtree_t(FNFLD) *fields;
-  tentry *records;
   int count;
   int rec_count;
-  listener *listeners;
 };
 
 fn_tbl* tbl_mk()
@@ -29,10 +27,6 @@ fn_tbl* tbl_mk()
   t->count = 0;
   t->rec_count = 0;
   t->fields = kb_init(FNFLD, KB_DEFAULT_SIZE);
-  t->records = malloc(sizeof(tentry));
-  t->records->prev = t->records;
-  t->records->next = t->records;
-  t->listeners = NULL;
   return t;
 }
 
@@ -92,66 +86,63 @@ void alert_listeners(klist_t(kl_listen) *lst)
 void tbl_insert(fn_tbl *t, fn_rec *rec)
 {
   t->rec_count++;
-  tentry *ent = malloc(sizeof(tentry));
-  ent->rec = rec;
-  ent->prev = t->records->prev;
-  ent->next = t->records;
-  rec->ent = ent;
 
   FN_KL_ITERBLK(kl_val, rec->vals) {
     fn_val *fv = it->data;
     if (fv->fld->type == typVOID) continue;
-    fn_val *v = kb_getp(FNVAL, fv->fld->vtree, fv);
 
+    fn_val *v = kb_getp(FNVAL, fv->fld->vtree, fv);
     /* new value so create new tree node and rec list */
     if (!v) {
       fv->count = 1;
-      fv->recs = kl_init(kl_tentry);
-      kl_push(kl_tentry, fv->recs, ent);
+      ventry *ent = malloc(sizeof(ventry));
+      ent->rec = rec;
+      ent->val = fv;
+      ent->prev = ent;
+      ent->next = ent;
+      ent->head = 1;
+      fv->rlist = ent;
       kb_putp(FNVAL, fv->fld->vtree, fv);
     }
-    /* value exists so just append */
+    /* value already exists */
     else {
       v->count++;
-      kl_push(kl_tentry, v->recs, ent);
+      ventry *ent = malloc(sizeof(ventry));
+      ent->rec = rec;
+      ent->val = fv;
+      ent->prev = v->rlist->prev;
+      ent->next = v->rlist;
+      ent->head = 0;
+      if (v->count == 1) {
+        v->listeners->entry = ent;
+      }
+      v->rlist->prev->next = ent;
+      v->rlist->prev = ent;
+      v->listeners->cb(v->listeners);
     }
   }
-  t->records->prev->next = ent;
-  t->records->prev = ent;
-
-  t->listeners->cb(t->listeners);
-}
-
-void destroy_tentry(fn_tbl *t, tentry *ent)
-{
-  ent->next->prev = ent->prev;
-  ent->prev->next = ent->next;
-  if (t->listeners->entry == ent) {
-    t->listeners->entry = ent->prev;
-    t->listeners->cb(t->listeners);
-  }
-  t->rec_count--;
-  kl_destroy(kl_val, ent->rec->vals);
-  free(ent->rec);
-  free(ent);
 }
 
 void tbl_del_val(fn_tbl *t, String fname, String val)
 {
-  log_msg("TABLE", "del");
   fn_fld f = { .key = fname };
   fn_val v = { .key = val   };
   fn_fld *ff = kb_get(FNFLD, t->fields, f);
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
-      /* iterate record ptrs. */
-      FN_KL_ITERBLK(kl_tentry, vv->recs) {
-        destroy_tentry(t, it->data);
+      /* iterate listeners. */
+      if (!vv->rlist->next) return;
+      ventry *it = vv->rlist->next;
+      for (int i = 1; i < vv->count; i++) {
+        it = it->next;
+        free(it->prev->rec);
+        free(it);
+        t->rec_count--;
       }
-      kb_delp(FNVAL, ff->vtree, vv);
-      /* destroy entire list of tentry ptrs. */
-      kl_destroy(kl_tentry, vv->recs);
+      if (!vv->listeners) {
+        kb_delp(FNVAL, ff->vtree, vv);
+      }
     }
   }
 }
@@ -173,7 +164,7 @@ fn_rec* mk_rec(fn_tbl *t)
   return rec;
 }
 
-klist_t(kl_tentry)* fnd_val(fn_tbl *t, String fname, String val)
+ventry* fnd_val(fn_tbl *t, String fname, String val)
 {
   log_msg("TABLE", "fnd_val %s: %s", fname, val);
   fn_fld f = { .key = fname };
@@ -182,25 +173,43 @@ klist_t(kl_tentry)* fnd_val(fn_tbl *t, String fname, String val)
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
-      return vv->recs;
+      if (vv->count > 0)
+        return vv->rlist;
     }
   }
   return NULL;
 }
 
-tentry* head(fn_tbl *t)
-{
-  return (t->records);
-}
-
-void tbl_listen(fn_tbl *t, fn_buf *buf, buf_cb cb)
+void tbl_listener(fn_tbl *t, listener *lis, String fname, String val)
 {
   log_msg("TABLE", "listen");
-  listener *lis = malloc(sizeof(listener));
-  lis->buf = buf;
-  lis->cb = cb;
-  lis->entry = t->records;
-  t->listeners = lis;
+  /* set listener to value's linked list of tentries. */
+  fn_fld f = { .key = fname };
+  fn_val v = { .key = val   };
+  fn_fld *ff = kb_get(FNFLD, t->fields, f);
+  if (ff) {
+    fn_val *vv = kb_get(FNVAL, ff->vtree, v);
+    if (vv) {
+      vv->listeners = lis;
+    }
+    else {
+      /* if null, create the stub. */
+      fn_val *v = malloc(sizeof(fn_val));
+      ventry *ent = malloc(sizeof(ventry));
+      v->key = val;
+      // TODO: ventry has to watch values. returns records
+      v->fld = ff;
+      v->count = 0;
+      ent->val = v;
+      ent->prev = ent;
+      ent->next = ent;
+      ent->head = 1;
+      v->rlist = ent;
+      v->listeners = lis;
+      lis->entry = ent;
+      kb_putp(FNVAL, ff->vtree, v);
+    }
+  }
 }
 
 void commit(Job *job, JobArg *arg)

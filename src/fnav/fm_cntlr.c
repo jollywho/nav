@@ -41,8 +41,9 @@ Cmd default_lst[] = {
 };
 
 String init_dir ="/home/chi/casper/YFS/ALL";
-static void fm_down();
 static void fm_up();
+static void fm_down();
+static void fm_right();
 static void fm_bottom();
 static void cancel();
 static void fm_update();
@@ -54,6 +55,7 @@ static const struct fm_cmd {
   short cmd_arg;                /* value for ca.arg */
 } fm_cmds[] =
 {
+  {'l',     fm_right,        0,                        0},
   {'j',     fm_down,        0,                        0},
   {'k',     fm_up,          0,                 BACKWARD},
   {'u',     fm_update,      0,                 BACKWARD},
@@ -93,6 +95,16 @@ static void fm_up(Cntlr *cntlr)
   buf_mv(self->base.hndl->buf, 0, -1);
   log_msg("FM", "set cur: %s", self->cur_dir);
   log_msg("FM", "waiting on job...");
+}
+
+static void fm_right(Cntlr *cntlr)
+{
+  log_msg("FM", "cmd left");
+  FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  self->cur_dir = buf_val(cntlr->hndl->buf, "dir");
+  cntlr->hndl->fval = self->cur_dir;
+  buf_set(cntlr->hndl, "name");
+  fs_open(&self->fs, self->cur_dir);
 }
 
 static void fm_down(Cntlr *cntlr)
@@ -234,12 +246,14 @@ FM_cntlr* fm_cntlr_init()
 
   c->base.hndl = malloc(sizeof(fn_handle));
   fn_tbl *t = tbl_mk();
-  tbl_mk_fld(t, "parent", typSTRING);
+  tbl_mk_fld(t, "dir", typSTRING);
   tbl_mk_fld(t, "name", typSTRING);
   tbl_mk_fld(t, "stat", typVOID);
   c->base.hndl->tbl = t;
-  c->base.hndl->buf = buf_init(t);
-  buf_set(c->base.hndl->buf, c->base.hndl);
+  c->base.hndl->buf = buf_init();
+  c->base.hndl->fname = "dir";
+  c->base.hndl->fval = c->cur_dir;
+  buf_set(c->base.hndl, "name");
 
   c->fs = fs_init(&c->base, c->base.hndl, fm_read_scan);
   fs_open(&c->fs, c->cur_dir);

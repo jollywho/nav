@@ -6,6 +6,7 @@
 #include <ncurses.h>
 
 #include "fnav/rpc.h"
+#include "fnav/buffer.h"
 #include "fnav/fs.h"
 #include "fnav/event.h"
 #include "fnav/table.h"
@@ -24,19 +25,19 @@ char* conspath(const char *restrict str1, const char *restrict str2)
 void scan_cb(uv_fs_t* req)
 {
   log_msg("FS", "--scan--");
-  log_msg("FS", "%s", req->path);
+  log_msg("FS", "path: %s", req->path);
   uv_dirent_t dent;
   FS_req *fq = req->data;
 
   /* clear outdated records */
   Cntlr *c = fq->fs_h->job.caller;
   fn_tbl *t = c->hndl->tbl;
-  tbl_del_val(t, "parent", (String)req->path);
+  tbl_del_val(t, "dir", (String)req->path);
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
     JobArg *arg = malloc(sizeof(JobArg));
     fn_rec *r = mk_rec(t);
-    rec_edit(r, "parent", (void*)req->path);
+    rec_edit(r, "dir", (void*)req->path);
     rec_edit(r, "name", (void*)dent.name);
     rec_edit(r, "stat", (void*)&fq->uv_stat);
     arg->rec = r;
@@ -53,18 +54,18 @@ void stat_cb(uv_fs_t* req)
   fq->uv_stat = req->statbuf;
   Cntlr *c = fq->fs_h->job.caller;
   fn_tbl *t = c->hndl->tbl;
-  klist_t(kl_tentry) *rec = fnd_val(t, "parent", fq->req_name);
+  ventry *ent = fnd_val(t, "dir", fq->req_name);
+  //
+  // TODO: fnd_val should receive tentry array not klist
 
-  // TODO: make klist details internal to table
-  if (rec) {
-    uv_stat_t *st = (uv_stat_t*)rec_fld(rec->head->data->rec, "stat");
+  if (ent) {
+    uv_stat_t *st = (uv_stat_t*)rec_fld(ent->rec, "stat");
     struct timeval t;
     timersub((struct timeval*)&fq->uv_stat.st_mtim, (struct timeval*)&st->st_mtim, &t);
-    // TODO: test~~
-    //if (t.tv_usec == 0) {
-    //  log_msg("FS", "NOP");
-    //  return;
-    //}
+    if (t.tv_usec == 0) {
+      log_msg("FS", "NOP");
+      return;
+    }
   }
   if (S_ISDIR(fq->uv_stat.st_mode))
     uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);

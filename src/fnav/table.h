@@ -19,6 +19,7 @@ typedef struct fn_val fn_val;
 typedef struct fn_fld fn_fld;
 typedef struct fn_rec fn_rec;
 typedef struct tentry tentry;
+typedef struct ventry ventry;
 typedef struct listener listener;
 
 #define _NOP(x)
@@ -29,9 +30,10 @@ KLIST_INIT(kl_listen, listener*, _NOP)
 struct fn_val {
   String key;
   void *dat;
-  klist_t(kl_tentry) *recs;
+  ventry *rlist;
   fn_fld *fld;
   int count;
+  listener *listeners;
 };
 
 struct fn_rec {
@@ -40,16 +42,19 @@ struct fn_rec {
   int fld_count;
 };
 
-struct tentry {
-  tentry *prev;
-  tentry *next;
+struct ventry {
+  ventry *prev;
+  ventry *next;
   fn_rec *rec;
+  fn_val *val;
+  unsigned int head;
 };
 
+// TODO: change klist recs to linked list of tentry ptrs.
 struct listener {
   fn_buf *buf;
   buf_cb cb;
-  tentry *entry;
+  ventry *entry;
 };
 
 typedef struct {
@@ -62,8 +67,8 @@ fn_rec* mk_rec(fn_tbl *t);
 void rec_edit(fn_rec *rec, String fname, void *val);
 void tbl_mk_fld(fn_tbl *t, String name, tFldType type);
 void tbl_del_val(fn_tbl *t, String fname, String val);
-void tbl_listen(fn_tbl *t, fn_buf *buf, buf_cb cb);
-klist_t(kl_tentry)* fnd_val(fn_tbl *t, String fname, String val);
+void tbl_listener(fn_tbl *t, listener *lis, String fname, String val);
+ventry* fnd_val(fn_tbl *t, String fname, String val);
 void commit(Job *job, JobArg *arg);
 
 int tbl_count(fn_tbl *t);
@@ -75,9 +80,7 @@ void* rec_fld(fn_rec *rec, String fname);
         (it) != kl_end  ( (lst) );   \
         (it) =  kl_next ( (it)  ))   \
 
-tentry* head(fn_tbl *t);
-
-#define FN_MV(t,e,d)                         \
-  (e) = (e->d != head(t)->prev) ? (e->d) : (e);    \
+#define FN_MV(e,d)                         \
+  (e) = (e->d->head) ? (e) : (e->d);     \
 
 #endif
