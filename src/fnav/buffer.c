@@ -82,26 +82,25 @@ void buf_listen(listener *listener)
 
 void buf_draw(Job *job, JobArg *arg)
 {
-  log_msg("BUFFER", "$_draw_$");
   fn_buf *buf = job->caller;
 #ifndef NCURSES_ENABLED
-  String n = (String)rec_fld(buf->focus.ent->rec, buf->fname);
-  log_msg("BUFFER", " %s", n);
+  pos_T p = {.lnum = 0, .col = 0};
+  ventry *it = buf->focus.ent;
+  for(int i = 0; i < 50; i++) {
+    String n = (String)rec_fld(it->rec, buf->fname);
+    log_msg("BUFFER", "%s", n);
+    it = it->next;
+    if (!it->rec) break;
+    INC_POS(p,0,1);
+  }
   buf->inval = false;
-  return;
-#endif
+#else
 
   wclear(buf->nc_win);
   pos_T p = {.lnum = 0, .col = 0};
   ventry *it = buf->focus.ent;
   for(int i = 0; i < buf->nc_size.lnum; i++) {
     String n = (String)rec_fld(it->rec, buf->fname);
-    uv_stat_t *st = (uv_stat_t*)rec_fld(it->rec, "stat");
-    if (S_ISDIR(st->st_mode)) {
-      // TODO: color attron
-    }
-    else {
-    }
     DRAW_AT(buf->nc_win, p, n);
     it = it->next;
     if (!it->rec) break;
@@ -110,6 +109,7 @@ void buf_draw(Job *job, JobArg *arg)
   buf->inval = false;
   wrefresh(buf->nc_win);
   refresh();
+#endif
 }
 
 String buf_val(fn_buf *buf, String fname)

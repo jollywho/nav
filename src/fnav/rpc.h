@@ -6,16 +6,6 @@
 #include "fnav/lib/queue.h"
 #include "fnav/cntlr.h"
 
-//  +----<-----+---->-----+----<-----+
-//  |  Event   |          |   Spin   |
-//  v          ^   RPC    v          ^
-//  |  Loop    |          |   Loop   |
-//  +---->-----+----<-----+---->-----+
-//
-//  +----------+----------+----------+
-//  | Channels |  Input   |   Jobs   |
-//  +----------+----------+----------+
-
 typedef uv_loop_t Loop;
 typedef void(*cntlr_cb)();
 typedef void(*buf_cb)();

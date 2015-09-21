@@ -76,9 +76,6 @@ void stat_cb(uv_fs_t* req)
 
 void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)
 {
-#ifdef NCURSES_ENABLED
-  printw("watch proc\n");
-#endif
   log_msg("FM", "--watch--");
   if (events & UV_RENAME)
     log_msg("FM", "=%s= renamed", filename);

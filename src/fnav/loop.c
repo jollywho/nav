@@ -25,15 +25,21 @@ struct job_item {
 
 Loop *spin_loop;
 uv_timer_t spin_timer;
+uv_timer_t rotate_timer;
+static void process_mainloop();
 static void process_loop();
 static void loop_timeout();
+bool running;
 
 void queue_init()
 {
   spin_loop = uv_default_loop();
   uv_timer_init(spin_loop, &spin_timer);
+  uv_timer_init(spin_loop, &rotate_timer);
+  QUEUE_INIT(&qhead_main.headtail);
   QUEUE_INIT(&qhead_work.headtail);
   QUEUE_INIT(&qhead_draw.headtail);
+  running = false;
 }
 
 void queue_push(Queue *queue, Job *job, JobArg *arg)
@@ -45,9 +51,14 @@ void queue_push(Queue *queue, Job *job, JobArg *arg)
   ji->arg = arg;
   i->data.queue = queue;
   i->data.item.jitem = ji;
+  QueueItem *im = malloc(sizeof(QueueItem));
+  im->data.queue = queue;
   QUEUE_INIT(&i->node);
+  QUEUE_INIT(&im->node);
   QUEUE_INSERT_TAIL(&queue->headtail, &i->node);
-  QUEUE_EMPTY(&queue->headtail) ? NULL : process_loop(queue);
+  QUEUE_INSERT_TAIL(&qhead_main.headtail, &im->node);
+  if (!running)
+    process_mainloop(&qhead_main);
 }
 
 static QueueItem *queue_node_data(QUEUE *q)
@@ -55,14 +66,18 @@ static QueueItem *queue_node_data(QUEUE *q)
   return QUEUE_DATA(q, QueueItem, node);
 }
 
-static JobItem* queue_pop(Queue *queue)
+static QueueItem* queue_pop(Queue *queue)
 {
   QUEUE *h = QUEUE_HEAD(&queue->headtail);
   QueueItem *i = queue_node_data(h);
-  JobItem *ji = i->data.item.jitem;
   QUEUE_REMOVE(&i->node);
-  free(i);
-  return ji;
+  return i;
+}
+
+void queue_timeout(uv_timer_t *req)
+{
+  uv_timer_stop(&rotate_timer);
+  process_mainloop(&qhead_main);
 }
 
 void loop_timeout(uv_timer_t *req)
@@ -72,12 +87,29 @@ void loop_timeout(uv_timer_t *req)
   cycle_events();
 }
 
-static void process_loop(Queue *queue)
+static void process_mainloop(Queue *queue)
 {
+  running = true;
+  log_msg("LOOP", "<MAIN>");
+  uv_timer_start(&rotate_timer, queue_timeout, 30, 0);
   uv_timer_start(&spin_timer, loop_timeout, 10, 0);
   while (!QUEUE_EMPTY(&queue->headtail)) {
-    JobItem *j = queue_pop(queue);
+    QueueItem *i = queue_pop(queue);
+    Queue *q = i->data.queue;
+    free(i);
+    process_loop(q);
+  }
+  running = false;
+}
+
+static void process_loop(Queue *queue)
+{
+  log_msg("LOOP", "<subloop>");
+  while (!QUEUE_EMPTY(&queue->headtail)) {
+    QueueItem *i = queue_pop(queue);
+    JobItem *j = i->data.item.jitem;
+    free(i);
     j->arg->fn(j->job, j->arg);
-    uv_run(spin_loop, UV_RUN_NOWAIT); // TODO: is this needed?
+    uv_run(spin_loop, UV_RUN_NOWAIT);
   }
 }
