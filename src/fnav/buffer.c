@@ -92,14 +92,18 @@ void buf_draw(Job *job, JobArg *arg)
 #endif
 
   wclear(buf->nc_win);
-  refresh();
   pos_T p = {.lnum = 0, .col = 0};
   ventry *it = buf->focus.ent;
   for(int i = 0; i < buf->nc_size.lnum; i++) {
     String n = (String)rec_fld(it->rec, buf->fname);
+    uv_stat_t *st = (uv_stat_t*)rec_fld(it->rec, "stat");
+    if (S_ISDIR(st->st_mode)) {
+      // TODO: color attron
+    }
+    else {
+    }
     DRAW_AT(buf->nc_win, p, n);
     it = it->next;
-    if (!it) break;
     if (!it->rec) break;
     INC_POS(p,0,1);
   }
@@ -108,9 +112,9 @@ void buf_draw(Job *job, JobArg *arg)
   refresh();
 }
 
-String buf_val(fn_buf *buf, String name)
+String buf_val(fn_buf *buf, String fname)
 {
-  return rec_fld(buf->focus.ent->rec, name);
+  return rec_fld(buf->focus.ent->rec, fname);
 }
 
 void buf_mv(fn_buf *buf, int x, int y)

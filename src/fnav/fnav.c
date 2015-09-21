@@ -17,6 +17,8 @@ void init(void)
 #ifdef NCURSES_ENABLED
   setlocale(LC_CTYPE, "");
   initscr();
+  start_color();
+  use_default_colors();
 #endif
   event_init();
   queue_init();

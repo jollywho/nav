@@ -66,6 +66,7 @@ void rec_edit(fn_rec *rec, String fname, void *val)
   FN_KL_ITERBLK(kl_val, rec->vals) {
     if (strcmp(it->data->fld->key, fname) == 0) {
       if (it->data->fld->type == typSTRING) {
+  log_msg("FS", "--doed %s|%s--", fname, val);
         it->data->key = strdup(val);
       }
       else {
@@ -76,24 +77,20 @@ void rec_edit(fn_rec *rec, String fname, void *val)
   }
 }
 
-void alert_listeners(klist_t(kl_listen) *lst)
-{
-  FN_KL_ITERBLK(kl_listen, lst) {
-    it->data->cb(it->data->buf);
-  }
-}
-
 void tbl_insert(fn_tbl *t, fn_rec *rec)
 {
+  log_msg("TABLE", "$rec$");
   t->rec_count++;
 
   FN_KL_ITERBLK(kl_val, rec->vals) {
+    log_msg("TABLE", "$fld$");
     fn_val *fv = it->data;
     if (fv->fld->type == typVOID) continue;
 
     fn_val *v = kb_getp(FNVAL, fv->fld->vtree, fv);
     /* new value so create new tree node and rec list */
     if (!v) {
+    log_msg("TABLE", "new val %s", fv->key);
       fv->count = 1;
       ventry *ent = malloc(sizeof(ventry));
       ent->rec = rec;
@@ -106,10 +103,11 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
     }
     /* value already exists */
     else {
+    log_msg("TABLE", "old val %s", v->key);
       v->count++;
       ventry *ent = malloc(sizeof(ventry));
       ent->rec = rec;
-      ent->val = fv;
+      ent->val = v;
       ent->prev = v->rlist->prev;
       ent->next = v->rlist;
       ent->head = 0;
@@ -118,13 +116,15 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
       }
       v->rlist->prev->next = ent;
       v->rlist->prev = ent;
-      v->listeners->cb(v->listeners);
+      if (v->listeners)
+        v->listeners->cb(v->listeners);
     }
   }
 }
 
 void tbl_del_val(fn_tbl *t, String fname, String val)
 {
+  log_msg("TABLE", "delete %s,%s",fname, val);
   fn_fld f = { .key = fname };
   fn_val v = { .key = val   };
   fn_fld *ff = kb_get(FNFLD, t->fields, f);
@@ -174,7 +174,7 @@ ventry* fnd_val(fn_tbl *t, String fname, String val)
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
       if (vv->count > 0)
-        return vv->rlist;
+        return vv->rlist->next;
     }
   }
   return NULL;
@@ -190,16 +190,19 @@ void tbl_listener(fn_tbl *t, listener *lis, String fname, String val)
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
+      log_msg("TABLE", "val exists %s", val);
       vv->listeners = lis;
+      lis->entry = vv->rlist->next;
+      lis->cb(lis);
     }
     else {
       /* if null, create the stub. */
       fn_val *v = malloc(sizeof(fn_val));
       ventry *ent = malloc(sizeof(ventry));
       v->key = val;
-      // TODO: ventry has to watch values. returns records
       v->fld = ff;
       v->count = 0;
+      ent->rec = NULL;
       ent->val = v;
       ent->prev = ent;
       ent->next = ent;

@@ -2,6 +2,7 @@
 #include <malloc.h>
 #include <stdio.h>
 #include <sys/time.h>
+#include <libgen.h>
 
 #include <ncurses.h>
 
@@ -12,14 +13,11 @@
 #include "fnav/table.h"
 #include "fnav/log.h"
 
-char* conspath(const char *restrict str1, const char *restrict str2)
+char* conspath(const char* str1, const char* str2)
 {
-  size_t l = strlen(str1);
-  char *dest = malloc(l + strlen(str2) + 2);
-  strcpy(dest, str1);
-  strcpy(dest, "/");
-  strcpy(dest, str2);
-  return dest;
+  char* result;
+  asprintf(&result, "%s/%s", str1, str2);
+  return result;
 }
 
 void scan_cb(uv_fs_t* req)
@@ -39,7 +37,14 @@ void scan_cb(uv_fs_t* req)
     fn_rec *r = mk_rec(t);
     rec_edit(r, "dir", (void*)req->path);
     rec_edit(r, "name", (void*)dent.name);
+    String fullpath = conspath(req->path, dent.name);
+    String temp = strdup(req->path);
+    temp = dirname(temp);
+    rec_edit(r, "fullpath", (void*)fullpath);
+    rec_edit(r, "parent", (void*)temp);
     rec_edit(r, "stat", (void*)&fq->uv_stat);
+    free(fullpath);
+    free(temp);
     arg->rec = r;
     arg->fn = commit;
     QUEUE_PUT(work, &fq->fs_h->job, arg);
@@ -55,17 +60,15 @@ void stat_cb(uv_fs_t* req)
   Cntlr *c = fq->fs_h->job.caller;
   fn_tbl *t = c->hndl->tbl;
   ventry *ent = fnd_val(t, "dir", fq->req_name);
-  //
-  // TODO: fnd_val should receive tentry array not klist
 
   if (ent) {
     uv_stat_t *st = (uv_stat_t*)rec_fld(ent->rec, "stat");
     struct timeval t;
     timersub((struct timeval*)&fq->uv_stat.st_mtim, (struct timeval*)&st->st_mtim, &t);
-    if (t.tv_usec == 0) {
-      log_msg("FS", "NOP");
+    //if (t.tv_usec == 0) {
+      log_msg("FS", "NOP"); // TODO: check working state
       return;
-    }
+    //}
   }
   if (S_ISDIR(fq->uv_stat.st_mode))
     uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);
