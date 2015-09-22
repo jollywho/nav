@@ -16,11 +16,6 @@ void log_set(const char* obj)
 
 void log_msg(const char* obj, const char* fmt, ...)
 {
-#ifdef NCURSES_ENABLED
-    return;
-#endif
-  if (listen_obj && strcmp(listen_obj, obj) != 0)
-    return;
   fprintf(stderr, "[" _C "%s" _R "] ", obj);
   va_list args;
   va_start(args, fmt);

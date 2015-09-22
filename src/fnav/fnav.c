@@ -19,6 +19,8 @@ void init(void)
   initscr();
   start_color();
   use_default_colors();
+  init_pair(1, 5, -1);
+  init_pair(2, 6, -1);
 #endif
   event_init();
   queue_init();

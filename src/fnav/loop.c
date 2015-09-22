@@ -100,6 +100,8 @@ static void process_mainloop(Queue *queue)
     process_loop(q);
   }
   running = false;
+  uv_timer_stop(&rotate_timer);
+  log_msg("LOOP", "<OFF>");
 }
 
 static void process_loop(Queue *queue)
@@ -112,4 +114,5 @@ static void process_loop(Queue *queue)
     j->arg->fn(j->job, j->arg);
     uv_run(spin_loop, UV_RUN_NOWAIT);
   }
+  log_msg("LOOP", "<subend>");
 }

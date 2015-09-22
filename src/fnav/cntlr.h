@@ -13,6 +13,7 @@ typedef struct Cntlr Cntlr;
 typedef struct fn_tbl fn_tbl;
 typedef struct fn_buf fn_buf;
 typedef struct fn_handle fn_handle;
+typedef struct b_focus b_focus;
 
 struct fn_handle {
   fn_handle *prev;
@@ -21,7 +22,7 @@ struct fn_handle {
   fn_buf *buf;
   String fname;
   String fval;
-/*filter *fltr*/
+  b_focus *focus;
 };
 
 struct Cntlr {
