@@ -9,6 +9,7 @@
 typedef uv_loop_t Loop;
 typedef void(*cntlr_cb)();
 typedef void(*buf_cb)();
+typedef struct fn_rec fn_rec;
 
 typedef struct {
   void *caller;
@@ -17,6 +18,11 @@ typedef struct {
   buf_cb   updt_cb;
   buf_cb   draw_cb;
 } Job;
+
+typedef struct {
+  fn_rec *rec;
+  void(*fn)();
+} JobArg;
 
 void rpc_temp_init();
 void rpc_handle(String cmdstr);

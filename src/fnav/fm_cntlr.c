@@ -71,7 +71,7 @@ void cancel(Cntlr *cntlr)
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   self->op_count = 1;
   self->mo_count = 1;
-  self->fs.cancel = true;
+  self->fs->cancel = true;
 }
 
 void fm_read_scan()
@@ -103,20 +103,20 @@ static void fm_left(Cntlr *cntlr)
 {
   log_msg("FM", "cmd left");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  self->cur_dir = buf_val(cntlr->hndl->buf, "parent");
+  self->cur_dir = buf_val(cntlr->hndl, "parent");
   cntlr->hndl->fval = self->cur_dir;
   buf_set(cntlr->hndl, "name");
-  fs_open(&self->fs, self->cur_dir);
+  fs_open(self->fs, self->cur_dir);
 }
 
 static void fm_right(Cntlr *cntlr)
 {
   log_msg("FM", "cmd right");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  self->cur_dir = buf_val(cntlr->hndl->buf, "fullpath");
+  self->cur_dir = buf_val(cntlr->hndl, "fullpath");
   cntlr->hndl->fval = self->cur_dir;
   buf_set(cntlr->hndl, "name");
-  fs_open(&self->fs, self->cur_dir);
+  fs_open(self->fs, self->cur_dir);
 }
 
 static void fm_down(Cntlr *cntlr)
@@ -264,13 +264,13 @@ FM_cntlr* fm_cntlr_init()
   tbl_mk_fld(t, "parent", typSTRING);
   tbl_mk_fld(t, "stat", typVOID);
   c->base.hndl->tbl = t;
-  c->base.hndl->buf = buf_init();
+  c->base.hndl->buf = buf_init(c->base.hndl);
   c->base.hndl->fname = "dir";
   c->base.hndl->fval = c->cur_dir;
   buf_set(c->base.hndl, "name");
 
   c->fs = fs_init(&c->base, c->base.hndl, fm_read_scan);
-  fs_open(&c->fs, c->cur_dir);
+  fs_open(c->fs, c->cur_dir);
   return c;
 }
 

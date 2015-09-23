@@ -24,7 +24,7 @@ typedef struct {
   String req_name;
 } FS_req ;
 
-FS_handle fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb);
+FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb);
 void fs_open(FS_handle *h, String dir);
 
 #endif

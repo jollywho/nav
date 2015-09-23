@@ -38,8 +38,8 @@ void send_rec(uv_fs_t* req, const char* fname)
 
   JobArg *arg = malloc(sizeof(JobArg));
   fn_rec *r = mk_rec(t);
-  rec_edit(r, "dir", (void*)req->path);
   rec_edit(r, "name", (void*)fname);
+  rec_edit(r, "dir", (void*)req->path);
   rec_edit(r, "fullpath", (void*)fullpath);
   rec_edit(r, "parent", (void*)temp);
   rec_edit(r, "stat", (void*)i);
@@ -108,9 +108,9 @@ void fs_open(FS_handle *fsh, String dir)
   ventry *ent = fnd_val(t, "dir", fq->req_name);
 
   if (ent) {
-    uv_stat_t *st = (uv_stat_t*)rec_fld(ent->rec, "stat");
-    struct timeval t;
-    timersub((struct timeval*)&fq->uv_stat.st_mtim, (struct timeval*)&st->st_mtim, &t);
+//    uv_stat_t *st = (uv_stat_t*)rec_fld(ent->rec, "stat");
+//    struct timeval t;
+//    timersub((struct timeval*)&fq->uv_stat.st_mtim, (struct timeval*)&st->st_mtim, &t);
     return;
   }
 
@@ -120,14 +120,13 @@ void fs_open(FS_handle *fsh, String dir)
   uv_fs_event_start(&fq->fs_h->watcher, watch_cb, dir, 0);
 }
 
-FS_handle fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb)
+FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb)
 {
   log_msg("FS", "open req");
-  FS_handle fsh = {
-    .loop = eventloop(),
-    .job.caller = c,
-    .job.hndl = h,
-    .job.read_cb = read_cb,
-  };
+  FS_handle *fsh = malloc(sizeof(FS_handle));
+  fsh->loop = eventloop();
+  fsh->job.caller = c;
+  fsh->job.hndl = h;
+  fsh->job.read_cb = read_cb;
   return fsh;
 }

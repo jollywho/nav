@@ -12,7 +12,7 @@ struct FM_cntlr {
   int op_count;
   int mo_count;
   String cur_dir;
-  FS_handle fs;
+  FS_handle *fs;
 };
 
 FM_cntlr* fm_cntlr_init();

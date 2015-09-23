@@ -14,6 +14,7 @@ typedef struct fn_tbl fn_tbl;
 typedef struct fn_buf fn_buf;
 typedef struct fn_handle fn_handle;
 typedef struct b_focus b_focus;
+typedef struct listener listener;
 
 struct fn_handle {
   fn_handle *prev;
@@ -23,6 +24,7 @@ struct fn_handle {
   String fname;
   String fval;
   b_focus *focus;
+  listener *listener;
 };
 
 struct Cntlr {

@@ -33,6 +33,7 @@ bool running;
 
 void queue_init()
 {
+  log_msg("INIT", "queue");
   spin_loop = uv_default_loop();
   uv_timer_init(spin_loop, &spin_timer);
   uv_timer_init(spin_loop, &rotate_timer);
@@ -91,7 +92,7 @@ static void process_mainloop(Queue *queue)
 {
   running = true;
   log_msg("LOOP", "<MAIN>");
-  uv_timer_start(&rotate_timer, queue_timeout, 30, 0);
+  uv_timer_start(&rotate_timer, queue_timeout, 20, 0);
   uv_timer_start(&spin_timer, loop_timeout, 10, 0);
   while (!QUEUE_EMPTY(&queue->headtail)) {
     QueueItem *i = queue_pop(queue);
@@ -112,6 +113,7 @@ static void process_loop(Queue *queue)
     JobItem *j = i->data.item.jitem;
     free(i);
     j->arg->fn(j->job, j->arg);
+    free(j);
     uv_run(spin_loop, UV_RUN_NOWAIT);
   }
   log_msg("LOOP", "<subend>");

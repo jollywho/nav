@@ -13,9 +13,10 @@
 void init(void)
 {
 //  log_set("BUFFER");
-  printf("init\n");
+  log_msg("INIT", "__INIT__");
 #ifdef NCURSES_ENABLED
   setlocale(LC_CTYPE, "");
+  log_msg("INIT", "initscr");
   initscr();
   start_color();
   use_default_colors();

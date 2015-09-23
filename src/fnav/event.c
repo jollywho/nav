@@ -19,7 +19,7 @@ void event_input(uv_poll_t *req, int status, int events);
 
 int event_init(void)
 {
-  printf("event init\n");
+  log_msg("INIT", "event");
   event_loop = uv_default_loop();
   uv_timer_init(event_loop, &fast_timer);
 
