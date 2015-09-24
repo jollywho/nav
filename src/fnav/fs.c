@@ -29,12 +29,7 @@ void send_rec(uv_fs_t* req, const char* fname)
   String temp = strdup(req->path);
   temp = dirname(temp);
   struct stat *s = malloc(sizeof(struct stat));
-  int *i = malloc(sizeof(int));
   stat(fullpath, s);
-  if (S_ISDIR(s->st_mode))
-    *i = 1;
-  else
-    *i = 0;
 
   JobArg *arg = malloc(sizeof(JobArg));
   fn_rec *r = mk_rec(t);
@@ -42,7 +37,7 @@ void send_rec(uv_fs_t* req, const char* fname)
   rec_edit(r, "dir", (void*)req->path);
   rec_edit(r, "fullpath", (void*)fullpath);
   rec_edit(r, "parent", (void*)temp);
-  rec_edit(r, "stat", (void*)i);
+  rec_edit(r, "stat", (void*)s);
   free(fullpath);
   free(temp);
   arg->rec = r;
@@ -74,6 +69,15 @@ void stat_cb(uv_fs_t* req)
   FS_req *fq= req->data;
   fq->uv_stat = req->statbuf;
 
+  Cntlr *c = fq->fs_h->job.caller;
+  fn_tbl *t = c->hndl->tbl;
+  ventry *ent = fnd_val(t, "dir", fq->req_name);
+
+  if (ent) {
+    log_msg("FS", "NOP");
+    return;
+  }
+
   if (S_ISDIR(fq->uv_stat.st_mode))
     uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);
 }
@@ -103,16 +107,6 @@ void fs_open(FS_handle *fsh, String dir)
   fq->fs_h->watcher.data = fq;
   fq->close_cb = fs_close_cb;
 
-  Cntlr *c = fq->fs_h->job.caller;
-  fn_tbl *t = c->hndl->tbl;
-  ventry *ent = fnd_val(t, "dir", fq->req_name);
-
-  if (ent) {
-//    uv_stat_t *st = (uv_stat_t*)rec_fld(ent->rec, "stat");
-//    struct timeval t;
-//    timersub((struct timeval*)&fq->uv_stat.st_mtim, (struct timeval*)&st->st_mtim, &t);
-    return;
-  }
 
   uv_fs_stat(fq->fs_h->loop, &fq->uv_fs, dir, stat_cb);
   uv_fs_event_stop(&fq->fs_h->watcher);

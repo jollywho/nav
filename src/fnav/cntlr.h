@@ -13,7 +13,6 @@ typedef struct Cntlr Cntlr;
 typedef struct fn_tbl fn_tbl;
 typedef struct fn_buf fn_buf;
 typedef struct fn_handle fn_handle;
-typedef struct b_focus b_focus;
 typedef struct listener listener;
 
 struct fn_handle {
@@ -23,8 +22,7 @@ struct fn_handle {
   fn_buf *buf;
   String fname;
   String fval;
-  b_focus *focus;
-  listener *listener;
+  listener *lis;
 };
 
 struct Cntlr {

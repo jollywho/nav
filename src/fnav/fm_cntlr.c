@@ -94,7 +94,7 @@ static void fm_up(Cntlr *cntlr)
 {
   log_msg("FM", "cmd up");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  buf_mv(self->base.hndl->buf, 0, -1);
+  buf_mv(cntlr->hndl->buf, 0, -1);
   log_msg("FM", "set cur: %s", self->cur_dir);
   log_msg("FM", "waiting on job...");
 }
@@ -123,7 +123,7 @@ static void fm_down(Cntlr *cntlr)
 {
   log_msg("FM", "cmd down");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  buf_mv(self->base.hndl->buf, 0, 1);
+  buf_mv(cntlr->hndl->buf, 0, 1);
   log_msg("FM", "set cur: %s", self->cur_dir);
   log_msg("FM", "waiting on job...");
 }
@@ -132,7 +132,7 @@ static void fm_bottom(Cntlr *cntlr)
 {
   log_msg("FM", "cmd bottom");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  buf_mv(self->base.hndl->buf, 0, tbl_count(self->base.hndl->tbl));
+  buf_mv(cntlr->hndl->buf, 0, tbl_count(self->base.hndl->tbl));
   log_msg("FM", "waiting on job...");
 }
 
@@ -264,7 +264,7 @@ FM_cntlr* fm_cntlr_init()
   tbl_mk_fld(t, "parent", typSTRING);
   tbl_mk_fld(t, "stat", typVOID);
   c->base.hndl->tbl = t;
-  c->base.hndl->buf = buf_init(c->base.hndl);
+  c->base.hndl->buf = buf_init();
   c->base.hndl->fname = "dir";
   c->base.hndl->fval = c->cur_dir;
   buf_set(c->base.hndl, "name");

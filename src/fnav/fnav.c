@@ -13,7 +13,7 @@
 void init(void)
 {
 //  log_set("BUFFER");
-  log_msg("INIT", "__INIT__");
+  log_msg("INIT", "__________INIT______________");
 #ifdef NCURSES_ENABLED
   setlocale(LC_CTYPE, "");
   log_msg("INIT", "initscr");

@@ -2,7 +2,6 @@
 #define FN_CORE_TABLE_H
 
 #include "fnav/lib/kbtree.h"
-#include "fnav/lib/klist.h"
 #include "fnav/rpc.h"
 
 #define elem_cmp(a, b) (strcmp((a).key, (b).key))
@@ -48,7 +47,7 @@ struct ventry {
 struct listener {
   fn_handle *hndl;
   buf_cb cb;
-  ventry *entry;
+  ventry *ent;
 };
 
 fn_tbl* tbl_mk();
@@ -56,14 +55,13 @@ fn_rec* mk_rec(fn_tbl *t);
 void rec_edit(fn_rec *rec, String fname, void *val);
 void tbl_mk_fld(fn_tbl *t, String name, tFldType typ);
 void tbl_del_val(fn_tbl *t, String fname, String val);
-void tbl_listener(fn_tbl *t, listener *lis, String fname, String val);
+void tbl_listener(fn_handle *hndl, buf_cb cb);
 ventry* fnd_val(fn_tbl *t, String fname, String val);
 void commit(Job *job, JobArg *arg);
 
 int tbl_count(fn_tbl *t);
 void* rec_fld(fn_rec *rec, String fname);
 
-#define FN_MV(e,d)                         \
-  (e) = (e->d->head) ? (e) : (e->d);     \
+int FN_MV(ventry *e, int n);
 
 #endif

@@ -7,11 +7,6 @@
 #include "fnav/buffer.h"
 #include "fnav/loop.h"
 
-struct b_focus {
-  ventry *ent;
-  pos_T pos;
-};
-
 struct fn_buf {
   WINDOW *nc_win;
   pos_T b_size;
@@ -35,23 +30,17 @@ struct fn_buf {
 #define DRAW_AT(win,pos,str)   \
   mvwprintw(win, pos.lnum, pos.col, str);
 
-void buf_listen(listener *listener);
+void buf_listen(fn_handle *hndl);
 
-fn_buf* buf_init(fn_handle *hndl)
+fn_buf* buf_init()
 {
   printf("buf init\n");
   fn_buf *buf = malloc(sizeof(fn_buf));
-  hndl->focus = malloc(sizeof(b_focus));
-  SET_POS(hndl->focus->pos,0,0);
   SET_POS(buf->b_size,0,0);
   getmaxyx(stdscr, buf->nc_size.lnum, buf->nc_size.col);
   buf->nc_win = newwin(buf->nc_size.lnum, buf->nc_size.col, 0,0);
   buf->job = malloc(sizeof(Job));
   buf->arg = malloc(sizeof(JobArg));
-  hndl->listener = malloc(sizeof(listener));
-  hndl->listener->cb = buf_listen;
-  hndl->listener->hndl = hndl;
-  buf->job->hndl = hndl;
   buf->job->caller = buf;
   buf->arg->fn = buf_draw;
   return buf;
@@ -63,15 +52,14 @@ void buf_set(fn_handle *hndl, String fname)
   fn_buf *buf = hndl->buf;
   buf->fname = fname;
   buf->hndl = hndl;
-  tbl_listener(hndl->tbl, hndl->listener, hndl->fname, hndl->fval);
+  buf->job->hndl = hndl;
+  tbl_listener(hndl, buf_listen);
 }
 
-void buf_listen(listener *listener)
+void buf_listen(fn_handle *hndl)
 {
   log_msg("BUFFER", "listen cb");
-  fn_buf *buf = listener->hndl->buf;
-  listener->hndl->focus->ent = listener->entry;
-  QUEUE_PUT(draw, buf->job, buf->arg);
+  QUEUE_PUT(draw, hndl->buf->job, hndl->buf->arg);
 }
 
 void buf_draw(Job *job, JobArg *arg)
@@ -81,12 +69,18 @@ void buf_draw(Job *job, JobArg *arg)
 
   wclear(buf->nc_win);
   pos_T p = {.lnum = 0, .col = 0};
-  b_focus *focus = job->hndl->focus;
-  ventry *it = focus->ent;
+  ventry *it = buf->hndl->lis->ent;
+  int i;
+  for(i = 0; i < buf->nc_size.lnum-1; i++) {
+    if (it->prev->head) break;
+    it = it->prev;
+    if (!it->rec) break;
+  }
+  int pos = i;
   for(int i = 0; i < buf->nc_size.lnum; i++) {
     String n = (String)rec_fld(it->rec, buf->fname);
-    int *st = (int*)rec_fld(it->rec, "stat");
-    if (*st) {
+    struct stat *st = (struct stat*)rec_fld(it->rec, "stat");
+    if (S_ISDIR(st->st_mode)) {
       wattron(buf->nc_win, COLOR_PAIR(1));
       DRAW_AT(buf->nc_win, p, n);
       wattroff(buf->nc_win, COLOR_PAIR(1));
@@ -96,28 +90,28 @@ void buf_draw(Job *job, JobArg *arg)
       DRAW_AT(buf->nc_win, p, n);
       wattroff(buf->nc_win, COLOR_PAIR(2));
     }
-    wmove(buf->nc_win, focus->pos.lnum, focus->pos.col);
     it = it->next;
     if (!it->rec) break;
     INC_POS(p,0,1);
   }
+  wmove(buf->nc_win, pos, 0);
   wrefresh(buf->nc_win);
-  log_msg("TABLE", "_druh");
 }
 
 String buf_val(fn_handle *hndl, String fname)
 {
-  return rec_fld(hndl->focus->ent->rec, fname);
+  return rec_fld(hndl->lis->ent->rec, fname);
 }
 
 void buf_mv(fn_buf *buf, int x, int y)
 {
-  b_focus *focus = buf->hndl->focus;
-  for (int i = 0; i < y; i++) {
-    FN_MV(focus->ent, next);
+  ventry *ent = buf->hndl->lis->ent;
+  int d = FN_MV(ent, y);
+  if (d == 1) {
+    buf->hndl->lis->ent = ent->next;
   }
-  for (int i = 0; i > y; i--) {
-    FN_MV(focus->ent, prev);
+  if (d == -1) {
+    buf->hndl->lis->ent = ent->prev;
   }
   QUEUE_PUT(draw, buf->job, buf->arg);
 }

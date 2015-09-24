@@ -42,9 +42,15 @@ void tbl_mk_fld(fn_tbl *t, String name, tFldType typ)
   kb_putp(FNFLD, t->fields, fld);
 }
 
+int FN_MV(ventry *e, int n)
+{
+  return ((n > 0) ?
+    (e->next->head ? 0 : (1)) :
+    (e->prev->head ? 0 : (-1)));
+}
+
 void* rec_fld(fn_rec *rec, String fname)
 {
-  log_msg("TABLE", "recfld");
   if (!rec) return NULL;
   for(int i=0;i<rec->fld_count;i++) {
     if (strcmp(rec->vals[i]->fld->key, fname) == 0) {
@@ -113,11 +119,11 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
       ent->head = 0;
       v->rlist->prev->next = ent;
       v->rlist->prev = ent;
-      if (v->count == 1) {
-        v->listeners->entry = ent;
-      }
       if (v->listeners) {
-        v->listeners->cb(v->listeners);
+        if (v->count == 1) {
+          v->listeners->ent = ent;
+        }
+        v->listeners->cb(v->listeners->hndl);
       }
     }
   }
@@ -183,27 +189,25 @@ ventry* fnd_val(fn_tbl *t, String fname, String val)
   return NULL;
 }
 
-void tbl_listener(fn_tbl *t, listener *lis, String fname, String val)
+void tbl_listener(fn_handle *hndl, buf_cb cb)
 {
-  log_msg("TABLE", "listen to %s %s", fname, val);
-  /* set listener to value's linked list of tentries. */
-  fn_fld f = { .key = fname };
-  fn_val v = { .key = val   };
-  fn_fld *ff = kb_get(FNFLD, t->fields, f);
+  /* create listener for fn_val entry list */
+  fn_fld f = { .key = hndl->fname };
+  fn_val v = { .key = hndl->fval   };
+  fn_fld *ff = kb_get(FNFLD, hndl->tbl->fields, f);
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
-      log_msg("TABLE", "val exists %s", val);
-      vv->listeners = lis;
-      lis->entry = vv->rlist->next;
-      lis->cb(lis);
+      log_msg("TABLE", "val exists %s", hndl->fval);
+      hndl->lis = vv->listeners;
+      vv->listeners->cb(vv->listeners->hndl);
     }
     else {
       /* if null, create the stub. */
       log_msg("TABLE", "null create");
       fn_val *vo = malloc(sizeof(fn_val));
       ventry *ent = malloc(sizeof(ventry));
-      vo->key = val;
+      vo->key = hndl->fval;
       vo->fld = ff;
       vo->count = 0;
       ent->rec = NULL;
@@ -212,8 +216,13 @@ void tbl_listener(fn_tbl *t, listener *lis, String fname, String val)
       ent->next = ent;
       ent->head = 1;
       vo->rlist = ent;
-      vo->listeners = lis;
-      lis->entry = ent;
+
+      /* create new listener */
+      vo->listeners = malloc(sizeof(listener));
+      vo->listeners->cb = cb;
+      vo->listeners->ent = ent;
+      vo->listeners->hndl = hndl;
+      hndl->lis = vo->listeners;
       kb_putp(FNVAL, ff->vtree, vo);
     }
   }

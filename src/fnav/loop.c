@@ -58,8 +58,11 @@ void queue_push(Queue *queue, Job *job, JobArg *arg)
   QUEUE_INIT(&im->node);
   QUEUE_INSERT_TAIL(&queue->headtail, &i->node);
   QUEUE_INSERT_TAIL(&qhead_main.headtail, &im->node);
-  if (!running)
+  if (!running) {
     process_mainloop(&qhead_main);
+    uv_timer_stop(&rotate_timer);
+    log_msg("LOOP", "<OFF>");
+  }
 }
 
 static QueueItem *queue_node_data(QUEUE *q)
@@ -77,7 +80,7 @@ static QueueItem* queue_pop(Queue *queue)
 
 void queue_timeout(uv_timer_t *req)
 {
-  uv_timer_stop(&rotate_timer);
+  log_msg("LOOP", "+(queue rotate)+");
   process_mainloop(&qhead_main);
 }
 
@@ -90,9 +93,7 @@ void loop_timeout(uv_timer_t *req)
 
 static void process_mainloop(Queue *queue)
 {
-  running = true;
   log_msg("LOOP", "<MAIN>");
-  uv_timer_start(&rotate_timer, queue_timeout, 20, 0);
   uv_timer_start(&spin_timer, loop_timeout, 10, 0);
   while (!QUEUE_EMPTY(&queue->headtail)) {
     QueueItem *i = queue_pop(queue);
@@ -100,14 +101,12 @@ static void process_mainloop(Queue *queue)
     free(i);
     process_loop(q);
   }
-  running = false;
-  uv_timer_stop(&rotate_timer);
-  log_msg("LOOP", "<OFF>");
 }
 
 static void process_loop(Queue *queue)
 {
   log_msg("LOOP", "<subloop>");
+  uv_timer_start(&rotate_timer, queue_timeout, 20, 0);
   while (!QUEUE_EMPTY(&queue->headtail)) {
     QueueItem *i = queue_pop(queue);
     JobItem *j = i->data.item.jitem;
