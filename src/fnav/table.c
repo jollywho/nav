@@ -123,7 +123,8 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
         if (v->count == 1) {
           v->listeners->ent = ent;
         }
-        v->listeners->cb(v->listeners->hndl);
+          log_msg("TABLE", "lis call %s", v->key);
+        v->listeners->cb(v->listeners->hndl, v->key);
       }
     }
   }
@@ -155,7 +156,6 @@ void tbl_del_val(fn_tbl *t, String fname, String val)
 
 void initflds(fn_fld *f, fn_rec *rec)
 {
-  log_msg("TABLE", "initfld %s", f->key);
   fn_val *v = malloc(sizeof(fn_val));
   v->fld = f;
   v->listeners = NULL;
@@ -166,7 +166,6 @@ void initflds(fn_fld *f, fn_rec *rec)
 fn_rec* mk_rec(fn_tbl *t)
 {
   fn_rec *rec = malloc(sizeof(fn_rec));
-  log_msg("TABLE", "malloc rec amt %d", t->count);
   rec->vals = malloc(sizeof(fn_val)*t->count);
   rec->fld_count = 0;
   __kb_traverse(fn_fld, t->fields, initflds, rec);
@@ -197,34 +196,35 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
   fn_fld *ff = kb_get(FNFLD, hndl->tbl->fields, f);
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
-    if (vv) {
-      log_msg("TABLE", "val exists %s", hndl->fval);
-      hndl->lis = vv->listeners;
-      vv->listeners->cb(vv->listeners->hndl);
-    }
-    else {
-      /* if null, create the stub. */
-      log_msg("TABLE", "null create");
-      fn_val *vo = malloc(sizeof(fn_val));
-      ventry *ent = malloc(sizeof(ventry));
-      vo->key = hndl->fval;
-      vo->fld = ff;
-      vo->count = 0;
+    ventry *ent;
+    if (!vv) {
+      /* if null, create the null stub. */
+      vv = malloc(sizeof(fn_val));
+      ent = malloc(sizeof(ventry));
+      vv->key = hndl->fval;
+      vv->fld = ff;
+      vv->count = 0;
       ent->rec = NULL;
-      ent->val = vo;
+      ent->val = vv;
       ent->prev = ent;
       ent->next = ent;
       ent->head = 1;
-      vo->rlist = ent;
-
-      /* create new listener */
-      vo->listeners = malloc(sizeof(listener));
-      vo->listeners->cb = cb;
-      vo->listeners->ent = ent;
-      vo->listeners->hndl = hndl;
-      hndl->lis = vo->listeners;
-      kb_putp(FNVAL, ff->vtree, vo);
+      vv->rlist = ent;
+      vv->listeners = NULL;
     }
+    else
+      ent = vv->rlist;
+
+    if (!vv->listeners) {
+      /* create new listener */
+      vv->listeners = malloc(sizeof(listener));
+      vv->listeners->cb = cb;
+      vv->listeners->ent = ent;
+      vv->listeners->hndl = hndl;
+      kb_putp(FNVAL, ff->vtree, vv);
+    }
+    hndl->lis = vv->listeners;
+    vv->listeners->cb(vv->listeners->hndl);
   }
 }
 

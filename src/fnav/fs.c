@@ -16,7 +16,11 @@
 char* conspath(const char* str1, const char* str2)
 {
   char* result;
-  asprintf(&result, "%s/%s", str1, str2);
+  if (strcmp(str1, "/") == 0) {
+    asprintf(&result, "/%s", str2);
+  }
+  else
+    asprintf(&result, "%s/%s", str1, str2);
   return result;
 }
 
@@ -80,6 +84,12 @@ void stat_cb(uv_fs_t* req)
 
   if (S_ISDIR(fq->uv_stat.st_mode))
     uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);
+}
+
+bool isdir(fn_handle *hndl, String fname)
+{
+  //TODO: stub
+  return false;
 }
 
 void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)

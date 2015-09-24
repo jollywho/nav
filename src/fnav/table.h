@@ -32,7 +32,6 @@ struct fn_val {
 
 struct fn_rec {
   fn_val **vals;
-  ventry *ent;
   int fld_count;
 };
 

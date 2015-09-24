@@ -30,7 +30,7 @@ struct fn_buf {
 #define DRAW_AT(win,pos,str)   \
   mvwprintw(win, pos.lnum, pos.col, str);
 
-void buf_listen(fn_handle *hndl);
+void buf_listen(fn_handle *hndl, String key);
 
 fn_buf* buf_init()
 {
@@ -56,7 +56,7 @@ void buf_set(fn_handle *hndl, String fname)
   tbl_listener(hndl, buf_listen);
 }
 
-void buf_listen(fn_handle *hndl)
+void buf_listen(fn_handle *hndl, String key)
 {
   log_msg("BUFFER", "listen cb");
   QUEUE_PUT(draw, hndl->buf->job, hndl->buf->arg);
@@ -78,6 +78,7 @@ void buf_draw(Job *job, JobArg *arg)
   }
   int pos = i;
   for(int i = 0; i < buf->nc_size.lnum; i++) {
+    if (!it->rec) break;
     String n = (String)rec_fld(it->rec, buf->fname);
     struct stat *st = (struct stat*)rec_fld(it->rec, "stat");
     if (S_ISDIR(st->st_mode)) {
@@ -91,7 +92,6 @@ void buf_draw(Job *job, JobArg *arg)
       wattroff(buf->nc_win, COLOR_PAIR(2));
     }
     it = it->next;
-    if (!it->rec) break;
     INC_POS(p,0,1);
   }
   wmove(buf->nc_win, pos, 0);
