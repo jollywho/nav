@@ -24,26 +24,27 @@ char* conspath(const char* str1, const char* str2)
   return result;
 }
 
-void send_rec(uv_fs_t* req, const char* fname)
+String fs_parent_dir(String path)
 {
-  FS_req *fq = req->data;
+  String tmp = strdup(path);
+  return dirname(tmp);
+}
+
+void send_rec(FS_req *fq, const char* dir, const char* base)
+{
   Cntlr *c = fq->fs_h->job.caller;
   fn_tbl *t = c->hndl->tbl;
-  String fullpath = conspath(req->path, fname);
-  String temp = strdup(req->path);
-  temp = dirname(temp);
+  String fullpath = conspath(dir, base);
   struct stat *s = malloc(sizeof(struct stat));
   stat(fullpath, s);
 
   JobArg *arg = malloc(sizeof(JobArg));
   fn_rec *r = mk_rec(t);
-  rec_edit(r, "name", (void*)fname);
-  rec_edit(r, "dir", (void*)req->path);
-  rec_edit(r, "fullpath", (void*)fullpath);
-  rec_edit(r, "parent", (void*)temp);
+  rec_edit(r, "name", (void*)base);
+  rec_edit(r, "path", (void*)fullpath);
+  rec_edit(r, "parent", (void*)dir);
   rec_edit(r, "stat", (void*)s);
   free(fullpath);
-  free(temp);
   arg->rec = r;
   arg->fn = commit;
   QUEUE_PUT(work, &fq->fs_h->job, arg);
@@ -59,10 +60,10 @@ void scan_cb(uv_fs_t* req)
   /* clear outdated records */
   Cntlr *c = fq->fs_h->job.caller;
   fn_tbl *t = c->hndl->tbl;
-  tbl_del_val(t, "dir", (String)req->path);
+  tbl_del_val(t, "path", (String)req->path);
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
-    send_rec(req, dent.name);
+    send_rec(fq, req->path, dent.name);
   }
   fq->close_cb(fq);
 }
@@ -75,7 +76,7 @@ void stat_cb(uv_fs_t* req)
 
   Cntlr *c = fq->fs_h->job.caller;
   fn_tbl *t = c->hndl->tbl;
-  ventry *ent = fnd_val(t, "dir", fq->req_name);
+  ventry *ent = fnd_val(t, "parent", fq->req_name);
 
   if (ent) {
     log_msg("FS", "NOP");
@@ -86,10 +87,10 @@ void stat_cb(uv_fs_t* req)
     uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);
 }
 
-bool isdir(fn_handle *hndl, String fname)
+bool isdir(fn_rec *rec)
 {
-  //TODO: stub
-  return false;
+  struct stat *st = (struct stat*)rec_fld(rec, "stat");
+  return (S_ISDIR(st->st_mode));
 }
 
 void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)
@@ -116,7 +117,6 @@ void fs_open(FS_handle *fsh, String dir)
   fq->uv_fs.data = fq;
   fq->fs_h->watcher.data = fq;
   fq->close_cb = fs_close_cb;
-
 
   uv_fs_stat(fq->fs_h->loop, &fq->uv_fs, dir, stat_cb);
   uv_fs_event_stop(&fq->fs_h->watcher);

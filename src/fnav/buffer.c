@@ -92,6 +92,7 @@ void buf_draw(Job *job, JobArg *arg)
       wattroff(buf->nc_win, COLOR_PAIR(2));
     }
     it = it->next;
+    if (it->prev->head) break;
     INC_POS(p,0,1);
   }
   wmove(buf->nc_win, pos, 0);
@@ -101,6 +102,11 @@ void buf_draw(Job *job, JobArg *arg)
 String buf_val(fn_handle *hndl, String fname)
 {
   return rec_fld(hndl->lis->ent->rec, fname);
+}
+
+fn_rec* buf_rec(fn_handle *hndl)
+{
+  return hndl->lis->ent->rec;
 }
 
 void buf_mv(fn_buf *buf, int x, int y)

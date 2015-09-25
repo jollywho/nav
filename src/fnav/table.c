@@ -75,6 +75,7 @@ void rec_edit(fn_rec *rec, String fname, void *val)
   for(int i=0;i<rec->fld_count;i++) {
     if (strcmp(rec->vals[i]->fld->key, fname) == 0) {
       if (rec->vals[i]->fld->type == typSTRING) {
+      log_msg("TABLE", "edit %s|%s", fname, val);
         rec->vals[i]->key = strdup(val);
       }
       else
@@ -123,7 +124,6 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
         if (v->count == 1) {
           v->listeners->ent = ent;
         }
-          log_msg("TABLE", "lis call %s", v->key);
         v->listeners->cb(v->listeners->hndl, v->key);
       }
     }
@@ -190,6 +190,7 @@ ventry* fnd_val(fn_tbl *t, String fname, String val)
 
 void tbl_listener(fn_handle *hndl, buf_cb cb)
 {
+  log_msg("TABLE", "SET LIS %s|%s", hndl->fname, hndl->fval);
   /* create listener for fn_val entry list */
   fn_fld f = { .key = hndl->fname };
   fn_val v = { .key = hndl->fval   };
