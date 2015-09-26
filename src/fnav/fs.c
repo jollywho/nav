@@ -13,6 +13,9 @@
 #include "fnav/table.h"
 #include "fnav/log.h"
 
+static int FON = 1;
+static int FOFF = 0;
+
 char* conspath(const char* str1, const char* str2)
 {
   char* result;
@@ -30,7 +33,13 @@ String fs_parent_dir(String path)
   return dirname(tmp);
 }
 
-void send_rec(FS_req *fq, const char* dir, const char* base)
+String fs_base_dir(String path)
+{
+  String tmp = strdup(path);
+  return basename(tmp);
+}
+
+void send_rec(FS_req *fq, const char* dir, const char* base, int *f)
 {
   Cntlr *c = fq->fs_h->job.caller;
   fn_tbl *t = c->hndl->tbl;
@@ -44,6 +53,7 @@ void send_rec(FS_req *fq, const char* dir, const char* base)
   rec_edit(r, "path", (void*)fullpath);
   rec_edit(r, "parent", (void*)dir);
   rec_edit(r, "stat", (void*)s);
+  rec_edit(r, "scan", (void*)f);
   free(fullpath);
   arg->rec = r;
   arg->fn = commit;
@@ -60,10 +70,23 @@ void scan_cb(uv_fs_t* req)
   /* clear outdated records */
   Cntlr *c = fq->fs_h->job.caller;
   fn_tbl *t = c->hndl->tbl;
-  tbl_del_val(t, "path", (String)req->path);
+  tbl_del_val(t, "parent", (String)req->path);
+
+  /* edit scan flag if record exists, else create it */
+  if (fq->rec) {
+    log_msg("FS", "--scan path exists--");
+    rec_edit(fq->rec, "scan", &FON);
+  }
+  else {
+    log_msg("FS", "--scan path create--");
+    String dir = fs_parent_dir(fq->req_name);
+    String base = fs_base_dir(fq->req_name);
+    send_rec(fq, dir, base, &FON);
+    free(dir);
+  }
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
-    send_rec(fq, req->path, dent.name);
+    send_rec(fq, req->path, dent.name, &FOFF);
   }
   fq->close_cb(fq);
 }
@@ -71,16 +94,30 @@ void scan_cb(uv_fs_t* req)
 void stat_cb(uv_fs_t* req)
 {
   log_msg("FS", "stat cb");
-  FS_req *fq= req->data;
+  FS_req *fq = req->data;
   fq->uv_stat = req->statbuf;
 
   Cntlr *c = fq->fs_h->job.caller;
   fn_tbl *t = c->hndl->tbl;
-  ventry *ent = fnd_val(t, "parent", fq->req_name);
+  ventry *ent = fnd_val(t, "path", fq->req_name);
 
+  struct stat *s = malloc(sizeof(struct stat));
+  stat(req->path, s);
   if (ent) {
-    log_msg("FS", "NOP");
-    return;
+    log_msg("FS", "ENT");
+    int *flag = (int*)rec_fld(ent->rec, "scan");
+    if (flag) {
+      log_msg("FS", "FLAG");
+      if (*flag == FON) {
+        log_msg("FS", "FLAG ON");
+        struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
+        if (fq->uv_stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
+          log_msg("FS", "NOP");
+          return;
+        }
+      }
+    }
+    fq->rec = ent->rec;
   }
 
   if (S_ISDIR(fq->uv_stat.st_mode))
@@ -117,6 +154,7 @@ void fs_open(FS_handle *fsh, String dir)
   fq->uv_fs.data = fq;
   fq->fs_h->watcher.data = fq;
   fq->close_cb = fs_close_cb;
+  fq->rec = NULL;
 
   uv_fs_stat(fq->fs_h->loop, &fq->uv_fs, dir, stat_cb);
   uv_fs_event_stop(&fq->fs_h->watcher);

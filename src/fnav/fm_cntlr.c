@@ -40,7 +40,7 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir ="/home/chi/casper/YFS";
+String init_dir ="/home/chi/qp/eii/src";
 static void fm_up();
 static void fm_down();
 static void fm_left();
@@ -265,6 +265,7 @@ FM_cntlr* fm_cntlr_init()
   tbl_mk_fld(t, "path", typSTRING);
   tbl_mk_fld(t, "parent", typSTRING);
   tbl_mk_fld(t, "stat", typVOID);
+  tbl_mk_fld(t, "scan", typVOID);
   c->base.hndl->tbl = t;
   c->base.hndl->buf = buf_init();
   c->base.hndl->fname = "parent";

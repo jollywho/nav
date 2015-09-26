@@ -42,6 +42,42 @@ void tbl_mk_fld(fn_tbl *t, String name, tFldType typ)
   kb_putp(FNFLD, t->fields, fld);
 }
 
+void initflds(fn_fld *f, fn_rec *rec)
+{
+  fn_val *v = malloc(sizeof(fn_val));
+  v->fld = f;
+  v->listeners = NULL;
+  rec->vals[rec->fld_count] = v;
+  rec->vlist[rec->fld_count] = NULL;
+  rec->fld_count++;
+}
+
+fn_rec* mk_rec(fn_tbl *t)
+{
+  fn_rec *rec = malloc(sizeof(fn_rec));
+  rec->vals = malloc(sizeof(fn_val)*t->count);
+  rec->vlist = malloc(sizeof(fn_val)*t->count);
+  rec->fld_count = 0;
+  __kb_traverse(fn_fld, t->fields, initflds, rec);
+  return rec;
+}
+
+ventry* fnd_val(fn_tbl *t, String fname, String val)
+{
+  log_msg("TABLE", "fnd_val %s: %s", fname, val);
+  fn_fld f = { .key = fname };
+  fn_val v = { .key = val   };
+  fn_fld *ff = kb_get(FNFLD, t->fields, f);
+  if (ff) {
+    fn_val *vv = kb_get(FNVAL, ff->vtree, v);
+    if (vv) {
+      if (vv->count > 0)
+        return vv->rlist->next;
+    }
+  }
+  return NULL;
+}
+
 int FN_MV(ventry *e, int n)
 {
   return ((n > 0) ?
@@ -120,12 +156,29 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
       ent->head = 0;
       v->rlist->prev->next = ent;
       v->rlist->prev = ent;
+      rec->vlist[i] = ent;
       if (v->listeners) {
         if (v->count == 1) {
           v->listeners->ent = ent;
         }
-        v->listeners->cb(v->listeners->hndl, v->key);
+        log_msg("TABLE", "CALL");
+        v->listeners->cb(v->listeners->hndl);
       }
+    }
+  }
+}
+
+void tbl_del_rec(fn_rec *rec)
+{
+  log_msg("TABLE", "delete rec st");
+  if (!rec) return;
+  for(int i=0;i<rec->fld_count;i++) {
+      log_msg("TABLE", "delete reer");
+    ventry *it = rec->vlist[i];
+    if (it && !it->head) {
+      log_msg("TABLE", "delete rec inner");
+      it->next->prev = it->prev;
+      it->prev->next = it->next;
     }
   }
 }
@@ -133,59 +186,24 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
 void tbl_del_val(fn_tbl *t, String fname, String val)
 {
   log_msg("TABLE", "delete %s,%s",fname, val);
-  return;
   fn_fld f = { .key = fname };
   fn_val v = { .key = val   };
   fn_fld *ff = kb_get(FNFLD, t->fields, f);
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
-      /* iterate listeners. */
-      if (!vv->rlist->next) return;
-      ventry *it = vv->rlist->next;
-      for (int i = 1; i < vv->count; i++) {
-        it = it->next;
-        t->rec_count--;
+      /* iterate entries of val. */
+      ventry *it = vv->rlist->prev;
+      while (!it->head) {
+        tbl_del_rec(it->rec);
+        it = it->prev;
       }
       if (!vv->listeners) {
         kb_delp(FNVAL, ff->vtree, vv);
+      log_msg("TABLE", "delete after lis");
       }
     }
   }
-}
-
-void initflds(fn_fld *f, fn_rec *rec)
-{
-  fn_val *v = malloc(sizeof(fn_val));
-  v->fld = f;
-  v->listeners = NULL;
-  rec->vals[rec->fld_count] = v;
-  rec->fld_count++;
-}
-
-fn_rec* mk_rec(fn_tbl *t)
-{
-  fn_rec *rec = malloc(sizeof(fn_rec));
-  rec->vals = malloc(sizeof(fn_val)*t->count);
-  rec->fld_count = 0;
-  __kb_traverse(fn_fld, t->fields, initflds, rec);
-  return rec;
-}
-
-ventry* fnd_val(fn_tbl *t, String fname, String val)
-{
-  log_msg("TABLE", "fnd_val %s: %s", fname, val);
-  fn_fld f = { .key = fname };
-  fn_val v = { .key = val   };
-  fn_fld *ff = kb_get(FNFLD, t->fields, f);
-  if (ff) {
-    fn_val *vv = kb_get(FNVAL, ff->vtree, v);
-    if (vv) {
-      if (vv->count > 0)
-        return vv->rlist->next;
-    }
-  }
-  return NULL;
 }
 
 void tbl_listener(fn_handle *hndl, buf_cb cb)
@@ -202,7 +220,7 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
       /* if null, create the null stub. */
       vv = malloc(sizeof(fn_val));
       ent = malloc(sizeof(ventry));
-      vv->key = hndl->fval;
+      vv->key = strdup(hndl->fval);
       vv->fld = ff;
       vv->count = 0;
       ent->rec = NULL;
@@ -228,6 +246,12 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
     vv->listeners->cb(vv->listeners->hndl);
   }
 }
+
+// TODO: use commit bit flags
+// COMMIT [ INSERT | UPDATE ]
+// will attempt to update instead of insert.
+// COMMIT [ INSERT | DELETE ]
+// will attempt to delete before insert.
 
 void commit(Job *job, JobArg *arg)
 {

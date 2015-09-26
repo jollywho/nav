@@ -22,6 +22,7 @@ typedef struct {
   req_cb close_cb;
 
   String req_name;
+  fn_rec *rec;
 } FS_req ;
 
 FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb);
