@@ -6,6 +6,7 @@
 #include "fnav/table.h"
 #include "fnav/buffer.h"
 #include "fnav/loop.h"
+#include "fnav/fs.h"
 
 struct fn_buf {
   WINDOW *nc_win;
@@ -69,6 +70,7 @@ void buf_draw(Job *job, JobArg *arg)
 
   wclear(buf->nc_win);
   pos_T p = {.lnum = 0, .col = 0};
+  log_msg("TABLE", "_druh");
   ventry *it = buf->hndl->lis->ent;
   if (!it) return;
   int i;
@@ -81,8 +83,7 @@ void buf_draw(Job *job, JobArg *arg)
   for(int i = 0; i < buf->nc_size.lnum; i++) {
     if (!it->rec) break;
     String n = (String)rec_fld(it->rec, buf->fname);
-    struct stat *st = (struct stat*)rec_fld(it->rec, "stat");
-    if (S_ISDIR(st->st_mode)) {
+    if (isdir(it->rec)) {
       wattron(buf->nc_win, COLOR_PAIR(1));
       DRAW_AT(buf->nc_win, p, n);
       wattroff(buf->nc_win, COLOR_PAIR(1));

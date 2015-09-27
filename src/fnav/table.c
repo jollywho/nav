@@ -71,8 +71,10 @@ ventry* fnd_val(fn_tbl *t, String fname, String val)
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
-      if (vv->count > 0)
+      if (!vv->rlist->next->head) {
+      log_msg("TABLE", "found val__");
         return vv->rlist->next;
+      }
     }
   }
   return NULL;
@@ -111,12 +113,12 @@ void rec_edit(fn_rec *rec, String fname, void *val)
   for(int i=0;i<rec->fld_count;i++) {
     if (strcmp(rec->vals[i]->fld->key, fname) == 0) {
       if (rec->vals[i]->fld->type == typSTRING) {
-      log_msg("TABLE", "edit %s|%s", fname, val);
+        log_msg("TABLE", "edit %s|%s", fname, val);
         rec->vals[i]->key = strdup(val);
       }
       else
         rec->vals[i]->key = NULL;
-      rec->vals[i]->data = val;
+        rec->vals[i]->data = val;
     }
   }
 }
@@ -133,37 +135,41 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
     }
 
     fn_val *v = kb_getp(FNVAL, fv->fld->vtree, fv);
-    /* new value so create new tree node and rec list */
+    /* create null entry stub. */
     if (!v) {
-      fv->count = 1;
+      log_msg("TABLE", "new stub");
+      v = malloc(sizeof(fn_val));
       ventry *ent = malloc(sizeof(ventry));
-      ent->rec = rec;
-      ent->val = fv;
+      v->key = strdup(fv->key);
+      v->fld = fv->fld;
+      v->count = 0;
+      ent->rec = NULL;
+      ent->val = v;
       ent->prev = ent;
       ent->next = ent;
       ent->head = 1;
-      fv->rlist = ent;
-      kb_putp(FNVAL, fv->fld->vtree, fv);
+      v->rlist = ent;
+      v->listeners = NULL;
+      kb_putp(FNVAL, fv->fld->vtree, v);
     }
-    /* value already exists */
-    else {
-      v->count++;
-      ventry *ent = malloc(sizeof(ventry));
-      ent->rec = rec;
-      ent->val = fv;
-      ent->prev = v->rlist->prev;
-      ent->next = v->rlist;
-      ent->head = 0;
-      v->rlist->prev->next = ent;
-      v->rlist->prev = ent;
-      rec->vlist[i] = ent;
-      if (v->listeners) {
-        if (v->count == 1) {
-          v->listeners->ent = ent;
-        }
-        log_msg("TABLE", "CALL");
-        v->listeners->cb(v->listeners->hndl);
+    /* attach record to an entry. */
+    v->count++;
+      log_msg("TABLE", "new value");
+    ventry *ent = malloc(sizeof(ventry));
+    ent->rec = rec;
+    ent->val = v;
+    ent->prev = v->rlist->prev;
+    ent->next = v->rlist;
+    ent->head = 0;
+    v->rlist->prev->next = ent;
+    v->rlist->prev = ent;
+    rec->vlist[i] = ent;
+    if (v->listeners) {
+      if (v->count == 1) {
+        v->listeners->ent = ent;
       }
+      log_msg("TABLE", "CALL");
+      v->listeners->cb(v->listeners->hndl);
     }
   }
 }
@@ -173,14 +179,23 @@ void tbl_del_rec(fn_rec *rec)
   log_msg("TABLE", "delete rec st");
   if (!rec) return;
   for(int i=0;i<rec->fld_count;i++) {
-      log_msg("TABLE", "delete reer");
     ventry *it = rec->vlist[i];
     if (it && !it->head) {
       log_msg("TABLE", "delete rec inner");
+      if (it->val->listeners) {
+      log_msg("TABLE", "delete ent has list!");
+        if (it->val->listeners->ent == it) {
+          it->val->listeners->ent = it->next;
+        }
+      }
       it->next->prev = it->prev;
       it->prev->next = it->next;
+      free(it);
+      it = NULL;
     }
   }
+  free(rec);
+  rec = NULL;
 }
 
 void tbl_del_val(fn_tbl *t, String fname, String val)
@@ -229,12 +244,6 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
       ent->next = ent;
       ent->head = 1;
       vv->rlist = ent;
-      vv->listeners = NULL;
-    }
-    else
-      ent = vv->rlist;
-
-    if (!vv->listeners) {
       /* create new listener */
       vv->listeners = malloc(sizeof(listener));
       vv->listeners->cb = cb;
@@ -242,6 +251,15 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
       vv->listeners->hndl = hndl;
       kb_putp(FNVAL, ff->vtree, vv);
     }
+    else {
+      if (!vv->listeners) {
+        vv->listeners = malloc(sizeof(listener));
+        vv->listeners->cb = cb;
+        vv->listeners->ent = vv->rlist->next;
+        vv->listeners->hndl = hndl;
+      }
+    }
+
     hndl->lis = vv->listeners;
     vv->listeners->cb(vv->listeners->hndl);
   }

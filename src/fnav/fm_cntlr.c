@@ -40,7 +40,7 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir ="/home/chi/qp/eii/src";
+String init_dir ="/home/chi/qp";
 static void fm_up();
 static void fm_down();
 static void fm_left();
@@ -103,7 +103,7 @@ static void fm_left(Cntlr *cntlr)
 {
   log_msg("FM", "cmd left");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  String tmp = fs_parent_dir(buf_val(cntlr->hndl, "parent"));
+  String tmp = fs_parent_dir(buf_val(cntlr->hndl, "dir"));
   self->cur_dir = tmp;
   cntlr->hndl->fval = self->cur_dir;
   buf_set(cntlr->hndl, "name");
@@ -115,7 +115,7 @@ static void fm_right(Cntlr *cntlr)
   log_msg("FM", "cmd right");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   if (isdir(buf_rec(cntlr->hndl))) {
-    self->cur_dir = buf_val(cntlr->hndl, "path");
+    self->cur_dir = buf_val(cntlr->hndl, "fullpath");
     cntlr->hndl->fval = self->cur_dir;
     buf_set(cntlr->hndl, "name");
     fs_open(self->fs, self->cur_dir);
@@ -262,13 +262,13 @@ FM_cntlr* fm_cntlr_init()
   c->base.hndl = malloc(sizeof(fn_handle));
   fn_tbl *t = tbl_mk();
   tbl_mk_fld(t, "name", typSTRING);
-  tbl_mk_fld(t, "path", typSTRING);
-  tbl_mk_fld(t, "parent", typSTRING);
+  tbl_mk_fld(t, "dir", typSTRING);
+  tbl_mk_fld(t, "fullpath", typSTRING);
   tbl_mk_fld(t, "stat", typVOID);
   tbl_mk_fld(t, "scan", typVOID);
   c->base.hndl->tbl = t;
   c->base.hndl->buf = buf_init();
-  c->base.hndl->fname = "parent";
+  c->base.hndl->fname = "dir";
   c->base.hndl->fval = c->cur_dir;
   buf_set(c->base.hndl, "name");
 

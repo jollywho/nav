@@ -39,6 +39,12 @@ String fs_base_dir(String path)
   return basename(tmp);
 }
 
+bool isdir(fn_rec *rec)
+{
+  struct stat *st = (struct stat*)rec_fld(rec, "stat");
+  return (S_ISDIR(st->st_mode));
+}
+
 void send_rec(FS_req *fq, const char* dir, const char* base, int *f)
 {
   Cntlr *c = fq->fs_h->job.caller;
@@ -50,8 +56,8 @@ void send_rec(FS_req *fq, const char* dir, const char* base, int *f)
   JobArg *arg = malloc(sizeof(JobArg));
   fn_rec *r = mk_rec(t);
   rec_edit(r, "name", (void*)base);
-  rec_edit(r, "path", (void*)fullpath);
-  rec_edit(r, "parent", (void*)dir);
+  rec_edit(r, "dir", (void*)dir);
+  rec_edit(r, "fullpath", (void*)fullpath);
   rec_edit(r, "stat", (void*)s);
   rec_edit(r, "scan", (void*)f);
   free(fullpath);
@@ -70,15 +76,13 @@ void scan_cb(uv_fs_t* req)
   /* clear outdated records */
   Cntlr *c = fq->fs_h->job.caller;
   fn_tbl *t = c->hndl->tbl;
-  tbl_del_val(t, "parent", (String)req->path);
+  tbl_del_val(t, "dir", (String)req->path);
 
-  /* edit scan flag if record exists, else create it */
   if (fq->rec) {
     log_msg("FS", "--scan path exists--");
     rec_edit(fq->rec, "scan", &FON);
   }
   else {
-    log_msg("FS", "--scan path create--");
     String dir = fs_parent_dir(fq->req_name);
     String base = fs_base_dir(fq->req_name);
     send_rec(fq, dir, base, &FON);
@@ -99,10 +103,8 @@ void stat_cb(uv_fs_t* req)
 
   Cntlr *c = fq->fs_h->job.caller;
   fn_tbl *t = c->hndl->tbl;
-  ventry *ent = fnd_val(t, "path", fq->req_name);
+  ventry *ent = fnd_val(t, "fullpath", fq->req_name);
 
-  struct stat *s = malloc(sizeof(struct stat));
-  stat(req->path, s);
   if (ent) {
     log_msg("FS", "ENT");
     int *flag = (int*)rec_fld(ent->rec, "scan");
@@ -122,12 +124,6 @@ void stat_cb(uv_fs_t* req)
 
   if (S_ISDIR(fq->uv_stat.st_mode))
     uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);
-}
-
-bool isdir(fn_rec *rec)
-{
-  struct stat *st = (struct stat*)rec_fld(rec, "stat");
-  return (S_ISDIR(st->st_mode));
 }
 
 void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)
