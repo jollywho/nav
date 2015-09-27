@@ -59,7 +59,11 @@ void event_input(uv_poll_t *req, int status, int events)
           (char)(command >> 8), args[0], args[1], (char)(command >> 16), (char)command);
     }
     else {
-      rpc_key_handle(key.utf8);
+      if (key.modifiers) {
+        unsigned int mask = (1 << key.modifiers) -1;
+        key.code.number &= key.code.number & mask;
+      }
+      rpc_key_handle(key.code.number);
     }
 
     if(key.type == TERMKEY_TYPE_UNICODE &&

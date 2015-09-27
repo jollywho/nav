@@ -98,8 +98,9 @@ void buf_draw(Job *job, JobArg *arg)
     INC_POS(p,0,1);
   }
   wmove(buf->nc_win, pos, 0);
-  wchgat(buf->nc_win, -1, A_STANDOUT, 1, NULL);
-  wrefresh(buf->nc_win);
+  wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
+  //TODO: use wnoutrefresh here and refresh once on timer
+  wnoutrefresh(buf->nc_win);
 }
 
 String buf_val(fn_handle *hndl, String fname)
@@ -112,15 +113,22 @@ fn_rec* buf_rec(fn_handle *hndl)
   return hndl->lis->ent->rec;
 }
 
+int buf_pgsize(fn_handle *hndl)
+{
+  return hndl->buf->nc_size.col / 3;
+}
+
 void buf_mv(fn_buf *buf, int x, int y)
 {
-  ventry *ent = buf->hndl->lis->ent;
-  int d = FN_MV(ent, y);
-  if (d == 1) {
-    buf->hndl->lis->ent = ent->next;
-  }
-  if (d == -1) {
-    buf->hndl->lis->ent = ent->prev;
+  for (int i = 0; i < abs(y); i++) {
+    ventry *ent = buf->hndl->lis->ent;
+    int d = FN_MV(ent, y);
+    if (d == 1) {
+      buf->hndl->lis->ent = ent->next;
+    }
+    if (d == -1) {
+      buf->hndl->lis->ent = ent->prev;
+    }
   }
   QUEUE_PUT(draw, buf->job, buf->arg);
 }

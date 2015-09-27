@@ -67,7 +67,7 @@ void scan_cb(uv_fs_t* req)
   FS_req *fq = req->data;
 
   /* clear outdated records */
-  tbl_del_val("fm_file", "dir", (String)req->path);
+  tbl_del_val("fm_files", "dir", (String)req->path);
 
   if (fq->rec) {
     log_msg("FS", "--stat already exists--");

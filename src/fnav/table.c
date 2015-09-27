@@ -49,7 +49,10 @@ void tbl_mk(String name)
 fn_tbl* get_tbl(String t)
 {
   fn_tbl tbl = { .key = t };
-  return kb_get(FNTBL, FN_MASTER.name, tbl);
+  fn_tbl *ret = kb_get(FNTBL, FN_MASTER.name, tbl);
+  if (!ret)
+    log_msg("ERROR", "::get_tbl %s does not exist", t);
+  return ret;
 }
 
 void tbl_mk_fld(String tn, String name, tFldType typ)
@@ -126,9 +129,9 @@ void* rec_fld(fn_rec *rec, String fname)
   return NULL;
 }
 
-int tbl_count(fn_tbl *t)
+int tbl_count(String tn)
 {
-  return t->rec_count;
+  return (get_tbl(tn)->count);
 }
 
 void rec_edit(fn_rec *rec, String fname, void *val)
@@ -220,7 +223,6 @@ void tbl_del_rec(fn_rec *rec)
 void tbl_del_val(String tn, String fname, String val)
 {
   log_msg("TABLE", "delete %s,%s",fname, val);
-  return;
   fn_tbl *t = get_tbl(tn);
   fn_fld f = { .key = fname };
   fn_val v = { .key = val   };
@@ -229,6 +231,7 @@ void tbl_del_val(String tn, String fname, String val)
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
       /* iterate entries of val. */
+      log_msg("TABLE", "deletner");
       ventry *it = vv->rlist->prev;
       while (!it->head) {
         tbl_del_rec(it->rec);
@@ -236,7 +239,6 @@ void tbl_del_val(String tn, String fname, String val)
       }
       if (!vv->listeners) {
         kb_delp(FNVAL, ff->vtree, vv);
-      log_msg("TABLE", "delete after lis");
       }
     }
   }

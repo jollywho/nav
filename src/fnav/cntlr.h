@@ -30,7 +30,7 @@ struct Cntlr {
   fn_handle *hndl;
   void *top;
   void (*_cancel)(Cntlr *cntlr);
-  int  (*_input)(Cntlr *cntlr, String key);
+  int  (*_input)(Cntlr *cntlr, int key);
 };
 
 #endif

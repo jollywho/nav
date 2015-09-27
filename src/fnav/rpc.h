@@ -27,7 +27,7 @@ typedef struct {
 
 void rpc_temp_init();
 void rpc_handle(String cmdstr);
-void rpc_key_handle(String key);
+void rpc_key_handle(int key);
 void rpc_draw_handle();
 void rpc_handle_for(String cntlr_name, String cmdstr);
 

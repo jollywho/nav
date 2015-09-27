@@ -1,4 +1,5 @@
 #include <malloc.h>
+#include <ncurses.h>
 
 #include "fnav/loop.h"
 #include "fnav/event.h"
@@ -87,6 +88,7 @@ void queue_timeout(uv_timer_t *req)
 void loop_timeout(uv_timer_t *req)
 {
   log_msg("LOOP", "++spin timeout++");
+  doupdate();
   uv_timer_stop(&spin_timer);
   cycle_events();
 }
@@ -113,6 +115,7 @@ static void process_loop(Queue *queue)
     free(i);
     j->arg->fn(j->job, j->arg);
     free(j);
+    // TODO: check current vs last call, not flat timer. doupdate()
     uv_run(spin_loop, UV_RUN_NOWAIT);
   }
   log_msg("LOOP", "<subend>");

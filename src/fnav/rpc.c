@@ -14,7 +14,7 @@ void rpc_temp_init()
 }
 
 // Input handler
-void rpc_key_handle(String key)
+void rpc_key_handle(int key)
 {
   //TODO: pass to client first
   //      -ret 1 is consumed

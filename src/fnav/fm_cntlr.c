@@ -6,17 +6,11 @@
 
 #include <ncurses.h>
 
+#include "fnav/ascii.h"
 #include "fnav/buffer.h"
 #include "fnav/fm_cntlr.h"
 #include "fnav/table.h"
 #include "fnav/log.h"
-
-#define FORWARD  1
-#define BACKWARD (-1)
-
-#define NV_NCH      0x01          /* may need to get a second char */
-#define NV_NCH_NOP  (0x02|NV_NCH) /* get second char when no operator pending */
-#define NV_NCH_ALW  (0x04|NV_NCH) /* always get a second char */
 
 enum Type { OPERATOR, MOTION };
 
@@ -30,6 +24,7 @@ typedef struct {
   pos_T start;                  /* start of the operator */
   pos_T end;                    /* end of the operator */
   long opcount;                 /* count before an operator */
+  int arg;
 } Cmdarg;
 
 typedef void (*key_func)(Cntlr *cntlr, Cmdarg *arg);
@@ -40,12 +35,13 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir ="/home/chi/qp/fnav";
-static void fm_up();
-static void fm_down();
+String init_dir ="/home/chi/casper/YFS";
+static void fm_mv();
+static void fm_page();
+static void fm_mv();
 static void fm_left();
 static void fm_right();
-static void fm_bottom();
+static void fm_g_cmd();
 static void cancel();
 static void fm_update();
 
@@ -56,12 +52,15 @@ static const struct fm_cmd {
   short cmd_arg;                /* value for ca.arg */
 } fm_cmds[] =
 {
-  {'h',     fm_left,        0,                        0},
-  {'l',     fm_right,       0,                        0},
-  {'j',     fm_down,        0,                        0},
-  {'k',     fm_up,          0,                 BACKWARD},
+  {Ctrl_J,  fm_page,        0,                 FORWARD},
+  {Ctrl_K,  fm_page,        0,                 BACKWARD},
+  {'h',     fm_left,        0,                 0},
+  {'l',     fm_right,       0,                 0},
+  {'j',     fm_mv,          0,                 FORWARD},
+  {'k',     fm_mv,          0,                 BACKWARD},
   {'u',     fm_update,      0,                 BACKWARD},
-  {'G',     fm_bottom,      0,                 BACKWARD},
+  {'g',     fm_g_cmd,       0,                 BACKWARD},
+  {'G',     fm_g_cmd,       0,                 FORWARD},
   {'c',     cancel,         0,                 BACKWARD},
 };
 
@@ -90,15 +89,6 @@ static void fm_update(Cntlr *cntlr)
   log_msg("FM", "waiting on job...");
 }
 
-static void fm_up(Cntlr *cntlr)
-{
-  log_msg("FM", "cmd up");
-  FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  buf_mv(cntlr->hndl->buf, 0, -1);
-  log_msg("FM", "set cur: %s", self->cur_dir);
-  log_msg("FM", "waiting on job...");
-}
-
 static void fm_left(Cntlr *cntlr)
 {
   log_msg("FM", "cmd left");
@@ -122,20 +112,26 @@ static void fm_right(Cntlr *cntlr)
   }
 }
 
-static void fm_down(Cntlr *cntlr)
+static void fm_mv(Cntlr *cntlr, Cmdarg *arg)
 {
   log_msg("FM", "cmd down");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  buf_mv(cntlr->hndl->buf, 0, 1);
+  buf_mv(cntlr->hndl->buf, 0, arg->arg);
   log_msg("FM", "set cur: %s", self->cur_dir);
   log_msg("FM", "waiting on job...");
 }
 
-static void fm_bottom(Cntlr *cntlr)
+static void fm_page(Cntlr *cntlr, Cmdarg *arg)
 {
   log_msg("FM", "cmd bottom");
-  FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  //buf_mv(cntlr->hndl->buf, 0, tbl_count(self->base.hndl->tbl));
+  buf_mv(cntlr->hndl->buf, 0, arg->arg * buf_pgsize(cntlr->hndl));
+  log_msg("FM", "waiting on job...");
+}
+
+static void fm_g_cmd(Cntlr *cntlr, Cmdarg *arg)
+{
+  log_msg("FM", "cmd bottom");
+  buf_mv(cntlr->hndl->buf, 0, arg->arg * cntlr->hndl->lis->ent->val->count);
   log_msg("FM", "waiting on job...");
 }
 
@@ -236,11 +232,13 @@ static int find_command(int cmdchar)
   return idx;
 }
 
-int input(Cntlr *cntlr, String key)
+int input(Cntlr *cntlr, int key)
 {
-  int idx = find_command(key[0]);
+  Cmdarg ca;
+  int idx = find_command(key);
+  ca.arg = fm_cmds[idx].cmd_arg;
   if (idx >= 0) {
-    fm_cmds[idx].cmd_func(cntlr, NULL);
+    fm_cmds[idx].cmd_func(cntlr, &ca);
   }
   return 0;
 }

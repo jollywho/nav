@@ -60,7 +60,7 @@ void tbl_listener(fn_handle *hndl, buf_cb cb);
 ventry* fnd_val(String tn, String fname, String val);
 void commit(Job *job, JobArg *arg);
 
-int tbl_count(fn_tbl *t);
+int tbl_count(String tn);
 void* rec_fld(fn_rec *rec, String fname);
 
 int FN_MV(ventry *e, int n);
