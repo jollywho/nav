@@ -98,6 +98,7 @@ void buf_draw(Job *job, JobArg *arg)
     INC_POS(p,0,1);
   }
   wmove(buf->nc_win, pos, 0);
+  wchgat(buf->nc_win, -1, A_STANDOUT, 1, NULL);
   wrefresh(buf->nc_win);
 }
 

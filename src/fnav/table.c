@@ -16,23 +16,46 @@ struct fn_fld {
 KBTREE_INIT(FNFLD, fn_fld, elem_cmp)
 
 struct fn_tbl {
+  String key;
   kbtree_t(FNFLD) *fields;
   int count;
   int rec_count;
 };
+KBTREE_INIT(FNTBL, fn_tbl, elem_cmp)
 
-fn_tbl* tbl_mk()
+typedef struct {
+  String key;
+  kbtree_t(FNTBL) *name;
+} tbl_list;
+
+tbl_list FN_MASTER;
+
+void tables_init()
 {
+  FN_MASTER.name = kb_init(FNTBL, KB_DEFAULT_SIZE);
+}
+
+void tbl_mk(String name)
+{
+  log_msg("TABLE", "making table {%s} ...", name);
   fn_tbl *t = malloc(sizeof(fn_tbl));
+  t->key = name;
   t->count = 0;
   t->rec_count = 0;
   t->fields = kb_init(FNFLD, KB_DEFAULT_SIZE);
-  return t;
+  kb_putp(FNTBL, FN_MASTER.name, t);
 }
 
-void tbl_mk_fld(fn_tbl *t, String name, tFldType typ)
+fn_tbl* get_tbl(String t)
 {
-  log_msg("TABLE", "mkfld");
+  fn_tbl tbl = { .key = t };
+  return kb_get(FNTBL, FN_MASTER.name, tbl);
+}
+
+void tbl_mk_fld(String tn, String name, tFldType typ)
+{
+  log_msg("TABLE", "making {%s} field {%s} ...", tn, name);
+  fn_tbl *t = get_tbl(tn);
   fn_fld *fld = malloc(sizeof(fn_fld));
   fld->key = strdup(name);
   fld->type = typ;
@@ -52,8 +75,9 @@ void initflds(fn_fld *f, fn_rec *rec)
   rec->fld_count++;
 }
 
-fn_rec* mk_rec(fn_tbl *t)
+fn_rec* mk_rec(String tn)
 {
+  fn_tbl *t = get_tbl(tn);
   fn_rec *rec = malloc(sizeof(fn_rec));
   rec->vals = malloc(sizeof(fn_val)*t->count);
   rec->vlist = malloc(sizeof(fn_val)*t->count);
@@ -62,9 +86,9 @@ fn_rec* mk_rec(fn_tbl *t)
   return rec;
 }
 
-ventry* fnd_val(fn_tbl *t, String fname, String val)
+ventry* fnd_val(String tn, String fname, String val)
 {
-  log_msg("TABLE", "fnd_val %s: %s", fname, val);
+  fn_tbl *t = get_tbl(tn);
   fn_fld f = { .key = fname };
   fn_val v = { .key = val   };
   fn_fld *ff = kb_get(FNFLD, t->fields, f);
@@ -72,7 +96,6 @@ ventry* fnd_val(fn_tbl *t, String fname, String val)
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
       if (!vv->rlist->next->head) {
-      log_msg("TABLE", "found val__");
         return vv->rlist->next;
       }
     }
@@ -113,12 +136,12 @@ void rec_edit(fn_rec *rec, String fname, void *val)
   for(int i=0;i<rec->fld_count;i++) {
     if (strcmp(rec->vals[i]->fld->key, fname) == 0) {
       if (rec->vals[i]->fld->type == typSTRING) {
-        log_msg("TABLE", "edit %s|%s", fname, val);
         rec->vals[i]->key = strdup(val);
       }
-      else
+      else {
         rec->vals[i]->key = NULL;
         rec->vals[i]->data = val;
+      }
     }
   }
 }
@@ -190,17 +213,15 @@ void tbl_del_rec(fn_rec *rec)
       }
       it->next->prev = it->prev;
       it->prev->next = it->next;
-      free(it);
-      it = NULL;
     }
   }
-  free(rec);
-  rec = NULL;
 }
 
-void tbl_del_val(fn_tbl *t, String fname, String val)
+void tbl_del_val(String tn, String fname, String val)
 {
   log_msg("TABLE", "delete %s,%s",fname, val);
+  return;
+  fn_tbl *t = get_tbl(tn);
   fn_fld f = { .key = fname };
   fn_val v = { .key = val   };
   fn_fld *ff = kb_get(FNFLD, t->fields, f);
@@ -224,10 +245,12 @@ void tbl_del_val(fn_tbl *t, String fname, String val)
 void tbl_listener(fn_handle *hndl, buf_cb cb)
 {
   log_msg("TABLE", "SET LIS %s|%s", hndl->fname, hndl->fval);
+
   /* create listener for fn_val entry list */
+  fn_tbl *t = get_tbl(hndl->tname);
   fn_fld f = { .key = hndl->fname };
   fn_val v = { .key = hndl->fval   };
-  fn_fld *ff = kb_get(FNFLD, hndl->tbl->fields, f);
+  fn_fld *ff = kb_get(FNFLD, t->fields, f);
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     ventry *ent;
@@ -255,7 +278,7 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
       if (!vv->listeners) {
         vv->listeners = malloc(sizeof(listener));
         vv->listeners->cb = cb;
-        vv->listeners->ent = vv->rlist->next;
+        vv->listeners->ent = vv->rlist;
         vv->listeners->hndl = hndl;
       }
     }
@@ -273,8 +296,8 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
 
 void commit(Job *job, JobArg *arg)
 {
-  Cntlr *c = job->caller;
-  tbl_insert(c->hndl->tbl, arg->rec);
+  fn_tbl *t = get_tbl(arg->tname);
+  tbl_insert(t, arg->rec);
   free(arg);
   job->read_cb(job->caller);
 }

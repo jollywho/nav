@@ -20,8 +20,9 @@ typedef struct {
 } Job;
 
 typedef struct {
-  fn_rec *rec;
   void(*fn)();
+  fn_rec *rec;
+  String tname;
 } JobArg;
 
 void rpc_temp_init();

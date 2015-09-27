@@ -12,7 +12,7 @@
 
 void init(void)
 {
-//  log_set("BUFFER");
+//  log_set("FS");
   log_msg("INIT", "__________INIT______________");
 #ifdef NCURSES_ENABLED
   setlocale(LC_CTYPE, "");
@@ -22,7 +22,9 @@ void init(void)
   use_default_colors();
   init_pair(1, 5, -1);
   init_pair(2, 6, -1);
+  curs_set(0);
 #endif
+  tables_init();
   event_init();
   queue_init();
   rpc_temp_init();

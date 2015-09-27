@@ -50,13 +50,14 @@ struct listener {
   ventry *ent;
 };
 
-fn_tbl* tbl_mk();
-fn_rec* mk_rec(fn_tbl *t);
+void tables_init();
+void tbl_mk(String name);
+fn_rec* mk_rec(String tn);
 void rec_edit(fn_rec *rec, String fname, void *val);
-void tbl_mk_fld(fn_tbl *t, String name, tFldType typ);
-void tbl_del_val(fn_tbl *t, String fname, String val);
+void tbl_mk_fld(String tn, String name, tFldType typ);
+void tbl_del_val(String tn, String fname, String val);
 void tbl_listener(fn_handle *hndl, buf_cb cb);
-ventry* fnd_val(fn_tbl *t, String fname, String val);
+ventry* fnd_val(String tn, String fname, String val);
 void commit(Job *job, JobArg *arg);
 
 int tbl_count(fn_tbl *t);

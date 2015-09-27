@@ -40,7 +40,7 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir ="/home/chi/qp";
+String init_dir ="/home/chi/qp/fnav";
 static void fm_up();
 static void fm_down();
 static void fm_left();
@@ -135,7 +135,7 @@ static void fm_bottom(Cntlr *cntlr)
 {
   log_msg("FM", "cmd bottom");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  buf_mv(cntlr->hndl->buf, 0, tbl_count(self->base.hndl->tbl));
+  //buf_mv(cntlr->hndl->buf, 0, tbl_count(self->base.hndl->tbl));
   log_msg("FM", "waiting on job...");
 }
 
@@ -260,13 +260,15 @@ FM_cntlr* fm_cntlr_init()
   c->cur_dir = init_dir;
 
   c->base.hndl = malloc(sizeof(fn_handle));
-  fn_tbl *t = tbl_mk();
-  tbl_mk_fld(t, "name", typSTRING);
-  tbl_mk_fld(t, "dir", typSTRING);
-  tbl_mk_fld(t, "fullpath", typSTRING);
-  tbl_mk_fld(t, "stat", typVOID);
-  tbl_mk_fld(t, "scan", typVOID);
-  c->base.hndl->tbl = t;
+  tbl_mk("fm_files");
+  tbl_mk_fld("fm_files", "name", typSTRING);
+  tbl_mk_fld("fm_files", "dir", typSTRING);
+  tbl_mk_fld("fm_files", "fullpath", typSTRING);
+
+  tbl_mk("fm_stat");
+  tbl_mk_fld("fm_stat", "fullpath", typSTRING);
+  tbl_mk_fld("fm_stat", "stat", typVOID);
+  c->base.hndl->tname = "fm_files";
   c->base.hndl->buf = buf_init();
   c->base.hndl->fname = "dir";
   c->base.hndl->fval = c->cur_dir;

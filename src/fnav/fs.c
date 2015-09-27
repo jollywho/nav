@@ -13,9 +13,6 @@
 #include "fnav/table.h"
 #include "fnav/log.h"
 
-static int FON = 1;
-static int FOFF = 0;
-
 char* conspath(const char* str1, const char* str2)
 {
   char* result;
@@ -41,26 +38,22 @@ String fs_base_dir(String path)
 
 bool isdir(fn_rec *rec)
 {
-  struct stat *st = (struct stat*)rec_fld(rec, "stat");
+  String full = rec_fld(rec, "fullpath");
+  ventry *ent = fnd_val("fm_stat", "fullpath", full);
+  struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
   return (S_ISDIR(st->st_mode));
 }
 
-void send_rec(FS_req *fq, const char* dir, const char* base, int *f)
+void send_stat(FS_req *fq, const char* dir)
 {
-  Cntlr *c = fq->fs_h->job.caller;
-  fn_tbl *t = c->hndl->tbl;
-  String fullpath = conspath(dir, base);
   struct stat *s = malloc(sizeof(struct stat));
-  stat(fullpath, s);
+  stat(dir, s);
 
   JobArg *arg = malloc(sizeof(JobArg));
-  fn_rec *r = mk_rec(t);
-  rec_edit(r, "name", (void*)base);
-  rec_edit(r, "dir", (void*)dir);
-  rec_edit(r, "fullpath", (void*)fullpath);
+  arg->tname = "fm_stat";
+  fn_rec *r = mk_rec(arg->tname);
+  rec_edit(r, "fullpath", (void*)dir);
   rec_edit(r, "stat", (void*)s);
-  rec_edit(r, "scan", (void*)f);
-  free(fullpath);
   arg->rec = r;
   arg->fn = commit;
   QUEUE_PUT(work, &fq->fs_h->job, arg);
@@ -74,23 +67,28 @@ void scan_cb(uv_fs_t* req)
   FS_req *fq = req->data;
 
   /* clear outdated records */
-  Cntlr *c = fq->fs_h->job.caller;
-  fn_tbl *t = c->hndl->tbl;
-  tbl_del_val(t, "dir", (String)req->path);
+  tbl_del_val("fm_file", "dir", (String)req->path);
 
   if (fq->rec) {
-    log_msg("FS", "--scan path exists--");
-    rec_edit(fq->rec, "scan", &FON);
+    log_msg("FS", "--stat already exists--");
+    tbl_del_val("fm_stat", "fullpath", (String)req->path);
   }
-  else {
-    String dir = fs_parent_dir(fq->req_name);
-    String base = fs_base_dir(fq->req_name);
-    send_rec(fq, dir, base, &FON);
-    free(dir);
-  }
+  /* add stat. TODO: should reuse uvstat in stat_cb */
+  send_stat(fq, req->path);
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
-    send_rec(fq, req->path, dent.name, &FOFF);
+    JobArg *arg = malloc(sizeof(JobArg));
+    arg->tname = "fm_files";
+    fn_rec *r = mk_rec(arg->tname);
+    rec_edit(r, "name", (void*)dent.name);
+    rec_edit(r, "dir", (void*)req->path);
+    String full = conspath(req->path, dent.name);
+    send_stat(fq, full);
+    rec_edit(r, "fullpath", (void*)full);
+    free(full);
+    arg->rec = r;
+    arg->fn = commit;
+    QUEUE_PUT(work, &fq->fs_h->job, arg);
   }
   fq->close_cb(fq);
 }
@@ -101,23 +99,15 @@ void stat_cb(uv_fs_t* req)
   FS_req *fq = req->data;
   fq->uv_stat = req->statbuf;
 
-  Cntlr *c = fq->fs_h->job.caller;
-  fn_tbl *t = c->hndl->tbl;
-  ventry *ent = fnd_val(t, "fullpath", fq->req_name);
+  ventry *ent = fnd_val("fm_files", "dir", fq->req_name);
 
   if (ent) {
     log_msg("FS", "ENT");
-    int *flag = (int*)rec_fld(ent->rec, "scan");
-    if (flag) {
-      log_msg("FS", "FLAG");
-      if (*flag == FON) {
-        log_msg("FS", "FLAG ON");
-        struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
-        if (fq->uv_stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
-          log_msg("FS", "NOP");
-          return;
-        }
-      }
+    ent = fnd_val("fm_stat", "fullpath", fq->req_name);
+    struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
+    if (fq->uv_stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
+      log_msg("FS", "NOP");
+      return;
     }
     fq->rec = ent->rec;
   }

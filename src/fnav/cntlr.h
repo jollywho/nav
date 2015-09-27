@@ -18,8 +18,8 @@ typedef struct listener listener;
 struct fn_handle {
   fn_handle *prev;
   fn_handle *next;
-  fn_tbl *tbl;
   fn_buf *buf;
+  String tname;
   String fname;
   String fval;
   listener *lis;
