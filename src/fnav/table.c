@@ -117,6 +117,7 @@ void* rec_fld(fn_rec *rec, String fname)
 {
   if (!rec) return NULL;
   for(int i=0;i<rec->fld_count;i++) {
+
     if (strcmp(rec->vals[i]->fld->key, fname) == 0) {
       if (rec->vals[i]->fld->type == typSTRING) {
         return rec->vals[i]->key;
@@ -160,14 +161,15 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
       continue;
     }
 
-    fn_val *v = kb_getp(FNVAL, fv->fld->vtree, fv);
+    fn_fld *f = kb_getp(FNFLD, t->fields, fv->fld);
+    fn_val *v = kb_getp(FNVAL, f->vtree, fv);
     /* create null entry stub. */
     if (!v) {
       log_msg("TABLE", "new stub");
       v = malloc(sizeof(fn_val));
       ventry *ent = malloc(sizeof(ventry));
       v->key = strdup(fv->key);
-      v->fld = fv->fld;
+      v->fld = f;
       v->count = 0;
       ent->rec = NULL;
       ent->val = v;
@@ -176,7 +178,7 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
       ent->head = 1;
       v->rlist = ent;
       v->listeners = NULL;
-      kb_putp(FNVAL, fv->fld->vtree, v);
+      kb_putp(FNVAL, f->vtree, v);
     }
     /* attach record to an entry. */
     v->count++;

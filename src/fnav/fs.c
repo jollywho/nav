@@ -85,6 +85,7 @@ void scan_cb(uv_fs_t* req)
     rec_edit(r, "name", (void*)dent.name);
     rec_edit(r, "dir", (void*)req->path);
     String full = conspath(req->path, dent.name);
+    tbl_del_val("fm_stat", "fullpath", full);
     send_stat(fq, full);
     rec_edit(r, "fullpath", (void*)full);
     free(full);
@@ -120,15 +121,13 @@ void stat_cb(uv_fs_t* req)
 
 void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)
 {
-  FS_req *fq = handle->data;
-  log_msg("FM", "--watch--");
+  FS_handle *hndl = handle->data;
+  log_msg("FS", "--watch--");
   if (events & UV_RENAME)
-    log_msg("FM", "=%s= renamed", filename);
+    log_msg("FS", "=%s= renamed", filename);
   if (events & UV_CHANGE)
-    log_msg("FM", "=%s= changed", filename);
-  uv_fs_event_stop(&fq->fs_h->watcher);
-  fs_open(fq->fs_h, fq->req_name);
-  free(fq);
+    log_msg("FS", "=%s= changed", filename);
+  //fs_open(hndl, handle->path);
 }
 
 void fs_close_cb(FS_req *fq)
@@ -147,18 +146,10 @@ void fs_open(FS_handle *fsh, String dir)
   fq->close_cb = fs_close_cb;
   fq->rec = NULL;
 
-  FS_req *fw = malloc(sizeof(FS_req));
-  fw->fs_h = fsh;
-  fw->req_name = dir;
-  fw->uv_fs.data = fw;
-  fw->fs_h->watcher.data = fw;
-  fw->close_cb = fs_close_cb;
-  fw->rec = NULL;
-
   uv_fs_stat(fq->fs_h->loop, &fq->uv_fs, dir, stat_cb);
-  uv_fs_event_stop(&fw->fs_h->watcher);
-  uv_fs_event_init(fw->fs_h->loop, &fw->fs_h->watcher);
-  uv_fs_event_start(&fw->fs_h->watcher, watch_cb, dir, 0);
+  uv_fs_event_stop(&fsh->watcher);
+  uv_fs_event_init(fsh->loop, &fsh->watcher);
+  uv_fs_event_start(&fsh->watcher, watch_cb, dir, 1);
 }
 
 FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb)
@@ -169,5 +160,6 @@ FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb)
   fsh->job.caller = c;
   fsh->job.hndl = h;
   fsh->job.read_cb = read_cb;
+  fsh->watcher.data = fsh;
   return fsh;
 }

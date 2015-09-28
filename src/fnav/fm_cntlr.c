@@ -35,7 +35,7 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir ="/home/chi/casper/YFS";
+String init_dir ="/home/chi/casper/Downloads/[Coalgirls]_Hunter_X_Hunter_(1280x720_Blu-ray_FLAC)";
 static void fm_mv();
 static void fm_page();
 static void fm_mv();
