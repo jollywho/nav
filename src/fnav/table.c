@@ -209,15 +209,25 @@ void tbl_del_rec(fn_rec *rec)
     if (it && !it->head) {
       log_msg("TABLE", "delete rec inner");
       if (it->val->listeners) {
-      log_msg("TABLE", "delete ent has list!");
         if (it->val->listeners->ent == it) {
-          it->val->listeners->ent = it->next;
+          log_msg("TABLE", "delete bumped listener!");
+          it->val->listeners->ent = it->prev;
         }
       }
       it->next->prev = it->prev;
       it->prev->next = it->next;
     }
+    if (rec->vals[i]->fld->type == typSTRING) {
+      free(rec->vals[i]->key);
+    }
+    else {
+      free(rec->vals[i]->data);
+    }
+    free(rec->vals[i]);
   }
+  free(rec->vals);
+  free(rec->vlist);
+  free(rec);
 }
 
 void tbl_del_val(String tn, String fname, String val)
@@ -235,6 +245,7 @@ void tbl_del_val(String tn, String fname, String val)
       ventry *it = vv->rlist->prev;
       while (!it->head) {
         tbl_del_rec(it->rec);
+        it->val->count--;
         it = it->prev;
       }
       if (!vv->listeners) {

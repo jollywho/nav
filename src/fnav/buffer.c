@@ -70,11 +70,10 @@ void buf_draw(Job *job, JobArg *arg)
 
   wclear(buf->nc_win);
   pos_T p = {.lnum = 0, .col = 0};
-  log_msg("TABLE", "_druh");
   ventry *it = buf->hndl->lis->ent;
   if (!it) return;
   int i;
-  for(i = 0; i < buf->nc_size.lnum-1; i++) {
+  for(i = 0; i < buf->nc_size.lnum * 0.8; i++) {
     if (it->prev->head) break;
     it = it->prev;
     if (!it->rec) break;

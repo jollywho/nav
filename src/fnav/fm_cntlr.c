@@ -48,7 +48,7 @@ static void fm_update();
 static const struct fm_cmd {
   int cmd_char;                 /* (first) command character */
   key_func cmd_func;            /* function for this command */
-  int cmd_flags;                /* NV_ flags */
+  int cmd_flags;                /* FN_ flags */
   short cmd_arg;                /* value for ca.arg */
 } fm_cmds[] =
 {
