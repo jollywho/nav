@@ -26,6 +26,7 @@ char* conspath(const char* str1, const char* str2)
 
 String fs_parent_dir(String path)
 {
+  // TODO: when to free this
   String tmp = strdup(path);
   return dirname(tmp);
 }
@@ -38,6 +39,7 @@ String fs_base_dir(String path)
 
 bool isdir(fn_rec *rec)
 {
+  if (!rec) return NULL;
   String full = rec_fld(rec, "fullpath");
   ventry *ent = fnd_val("fm_stat", "fullpath", full);
   struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
@@ -118,11 +120,15 @@ void stat_cb(uv_fs_t* req)
 
 void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)
 {
+  FS_req *fq = handle->data;
   log_msg("FM", "--watch--");
   if (events & UV_RENAME)
     log_msg("FM", "=%s= renamed", filename);
   if (events & UV_CHANGE)
     log_msg("FM", "=%s= changed", filename);
+  uv_fs_event_stop(&fq->fs_h->watcher);
+  fs_open(fq->fs_h, fq->req_name);
+  free(fq);
 }
 
 void fs_close_cb(FS_req *fq)
@@ -138,14 +144,21 @@ void fs_open(FS_handle *fsh, String dir)
   fq->fs_h = fsh;
   fq->req_name = dir;
   fq->uv_fs.data = fq;
-  fq->fs_h->watcher.data = fq;
   fq->close_cb = fs_close_cb;
   fq->rec = NULL;
 
+  FS_req *fw = malloc(sizeof(FS_req));
+  fw->fs_h = fsh;
+  fw->req_name = dir;
+  fw->uv_fs.data = fw;
+  fw->fs_h->watcher.data = fw;
+  fw->close_cb = fs_close_cb;
+  fw->rec = NULL;
+
   uv_fs_stat(fq->fs_h->loop, &fq->uv_fs, dir, stat_cb);
-  uv_fs_event_stop(&fq->fs_h->watcher);
-  uv_fs_event_init(fq->fs_h->loop, &fq->fs_h->watcher);
-  uv_fs_event_start(&fq->fs_h->watcher, watch_cb, dir, 0);
+  uv_fs_event_stop(&fw->fs_h->watcher);
+  uv_fs_event_init(fw->fs_h->loop, &fw->fs_h->watcher);
+  uv_fs_event_start(&fw->fs_h->watcher, watch_cb, dir, 0);
 }
 
 FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb)

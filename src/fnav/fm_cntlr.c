@@ -93,8 +93,9 @@ static void fm_left(Cntlr *cntlr)
 {
   log_msg("FM", "cmd left");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  String tmp = fs_parent_dir(buf_val(cntlr->hndl, "dir"));
-  self->cur_dir = tmp;
+  String tmp = buf_val(cntlr->hndl, "dir");
+  tmp = tmp ? tmp : self->cur_dir;
+  self->cur_dir = fs_parent_dir(tmp);
   cntlr->hndl->fval = self->cur_dir;
   buf_set(cntlr->hndl, "name");
   fs_open(self->fs, self->cur_dir);

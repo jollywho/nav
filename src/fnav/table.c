@@ -216,6 +216,7 @@ void tbl_del_rec(fn_rec *rec)
       }
       it->next->prev = it->prev;
       it->prev->next = it->next;
+      // TODO: how free entries while iterating
     }
     if (rec->vals[i]->fld->type == typSTRING) {
       free(rec->vals[i]->key);
@@ -223,7 +224,6 @@ void tbl_del_rec(fn_rec *rec)
     else {
       free(rec->vals[i]->data);
     }
-    free(rec->vals[i]);
   }
   free(rec->vals);
   free(rec->vlist);
