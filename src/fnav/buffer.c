@@ -65,20 +65,23 @@ void buf_listen(fn_handle *hndl)
 
 void buf_draw(Job *job, JobArg *arg)
 {
-  log_msg("TABLE", "druh");
+  log_msg("BUFFER", "druh");
   fn_buf *buf = job->caller;
 
   wclear(buf->nc_win);
   pos_T p = {.lnum = 0, .col = 0};
-  ventry *it = buf->hndl->lis->ent;
+  listener *lis = buf->hndl->lis;
+  ventry *it = lis->ent;
   if (!it) return;
   int i;
-  for(i = 0; i < buf->nc_size.lnum * 0.8; i++) {
+  for(i = 0; i < lis->pos; i++) {
     if (it->prev->head) break;
     it = it->prev;
     if (!it->rec) break;
   }
-  int pos = i;
+  log_msg("BUFFER", "___[ofs %d]__", lis->ofs);
+  log_msg("BUFFER", "___[pos %d]__", lis->pos);
+  log_msg("BUFFER", "___[count %d]__", i);
   for(int i = 0; i < buf->nc_size.lnum; i++) {
     if (!it->rec) break;
     String n = (String)rec_fld(it->rec, buf->fname);
@@ -96,7 +99,7 @@ void buf_draw(Job *job, JobArg *arg)
     if (it->prev->head) break;
     INC_POS(p,0,1);
   }
-  wmove(buf->nc_win, pos, 0);
+  wmove(buf->nc_win, lis->pos, 0);
   wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
   //TODO: use wnoutrefresh here and refresh once on timer
   wnoutrefresh(buf->nc_win);
@@ -119,14 +122,27 @@ int buf_pgsize(fn_handle *hndl)
 
 void buf_mv(fn_buf *buf, int x, int y)
 {
+  int *pos = &buf->hndl->lis->pos;
+  int *ofs = &buf->hndl->lis->ofs;
   for (int i = 0; i < abs(y); i++) {
     ventry *ent = buf->hndl->lis->ent;
     int d = FN_MV(ent, y);
     if (d == 1) {
       buf->hndl->lis->ent = ent->next;
+      if (*pos < buf->nc_size.lnum * .8)
+        (*pos)++;
+      else
+        (*ofs)++;
     }
     if (d == -1) {
       buf->hndl->lis->ent = ent->prev;
+      if (*pos > buf->nc_size.lnum * .2)
+        (*pos)--;
+      else
+        if (*ofs > 0)
+          (*ofs)--;
+        else
+          (*pos)--;
     }
   }
   QUEUE_PUT(draw, buf->job, buf->arg);

@@ -286,6 +286,8 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
       vv->listeners = malloc(sizeof(listener));
       vv->listeners->cb = cb;
       vv->listeners->ent = ent;
+      vv->listeners->pos = 0;
+      vv->listeners->ofs = 0;
       vv->listeners->hndl = hndl;
       kb_putp(FNVAL, ff->vtree, vv);
     }
@@ -294,6 +296,8 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
         vv->listeners = malloc(sizeof(listener));
         vv->listeners->cb = cb;
         vv->listeners->ent = vv->rlist;
+        vv->listeners->pos = 0;
+        vv->listeners->ofs = 0;
         vv->listeners->hndl = hndl;
       }
     }

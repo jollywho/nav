@@ -48,6 +48,8 @@ struct listener {
   fn_handle *hndl;
   buf_cb cb;
   ventry *ent;
+  int pos;
+  int ofs;
 };
 
 void tables_init();
