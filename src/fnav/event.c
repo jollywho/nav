@@ -100,11 +100,17 @@ void stop_cycle(void)
   uv_timer_stop(&fast_timer);
 }
 
-void cycle_events(void)
+void cycle_events(int ms)
 {
   log_msg("EVENT", "<<enable>>");
-  uv_timer_start(&fast_timer, loop_timeout, 10, 0);
-  uv_run(event_loop, UV_RUN_ONCE);
+  uv_run_mode mode = UV_RUN_ONCE;
+  if (ms > 0) {
+    uv_timer_start(&fast_timer, loop_timeout, (uint64_t)ms, (uint64_t)ms);
+  }
+  else if(ms == 0)
+    mode = UV_RUN_NOWAIT;
+
+  uv_run(event_loop, mode);
 }
 
 Loop *eventloop(void)

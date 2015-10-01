@@ -5,7 +5,7 @@
 
 int event_init(void);
 void start_event_loop(void);
-void cycle_events(void);
+void cycle_events(int ms);
 void stop_cycle(void);
 Loop *eventloop(void);
 

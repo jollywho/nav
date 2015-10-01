@@ -15,6 +15,7 @@ struct fn_buf {
 
   Job *job;
   JobArg *arg;
+  bool dirty;
 
   fn_handle *hndl;
   String fname;
@@ -44,6 +45,7 @@ fn_buf* buf_init()
   buf->arg = malloc(sizeof(JobArg));
   buf->job->caller = buf;
   buf->arg->fn = buf_draw;
+  buf->dirty = false;
   return buf;
 }
 
@@ -60,6 +62,9 @@ void buf_set(fn_handle *hndl, String fname)
 void buf_listen(fn_handle *hndl)
 {
   log_msg("BUFFER", "listen cb");
+  if (hndl->buf->dirty)
+    return;
+  hndl->buf->dirty = true;
   QUEUE_PUT(draw, hndl->buf->job, hndl->buf->arg);
 }
 
@@ -100,6 +105,7 @@ void buf_draw(Job *job, JobArg *arg)
   wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
   //TODO: use wnoutrefresh here and refresh once on timer
   wnoutrefresh(buf->nc_win);
+  buf->dirty = false;
 }
 
 String buf_val(fn_handle *hndl, String fname) {
