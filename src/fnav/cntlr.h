@@ -24,8 +24,6 @@ struct fn_handle {
 };
 
 struct Cntlr {
-  Cntlr *next;
-  Cntlr *prev;
   Cmd *cmd_lst;
   fn_handle *hndl;
   void *top;

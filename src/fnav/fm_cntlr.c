@@ -10,6 +10,7 @@
 #include "fnav/buffer.h"
 #include "fnav/fm_cntlr.h"
 #include "fnav/table.h"
+#include "fnav/pane.h"
 #include "fnav/log.h"
 
 enum Type { OPERATOR, MOTION };
@@ -42,7 +43,6 @@ static void fm_mv();
 static void fm_left();
 static void fm_right();
 static void fm_g_cmd();
-static void cancel();
 
 static const struct fm_cmd {
   int cmd_char;                 /* (first) command character */
@@ -59,10 +59,9 @@ static const struct fm_cmd {
   {'k',     fm_mv,          0,                 BACKWARD},
   {'g',     fm_g_cmd,       0,                 BACKWARD},
   {'G',     fm_g_cmd,       0,                 FORWARD},
-  {'c',     cancel,         0,                 BACKWARD},
 };
 
-void cancel(Cntlr *cntlr)
+void cntlr_cancel(Cntlr *cntlr)
 {
   log_msg("FM", "<|_CANCEL_|>");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
@@ -81,7 +80,7 @@ void fm_after_scan()
   log_msg("FM", "async done");
 }
 
-static void focus(Cntlr *cntlr)
+void cntlr_focus(Cntlr *cntlr)
 {
   log_msg("FM", "update dir");
   buf_refresh(cntlr->hndl->buf);
@@ -231,7 +230,7 @@ static int find_command(int cmdchar)
   return idx;
 }
 
-int input(Cntlr *cntlr, int key)
+int cntlr_input(Cntlr *cntlr, int key)
 {
   Cmdarg ca;
   int idx = find_command(key);
@@ -251,22 +250,23 @@ void init_fm_hndl(FM_cntlr *fm, Cntlr *c, String val)
   hndl->fval = val;
   c->hndl = hndl;
   c->cmd_lst = default_lst;
-  c->_focus = focus;
-  c->_cancel = cancel;
-  c->_input = input;
+  c->_focus = cntlr_focus;
+  c->_cancel = cntlr_cancel;
+  c->_input = cntlr_input;
   c->top = fm;
   buf_set(c->hndl, "name");
+  pane_add(c);
 }
 
 FM_cntlr* fm_cntlr_init()
 {
-  printf("fm_cntlr init\n");
+  log_msg("INIT", "FM_CNTLR");
   init_cmds(); //TODO: cleanup loose parts
 
-  FM_cntlr *c = malloc(sizeof(FM_cntlr));
-  c->op_count = 1;
-  c->mo_count = 1;
-  c->cur_dir = init_dir;
+  FM_cntlr *fm = malloc(sizeof(FM_cntlr));
+  fm->op_count = 1;
+  fm->mo_count = 1;
+  fm->cur_dir = init_dir;
 
   tbl_mk("fm_files");
   tbl_mk_fld("fm_files", "name", typSTRING);
@@ -276,21 +276,15 @@ FM_cntlr* fm_cntlr_init()
   tbl_mk("fm_stat");
   tbl_mk_fld("fm_stat", "fullpath", typSTRING);
   tbl_mk_fld("fm_stat", "stat", typVOID);
-  init_fm_hndl(c, &c->base, c->cur_dir);
+  init_fm_hndl(fm, &fm->base, fm->cur_dir);
 
-  c->fs = fs_init(&c->base, c->base.hndl, fm_read_scan);
-  fs_open(c->fs, c->cur_dir);
+  fm->fs = fs_init(&fm->base, fm->base.hndl, fm_read_scan);
+  fs_open(fm->fs, fm->cur_dir);
 
-  init_fm_hndl(c, &c->parent, c->cur_dir);
-  init_fm_hndl(c, &c->child, c->cur_dir);
-  c->parent.prev = &c->base;
-  c->parent.next = &c->child;
-  c->child.prev = &c->parent;
-  c->child.next = &c->base;
-  c->base.prev = &c->child;
-  c->base.next = &c->parent;
+  init_fm_hndl(fm, &fm->parent, fm->cur_dir);
+  init_fm_hndl(fm, &fm->child, fm->cur_dir);
 
-  return c;
+  return fm;
 }
 
 void fm_cntlr_cleanup(FM_cntlr *cntlr)

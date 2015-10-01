@@ -5,6 +5,7 @@
 #include <termkey.h>
 #include <ncurses.h>
 
+#include "fnav/pane.h"
 #include "fnav/event.h"
 #include "fnav/log.h"
 
@@ -63,7 +64,7 @@ void event_input(uv_poll_t *req, int status, int events)
         unsigned int mask = (1 << key.modifiers) -1;
         key.code.number &= key.code.number & mask;
       }
-      rpc_key_handle(key.code.number);
+      pane_input(key.code.number);
     }
 
     if(key.type == TERMKEY_TYPE_UNICODE &&

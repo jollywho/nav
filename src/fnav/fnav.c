@@ -9,6 +9,7 @@
 #include "fnav/event.h"
 #include "fnav/fm_cntlr.h"
 #include "fnav/fs.h"
+#include "fnav/pane.h"
 
 void init(void)
 {
@@ -27,7 +28,7 @@ void init(void)
   tables_init();
   event_init();
   queue_init();
-  rpc_temp_init();
+  pane_init();
 }
 
 void sig_handler(int sig)
