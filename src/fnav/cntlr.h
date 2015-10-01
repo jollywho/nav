@@ -16,8 +16,6 @@ typedef struct fn_handle fn_handle;
 typedef struct listener listener;
 
 struct fn_handle {
-  fn_handle *prev;
-  fn_handle *next;
   fn_buf *buf;
   String tname;
   String fname;
@@ -26,10 +24,13 @@ struct fn_handle {
 };
 
 struct Cntlr {
+  Cntlr *next;
+  Cntlr *prev;
   Cmd *cmd_lst;
   fn_handle *hndl;
   void *top;
   void (*_cancel)(Cntlr *cntlr);
+  void (*_focus)(Cntlr *cntlr);
   int  (*_input)(Cntlr *cntlr, int key);
 };
 

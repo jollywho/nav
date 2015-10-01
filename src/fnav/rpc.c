@@ -6,11 +6,11 @@
 #include "fnav/event.h"
 #include "fnav/log.h"
 
-Cntlr *cntlr; //replace later with focus
+Cntlr *focus; //replace later with focus
 
 void rpc_temp_init()
 {
-  cntlr = (Cntlr*)fm_cntlr_init();
+  focus = &fm_cntlr_init()->base;
 }
 
 // Input handler
@@ -20,5 +20,9 @@ void rpc_key_handle(int key)
   //      -ret 1 is consumed
   //      -ret 0 is ignored
   //TODO: set focus cntrl
-  cntlr->_input(cntlr, key);
+  if (key == 'n') {
+    focus = focus->next;
+    focus->_focus(focus);
+  }
+  focus->_input(focus, key);
 }

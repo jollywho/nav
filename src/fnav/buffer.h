@@ -17,5 +17,6 @@ void buf_mv(fn_buf *buf, int x, int y);
 String buf_val(fn_handle *hndl, String fname);
 fn_rec* buf_rec(fn_handle *hndl);
 int buf_pgsize(fn_handle *hndl);
+void buf_refresh(fn_buf *buf);
 
 #endif

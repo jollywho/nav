@@ -79,9 +79,6 @@ void buf_draw(Job *job, JobArg *arg)
     it = it->prev;
     if (!it->rec) break;
   }
-  log_msg("BUFFER", "___[ofs %d]__", lis->ofs);
-  log_msg("BUFFER", "___[pos %d]__", lis->pos);
-  log_msg("BUFFER", "___[count %d]__", i);
   for(int i = 0; i < buf->nc_size.lnum; i++) {
     if (!it->rec) break;
     String n = (String)rec_fld(it->rec, buf->fname);
@@ -105,19 +102,20 @@ void buf_draw(Job *job, JobArg *arg)
   wnoutrefresh(buf->nc_win);
 }
 
-String buf_val(fn_handle *hndl, String fname)
-{
+String buf_val(fn_handle *hndl, String fname) {
   return rec_fld(hndl->lis->ent->rec, fname);
 }
 
-fn_rec* buf_rec(fn_handle *hndl)
-{
+fn_rec* buf_rec(fn_handle *hndl) {
   return hndl->lis->ent->rec;
 }
 
-int buf_pgsize(fn_handle *hndl)
-{
+int buf_pgsize(fn_handle *hndl) {
   return hndl->buf->nc_size.col / 3;
+}
+
+void buf_refresh(fn_buf *buf) {
+  QUEUE_PUT(draw, buf->job, buf->arg);
 }
 
 void buf_mv(fn_buf *buf, int x, int y)
@@ -127,22 +125,24 @@ void buf_mv(fn_buf *buf, int x, int y)
   for (int i = 0; i < abs(y); i++) {
     ventry *ent = buf->hndl->lis->ent;
     int d = FN_MV(ent, y);
+
     if (d == 1) {
-      buf->hndl->lis->ent = ent->next;
       if (*pos < buf->nc_size.lnum * .8)
         (*pos)++;
       else
         (*ofs)++;
+      buf->hndl->lis->ent = ent->next;
     }
-    if (d == -1) {
-      buf->hndl->lis->ent = ent->prev;
+    else if (d == -1) {
       if (*pos > buf->nc_size.lnum * .2)
         (*pos)--;
-      else
+      else {
         if (*ofs > 0)
           (*ofs)--;
         else
           (*pos)--;
+      }
+      buf->hndl->lis->ent = ent->prev;
     }
   }
   QUEUE_PUT(draw, buf->job, buf->arg);

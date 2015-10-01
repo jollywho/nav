@@ -88,7 +88,6 @@ void queue_timeout(uv_timer_t *req)
 void loop_timeout(uv_timer_t *req)
 {
   log_msg("LOOP", "++spin timeout++");
-  doupdate();
   uv_timer_stop(&spin_timer);
   cycle_events();
 }
@@ -102,6 +101,7 @@ static void process_mainloop(Queue *queue)
     Queue *q = i->data.queue;
     free(i);
     process_loop(q);
+    doupdate();
   }
 }
 

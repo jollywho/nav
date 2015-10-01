@@ -8,7 +8,8 @@ typedef struct FM_cntlr FM_cntlr;
 
 struct FM_cntlr {
   Cntlr base;
-  /* new fields */
+  Cntlr parent;
+  Cntlr child;
   int op_count;
   int mo_count;
   String cur_dir;

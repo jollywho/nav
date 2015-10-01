@@ -35,7 +35,7 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir ="/home/chi/casper/Downloads";
+String init_dir ="/home/chi/casper/YFS";
 static void fm_mv();
 static void fm_page();
 static void fm_mv();
@@ -43,7 +43,6 @@ static void fm_left();
 static void fm_right();
 static void fm_g_cmd();
 static void cancel();
-static void fm_update();
 
 static const struct fm_cmd {
   int cmd_char;                 /* (first) command character */
@@ -58,7 +57,6 @@ static const struct fm_cmd {
   {'l',     fm_right,       0,                 0},
   {'j',     fm_mv,          0,                 FORWARD},
   {'k',     fm_mv,          0,                 BACKWARD},
-  {'u',     fm_update,      0,                 BACKWARD},
   {'g',     fm_g_cmd,       0,                 BACKWARD},
   {'G',     fm_g_cmd,       0,                 FORWARD},
   {'c',     cancel,         0,                 BACKWARD},
@@ -83,10 +81,10 @@ void fm_after_scan()
   log_msg("FM", "async done");
 }
 
-static void fm_update(Cntlr *cntlr)
+static void focus(Cntlr *cntlr)
 {
   log_msg("FM", "update dir");
-  log_msg("FM", "waiting on job...");
+  buf_refresh(cntlr->hndl->buf);
 }
 
 static void fm_left(Cntlr *cntlr)
@@ -244,21 +242,32 @@ int input(Cntlr *cntlr, int key)
   return 0;
 }
 
+void init_fm_hndl(FM_cntlr *fm, Cntlr *c, String val)
+{
+  fn_handle *hndl = malloc(sizeof(fn_handle));
+  hndl->tname = "fm_files";
+  hndl->buf = buf_init();
+  hndl->fname = "dir";
+  hndl->fval = val;
+  c->hndl = hndl;
+  c->cmd_lst = default_lst;
+  c->_focus = focus;
+  c->_cancel = cancel;
+  c->_input = input;
+  c->top = fm;
+  buf_set(c->hndl, "name");
+}
+
 FM_cntlr* fm_cntlr_init()
 {
   printf("fm_cntlr init\n");
   init_cmds(); //TODO: cleanup loose parts
 
   FM_cntlr *c = malloc(sizeof(FM_cntlr));
-  c->base.top = c;
-  c->base.cmd_lst = default_lst;
-  c->base._cancel = cancel;
-  c->base._input = input;
   c->op_count = 1;
   c->mo_count = 1;
   c->cur_dir = init_dir;
 
-  c->base.hndl = malloc(sizeof(fn_handle));
   tbl_mk("fm_files");
   tbl_mk_fld("fm_files", "name", typSTRING);
   tbl_mk_fld("fm_files", "dir", typSTRING);
@@ -267,14 +276,20 @@ FM_cntlr* fm_cntlr_init()
   tbl_mk("fm_stat");
   tbl_mk_fld("fm_stat", "fullpath", typSTRING);
   tbl_mk_fld("fm_stat", "stat", typVOID);
-  c->base.hndl->tname = "fm_files";
-  c->base.hndl->buf = buf_init();
-  c->base.hndl->fname = "dir";
-  c->base.hndl->fval = c->cur_dir;
-  buf_set(c->base.hndl, "name");
+  init_fm_hndl(c, &c->base, c->cur_dir);
 
   c->fs = fs_init(&c->base, c->base.hndl, fm_read_scan);
   fs_open(c->fs, c->cur_dir);
+
+  init_fm_hndl(c, &c->parent, c->cur_dir);
+  init_fm_hndl(c, &c->child, c->cur_dir);
+  c->parent.prev = &c->base;
+  c->parent.next = &c->child;
+  c->child.prev = &c->parent;
+  c->child.next = &c->base;
+  c->base.prev = &c->child;
+  c->base.next = &c->parent;
+
   return c;
 }
 
