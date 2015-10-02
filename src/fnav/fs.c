@@ -58,7 +58,7 @@ void send_stat(FS_req *fq, const char* dir)
   rec_edit(r, "stat", (void*)s);
   arg->rec = r;
   arg->fn = commit;
-  QUEUE_PUT(work, &fq->fs_h->job, arg);
+  queue_push(eventloop(), &fq->fs_h->job, arg);
 }
 
 void scan_cb(uv_fs_t* req)
@@ -91,7 +91,7 @@ void scan_cb(uv_fs_t* req)
     free(full);
     arg->rec = r;
     arg->fn = commit;
-    QUEUE_PUT(work, &fq->fs_h->job, arg);
+    queue_push(eventloop(), &fq->fs_h->job, arg);
   }
   fq->close_cb(fq);
 }

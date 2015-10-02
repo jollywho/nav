@@ -2,6 +2,7 @@
 #include <ncurses.h>
 #include <limits.h>
 
+#include "fnav/pane.h"
 #include "fnav/log.h"
 #include "fnav/table.h"
 #include "fnav/buffer.h"
@@ -15,7 +16,6 @@ struct fn_buf {
 
   Job *job;
   JobArg *arg;
-  bool dirty;
 
   fn_handle *hndl;
   String fname;
@@ -45,7 +45,6 @@ fn_buf* buf_init()
   buf->arg = malloc(sizeof(JobArg));
   buf->job->caller = buf;
   buf->arg->fn = buf_draw;
-  buf->dirty = false;
   return buf;
 }
 
@@ -59,21 +58,25 @@ void buf_set(fn_handle *hndl, String fname)
   tbl_listener(hndl, buf_listen);
 }
 
+void buf_resize(fn_buf *buf, int w, int h)
+{
+  SET_POS(buf->b_size, w, h);
+}
+
 void buf_listen(fn_handle *hndl)
 {
   log_msg("BUFFER", "listen cb");
-  if (hndl->buf->dirty)
-    return;
-  hndl->buf->dirty = true;
-  QUEUE_PUT(draw, hndl->buf->job, hndl->buf->arg);
+  pane_set_dirty(hndl->buf);
 }
 
 void buf_draw(Job *job, JobArg *arg)
 {
   log_msg("BUFFER", "druh");
   fn_buf *buf = job->caller;
+  log_msg("BUFFER", "_druh");
 
   wclear(buf->nc_win);
+  log_msg("BUFFER", "__druh");
   pos_T p = {.lnum = 0, .col = 0};
   listener *lis = buf->hndl->lis;
   ventry *it = lis->ent;
@@ -101,11 +104,11 @@ void buf_draw(Job *job, JobArg *arg)
     if (it->prev->head) break;
     INC_POS(p,0,1);
   }
+  log_msg("BUFFER", "+__druh");
   wmove(buf->nc_win, lis->pos, 0);
   wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
   //TODO: use wnoutrefresh here and refresh once on timer
   wnoutrefresh(buf->nc_win);
-  buf->dirty = false;
 }
 
 String buf_val(fn_handle *hndl, String fname) {
@@ -120,8 +123,14 @@ int buf_pgsize(fn_handle *hndl) {
   return hndl->buf->nc_size.col / 3;
 }
 
-void buf_refresh(fn_buf *buf) {
-  QUEUE_PUT(draw, buf->job, buf->arg);
+void buf_refresh(fn_buf *buf)
+{
+  pane_set_dirty(buf);
+}
+
+void buf_allow_draw(Loop *loop, fn_buf *buf)
+{
+  queue_push(loop, buf->job, buf->arg);
 }
 
 void buf_mv(fn_buf *buf, int x, int y)
@@ -151,5 +160,5 @@ void buf_mv(fn_buf *buf, int x, int y)
       buf->hndl->lis->ent = ent->prev;
     }
   }
-  QUEUE_PUT(draw, buf->job, buf->arg);
+  pane_set_dirty(buf);
 }

@@ -6,4 +6,5 @@
 void pane_init();
 void pane_add(Cntlr *c);
 void pane_input(int key);
+void pane_set_dirty(fn_buf *buf);
 #endif
