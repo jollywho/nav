@@ -10,6 +10,7 @@ typedef struct {
 } Cmd;
 
 typedef struct Cntlr Cntlr;
+typedef struct Pane Pane;
 typedef struct fn_tbl fn_tbl;
 typedef struct fn_buf fn_buf;
 typedef struct fn_handle fn_handle;

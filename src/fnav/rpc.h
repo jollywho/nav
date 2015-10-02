@@ -6,7 +6,6 @@
 #include "fnav/lib/queue.h"
 #include "fnav/cntlr.h"
 
-typedef uv_loop_t Loop;
 typedef void(*cntlr_cb)();
 typedef void(*buf_cb)();
 typedef struct fn_rec fn_rec;

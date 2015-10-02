@@ -14,20 +14,19 @@ struct CntlrNode {
   Cntlr *cntlr;
 };
 
-Loop *loop;
-CntlrNode *clist;
-CntlrNode *focus;
-bool draw_pending;
+struct Pane {
+  CntlrNode *clist;
+  CntlrNode *focus;
+  Window *window;
+};
 
 #define FC focus->cntlr
 
-void pane_init()
+void pane_init(Pane *p)
 {
   log_msg("INIT", "PANE");
-  //loop = uv_default_loop();
-  draw_pending = 0;
-  clist = NULL;
-  focus = NULL;
+  p->clist = NULL;
+  p->focus = NULL;
   fm_cntlr_init();
 }
 
@@ -57,7 +56,8 @@ static CntlrNode* pane_next() {
 
 static void pane_focus(CntlrNode* cn)
 {
-  focus = cn;
+  if (cn)
+    focus = cn;
   FC->_focus(FC);
 }
 
@@ -69,11 +69,7 @@ void pane_input(int key)
   FC->_input(FC, key);
 }
 
-void pane_set_dirty(fn_buf *buf)
+void pane_req_draw(fn_buf *buf)
 {
-  buf_allow_draw(eventloop(), buf);
-  if (!draw_pending) {
-    draw_pending = 1;
-    buf_allow_draw(eventloop(), buf);
-  }
+  window_req_draw(self.window, buf);
 }

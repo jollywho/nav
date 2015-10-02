@@ -19,6 +19,4 @@ fn_rec* buf_rec(fn_handle *hndl);
 int buf_pgsize(fn_handle *hndl);
 void buf_refresh(fn_buf *buf);
 
-void buf_allow_draw(Loop *loop, fn_buf *buf);
-
 #endif

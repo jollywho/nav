@@ -11,6 +11,7 @@
 
 struct fn_buf {
   WINDOW *nc_win;
+  Pane *pane;
   pos_T b_size;
   pos_T nc_size;
 
@@ -19,6 +20,7 @@ struct fn_buf {
 
   fn_handle *hndl;
   String fname;
+  bool dirty;
 };
 
 #define SET_POS(pos,x,y)       \
@@ -45,6 +47,7 @@ fn_buf* buf_init()
   buf->arg = malloc(sizeof(JobArg));
   buf->job->caller = buf;
   buf->arg->fn = buf_draw;
+  buf->dirty = false;
   return buf;
 }
 
@@ -66,7 +69,7 @@ void buf_resize(fn_buf *buf, int w, int h)
 void buf_listen(fn_handle *hndl)
 {
   log_msg("BUFFER", "listen cb");
-  pane_set_dirty(hndl->buf);
+  buf_refresh(hndl->buf);
 }
 
 void buf_draw(Job *job, JobArg *arg)
@@ -109,6 +112,7 @@ void buf_draw(Job *job, JobArg *arg)
   wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
   //TODO: use wnoutrefresh here and refresh once on timer
   wnoutrefresh(buf->nc_win);
+  buf->dirty = false;
 }
 
 String buf_val(fn_handle *hndl, String fname) {
@@ -125,12 +129,10 @@ int buf_pgsize(fn_handle *hndl) {
 
 void buf_refresh(fn_buf *buf)
 {
-  pane_set_dirty(buf);
-}
-
-void buf_allow_draw(Loop *loop, fn_buf *buf)
-{
-  queue_push(loop, buf->job, buf->arg);
+  if (buf->dirty)
+    return;
+  buf->dirty = true;
+  pane_req_draw(buf);
 }
 
 void buf_mv(fn_buf *buf, int x, int y)
@@ -160,5 +162,5 @@ void buf_mv(fn_buf *buf, int x, int y)
       buf->hndl->lis->ent = ent->prev;
     }
   }
-  pane_set_dirty(buf);
+  buf_refresh(buf);
 }
