@@ -6,7 +6,7 @@
 typedef struct {
   Job job;
   uv_fs_event_t watcher;
-  Loop *loop;
+  Loop loop;
   bool cancel;
 } FS_handle;
 

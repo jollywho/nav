@@ -7,13 +7,14 @@
 #include "fnav/fnav.h"
 #include "fnav/window.h"
 #include "fnav/loop.h"
+#include "fnav/input.h"
 #include "fnav/event.h"
 #include "fnav/table.h"
 
 void init(void)
 {
 //  log_set("FS");
-  log_msg("INIT", "__________INIT______________");
+  log_msg("INIT", "__________INIT_START____________");
 #ifdef NCURSES_ENABLED
   setlocale(LC_CTYPE, "");
   log_msg("INIT", "initscr");
@@ -27,6 +28,8 @@ void init(void)
   tables_init();
   event_init();
   window_init();
+  input_init();
+  log_msg("INIT", "__________INIT_END______________");
 }
 
 void sig_handler(int sig)

@@ -8,16 +8,12 @@
 #include "fnav/event.h"
 #include "fnav/log.h"
 
-uv_loop_t *loop;
-uv_timer_t draw_timer;
+uv_loop_t loop;
 
-int event_init(void)
+void event_init(void)
 {
   log_msg("INIT", "event");
-  uv_loop_init(loop);
-  uv_timer_init(loop, &draw_timer);
-
-  return 0;
+  uv_loop_init(&loop);
 }
 
 uint64_t os_hrtime(void)
@@ -27,10 +23,11 @@ uint64_t os_hrtime(void)
 
 uv_loop_t *eventloop(void)
 {
-  return loop;
+  return &loop;
 }
 
 void start_event_loop(void)
 {
-  uv_run(loop, UV_RUN_DEFAULT);
+  log_msg("EVENT", "::::started::::");
+  uv_run(&loop, UV_RUN_DEFAULT);
 }

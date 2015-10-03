@@ -3,7 +3,7 @@
 
 #include "fnav/loop.h"
 
-int event_init(void);
+void event_init(void);
 void start_event_loop(void);
 uv_loop_t *eventloop(void);
 uint64_t os_hrtime(void);

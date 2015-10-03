@@ -13,11 +13,18 @@ struct queue_item {
   QUEUE node;
 };
 
+static Queue *queue_new()
+{
+  Queue *rv = malloc(sizeof(Queue));
+  QUEUE_INIT(&rv->headtail);
+  return rv;
+}
+
 void loop_init(Loop *loop)
 {
-  log_msg("INIT", "queue");
+  log_msg("INIT", "new loop");
   uv_loop_init(&loop->uv);
-  QUEUE_INIT(&loop->events->headtail);
+  loop->events = queue_new();
 }
 
 void queue_push(Queue *queue, Event event)

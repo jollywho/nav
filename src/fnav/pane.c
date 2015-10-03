@@ -7,20 +7,6 @@
 #include "fnav/fm_cntlr.h"
 #include "fnav/log.h"
 
-typedef struct CntlrNode CntlrNode;
-
-struct CntlrNode {
-  CntlrNode *prev;
-  CntlrNode *next;
-  Cntlr *cntlr;
-};
-
-struct Pane {
-  CntlrNode *clist;
-  CntlrNode *focus;
-  Window *window;
-};
-
 #define FC focus->cntlr
 
 void pane_init(Pane *p)
@@ -64,6 +50,7 @@ static void pane_focus(Pane *p, CntlrNode* cn)
 
 void pane_input(Pane *p, int key)
 {
+  log_msg("PANE", "input");
   if (key == 'n') {
     pane_focus(p, pane_next(p));
   }

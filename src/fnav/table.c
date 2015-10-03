@@ -32,6 +32,7 @@ tbl_list FN_MASTER;
 
 void tables_init()
 {
+  log_msg("INIT", "table");
   FN_MASTER.name = kb_init(FNTBL, KB_DEFAULT_SIZE);
 }
 

@@ -10,7 +10,6 @@
 typedef struct queue Queue;
 struct queue {
   QUEUE headtail;
-  void *data;
 };
 
 typedef struct loop {

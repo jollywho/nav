@@ -3,4 +3,6 @@
 
 #define INPUT_INTERVAL (uint32_t)30
 
+void input_init(void);
+
 #endif

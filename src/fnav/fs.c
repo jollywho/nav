@@ -59,7 +59,7 @@ void send_stat(FS_req *fq, const char* dir)
   rec_edit(r, "stat", (void*)s);
   arg->rec = r;
   arg->fn = commit;
-  CREATE_EVENT(fh->loop->events, arg->fn, 1, arg);
+  CREATE_EVENT(fh->loop.events, arg->fn, 1, arg);
 }
 
 void scan_cb(uv_fs_t* req)
@@ -93,7 +93,7 @@ void scan_cb(uv_fs_t* req)
     free(full);
     arg->rec = r;
     arg->fn = commit;
-    CREATE_EVENT(fh->loop->events, arg->fn, 1, arg);
+    CREATE_EVENT(fh->loop.events, arg->fn, 1, arg);
   }
   fq->close_cb(fq);
 }
@@ -118,7 +118,7 @@ void stat_cb(uv_fs_t* req)
   }
 
   if (S_ISDIR(fq->uv_stat.st_mode))
-    uv_fs_scandir(&fq->fs_h->loop->uv, &fq->uv_fs, fq->req_name, 0, scan_cb);
+    uv_fs_scandir(&fq->fs_h->loop.uv, &fq->uv_fs, fq->req_name, 0, scan_cb);
 }
 
 void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)
@@ -147,9 +147,9 @@ void fs_open(FS_handle *fsh, String dir)
   fq->close_cb = fs_close_cb;
   fq->rec = NULL;
 
-  uv_fs_stat(&fq->fs_h->loop->uv, &fq->uv_fs, dir, stat_cb);
+  uv_fs_stat(&fq->fs_h->loop.uv, &fq->uv_fs, dir, stat_cb);
   uv_fs_event_stop(&fsh->watcher);
-  uv_fs_event_init(&fsh->loop->uv, &fsh->watcher);
+  uv_fs_event_init(&fsh->loop.uv, &fsh->watcher);
   uv_fs_event_start(&fsh->watcher, watch_cb, dir, 1);
 }
 
@@ -157,7 +157,7 @@ FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb)
 {
   log_msg("FS", "open req");
   FS_handle *fsh = malloc(sizeof(FS_handle));
-  loop_init(fsh->loop);
+  loop_init(&fsh->loop);
   fsh->job.caller = c;
   fsh->job.hndl = h;
   fsh->job.read_cb = read_cb;

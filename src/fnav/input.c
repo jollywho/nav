@@ -10,33 +10,29 @@
 #include "fnav/pane.h"
 
 uv_timer_t input_timer;
-uv_loop_t *loop;
 uv_poll_t poll_handle;
 
 TermKey *tk;
 char buffer[50];
-void event_input(uv_poll_t *req, int status, int events);
+void event_input();
 
 void input_check()
 {
   global_input_time = os_hrtime();
-  uv_run(loop, UV_RUN_ONCE);
+  event_input();
 }
 
 void input_init(void)
 {
-  log_msg("INIT", "input");
+  log_msg("INIT", "INPUT");
   tk = termkey_new(0,0);
   termkey_set_flags(tk, TERMKEY_FLAG_UTF8);
-
-  uv_poll_init(loop, &poll_handle, 0);
-  uv_poll_start(&poll_handle, UV_READABLE, event_input);
 
   uv_timer_init(eventloop(), &input_timer);
   uv_timer_start(&input_timer, input_check, INPUT_INTERVAL, INPUT_INTERVAL);
 }
 
-void event_input(uv_poll_t *req, int status, int events)
+void event_input()
 {
   TermKeyKey key;
   TermKeyFormat format = TERMKEY_FORMAT_URWID;
@@ -69,9 +65,6 @@ void event_input(uv_poll_t *req, int status, int events)
     if(key.type == TERMKEY_TYPE_UNICODE &&
         key.modifiers == 0 &&
         key.code.codepoint == '?') {
-      // printf("\033[?6n"); // DECDSR 6 == request cursor position
-      printf("\033[?1$p"); // DECRQM == request mode, DEC origin mode
-      fflush(stdout);
     }
   }
 }
