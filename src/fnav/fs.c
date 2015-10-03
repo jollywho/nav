@@ -48,6 +48,7 @@ bool isdir(fn_rec *rec)
 
 void send_stat(FS_req *fq, const char* dir)
 {
+  FS_handle *fh = fq->fs_h;
   struct stat *s = malloc(sizeof(struct stat));
   stat(dir, s);
 
@@ -58,7 +59,7 @@ void send_stat(FS_req *fq, const char* dir)
   rec_edit(r, "stat", (void*)s);
   arg->rec = r;
   arg->fn = commit;
-  queue_push(eventloop(), &fq->fs_h->job, arg);
+  CREATE_EVENT(fh->loop->events, arg->fn, 1, arg);
 }
 
 void scan_cb(uv_fs_t* req)
@@ -67,6 +68,7 @@ void scan_cb(uv_fs_t* req)
   log_msg("FS", "path: %s", req->path);
   uv_dirent_t dent;
   FS_req *fq = req->data;
+  FS_handle *fh = fq->fs_h;
 
   /* clear outdated records */
   tbl_del_val("fm_files", "dir", (String)req->path);
@@ -91,7 +93,7 @@ void scan_cb(uv_fs_t* req)
     free(full);
     arg->rec = r;
     arg->fn = commit;
-    queue_push(eventloop(), &fq->fs_h->job, arg);
+    CREATE_EVENT(fh->loop->events, arg->fn, 1, arg);
   }
   fq->close_cb(fq);
 }
@@ -116,12 +118,11 @@ void stat_cb(uv_fs_t* req)
   }
 
   if (S_ISDIR(fq->uv_stat.st_mode))
-    uv_fs_scandir(fq->fs_h->loop, &fq->uv_fs, fq->req_name, 0, scan_cb);
+    uv_fs_scandir(&fq->fs_h->loop->uv, &fq->uv_fs, fq->req_name, 0, scan_cb);
 }
 
 void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)
 {
-  FS_handle *hndl = handle->data;
   log_msg("FS", "--watch--");
   if (events & UV_RENAME)
     log_msg("FS", "=%s= renamed", filename);
@@ -146,9 +147,9 @@ void fs_open(FS_handle *fsh, String dir)
   fq->close_cb = fs_close_cb;
   fq->rec = NULL;
 
-  uv_fs_stat(fq->fs_h->loop, &fq->uv_fs, dir, stat_cb);
+  uv_fs_stat(&fq->fs_h->loop->uv, &fq->uv_fs, dir, stat_cb);
   uv_fs_event_stop(&fsh->watcher);
-  uv_fs_event_init(fsh->loop, &fsh->watcher);
+  uv_fs_event_init(&fsh->loop->uv, &fsh->watcher);
   uv_fs_event_start(&fsh->watcher, watch_cb, dir, 1);
 }
 
@@ -156,7 +157,7 @@ FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb)
 {
   log_msg("FS", "open req");
   FS_handle *fsh = malloc(sizeof(FS_handle));
-  fsh->loop = eventloop();
+  loop_init(fsh->loop);
   fsh->job.caller = c;
   fsh->job.hndl = h;
   fsh->job.read_cb = read_cb;

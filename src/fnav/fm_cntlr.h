@@ -16,6 +16,6 @@ struct FM_cntlr {
   FS_handle *fs;
 };
 
-FM_cntlr* fm_cntlr_init();
+FM_cntlr* fm_cntlr_init(Pane *pane);
 
 #endif

@@ -15,9 +15,6 @@ struct fn_buf {
   pos_T b_size;
   pos_T nc_size;
 
-  Job *job;
-  JobArg *arg;
-
   fn_handle *hndl;
   String fname;
   bool dirty;
@@ -43,10 +40,6 @@ fn_buf* buf_init()
   SET_POS(buf->b_size,0,0);
   getmaxyx(stdscr, buf->nc_size.lnum, buf->nc_size.col);
   buf->nc_win = newwin(buf->nc_size.lnum, buf->nc_size.col, 0,0);
-  buf->job = malloc(sizeof(Job));
-  buf->arg = malloc(sizeof(JobArg));
-  buf->job->caller = buf;
-  buf->arg->fn = buf_draw;
   buf->dirty = false;
   return buf;
 }
@@ -57,7 +50,6 @@ void buf_set(fn_handle *hndl, String fname)
   fn_buf *buf = hndl->buf;
   buf->fname = fname;
   buf->hndl = hndl;
-  buf->job->hndl = hndl;
   tbl_listener(hndl, buf_listen);
 }
 
@@ -72,11 +64,10 @@ void buf_listen(fn_handle *hndl)
   buf_refresh(hndl->buf);
 }
 
-void buf_draw(Job *job, JobArg *arg)
+void buf_draw(void **argv)
 {
   log_msg("BUFFER", "druh");
-  fn_buf *buf = job->caller;
-  log_msg("BUFFER", "_druh");
+  fn_buf *buf = (fn_buf*)argv[0];
 
   wclear(buf->nc_win);
   log_msg("BUFFER", "__druh");
@@ -132,7 +123,7 @@ void buf_refresh(fn_buf *buf)
   if (buf->dirty)
     return;
   buf->dirty = true;
-  pane_req_draw(buf);
+  pane_req_draw(buf, buf_draw);
 }
 
 void buf_mv(fn_buf *buf, int x, int y)

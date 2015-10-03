@@ -5,11 +5,10 @@
 
 #include "fnav/log.h"
 #include "fnav/fnav.h"
+#include "fnav/window.h"
 #include "fnav/loop.h"
 #include "fnav/event.h"
-#include "fnav/fm_cntlr.h"
-#include "fnav/fs.h"
-#include "fnav/pane.h"
+#include "fnav/table.h"
 
 void init(void)
 {
@@ -27,8 +26,7 @@ void init(void)
 #endif
   tables_init();
   event_init();
-  queue_init();
-  pane_init();
+  window_init();
 }
 
 void sig_handler(int sig)

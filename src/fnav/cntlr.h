@@ -9,8 +9,10 @@ typedef struct {
   void (*fn)();
 } Cmd;
 
-typedef struct Cntlr Cntlr;
+typedef void (*argv_callback)(void **argv);
+typedef struct Window Window;
 typedef struct Pane Pane;
+typedef struct Cntlr Cntlr;
 typedef struct fn_tbl fn_tbl;
 typedef struct fn_buf fn_buf;
 typedef struct fn_handle fn_handle;

@@ -2,12 +2,12 @@
 #include <uv.h>
 #include <termkey.h>
 
+#include "fnav/input.h"
+#include "fnav/window.h"
 #include "fnav/loop.h"
 #include "fnav/event.h"
 #include "fnav/log.h"
 #include "fnav/pane.h"
-
-#define INPUT_INTERVAL (uint32_t)30
 
 uv_timer_t input_timer;
 uv_loop_t *loop;
@@ -52,9 +52,6 @@ void event_input(uv_poll_t *req, int status, int events)
       size_t nargs = 16;
       unsigned long command;
       termkey_interpret_csi(tk, &key, args, &nargs, &command);
-      //keep this for testing
-      fprintf(stderr, "Unrecognised CSI %c %ld;%ld %c%c\n",
-          (char)(command >> 8), args[0], args[1], (char)(command >> 16), (char)command);
     }
     else {
       if (key.modifiers) {

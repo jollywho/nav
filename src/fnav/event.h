@@ -5,7 +5,6 @@
 
 int event_init(void);
 void start_event_loop(void);
-void stop_cycle(void);
 uv_loop_t *eventloop(void);
 uint64_t os_hrtime(void);
 

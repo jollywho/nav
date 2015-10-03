@@ -25,8 +25,12 @@ uint64_t os_hrtime(void)
   return uv_hrtime();
 }
 
-
 uv_loop_t *eventloop(void)
 {
   return loop;
+}
+
+void start_event_loop(void)
+{
+  uv_run(loop, UV_RUN_DEFAULT);
 }

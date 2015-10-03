@@ -2,7 +2,10 @@
 #define FN_CORE_LOOP_H
 
 #include <stdarg.h>
-#include "fnav/table.h"
+#include <uv.h>
+
+#include "fnav/lib/queue.h"
+#include "fnav/cntlr.h"
 
 typedef struct queue Queue;
 struct queue {
@@ -21,14 +24,13 @@ typedef struct loop {
 } Loop;
 
 #define EVENT_HANDLER_MAX_ARGC 4
-typedef void (*argv_callback)(void **argv);
 typedef struct message {
   argv_callback handler;
   void *argv[EVENT_HANDLER_MAX_ARGC];
 } Event;
 
 #define queue_put(q, h, ...) \
-  queue_put_event(q, event_create(1, h, __VA_ARGS__));
+  queue_put_event(q, event_create(h, __VA_ARGS__));
 
 #define CREATE_EVENT(queue, handler, argc, ...)                  \
   do {                                                           \
@@ -37,7 +39,7 @@ typedef struct message {
     }                                                            \
   } while (0)
 
-#define VA_EVENT_INIT(event, p, h, a)                   \
+#define VA_EVENT_INIT(event, h, a)                   \
   do {                                                  \
     (event)->handler = h;                               \
     if (a) {                                            \
@@ -50,10 +52,10 @@ typedef struct message {
     }                                                   \
   } while (0)
 
-static inline Event event_create(int priority, argv_callback cb, int argc, ...)
+static inline Event event_create(argv_callback cb, int argc, ...)
 {
   Event event;
-  VA_EVENT_INIT(&event, priority, cb, argc);
+  VA_EVENT_INIT(&event, cb, argc);
   return event;
 }
 
@@ -62,5 +64,6 @@ void queue_push(Queue *queue, Event event);
 void queue_put_event(Queue *queue, Event event);
 bool queue_empty(Queue *queue);
 void loop_init(Loop *loop);
+void process_loop(Loop *loop);
 
 #endif

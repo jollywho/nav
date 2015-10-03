@@ -1,7 +1,8 @@
 
+#include "fnav/pane.h"
+#include "fnav/window.h"
 #include "fnav/event.h"
 #include "fnav/loop.h"
-#include "fnav/pane.h"
 #include "fnav/buffer.h"
 #include "fnav/fm_cntlr.h"
 #include "fnav/log.h"
@@ -27,49 +28,49 @@ void pane_init(Pane *p)
   log_msg("INIT", "PANE");
   p->clist = NULL;
   p->focus = NULL;
-  fm_cntlr_init();
+  fm_cntlr_init(p);
 }
 
-void pane_add(Cntlr *c)
+void pane_add(Pane *p, Cntlr *c)
 {
   log_msg("INIT", "PANE +ADD+");
   CntlrNode *cn = malloc(sizeof(CntlrNode*));
-  if (!clist) {
+  if (!p->clist) {
     cn->next = cn;
     cn->prev = cn;
     cn->cntlr = c;
-    clist = cn;
-    focus = cn;
+    p->clist = cn;
+    p->focus = cn;
   }
   else {
     cn->cntlr = c;
-    cn->prev = clist->prev;
-    cn->next = clist;
-    clist->prev->next = cn;
-    clist->prev = cn;
+    cn->prev = p->clist->prev;
+    cn->next = p->clist;
+    p->clist->prev->next = cn;
+    p->clist->prev = cn;
   }
 }
 
-static CntlrNode* pane_next() {
-  return focus->next;
+static CntlrNode* pane_next(Pane *p) {
+  return p->focus->next;
 }
 
-static void pane_focus(CntlrNode* cn)
+static void pane_focus(Pane *p, CntlrNode* cn)
 {
   if (cn)
-    focus = cn;
-  FC->_focus(FC);
+    p->focus = cn;
+  p->FC->_focus(p->FC);
 }
 
-void pane_input(int key)
+void pane_input(Pane *p, int key)
 {
   if (key == 'n') {
-    pane_focus(pane_next());
+    pane_focus(p, pane_next(p));
   }
-  FC->_input(FC, key);
+  p->FC->_input(p->FC, key);
 }
 
-void pane_req_draw(fn_buf *buf)
+void pane_req_draw(fn_buf *buf, argv_callback cb)
 {
-  window_req_draw(self.window, buf);
+  window_req_draw(buf, cb);
 }

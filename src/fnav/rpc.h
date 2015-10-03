@@ -1,9 +1,6 @@
 #ifndef FN_CORE_RPC_H
 #define FN_CORE_RPC_H
 
-#include <uv.h>
-
-#include "fnav/lib/queue.h"
 #include "fnav/cntlr.h"
 
 typedef void(*cntlr_cb)();
