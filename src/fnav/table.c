@@ -244,7 +244,6 @@ void tbl_del_val(String tn, String fname, String val)
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
       /* iterate entries of val. */
-      log_msg("TABLE", "deletner");
       ventry *it = vv->rlist->prev;
       while (!it->head) {
         tbl_del_rec(it->rec);
@@ -314,10 +313,9 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
 // COMMIT [ INSERT | DELETE ]
 // will attempt to delete before insert.
 
-void commit(Job *job, JobArg *arg)
+void commit(void **data)
 {
-  fn_tbl *t = get_tbl(arg->tname);
-  tbl_insert(t, arg->rec);
-  free(arg);
-  job->read_cb(job->caller);
+  log_msg("TABLE", "commit");
+  fn_tbl *t = get_tbl(data[0]);
+  tbl_insert(t, data[1]);
 }

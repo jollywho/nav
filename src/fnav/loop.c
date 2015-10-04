@@ -24,6 +24,7 @@ void loop_init(Loop *loop)
 {
   log_msg("INIT", "new loop");
   uv_loop_init(&loop->uv);
+  uv_timer_init(&loop->uv, &loop->delay);
   loop->events = queue_new();
 }
 
@@ -65,11 +66,12 @@ static Event queue_pop(Queue *queue)
 
 static void timeout_cb(uv_timer_t *handle)
 {
+  log_msg("EVENT", "<<subloop timeout>>");
 }
 
 void queue_process_events(Queue *queue, int ms)
 {
-  do {
+  //log_msg("EVENT", "<<queue>>");
     int remaining = ms;
     uint64_t before = (remaining > 0) ? os_hrtime() : 0;
     while (!QUEUE_EMPTY(&queue->headtail)) {
@@ -89,59 +91,31 @@ void queue_process_events(Queue *queue, int ms)
         }
       }
     }
-  } while (0);
+  //log_msg("EVENT", "<<queueEND>>");
 }
 
 void loop_process_events(Loop *loop, int ms)
 {
-  log_msg("EVENT", "<<enable>>");
+  //log_msg("EVENT", "<<enable>>");
   uv_run_mode mode = UV_RUN_ONCE;
+
   if (ms > 0) {
     uv_timer_start(&loop->delay, timeout_cb, (uint64_t)ms, (uint64_t)ms);
   }
-  else if(ms == 0)
+  else if (ms == 0)
     mode = UV_RUN_NOWAIT;
 
   uv_run(&loop->uv, mode);
-  int remaining = (int) ((os_hrtime() - ms) / 1000000);
-  queue_process_events(loop->events, remaining);
+
+  if (ms > 0) {
+    uv_timer_stop(&loop->delay);
+  }
+  queue_process_events(loop->events, ms);
 }
 
-// TODO: 30ms timeslice total
-// MAIN LOOP:
-// polling input
-//  |on input
-//    set initial time
-// draw timer:
-//  |on queue
-//    loop
-//
-// uv_check cb loop:
-//  check loop:
-//    |calc remaining
-//      timer start, set to remaining time
-//      loop
-//    |calc neg or 0
-//      restart main loop
 void process_loop(Loop *loop)
 {
-  log_msg("LOOP", "<MAIN>");
-  do {
-    int remaining = global_input_time;
-    uint64_t before = (remaining > 0) ? os_hrtime() : 0;
-    while (!QUEUE_EMPTY(&loop->events->headtail)) {
-      loop_process_events(loop, remaining);
-      if (remaining == 0) {
-        break;
-      }
-      else if (remaining > 0) {
-        uint64_t now = os_hrtime();
-        remaining -= (int) ((now - before) / 1000000);
-        before = now;
-        if (remaining <= 0) {
-          break;
-        }
-      }
-    }
-  } while (0);
+  //log_msg("LOOP", "<LOOP>");
+  loop_process_events(loop, 10);
+  //log_msg("EVENT", "<LOOPEND>");
 }

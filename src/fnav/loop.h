@@ -32,11 +32,7 @@ typedef struct message {
   queue_put_event(q, event_create(h, __VA_ARGS__));
 
 #define CREATE_EVENT(queue, handler, argc, ...)                  \
-  do {                                                           \
-    if (queue) {                                                 \
-      queue_put((queue), (handler), argc, __VA_ARGS__);          \
-    }                                                            \
-  } while (0)
+  queue_put((queue), (handler), argc, __VA_ARGS__);          \
 
 #define VA_EVENT_INIT(event, h, a)                   \
   do {                                                  \

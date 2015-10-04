@@ -16,7 +16,6 @@ struct Pane {
   Window *window;
 };
 
-
 void pane_init(Pane *pane);
 void pane_add(Pane *pane, Cntlr *c);
 void pane_input(Pane *pane, int key);

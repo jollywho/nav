@@ -8,7 +8,7 @@
 #include "fnav/event.h"
 #include "fnav/pane.h"
 
-#define DRAW_DELAY (uint32_t)30
+#define DRAW_DELAY (uint32_t)20
 
 struct Window {
   Loop loop;
@@ -17,6 +17,7 @@ struct Window {
 };
 
 Window win;
+void window_draw(uv_timer_t *req);
 
 void window_init(void)
 {
@@ -24,6 +25,7 @@ void window_init(void)
   loop_init(&win.loop);
   uv_timer_init(&win.loop.uv, &win.loop.delay);
   uv_timer_init(eventloop(), &win.draw_timer);
+  uv_timer_start(&win.draw_timer, window_draw, DRAW_DELAY, DRAW_DELAY);
   pane_init(&win.pane);
 }
 
@@ -42,8 +44,8 @@ void window_draw(uv_timer_t *req)
 
 void window_req_draw(fn_buf *buf, argv_callback cb)
 {
-  if (!queue_empty(win.loop.events)) {
-    uv_timer_start(&win.draw_timer, window_draw, DRAW_DELAY, DRAW_DELAY);
+  log_msg("WINDOW", "req draw");
+  if (queue_empty(win.loop.events)) {
   }
   CREATE_EVENT(win.loop.events, cb, 1, buf);
 }

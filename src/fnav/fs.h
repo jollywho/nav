@@ -2,11 +2,12 @@
 #define FN_CORE_FS_H
 
 #include "fnav/loop.h"
+#include "fnav/table.h"
 
 typedef struct {
-  Job job;
   uv_fs_event_t watcher;
   Loop loop;
+  uv_check_t uv_check;
   bool cancel;
 } FS_handle;
 
@@ -23,7 +24,7 @@ typedef struct {
 
   String req_name;
   fn_rec *rec;
-} FS_req ;
+} FS_req;
 
 FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb);
 void fs_open(FS_handle *h, String dir);

@@ -112,7 +112,7 @@ static void fm_right(Cntlr *cntlr)
 
 static void fm_mv(Cntlr *cntlr, Cmdarg *arg)
 {
-  log_msg("FM", "cmd down");
+  log_msg("FM", "cmd mv");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   buf_mv(cntlr->hndl->buf, 0, arg->arg);
   log_msg("FM", "set cur: %s", self->cur_dir);
@@ -121,14 +121,14 @@ static void fm_mv(Cntlr *cntlr, Cmdarg *arg)
 
 static void fm_page(Cntlr *cntlr, Cmdarg *arg)
 {
-  log_msg("FM", "cmd bottom");
+  log_msg("FM", "cmd page");
   buf_mv(cntlr->hndl->buf, 0, arg->arg * buf_pgsize(cntlr->hndl));
   log_msg("FM", "waiting on job...");
 }
 
 static void fm_g_cmd(Cntlr *cntlr, Cmdarg *arg)
 {
-  log_msg("FM", "cmd bottom");
+  log_msg("FM", "cmd _g");
   buf_mv(cntlr->hndl->buf, 0, arg->arg * cntlr->hndl->lis->ent->val->count);
   log_msg("FM", "waiting on job...");
 }

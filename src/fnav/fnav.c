@@ -27,8 +27,8 @@ void init(void)
 #endif
   tables_init();
   event_init();
-  window_init();
   input_init();
+  window_init();
   log_msg("INIT", "__________INIT_END______________");
 }
 

@@ -14,7 +14,6 @@ void pane_init(Pane *p)
   log_msg("INIT", "PANE");
   p->clist = NULL;
   p->focus = NULL;
-  fm_cntlr_init(p);
 }
 
 void pane_add(Pane *p, Cntlr *c)
@@ -54,6 +53,8 @@ void pane_input(Pane *p, int key)
   if (key == 'n') {
     pane_focus(p, pane_next(p));
   }
+  if (key == 'o')
+    fm_cntlr_init(p);
   p->FC->_input(p->FC, key);
 }
 

@@ -35,7 +35,7 @@ void buf_listen(fn_handle *hndl);
 
 fn_buf* buf_init()
 {
-  printf("buf init\n");
+  log_msg("INIT", "BUFFER");
   fn_buf *buf = malloc(sizeof(fn_buf));
   SET_POS(buf->b_size,0,0);
   getmaxyx(stdscr, buf->nc_size.lnum, buf->nc_size.col);
@@ -94,6 +94,7 @@ void buf_draw(void **argv)
       DRAW_AT(buf->nc_win, p, n);
       wattroff(buf->nc_win, COLOR_PAIR(2));
     }
+    log_msg("BUFFER", "_d_");
     it = it->next;
     if (it->prev->head) break;
     INC_POS(p,0,1);
@@ -120,9 +121,7 @@ int buf_pgsize(fn_handle *hndl) {
 
 void buf_refresh(fn_buf *buf)
 {
-  if (buf->dirty)
-    return;
-  buf->dirty = true;
+  log_msg("BUFFER", "refresh");
   pane_req_draw(buf, buf_draw);
 }
 
