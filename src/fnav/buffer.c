@@ -94,7 +94,6 @@ void buf_draw(void **argv)
       DRAW_AT(buf->nc_win, p, n);
       wattroff(buf->nc_win, COLOR_PAIR(2));
     }
-    log_msg("BUFFER", "_d_");
     it = it->next;
     if (it->prev->head) break;
     INC_POS(p,0,1);
@@ -122,6 +121,9 @@ int buf_pgsize(fn_handle *hndl) {
 void buf_refresh(fn_buf *buf)
 {
   log_msg("BUFFER", "refresh");
+  if (buf->dirty)
+    return;
+  buf->dirty = true;
   pane_req_draw(buf, buf_draw);
 }
 

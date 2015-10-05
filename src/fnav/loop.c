@@ -13,6 +13,14 @@ struct queue_item {
   QUEUE node;
 };
 
+typedef struct {
+  Loop *loop;
+  loop_cb cb;
+} loopbind;
+
+loopbind loop_pool[5];
+int loop_count;
+
 static Queue *queue_new()
 {
   Queue *rv = malloc(sizeof(Queue));
@@ -20,12 +28,23 @@ static Queue *queue_new()
   return rv;
 }
 
-void loop_init(Loop *loop)
+void loop_init(Loop *loop, loop_cb cb)
 {
   log_msg("INIT", "new loop");
   uv_loop_init(&loop->uv);
   uv_timer_init(&loop->uv, &loop->delay);
+  loop_pool[loop_count].loop = loop;
+  loop_pool[loop_count].cb = cb;
+  loop_count++;
   loop->events = queue_new();
+}
+
+void doloops()
+{
+  log_msg("INIT", "event");
+  for (int i = 0; i < loop_count; i++) {
+    loop_pool[i].cb(loop_pool[i].loop);
+  }
 }
 
 void queue_push(Queue *queue, Event event)
@@ -66,31 +85,30 @@ static Event queue_pop(Queue *queue)
 
 static void timeout_cb(uv_timer_t *handle)
 {
-  log_msg("EVENT", "<<subloop timeout>>");
 }
 
 void queue_process_events(Queue *queue, int ms)
 {
   //log_msg("EVENT", "<<queue>>");
-    int remaining = ms;
-    uint64_t before = (remaining > 0) ? os_hrtime() : 0;
-    while (!QUEUE_EMPTY(&queue->headtail)) {
-      Event e = queue_pop(queue);
-      if (e.handler) {
-        e.handler(e.argv);
-      }
-      if (remaining == 0) {
+  int remaining = ms;
+  uint64_t before = (remaining > 0) ? os_hrtime() : 0;
+  while (!QUEUE_EMPTY(&queue->headtail)) {
+    Event e = queue_pop(queue);
+    if (e.handler) {
+      e.handler(e.argv);
+    }
+    if (remaining == 0) {
+      break;
+    }
+    else if (remaining > 0) {
+      uint64_t now = os_hrtime();
+      remaining -= (int) ((now - before) / 1000000);
+      before = now;
+      if (remaining <= 0) {
         break;
       }
-      else if (remaining > 0) {
-        uint64_t now = os_hrtime();
-        remaining -= (int) ((now - before) / 1000000);
-        before = now;
-        if (remaining <= 0) {
-          break;
-        }
-      }
     }
+  }
   //log_msg("EVENT", "<<queueEND>>");
 }
 
@@ -115,7 +133,7 @@ void loop_process_events(Loop *loop, int ms)
 
 void process_loop(Loop *loop)
 {
-  //log_msg("LOOP", "<LOOP>");
+  log_msg("LOOP", "<LOOP>");
   loop_process_events(loop, 10);
   //log_msg("EVENT", "<LOOPEND>");
 }

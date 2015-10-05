@@ -12,17 +12,15 @@
 
 uv_poll_t poll_handle;
 uv_timer_t input_timer;
-Loop loop;
+uv_loop_t loop;
 
 TermKey *tk;
-char buffer[50];
 void event_input();
 
 void input_check()
 {
   log_msg("INPUT", "INPUT CHECK");
   global_input_time = os_hrtime();
-  log_msg("INPUT", "INPUT CHECK %d", (int)global_input_time);
   event_input();
 }
 
@@ -31,9 +29,8 @@ void input_init(void)
   log_msg("INIT", "INPUT");
   tk = termkey_new(0,0);
   termkey_set_flags(tk, TERMKEY_FLAG_UTF8);
-  loop_init(&loop);
 
-  uv_poll_init(&loop.uv, &poll_handle, 0);
+  uv_poll_init(eventloop(), &poll_handle, 0);
   uv_poll_start(&poll_handle, UV_READABLE, input_check);
 }
 

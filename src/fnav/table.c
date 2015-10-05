@@ -217,9 +217,9 @@ void tbl_del_rec(fn_rec *rec)
           it->val->listeners->ent = it->prev;
         }
       }
+      it->val->count--;
       it->next->prev = it->prev;
       it->prev->next = it->next;
-      // TODO: how free entries while iterating
     }
     if (rec->vals[i]->fld->type == typSTRING) {
       free(rec->vals[i]->key);
@@ -247,7 +247,6 @@ void tbl_del_val(String tn, String fname, String val)
       ventry *it = vv->rlist->prev;
       while (!it->head) {
         tbl_del_rec(it->rec);
-        it->val->count--;
         it = it->prev;
       }
       if (!vv->listeners) {
@@ -306,12 +305,6 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
     vv->listeners->cb(vv->listeners->hndl);
   }
 }
-
-// TODO: use commit bit flags
-// COMMIT [ INSERT | UPDATE ]
-// will attempt to update instead of insert.
-// COMMIT [ INSERT | DELETE ]
-// will attempt to delete before insert.
 
 void commit(void **data)
 {
