@@ -39,11 +39,25 @@ void loop_init(Loop *loop, loop_cb cb)
   loop->events = queue_new();
 }
 
-void doloops()
+void doloops(int ms)
 {
   log_msg("INIT", "event");
+
+  int remaining = ms;
+  uint64_t before = (remaining > 0) ? os_hrtime() : 0;
   for (int i = 0; i < loop_count; i++) {
-    loop_pool[i].cb(loop_pool[i].loop);
+    loop_pool[i].cb(loop_pool[i].loop, ms);
+    if (remaining == 0) {
+      break;
+    }
+    else if (remaining > 0) {
+      uint64_t now = os_hrtime();
+      remaining -= (int) ((now - before) / 1000000);
+      before = now;
+      if (remaining <= 0) {
+        break;
+      }
+    }
   }
 }
 
@@ -87,38 +101,25 @@ static void timeout_cb(uv_timer_t *handle)
 {
 }
 
-void queue_process_events(Queue *queue, int ms)
+void queue_process_events(Queue *queue)
 {
-  //log_msg("EVENT", "<<queue>>");
-  int remaining = ms;
-  uint64_t before = (remaining > 0) ? os_hrtime() : 0;
-  while (!QUEUE_EMPTY(&queue->headtail)) {
+  // TODO: calc timeout
+  while (!queue_empty(queue)) {
     Event e = queue_pop(queue);
     if (e.handler) {
       e.handler(e.argv);
     }
-    if (remaining == 0) {
-      break;
-    }
-    else if (remaining > 0) {
-      uint64_t now = os_hrtime();
-      remaining -= (int) ((now - before) / 1000000);
-      before = now;
-      if (remaining <= 0) {
-        break;
-      }
-    }
   }
-  //log_msg("EVENT", "<<queueEND>>");
 }
 
 void loop_process_events(Loop *loop, int ms)
 {
-  //log_msg("EVENT", "<<enable>>");
+  log_msg("EVENT", "<<enable>>");
   uv_run_mode mode = UV_RUN_ONCE;
 
   if (ms > 0) {
     uv_timer_start(&loop->delay, timeout_cb, (uint64_t)ms, (uint64_t)ms);
+    uv_unref((uv_handle_t*)&loop->delay);
   }
   else if (ms == 0)
     mode = UV_RUN_NOWAIT;
@@ -128,12 +129,13 @@ void loop_process_events(Loop *loop, int ms)
   if (ms > 0) {
     uv_timer_stop(&loop->delay);
   }
-  queue_process_events(loop->events, ms);
+  queue_process_events(loop->events);
 }
 
-void process_loop(Loop *loop)
+void process_loop(Loop *loop, int ms)
 {
   log_msg("LOOP", "<LOOP>");
-  loop_process_events(loop, 10);
-  //log_msg("EVENT", "<LOOPEND>");
+
+  loop_process_events(loop, ms);
+  log_msg("EVENT", "<LOOPEND>");
 }

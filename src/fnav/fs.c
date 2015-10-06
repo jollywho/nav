@@ -46,9 +46,9 @@ bool isdir(fn_rec *rec)
   return (S_ISDIR(st->st_mode));
 }
 
-void fs_loop(Loop *loop)
+void fs_loop(Loop *loop, int ms)
 {
-  process_loop(loop);
+  process_loop(loop, ms);
 }
 
 void send_stat(FS_req *fq, const char* dir)
@@ -149,6 +149,7 @@ void fs_open(FS_handle *fsh, String dir)
   uv_fs_event_stop(&fsh->watcher);
   uv_fs_event_init(&fsh->loop.uv, &fsh->watcher);
   uv_fs_event_start(&fsh->watcher, watch_cb, dir, 1);
+  uv_unref((uv_handle_t*)&fsh->watcher);
 }
 
 FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb)

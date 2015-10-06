@@ -54,13 +54,12 @@ static inline Event event_create(argv_callback cb, int argc, ...)
   return event;
 }
 
-typedef void(*loop_cb)(Loop *loop);
-uint64_t global_input_time;
+typedef void(*loop_cb)(Loop *loop, int ms);
 void queue_push(Queue *queue, Event event);
 void queue_put_event(Queue *queue, Event event);
 bool queue_empty(Queue *queue);
 void loop_init(Loop *loop, loop_cb cb);
-void process_loop(Loop *loop);
-void doloops();
+void process_loop(Loop *loop, int ms);
+void doloops(int ms);
 
 #endif

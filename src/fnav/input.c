@@ -11,7 +11,6 @@
 #include "fnav/pane.h"
 
 uv_poll_t poll_handle;
-uv_timer_t input_timer;
 uv_loop_t loop;
 
 TermKey *tk;
@@ -20,7 +19,6 @@ void event_input();
 void input_check()
 {
   log_msg("INPUT", "INPUT CHECK");
-  global_input_time = os_hrtime();
   event_input();
 }
 
