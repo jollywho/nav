@@ -17,7 +17,6 @@ const char* listen_obj;
 void log_init()
 {
   char *name = getenv("HOME");
-  fprintf(stdout, "%s\n", name);
   char *path;
   asprintf(&path, "%s/%s", name, LOG_FILENAME);
   log_file = fopen(path, "a");
@@ -39,4 +38,5 @@ void log_msg(const char* obj, const char* fmt, ...)
   vfprintf(log_file, fmt, args);
   va_end(args);
   fputc('\n', log_file);
+  fflush(log_file);
 }

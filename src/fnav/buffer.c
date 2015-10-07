@@ -70,7 +70,6 @@ void buf_draw(void **argv)
   fn_buf *buf = (fn_buf*)argv[0];
 
   wclear(buf->nc_win);
-  log_msg("BUFFER", "__druh");
   pos_T p = {.lnum = 0, .col = 0};
   listener *lis = buf->hndl->lis;
   ventry *it = lis->ent;

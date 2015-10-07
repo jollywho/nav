@@ -99,8 +99,8 @@ ventry* fnd_val(String tn, String fname, String val)
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
-      if (!vv->rlist->next->head) {
-        return vv->rlist->next;
+      if (!vv->rlist->prev->head) {
+        return vv->rlist->prev;
       }
     }
   }
@@ -153,7 +153,7 @@ void rec_edit(fn_rec *rec, String fname, void *val)
 
 void tbl_insert(fn_tbl *t, fn_rec *rec)
 {
-  log_msg("TABLE", "$rec$");
+  log_msg("TABLE", "rec");
   t->rec_count++;
 
   for(int i = 0; i < rec->fld_count; i++) {
@@ -184,6 +184,7 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
     /* attach record to an entry. */
     v->count++;
     log_msg("TABLE", "new value");
+    log_msg("TABLE", "%s %s %s", t->key, f->key, v->key);
     ventry *ent = malloc(sizeof(ventry));
     ent->rec = rec;
     ent->val = v;
@@ -209,32 +210,37 @@ void tbl_del_rec(fn_rec *rec)
   if (!rec) return;
   for(int i = 0; i < rec->fld_count; i++) {
     ventry *it = rec->vlist[i];
-    if (it && !it->head) {
+    if (it) {
       log_msg("TABLE", "delete rec inner");
+      it->val->count--;
+      it->next->prev = it->prev;
+      it->prev->next = it->next;
+
       if (it->val->listeners) {
         if (it->val->listeners->ent == it) {
-          log_msg("TABLE", "delete bumped listener!");
+          log_msg("FUK", "delete rec inner");
           it->val->listeners->ent = it->prev;
         }
       }
-      it->next->prev = it->prev;
-      it->prev->next = it->next;
     }
     if (rec->vals[i]->fld->type == typSTRING) {
-      free(rec->vals[i]->key);
+//      free(rec->vals[i]->key);
     }
     else {
-      free(rec->vals[i]->data);
+//      free(rec->vals[i]->data);
     }
   }
-  free(rec->vals);
-  free(rec->vlist);
-  free(rec);
+  //  TODO: delete a broken shit.
+  //  lis' pos and ofs should be updated after a delete but how?
+
+//  free(rec->vals);
+//  free(rec->vlist);
+//  free(rec);
 }
 
 void tbl_del_val(String tn, String fname, String val)
 {
-  log_msg("TABLE", "delete %s,%s",fname, val);
+  log_msg("TABLE", "delete %s %s,%s",tn ,fname, val);
   fn_tbl *t = get_tbl(tn);
   fn_fld f = { .key = fname };
   fn_val v = { .key = val   };
@@ -243,14 +249,14 @@ void tbl_del_val(String tn, String fname, String val)
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
       /* iterate entries of val. */
-      ventry *it = vv->rlist->prev;
-      while (!it->head) {
-        tbl_del_rec(it->rec);
-        it->val->count--;
+      ventry *it = vv->rlist;
+      int count = vv->count;
+      for (int i = 0; i < count; i++) {
+        log_msg("TAB", "ITERHEAD");
         it = it->prev;
-      }
-      if (!vv->listeners) {
-        kb_delp(FNVAL, ff->vtree, vv);
+        if (it->head) continue;
+        log_msg("TAB", "ITER");
+        tbl_del_rec(it->rec);
       }
     }
   }
@@ -270,6 +276,7 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
     ventry *ent;
     if (!vv) {
       /* if null, create the null stub. */
+      log_msg("TABLE", "new lis for stub");
       vv = malloc(sizeof(fn_val));
       ent = malloc(sizeof(ventry));
       vv->key = strdup(hndl->fval);
@@ -292,6 +299,7 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
     }
     else {
       if (!vv->listeners) {
+        log_msg("TABLE", "new lis for existing val");
         vv->listeners = malloc(sizeof(listener));
         vv->listeners->cb = cb;
         vv->listeners->ent = vv->rlist;

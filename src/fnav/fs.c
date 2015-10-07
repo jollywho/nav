@@ -51,7 +51,7 @@ void fs_loop(Loop *loop, int ms)
   process_loop(loop, ms);
 }
 
-void send_stat(FS_req *fq, const char* dir)
+void send_stat(FS_req *fq, const char* dir, void* upd)
 {
   FS_handle *fh = fq->fs_h;
   struct stat *s = malloc(sizeof(struct stat));
@@ -59,6 +59,7 @@ void send_stat(FS_req *fq, const char* dir)
 
   fn_rec *r = mk_rec("fm_stat");
   rec_edit(r, "fullpath", (void*)dir);
+  rec_edit(r, "update", (void*)upd);
   rec_edit(r, "stat", (void*)s);
   CREATE_EVENT(fh->loop.events, commit, 2, "fm_stat", r);
 }
@@ -79,15 +80,23 @@ void scan_cb(uv_fs_t* req)
     tbl_del_val("fm_stat", "fullpath", (String)req->path);
   }
   /* add stat. TODO: should reuse uvstat in stat_cb */
-  send_stat(fq, req->path);
+  send_stat(fq, req->path, (void*)1);
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
     fn_rec *r = mk_rec("fm_files");
     rec_edit(r, "name", (void*)dent.name);
     rec_edit(r, "dir", (void*)req->path);
     String full = conspath(req->path, dent.name);
-    tbl_del_val("fm_stat", "fullpath", full);
-    send_stat(fq, full);
+
+    //NOTE: if a subdir has changed this stat overwrites that info and
+    //stat appears to be uptodate. instead, have an uptodate field in fm_stat
+    //that flags the stat was used when opening the dir, so it's valid.
+    //otherwise the stat is only used for attributes.
+    ventry *ent = fnd_val("fm_stat", "fullpath", full);
+    if (!ent) {
+      send_stat(fq, full, (void*)0);
+    }
+
     rec_edit(r, "fullpath", (void*)full);
     free(full);
     CREATE_EVENT(fh->loop.events, commit, 2, "fm_files", r);
@@ -106,12 +115,17 @@ void stat_cb(uv_fs_t* req)
   if (ent) {
     log_msg("FS", "ENT");
     ent = fnd_val("fm_stat", "fullpath", fq->req_name);
-    struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
-    if (fq->uv_stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
-      log_msg("FS", "NOP");
-      return;
+    if (ent) {
+      int upd = (int)rec_fld(ent->rec, "update");
+      if (upd) {
+        struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
+        if (fq->uv_stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
+          log_msg("FS", "NOP");
+          return;
+        }
+      }
+      fq->rec = ent->rec;
     }
-    fq->rec = ent->rec;
   }
 
   if (S_ISDIR(fq->uv_stat.st_mode)) {
@@ -146,10 +160,10 @@ void fs_open(FS_handle *fsh, String dir)
   fq->rec = NULL;
 
   uv_fs_stat(&fq->fs_h->loop.uv, &fq->uv_fs, dir, stat_cb);
-  uv_fs_event_stop(&fsh->watcher);
-  uv_fs_event_init(&fsh->loop.uv, &fsh->watcher);
-  uv_fs_event_start(&fsh->watcher, watch_cb, dir, 1);
-  uv_unref((uv_handle_t*)&fsh->watcher);
+  //uv_fs_event_stop(&fsh->watcher);
+  //uv_fs_event_init(&fsh->loop.uv, &fsh->watcher);
+  //uv_fs_event_start(&fsh->watcher, watch_cb, dir, 1);
+  //uv_unref((uv_handle_t*)&fsh->watcher);
 }
 
 FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb)

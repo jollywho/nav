@@ -42,8 +42,6 @@ void loop_init(Loop *loop, loop_cb cb)
 
 void doloops(int ms)
 {
-  log_msg("LOOP", "DOLOOP");
-
   int remaining = ms;
   uint64_t before = (remaining > 0) ? os_hrtime() : 0;
   for (int i = 0; i < loop_count; i++) {
@@ -60,12 +58,10 @@ void doloops(int ms)
       }
     }
   }
-  log_msg("INIT", "_________________________");
 }
 
 void queue_push(Queue *queue, Event event)
 {
-  log_msg("LOOP", "{{push}}");
   QueueItem *item = malloc(sizeof(QueueItem));
   item->item = event;
   QUEUE_INIT(&item->node);
@@ -107,7 +103,6 @@ void queue_process_events(Queue *queue, int ms)
 {
   int remaining = ms;
   while (!queue_empty(queue)) {
-    log_msg("LOOP", "<<queue item>>");
     uint64_t before = (remaining > 0) ? os_hrtime() : 0;
     Event e = queue_pop(queue);
     if (e.handler) {
@@ -129,7 +124,6 @@ void queue_process_events(Queue *queue, int ms)
 
 void loop_process_events(Loop *loop, int ms)
 {
-  log_msg("LOOP", "<<events enable>>");
   uv_run_mode mode = UV_RUN_ONCE;
 
   if (ms > 0) {
@@ -145,12 +139,9 @@ void loop_process_events(Loop *loop, int ms)
     uv_timer_stop(&loop->delay);
   }
   queue_process_events(loop->events, ms);
-  log_msg("LOOP", "<<events disable>>");
 }
 
 void process_loop(Loop *loop, int ms)
 {
-  log_msg("LOOP", "<LOOP>");
   loop_process_events(loop, ms);
-  log_msg("LOOP", "<LOOPEND>");
 }
