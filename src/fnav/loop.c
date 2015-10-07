@@ -18,6 +18,7 @@ typedef struct {
   loop_cb cb;
 } loopbind;
 
+// TODO: fix from testing size; dynamic array.
 loopbind loop_pool[5];
 int loop_count;
 
@@ -41,7 +42,7 @@ void loop_init(Loop *loop, loop_cb cb)
 
 void doloops(int ms)
 {
-  log_msg("INIT", "event");
+  log_msg("LOOP", "DOLOOP");
 
   int remaining = ms;
   uint64_t before = (remaining > 0) ? os_hrtime() : 0;
@@ -59,6 +60,7 @@ void doloops(int ms)
       }
     }
   }
+  log_msg("INIT", "_________________________");
 }
 
 void queue_push(Queue *queue, Event event)
@@ -101,20 +103,33 @@ static void timeout_cb(uv_timer_t *handle)
 {
 }
 
-void queue_process_events(Queue *queue)
+void queue_process_events(Queue *queue, int ms)
 {
-  // TODO: calc timeout
+  int remaining = ms;
   while (!queue_empty(queue)) {
+    log_msg("LOOP", "<<queue item>>");
+    uint64_t before = (remaining > 0) ? os_hrtime() : 0;
     Event e = queue_pop(queue);
     if (e.handler) {
       e.handler(e.argv);
+    }
+    if (remaining == 0) {
+      break;
+    }
+    else if (remaining > 0) {
+      uint64_t now = os_hrtime();
+      remaining -= (int) ((now - before) / 1000000);
+      before = now;
+      if (remaining <= 0) {
+        break;
+      }
     }
   }
 }
 
 void loop_process_events(Loop *loop, int ms)
 {
-  log_msg("EVENT", "<<enable>>");
+  log_msg("LOOP", "<<events enable>>");
   uv_run_mode mode = UV_RUN_ONCE;
 
   if (ms > 0) {
@@ -129,13 +144,13 @@ void loop_process_events(Loop *loop, int ms)
   if (ms > 0) {
     uv_timer_stop(&loop->delay);
   }
-  queue_process_events(loop->events);
+  queue_process_events(loop->events, ms);
+  log_msg("LOOP", "<<events disable>>");
 }
 
 void process_loop(Loop *loop, int ms)
 {
   log_msg("LOOP", "<LOOP>");
-
   loop_process_events(loop, ms);
-  log_msg("EVENT", "<LOOPEND>");
+  log_msg("LOOP", "<LOOPEND>");
 }

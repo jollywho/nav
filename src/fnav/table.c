@@ -117,7 +117,7 @@ int FN_MV(ventry *e, int n)
 void* rec_fld(fn_rec *rec, String fname)
 {
   if (!rec) return NULL;
-  for(int i=0;i<rec->fld_count;i++) {
+  for(int i = 0; i < rec->fld_count; i++) {
 
     if (strcmp(rec->vals[i]->fld->key, fname) == 0) {
       if (rec->vals[i]->fld->type == typSTRING) {
@@ -156,7 +156,7 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
   log_msg("TABLE", "$rec$");
   t->rec_count++;
 
-  for(int i=0;i<rec->fld_count;i++) {
+  for(int i = 0; i < rec->fld_count; i++) {
     fn_val *fv = rec->vals[i];
     if (fv->fld->type == typVOID) {
       continue;
@@ -183,7 +183,7 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
     }
     /* attach record to an entry. */
     v->count++;
-      log_msg("TABLE", "new value");
+    log_msg("TABLE", "new value");
     ventry *ent = malloc(sizeof(ventry));
     ent->rec = rec;
     ent->val = v;
@@ -207,7 +207,7 @@ void tbl_del_rec(fn_rec *rec)
 {
   log_msg("TABLE", "delete rec st");
   if (!rec) return;
-  for(int i=0;i<rec->fld_count;i++) {
+  for(int i = 0; i < rec->fld_count; i++) {
     ventry *it = rec->vlist[i];
     if (it && !it->head) {
       log_msg("TABLE", "delete rec inner");
@@ -217,7 +217,6 @@ void tbl_del_rec(fn_rec *rec)
           it->val->listeners->ent = it->prev;
         }
       }
-      it->val->count--;
       it->next->prev = it->prev;
       it->prev->next = it->next;
     }
@@ -247,6 +246,7 @@ void tbl_del_val(String tn, String fname, String val)
       ventry *it = vv->rlist->prev;
       while (!it->head) {
         tbl_del_rec(it->rec);
+        it->val->count--;
         it = it->prev;
       }
       if (!vv->listeners) {
