@@ -254,8 +254,8 @@ void init_fm_hndl(FM_cntlr *fm, Pane *p, Cntlr *c, String val)
   c->_cancel = cntlr_cancel;
   c->_input = cntlr_input;
   c->top = fm;
-  buf_set(c->hndl, "name");
   pane_add(p, c);
+  buf_set(c->hndl, "name");
 }
 
 FM_cntlr* fm_cntlr_init(Pane *p)
@@ -282,8 +282,8 @@ FM_cntlr* fm_cntlr_init(Pane *p)
   fm->fs = fs_init(&fm->base, fm->base.hndl, fm_read_scan);
   fs_open(fm->fs, fm->cur_dir);
 
-  init_fm_hndl(fm, p, &fm->parent, fm->cur_dir);
-  init_fm_hndl(fm, p, &fm->child, fm->cur_dir);
+//  init_fm_hndl(fm, p, &fm->parent, fm->cur_dir);
+//  init_fm_hndl(fm, p, &fm->child, fm->cur_dir);
 
   return fm;
 }

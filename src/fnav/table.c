@@ -7,10 +7,13 @@
 #include "fnav/log.h"
 
 KBTREE_INIT(FNVAL, fn_val, elem_cmp)
+KBTREE_INIT(FNLIS, fn_lis, elem_cmp)
+
 struct fn_fld {
   String key;
   tFldType type;
   kbtree_t(FNVAL) *vtree;
+  kbtree_t(FNLIS) *ltree;
 };
 
 KBTREE_INIT(FNFLD, fn_fld, elem_cmp)
@@ -64,6 +67,7 @@ void tbl_mk_fld(String tn, String name, tFldType typ)
   fld->key = strdup(name);
   fld->type = typ;
   fld->vtree = kb_init(FNVAL, KB_DEFAULT_SIZE);
+  fld->ltree = kb_init(FNLIS, KB_DEFAULT_SIZE);
   log_msg("TABLE", "made %s", fld->key);
   t->count++;
   kb_putp(FNFLD, t->fields, fld);
@@ -73,7 +77,6 @@ void initflds(fn_fld *f, fn_rec *rec)
 {
   fn_val *v = malloc(sizeof(fn_val));
   v->fld = f;
-  v->listeners = NULL;
   rec->vals[rec->fld_count] = v;
   rec->vlist[rec->fld_count] = NULL;
   rec->fld_count++;
@@ -99,9 +102,7 @@ ventry* fnd_val(String tn, String fname, String val)
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
-      if (!vv->rlist->prev->head) {
-        return vv->rlist->prev;
-      }
+      return vv->rlist;
     }
   }
   return NULL;
@@ -157,49 +158,53 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
   t->rec_count++;
 
   for(int i = 0; i < rec->fld_count; i++) {
-    fn_val *fv = rec->vals[i];
-    if (fv->fld->type == typVOID) {
+    fn_val *v = rec->vals[i];
+    if (v->fld->type == typVOID) {
       continue;
     }
 
-    fn_fld *f = kb_getp(FNFLD, t->fields, fv->fld);
-    fn_val *v = kb_getp(FNVAL, f->vtree, fv);
+    fn_fld *f = kb_getp(FNFLD, t->fields, v->fld);
+    fn_val *vv = kb_getp(FNVAL, f->vtree, v);
+
+    ventry *ent = malloc(sizeof(ventry));
     /* create null entry stub. */
-    if (!v) {
+    if (!vv) {
       log_msg("TABLE", "new stub");
-      v = malloc(sizeof(fn_val));
-      ventry *ent = malloc(sizeof(ventry));
-      v->key = strdup(fv->key);
-      v->fld = f;
-      v->count = 0;
-      ent->rec = NULL;
-      ent->val = v;
-      ent->prev = ent;
+      vv = v;
       ent->next = ent;
+      ent->prev = ent;
+      vv->rlist = ent;
+      vv->count = 0;
       ent->head = 1;
-      v->rlist = ent;
-      v->listeners = NULL;
-      kb_putp(FNVAL, f->vtree, v);
+      kb_putp(FNVAL, f->vtree, vv);
+    }
+    else {
+      ent->head = 0;
     }
     /* attach record to an entry. */
-    v->count++;
-    log_msg("TABLE", "new value");
-    log_msg("TABLE", "%s %s %s", t->key, f->key, v->key);
-    ventry *ent = malloc(sizeof(ventry));
+    log_msg("TABLE", "insert %s %s %s",t->key, f->key, vv->key );
+    vv->count++;
     ent->rec = rec;
-    ent->val = v;
-    ent->prev = v->rlist->prev;
-    ent->next = v->rlist;
-    ent->head = 0;
-    v->rlist->prev->next = ent;
-    v->rlist->prev = ent;
+    ent->val = vv;
+    ent->prev = vv->rlist->prev;
+    ent->next = vv->rlist;
+    vv->rlist->prev->next = ent;
+    vv->rlist->prev = ent;
     rec->vlist[i] = ent;
-    if (v->listeners) {
-      if (v->count == 1) {
-        v->listeners->ent = ent;
+    /* check if field has lis. */
+    if (kb_size(f->ltree) > 0) {
+      fn_lis l = { .key = vv->key };
+      fn_lis *ll = kb_get(FNLIS, f->ltree, l);
+      /* field has lis so call it. */
+      if (ll) {
+        log_msg("TABLE", "CALL");
+        /* if lis val unset, set it. */
+        if (!ll->f_val) {
+          ll->f_val = vv;
+        }
+        ll->hndl->lis = ll;
+        ll->cb(ll->hndl);
       }
-      log_msg("TABLE", "CALL");
-      v->listeners->cb(v->listeners->hndl);
     }
   }
 }
@@ -216,12 +221,6 @@ void tbl_del_rec(fn_rec *rec)
       it->next->prev = it->prev;
       it->prev->next = it->next;
 
-      if (it->val->listeners) {
-        if (it->val->listeners->ent == it) {
-          log_msg("FUK", "delete rec inner");
-          it->val->listeners->ent = it->prev;
-        }
-      }
     }
     if (rec->vals[i]->fld->type == typSTRING) {
 //      free(rec->vals[i]->key);
@@ -241,6 +240,7 @@ void tbl_del_rec(fn_rec *rec)
 void tbl_del_val(String tn, String fname, String val)
 {
   log_msg("TABLE", "delete %s %s,%s",tn ,fname, val);
+  return;
   fn_tbl *t = get_tbl(tn);
   fn_fld f = { .key = fname };
   fn_val v = { .key = val   };
@@ -269,48 +269,27 @@ void tbl_listener(fn_handle *hndl, buf_cb cb)
   /* create listener for fn_val entry list */
   fn_tbl *t = get_tbl(hndl->tname);
   fn_fld f = { .key = hndl->fname };
-  fn_val v = { .key = hndl->fval   };
+  fn_lis l = { .key = hndl->fval   };
   fn_fld *ff = kb_get(FNFLD, t->fields, f);
   if (ff) {
-    fn_val *vv = kb_get(FNVAL, ff->vtree, v);
-    ventry *ent;
-    if (!vv) {
-      /* if null, create the null stub. */
-      log_msg("TABLE", "new lis for stub");
-      vv = malloc(sizeof(fn_val));
-      ent = malloc(sizeof(ventry));
-      vv->key = strdup(hndl->fval);
-      vv->fld = ff;
-      vv->count = 0;
-      ent->rec = NULL;
-      ent->val = vv;
-      ent->prev = ent;
-      ent->next = ent;
-      ent->head = 1;
-      vv->rlist = ent;
+    fn_lis *ll = kb_get(FNLIS, ff->ltree, l);
+    if (!ll) {
+      log_msg("TABLE", "new lis");
       /* create new listener */
-      vv->listeners = malloc(sizeof(listener));
-      vv->listeners->cb = cb;
-      vv->listeners->ent = ent;
-      vv->listeners->pos = 0;
-      vv->listeners->ofs = 0;
-      vv->listeners->hndl = hndl;
-      kb_putp(FNVAL, ff->vtree, vv);
-    }
-    else {
-      if (!vv->listeners) {
-        log_msg("TABLE", "new lis for existing val");
-        vv->listeners = malloc(sizeof(listener));
-        vv->listeners->cb = cb;
-        vv->listeners->ent = vv->rlist;
-        vv->listeners->pos = 0;
-        vv->listeners->ofs = 0;
-        vv->listeners->hndl = hndl;
-      }
+      ll = malloc(sizeof(fn_lis));
+      ll->key = strdup(hndl->fval);
+      ll->f_fld = ff;
+      ll->f_val = NULL;
+      ll->hndl = hndl;
+      ll->ent = NULL;
+      ll->cb = cb;
+      ll->pos = 0;
+      ll->ofs = 0;
+      kb_putp(FNLIS, ff->ltree, ll);
     }
 
-    hndl->lis = vv->listeners;
-    vv->listeners->cb(vv->listeners->hndl);
+    hndl->lis = ll;
+    ll->cb(ll->hndl);
   }
 }
 

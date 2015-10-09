@@ -16,14 +16,14 @@ typedef struct Cntlr Cntlr;
 typedef struct fn_tbl fn_tbl;
 typedef struct fn_buf fn_buf;
 typedef struct fn_handle fn_handle;
-typedef struct listener listener;
+typedef struct fn_lis fn_lis;
 
 struct fn_handle {
   fn_buf *buf;
   String tname;
   String fname;
   String fval;
-  listener *lis;
+  fn_lis *lis;
 };
 
 struct Cntlr {

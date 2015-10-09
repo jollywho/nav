@@ -27,7 +27,6 @@ struct fn_val {
   ventry *rlist;
   fn_fld *fld;
   int count;
-  listener *listeners;
 };
 
 struct fn_rec {
@@ -44,10 +43,13 @@ struct ventry {
   unsigned int head;
 };
 
-struct listener {
+struct fn_lis {
+  String key;    // value being listened
+  fn_fld *f_fld; // filter field
+  fn_val *f_val; // filter value
   fn_handle *hndl;
-  buf_cb cb;
   ventry *ent;
+  buf_cb cb;
   int pos;
   int ofs;
 };

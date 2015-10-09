@@ -18,6 +18,7 @@ struct fn_buf {
   fn_handle *hndl;
   String fname;
   bool dirty;
+  bool queued;
 };
 
 #define SET_POS(pos,x,y)       \
@@ -32,6 +33,7 @@ struct fn_buf {
   mvwprintw(win, pos.lnum, pos.col, str);
 
 void buf_listen(fn_handle *hndl);
+void buf_draw(void **argv);
 
 fn_buf* buf_init()
 {
@@ -41,6 +43,7 @@ fn_buf* buf_init()
   getmaxyx(stdscr, buf->nc_size.lnum, buf->nc_size.col);
   buf->nc_win = newwin(buf->nc_size.lnum, buf->nc_size.col, 0,0);
   buf->dirty = false;
+  buf->queued = false;
   return buf;
 }
 
@@ -58,28 +61,62 @@ void buf_resize(fn_buf *buf, int w, int h)
   SET_POS(buf->b_size, w, h);
 }
 
+void buf_refresh(fn_buf *buf)
+{
+  log_msg("BUFFER", "refresh");
+  if (buf->queued)
+    return;
+  buf->queued = true;
+  pane_req_draw(buf, buf_draw);
+}
+
 void buf_listen(fn_handle *hndl)
 {
   log_msg("BUFFER", "listen cb");
+  hndl->buf->dirty = true;
   buf_refresh(hndl->buf);
+}
+
+void buf_count_rewind(fn_buf *buf, fn_lis *lis)
+{
+  log_msg("BUFFER", "rewind");
+  ventry *it = lis->ent;
+  int count, sub;
+  for(count = 0, sub = 0; count < lis->pos; count++, sub++) {
+    if (it->prev->head) break;
+    it = it->prev;
+    if (lis->ofs > 0 && sub > buf->nc_size.lnum) {
+      sub = 0;
+      lis->ofs--;
+    }
+  }
+  lis->pos = count;
 }
 
 void buf_draw(void **argv)
 {
   log_msg("BUFFER", "druh");
   fn_buf *buf = (fn_buf*)argv[0];
+  fn_lis *lis = buf->hndl->lis;
 
   wclear(buf->nc_win);
-  pos_T p = {.lnum = 0, .col = 0};
-  listener *lis = buf->hndl->lis;
-  ventry *it = lis->ent;
-  if (!it) return;
-  int i;
-  for(i = 0; i < lis->pos; i++) {
-    if (it->prev->head) break;
-    it = it->prev;
-    if (!it->rec) break;
+  if (!lis->f_val) {
+    log_msg("BUFFER", "druh NOP");
+    buf->dirty = false;
+    buf->queued = false;
+    return;
   }
+
+  if (!lis->ent) {
+    lis->ent = lis->f_val->rlist;
+  }
+  if (buf->dirty) {
+    buf_count_rewind(buf, lis);
+  }
+
+  pos_T p = {.lnum = 0, .col = 0};
+  ventry *it = lis->ent;
+
   for(int i = 0; i < buf->nc_size.lnum; i++) {
     if (!it->rec) break;
     String n = (String)rec_fld(it->rec, buf->fname);
@@ -93,16 +130,17 @@ void buf_draw(void **argv)
       DRAW_AT(buf->nc_win, p, n);
       wattroff(buf->nc_win, COLOR_PAIR(2));
     }
+    log_msg("BUFFER", "druh_nexnd");
     it = it->next;
     if (it->prev->head) break;
     INC_POS(p,0,1);
   }
-  log_msg("BUFFER", "+__druh");
+  log_msg("BUFFER", "druh_end");
   wmove(buf->nc_win, lis->pos, 0);
   wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
-  //TODO: use wnoutrefresh here and refresh once on timer
   wnoutrefresh(buf->nc_win);
   buf->dirty = false;
+  buf->queued = false;
 }
 
 String buf_val(fn_handle *hndl, String fname) {
@@ -115,15 +153,6 @@ fn_rec* buf_rec(fn_handle *hndl) {
 
 int buf_pgsize(fn_handle *hndl) {
   return hndl->buf->nc_size.col / 3;
-}
-
-void buf_refresh(fn_buf *buf)
-{
-  log_msg("BUFFER", "refresh");
-  if (buf->dirty)
-    return;
-  buf->dirty = true;
-  pane_req_draw(buf, buf_draw);
 }
 
 void buf_mv(fn_buf *buf, int x, int y)

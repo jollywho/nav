@@ -49,7 +49,6 @@ static void pane_focus(Pane *p, CntlrNode* cn)
 
 void pane_input(Pane *p, int key)
 {
-  log_msg("PANE", "input");
   if (key == 'n') {
     pane_focus(p, pane_next(p));
   }

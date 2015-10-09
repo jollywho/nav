@@ -88,10 +88,6 @@ void scan_cb(uv_fs_t* req)
     rec_edit(r, "dir", (void*)req->path);
     String full = conspath(req->path, dent.name);
 
-    //NOTE: if a subdir has changed this stat overwrites that info and
-    //stat appears to be uptodate. instead, have an uptodate field in fm_stat
-    //that flags the stat was used when opening the dir, so it's valid.
-    //otherwise the stat is only used for attributes.
     ventry *ent = fnd_val("fm_stat", "fullpath", full);
     if (!ent) {
       send_stat(fq, full, (void*)0);
