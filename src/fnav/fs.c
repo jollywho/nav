@@ -51,7 +51,7 @@ void fs_loop(Loop *loop, int ms)
   process_loop(loop, ms);
 }
 
-void send_stat(FS_req *fq, const char* dir, void* upd)
+void send_stat(FS_req *fq, const char* dir, String upd)
 {
   FS_handle *fh = fq->fs_h;
   struct stat *s = malloc(sizeof(struct stat));
@@ -80,7 +80,7 @@ void scan_cb(uv_fs_t* req)
     tbl_del_val("fm_stat", "fullpath", (String)req->path);
   }
   /* add stat. TODO: should reuse uvstat in stat_cb */
-  send_stat(fq, req->path, (void*)1);
+  send_stat(fq, req->path, "1");
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
     fn_rec *r = mk_rec("fm_files");
@@ -90,7 +90,8 @@ void scan_cb(uv_fs_t* req)
 
     ventry *ent = fnd_val("fm_stat", "fullpath", full);
     if (!ent) {
-      send_stat(fq, full, (void*)0);
+      log_msg("FS", "--stat 0--");
+      send_stat(fq, full, "0");
     }
 
     rec_edit(r, "fullpath", (void*)full);
@@ -109,11 +110,14 @@ void stat_cb(uv_fs_t* req)
   ventry *ent = fnd_val("fm_files", "dir", fq->req_name);
 
   if (ent) {
-    log_msg("FS", "ENT");
+    log_msg("FS", "HAS FM_FILE");
     ent = fnd_val("fm_stat", "fullpath", fq->req_name);
     if (ent) {
-      int upd = (int)rec_fld(ent->rec, "update");
-      if (upd) {
+      log_msg("FS", "HAS STAT");
+      String upd = (String)rec_fld(ent->rec, "update");
+      log_msg("FS", "HAS STAT of %s", upd);
+      if (strcmp(upd, "1") == 0) {
+        log_msg("FS", "HAS UPD");
         struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
         if (fq->uv_stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
           log_msg("FS", "NOP");

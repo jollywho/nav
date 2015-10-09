@@ -129,7 +129,7 @@ static void fm_page(Cntlr *cntlr, Cmdarg *arg)
 static void fm_g_cmd(Cntlr *cntlr, Cmdarg *arg)
 {
   log_msg("FM", "cmd _g");
-  buf_mv(cntlr->hndl->buf, 0, arg->arg * cntlr->hndl->lis->ent->val->count);
+  buf_mv(cntlr->hndl->buf, 0, arg->arg * buf_entsize(cntlr->hndl));
   log_msg("FM", "waiting on job...");
 }
 
@@ -275,7 +275,7 @@ FM_cntlr* fm_cntlr_init(Pane *p)
 
   tbl_mk("fm_stat");
   tbl_mk_fld("fm_stat", "fullpath", typSTRING);
-  tbl_mk_fld("fm_stat", "update", typVOID);
+  tbl_mk_fld("fm_stat", "update", typSTRING);
   tbl_mk_fld("fm_stat", "stat", typVOID);
   init_fm_hndl(fm, p, &fm->base, fm->cur_dir);
 

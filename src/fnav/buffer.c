@@ -83,7 +83,8 @@ void buf_count_rewind(fn_buf *buf, fn_lis *lis)
   ventry *it = lis->ent;
   int count, sub;
   for(count = 0, sub = 0; count < lis->pos; count++, sub++) {
-    if (it->prev->head) break;
+    if (it->head) break;
+    log_msg("BUFFER", "druh_nexnd");
     it = it->prev;
     if (lis->ofs > 0 && sub > buf->nc_size.lnum) {
       sub = 0;
@@ -104,18 +105,21 @@ void buf_draw(void **argv)
     log_msg("BUFFER", "druh NOP");
     buf->dirty = false;
     buf->queued = false;
+    wnoutrefresh(buf->nc_win);
     return;
   }
 
-  if (!lis->ent) {
-    lis->ent = lis->f_val->rlist;
-  }
   if (buf->dirty) {
     buf_count_rewind(buf, lis);
   }
 
   pos_T p = {.lnum = 0, .col = 0};
   ventry *it = lis->ent;
+  for(int i = 0; i < lis->pos; i++) {
+    if (it->head) break;
+    it = it->prev;
+    if (!it->rec) break;
+  }
 
   for(int i = 0; i < buf->nc_size.lnum; i++) {
     if (!it->rec) break;
@@ -130,9 +134,8 @@ void buf_draw(void **argv)
       DRAW_AT(buf->nc_win, p, n);
       wattroff(buf->nc_win, COLOR_PAIR(2));
     }
-    log_msg("BUFFER", "druh_nexnd");
     it = it->next;
-    if (it->prev->head) break;
+    if (it->head) break;
     INC_POS(p,0,1);
   }
   log_msg("BUFFER", "druh_end");
@@ -143,11 +146,15 @@ void buf_draw(void **argv)
   buf->queued = false;
 }
 
-String buf_val(fn_handle *hndl, String fname) {
+String buf_val(fn_handle *hndl, String fname)
+{
+  if (!hndl->lis->ent) return NULL;
   return rec_fld(hndl->lis->ent->rec, fname);
 }
 
-fn_rec* buf_rec(fn_handle *hndl) {
+fn_rec* buf_rec(fn_handle *hndl)
+{
+  if (!hndl->lis->ent) return NULL;
   return hndl->lis->ent->rec;
 }
 
@@ -155,8 +162,13 @@ int buf_pgsize(fn_handle *hndl) {
   return hndl->buf->nc_size.col / 3;
 }
 
+int buf_entsize(fn_handle *hndl) {
+  return hndl->lis->ent->val->count;
+}
+
 void buf_mv(fn_buf *buf, int x, int y)
 {
+  if (!buf->hndl->lis->ent) return;
   int *pos = &buf->hndl->lis->pos;
   int *ofs = &buf->hndl->lis->ofs;
   for (int i = 0; i < abs(y); i++) {

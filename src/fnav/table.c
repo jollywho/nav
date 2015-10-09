@@ -112,7 +112,7 @@ int FN_MV(ventry *e, int n)
 {
   return ((n > 0) ?
     (e->next->head ? 0 : (1)) :
-    (e->prev->head ? 0 : (-1)));
+    (e->head ? 0 : (-1)));
 }
 
 void* rec_fld(fn_rec *rec, String fname)
@@ -167,22 +167,25 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
     fn_val *vv = kb_getp(FNVAL, f->vtree, v);
 
     ventry *ent = malloc(sizeof(ventry));
-    /* create null entry stub. */
+    /* create header entry. */
     if (!vv) {
       log_msg("TABLE", "new stub");
-      vv = v;
       ent->next = ent;
       ent->prev = ent;
-      vv->rlist = ent;
-      vv->count = 0;
+      v->rlist = ent;
+      v->count = 0;
       ent->head = 1;
-      kb_putp(FNVAL, f->vtree, vv);
+      kb_putp(FNVAL, f->vtree, v);
     }
     else {
       ent->head = 0;
+      // TODO: delete val
+    }
+    /* reattach variable for less code. */
+    if (!vv) {
+      vv = kb_getp(FNVAL, f->vtree, v);
     }
     /* attach record to an entry. */
-    log_msg("TABLE", "insert %s %s %s",t->key, f->key, vv->key );
     vv->count++;
     ent->rec = rec;
     ent->val = vv;
@@ -191,6 +194,7 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
     vv->rlist->prev->next = ent;
     vv->rlist->prev = ent;
     rec->vlist[i] = ent;
+
     /* check if field has lis. */
     if (kb_size(f->ltree) > 0) {
       fn_lis l = { .key = vv->key };
@@ -198,9 +202,10 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
       /* field has lis so call it. */
       if (ll) {
         log_msg("TABLE", "CALL");
-        /* if lis val unset, set it. */
+        /* if lis hasn't obtained a val, set it now. */
         if (!ll->f_val) {
           ll->f_val = vv;
+          ll->ent = ent;
         }
         ll->hndl->lis = ll;
         ll->cb(ll->hndl);
@@ -221,26 +226,25 @@ void tbl_del_rec(fn_rec *rec)
       it->next->prev = it->prev;
       it->prev->next = it->next;
 
+      if (it->val->count < 1 ) {
+        kb_delp(FNVAL, it->val->fld->vtree, it->val);
+      }
     }
     if (rec->vals[i]->fld->type == typSTRING) {
-//      free(rec->vals[i]->key);
+      free(rec->vals[i]->key);
     }
     else {
-//      free(rec->vals[i]->data);
+      free(rec->vals[i]->data);
     }
   }
-  //  TODO: delete a broken shit.
-  //  lis' pos and ofs should be updated after a delete but how?
-
-//  free(rec->vals);
-//  free(rec->vlist);
-//  free(rec);
+  free(rec->vals);
+  free(rec->vlist);
+  free(rec);
 }
 
 void tbl_del_val(String tn, String fname, String val)
 {
   log_msg("TABLE", "delete %s %s,%s",tn ,fname, val);
-  return;
   fn_tbl *t = get_tbl(tn);
   fn_fld f = { .key = fname };
   fn_val v = { .key = val   };
@@ -257,6 +261,11 @@ void tbl_del_val(String tn, String fname, String val)
         if (it->head) continue;
         log_msg("TAB", "ITER");
         tbl_del_rec(it->rec);
+      }
+      fn_lis l = { .key = val   };
+      fn_lis *ll = kb_get(FNLIS, ff->ltree, l);
+      if (ll) {
+        ll->f_val = NULL;
       }
     }
   }
