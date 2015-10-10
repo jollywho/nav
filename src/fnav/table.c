@@ -102,7 +102,7 @@ ventry* fnd_val(String tn, String fname, String val)
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
-      return vv->rlist;
+      return vv->rlist->next;
     }
   }
   return NULL;
@@ -143,6 +143,7 @@ void rec_edit(fn_rec *rec, String fname, void *val)
     if (strcmp(rec->vals[i]->fld->key, fname) == 0) {
       if (rec->vals[i]->fld->type == typSTRING) {
         rec->vals[i]->key = strdup(val);
+        rec->vals[i]->data = NULL;
       }
       else {
         rec->vals[i]->key = NULL;
@@ -173,19 +174,30 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
       ent->next = ent;
       ent->prev = ent;
       v->rlist = ent;
+      // TODO: rec_fld is returning a value with count 0 which breaks stat.
+      // there is a false assumption that the value incremented below is
+      // linked to the value inserted into the tree.
+      // having fnd_val return the next entry works somewhat.
+      // maybe related, delete still crashes. small sized tests show
+      // the header remaining intact after delete.
       v->count = 0;
       ent->head = 1;
+      log_msg("TABLE", "trepush");
       kb_putp(FNVAL, f->vtree, v);
+      log_msg("TABLE", "trepushed");
     }
     else {
       ent->head = 0;
-      // TODO: delete val
+      // TODO: loose fnval not being used should be cleared.
     }
     /* reattach variable for less code. */
     if (!vv) {
+      log_msg("TABLE", "treeget");
       vv = kb_getp(FNVAL, f->vtree, v);
+      log_msg("TABLE", "tregot");
     }
     /* attach record to an entry. */
+    log_msg("TABLE", "value %s %s %s", t->key, f->key, vv->key);
     vv->count++;
     ent->rec = rec;
     ent->val = vv;
@@ -216,35 +228,36 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
 
 void tbl_del_rec(fn_rec *rec)
 {
-  log_msg("TABLE", "delete rec st");
+  log_msg("TABLE", "delete_rec()");
   if (!rec) return;
   for(int i = 0; i < rec->fld_count; i++) {
+    log_msg("TABLE", "next");
     ventry *it = rec->vlist[i];
+    log_msg("TABLE", "next got");
     if (it) {
-      log_msg("TABLE", "delete rec inner");
+      log_msg("TABLE", "it next got");
       it->val->count--;
       it->next->prev = it->prev;
       it->prev->next = it->next;
 
       if (it->val->count < 1 ) {
+        log_msg("TABLE", "deletep %s %s", it->val->fld->key, it->val->key);
         kb_delp(FNVAL, it->val->fld->vtree, it->val);
+        log_msg("TABLE", "dele %s %s", it->val->fld->key, it->val->key);
       }
     }
-    if (rec->vals[i]->fld->type == typSTRING) {
-      free(rec->vals[i]->key);
-    }
-    else {
-      free(rec->vals[i]->data);
-    }
   }
-  free(rec->vals);
-  free(rec->vlist);
-  free(rec);
+// TODO: cannot free record or its vals with this strategy
+//
+//  free(it->val->data);
+//  free(rec->vals);
+//  free(rec->vlist);
+//  free(rec);
 }
 
 void tbl_del_val(String tn, String fname, String val)
 {
-  log_msg("TABLE", "delete %s %s,%s",tn ,fname, val);
+  log_msg("TABLE", "delete_val() %s %s,%s",tn ,fname, val);
   fn_tbl *t = get_tbl(tn);
   fn_fld f = { .key = fname };
   fn_val v = { .key = val   };
@@ -256,16 +269,16 @@ void tbl_del_val(String tn, String fname, String val)
       ventry *it = vv->rlist;
       int count = vv->count;
       for (int i = 0; i < count; i++) {
-        log_msg("TAB", "ITERHEAD");
-        it = it->prev;
-        if (it->head) continue;
-        log_msg("TAB", "ITER");
+        log_msg("TAB", "ITERHEAD %s %s %s",tn,fname,val);
+        it = it->next;
         tbl_del_rec(it->rec);
       }
       fn_lis l = { .key = val   };
       fn_lis *ll = kb_get(FNLIS, ff->ltree, l);
       if (ll) {
+        log_msg("TAB", "CLEAR ");
         ll->f_val = NULL;
+        ll->ent = NULL;
       }
     }
   }

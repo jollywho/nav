@@ -74,11 +74,10 @@ void scan_cb(uv_fs_t* req)
 
   /* clear outdated records */
   tbl_del_val("fm_files", "dir", (String)req->path);
-
   if (fq->rec) {
-    log_msg("FS", "--stat already exists--");
     tbl_del_val("fm_stat", "fullpath", (String)req->path);
   }
+
   /* add stat. TODO: should reuse uvstat in stat_cb */
   send_stat(fq, req->path, "1");
 
@@ -115,7 +114,7 @@ void stat_cb(uv_fs_t* req)
     if (ent) {
       log_msg("FS", "HAS STAT");
       String upd = (String)rec_fld(ent->rec, "update");
-      log_msg("FS", "HAS STAT of %s", upd);
+      log_msg("FS", "HAS UPD of %s", upd);
       if (strcmp(upd, "1") == 0) {
         log_msg("FS", "HAS UPD");
         struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
@@ -151,7 +150,7 @@ void fs_close_cb(FS_req *fq)
 
 void fs_open(FS_handle *fsh, String dir)
 {
-  log_msg("FS", "fs open");
+  log_msg("FS", "fs open %s", dir);
   FS_req *fq = malloc(sizeof(FS_req));
   fq->fs_h = fsh;
   fq->req_name = dir;

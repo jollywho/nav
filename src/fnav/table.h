@@ -11,8 +11,6 @@ typedef struct fn_fld fn_fld;
 typedef struct tentry tentry;
 typedef struct ventry ventry;
 
-#define _NOP(x)
-
 typedef enum {
   typVOID,
   typINT,

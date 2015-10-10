@@ -36,7 +36,7 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir ="/home/chi/casper/YFS";
+String init_dir = "/home/chi/casper/YFS";
 static void fm_mv();
 static void fm_page();
 static void fm_mv();
