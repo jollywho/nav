@@ -121,8 +121,8 @@ void buf_draw(void **argv)
     if (!it->rec) break;
   }
 
+  log_msg("BUFFER", "druh_start");
   for(int i = 0; i < buf->nc_size.lnum; i++) {
-    if (!it->rec) break;
     String n = (String)rec_fld(it->rec, buf->fname);
     if (isdir(it->rec)) {
       wattron(buf->nc_win, COLOR_PAIR(1));

@@ -19,7 +19,7 @@ void log_init()
   char *name = getenv("HOME");
   char *path;
   asprintf(&path, "%s/%s", name, LOG_FILENAME);
-  log_file = fopen(path, "a");
+  log_file = fopen(path, "w");
 }
 
 void log_set(const char* obj)

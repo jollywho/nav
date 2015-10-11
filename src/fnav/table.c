@@ -75,21 +75,19 @@ void tbl_mk_fld(String tn, String name, tFldType typ)
 
 void initflds(fn_fld *f, fn_rec *rec)
 {
-  fn_val *v = malloc(sizeof(fn_val));
-  v->fld = f;
-  rec->vals[rec->fld_count] = v;
+  rec->vals[rec->fld_count] = NULL;
   rec->vlist[rec->fld_count] = NULL;
   rec->fld_count++;
 }
 
-fn_rec* mk_rec(String tn)
+fn_rec* mk_rec(fn_tbl *t)
 {
-  fn_tbl *t = get_tbl(tn);
   fn_rec *rec = malloc(sizeof(fn_rec));
   rec->vals = malloc(sizeof(fn_val)*t->count);
   rec->vlist = malloc(sizeof(fn_val)*t->count);
-  rec->fld_count = 0;
-  __kb_traverse(fn_fld, t->fields, initflds, rec);
+  rec->fld_count = kb_size(t->fields);
+
+  //__kb_traverse(fn_fld, t->fields, initflds, rec);
   return rec;
 }
 
@@ -102,7 +100,7 @@ ventry* fnd_val(String tn, String fname, String val)
   if (ff) {
     fn_val *vv = kb_get(FNVAL, ff->vtree, v);
     if (vv) {
-      return vv->rlist->next;
+      return vv->rlist;
     }
   }
   return NULL;
@@ -153,71 +151,92 @@ void rec_edit(fn_rec *rec, String fname, void *val)
   }
 }
 
-void tbl_insert(fn_tbl *t, fn_rec *rec)
+fn_val* new_entry(fn_rec *rec, fn_fld *fld, void *data, int typ, int indx)
+{
+  fn_val *val = malloc(sizeof(fn_val));
+  ventry *ent = malloc(sizeof(ventry));
+  val->fld = fld;
+  if (typ) {
+    val->count = 1;
+    val->data = data;
+  }
+  else {
+    log_msg("TABLE", "trepush");
+    val->count = 1;
+    ent->head = 1;
+    ent->next = ent;
+    ent->prev = ent;
+    val->rlist = ent;
+    val->key = data;
+    ent->rec = rec;
+    ent->val = val;
+    rec->vlist[indx] = ent;
+    kb_putp(FNVAL, fld->vtree, val);
+  }
+  return val;
+}
+
+void add_entry(fn_rec *rec, fn_fld *fld, fn_val *v, int typ, int indx)
+{
+  /* attach record to an entry. */
+  log_msg("TABLE", "prev val %s", v->rlist->prev->val->key);
+  ventry *ent = malloc(sizeof(ventry));
+  v->count++;
+  ent->head = 0;
+  ent->rec = rec;
+  ent->val = v;
+  ent->prev = v->rlist->prev;
+  ent->next = v->rlist;
+  v->rlist->prev->next = ent;
+  v->rlist->prev = ent;
+  rec->vlist[indx] = ent;
+}
+
+void tbl_insert(fn_tbl *t, trans_rec *trec)
 {
   log_msg("TABLE", "rec");
   t->rec_count++;
+  fn_rec *rec = mk_rec(t);
 
   for(int i = 0; i < rec->fld_count; i++) {
-    fn_val *v = rec->vals[i];
-    if (v->fld->type == typVOID) {
+    log_msg("TABLE", "inserting %s %s ", trec->flds[i], (String)trec->data[i]);
+    void *data = trec->data[i];
+
+    fn_fld f = { .key = trec->flds[i] };
+    fn_fld *fld = kb_get(FNFLD, t->fields, f);
+
+    if (fld->type == typVOID) {
+      log_msg("TABLE", "void insert");
+      rec->vals[i] = new_entry(rec, fld, data, 1, i);
+      rec->vlist[i] = NULL;
       continue;
     }
 
-    fn_fld *f = kb_getp(FNFLD, t->fields, v->fld);
-    fn_val *vv = kb_getp(FNVAL, f->vtree, v);
+    fn_val v = { .key = data };
+    fn_val *vv = kb_get(FNVAL, fld->vtree, v);
 
-    ventry *ent = malloc(sizeof(ventry));
     /* create header entry. */
     if (!vv) {
       log_msg("TABLE", "new stub");
-      ent->next = ent;
-      ent->prev = ent;
-      v->rlist = ent;
-      // TODO: rec_fld is returning a value with count 0 which breaks stat.
-      // there is a false assumption that the value incremented below is
-      // linked to the value inserted into the tree.
-      // having fnd_val return the next entry works somewhat.
-      // maybe related, delete still crashes. small sized tests show
-      // the header remaining intact after delete.
-      v->count = 0;
-      ent->head = 1;
-      log_msg("TABLE", "trepush");
-      kb_putp(FNVAL, f->vtree, v);
-      log_msg("TABLE", "trepushed");
+      rec->vals[i] = new_entry(rec, fld, data, 0, i);
     }
     else {
-      ent->head = 0;
-      // TODO: loose fnval not being used should be cleared.
+      rec->vals[i] = vv;
+      add_entry(rec, fld, vv, 0, i);
     }
-    /* reattach variable for less code. */
-    if (!vv) {
-      log_msg("TABLE", "treeget");
-      vv = kb_getp(FNVAL, f->vtree, v);
-      log_msg("TABLE", "tregot");
-    }
-    /* attach record to an entry. */
-    log_msg("TABLE", "value %s %s %s", t->key, f->key, vv->key);
-    vv->count++;
-    ent->rec = rec;
-    ent->val = vv;
-    ent->prev = vv->rlist->prev;
-    ent->next = vv->rlist;
-    vv->rlist->prev->next = ent;
-    vv->rlist->prev = ent;
-    rec->vlist[i] = ent;
+    log_msg("TABLE", "ins'd res %s", v.key);
 
     /* check if field has lis. */
-    if (kb_size(f->ltree) > 0) {
-      fn_lis l = { .key = vv->key };
-      fn_lis *ll = kb_get(FNLIS, f->ltree, l);
+    if (kb_size(fld->ltree) > 0) {
+      fn_lis l = { .key = rec->vals[i]->key };
+      fn_lis *ll = kb_get(FNLIS, fld->ltree, l);
       /* field has lis so call it. */
       if (ll) {
         log_msg("TABLE", "CALL");
         /* if lis hasn't obtained a val, set it now. */
         if (!ll->f_val) {
-          ll->f_val = vv;
-          ll->ent = ent;
+          ll->f_val = rec->vals[i];
+          ll->ent = rec->vlist[i];
         }
         ll->hndl->lis = ll;
         ll->cb(ll->hndl);
@@ -229,30 +248,39 @@ void tbl_insert(fn_tbl *t, fn_rec *rec)
 void tbl_del_rec(fn_rec *rec)
 {
   log_msg("TABLE", "delete_rec()");
-  if (!rec) return;
   for(int i = 0; i < rec->fld_count; i++) {
     log_msg("TABLE", "next");
     ventry *it = rec->vlist[i];
-    log_msg("TABLE", "next got");
+    if (!it) { free(rec->vals[i]); }
     if (it) {
-      log_msg("TABLE", "it next got");
+      log_msg("TABLE", "got entry");
       it->val->count--;
-      it->next->prev = it->prev;
-      it->prev->next = it->next;
 
       if (it->val->count < 1 ) {
-        log_msg("TABLE", "deletep %s %s", it->val->fld->key, it->val->key);
-        kb_delp(FNVAL, it->val->fld->vtree, it->val);
-        log_msg("TABLE", "dele %s %s", it->val->fld->key, it->val->key);
+        log_msg("TABLE", "to delp %s %s", it->val->fld->key, it->val->key);
+        fn_val *v = kb_getp(FNVAL, it->val->fld->vtree, it->val);
+        log_msg("TABLE", "getp %s %s", v->fld->key, v->key);
+        kb_del(FNVAL, v->fld->vtree, *v);
+
+        fn_lis l = { .key = it->val->key   };
+        fn_lis *ll = kb_get(FNLIS, it->val->fld->ltree, l);
+        if (ll) {
+          log_msg("TAB", "CLEAR ");
+          ll->f_val = NULL;
+          ll->ent = NULL;
+        }
+        free(it->val->key);
+        free(rec->vals[i]);
       }
+      it->next->prev = it->prev;
+      it->prev->next = it->next;
+      it->next->head = it->head;
+      free(it);
     }
   }
-// TODO: cannot free record or its vals with this strategy
-//
-//  free(it->val->data);
-//  free(rec->vals);
-//  free(rec->vlist);
-//  free(rec);
+  free(rec->vals);
+  free(rec->vlist);
+  free(rec);
 }
 
 void tbl_del_val(String tn, String fname, String val)
@@ -268,17 +296,11 @@ void tbl_del_val(String tn, String fname, String val)
       /* iterate entries of val. */
       ventry *it = vv->rlist;
       int count = vv->count;
+        log_msg("TAB", "DELCOUN %d", vv->count);
       for (int i = 0; i < count; i++) {
         log_msg("TAB", "ITERHEAD %s %s %s",tn,fname,val);
         it = it->next;
         tbl_del_rec(it->rec);
-      }
-      fn_lis l = { .key = val   };
-      fn_lis *ll = kb_get(FNLIS, ff->ltree, l);
-      if (ll) {
-        log_msg("TAB", "CLEAR ");
-        ll->f_val = NULL;
-        ll->ent = NULL;
       }
     }
   }
@@ -320,4 +342,5 @@ void commit(void **data)
   log_msg("TABLE", "commit");
   fn_tbl *t = get_tbl(data[0]);
   tbl_insert(t, data[1]);
+  free(data[1]);
 }

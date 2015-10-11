@@ -39,7 +39,7 @@ String fs_base_dir(String path)
 
 bool isdir(fn_rec *rec)
 {
-  if (!rec) return NULL;
+  if (!rec) return false;
   String full = rec_fld(rec, "fullpath");
   ventry *ent = fnd_val("fm_stat", "fullpath", full);
   struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
@@ -51,16 +51,16 @@ void fs_loop(Loop *loop, int ms)
   process_loop(loop, ms);
 }
 
-void send_stat(FS_req *fq, const char* dir, String upd)
+void send_stat(FS_req *fq, const char* dir, char* upd)
 {
   FS_handle *fh = fq->fs_h;
   struct stat *s = malloc(sizeof(struct stat));
   stat(dir, s);
 
-  fn_rec *r = mk_rec("fm_stat");
-  rec_edit(r, "fullpath", (void*)dir);
-  rec_edit(r, "update", (void*)upd);
-  rec_edit(r, "stat", (void*)s);
+  trans_rec *r = mk_trans_rec(2);
+  edit_trans(r, "fullpath", (void*)dir,NULL);
+  edit_trans(r, "update", NULL, (void*)upd);
+  edit_trans(r, "stat", NULL,(void*)s);
   CREATE_EVENT(fh->loop.events, commit, 2, "fm_stat", r);
 }
 
@@ -74,26 +74,24 @@ void scan_cb(uv_fs_t* req)
 
   /* clear outdated records */
   tbl_del_val("fm_files", "dir", (String)req->path);
-  if (fq->rec) {
-    tbl_del_val("fm_stat", "fullpath", (String)req->path);
-  }
+  tbl_del_val("fm_stat", "fullpath", (String)req->path);
 
   /* add stat. TODO: should reuse uvstat in stat_cb */
-  send_stat(fq, req->path, "1");
+  send_stat(fq, req->path, "yes");
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
-    fn_rec *r = mk_rec("fm_files");
-    rec_edit(r, "name", (void*)dent.name);
-    rec_edit(r, "dir", (void*)req->path);
+    trans_rec *r = mk_trans_rec(3);
+    edit_trans(r, "name", (void*)dent.name,NULL);
+    edit_trans(r, "dir", (void*)req->path,NULL);
     String full = conspath(req->path, dent.name);
 
     ventry *ent = fnd_val("fm_stat", "fullpath", full);
     if (!ent) {
-      log_msg("FS", "--stat 0--");
-      send_stat(fq, full, "0");
+      log_msg("FS", "--fresh stat-- %s", full);
+      send_stat(fq, full, "no");
     }
 
-    rec_edit(r, "fullpath", (void*)full);
+    edit_trans(r, "fullpath", (void*)full,NULL);
     free(full);
     CREATE_EVENT(fh->loop.events, commit, 2, "fm_files", r);
   }
@@ -113,9 +111,10 @@ void stat_cb(uv_fs_t* req)
     ent = fnd_val("fm_stat", "fullpath", fq->req_name);
     if (ent) {
       log_msg("FS", "HAS STAT");
-      String upd = (String)rec_fld(ent->rec, "update");
-      log_msg("FS", "HAS UPD of %s", upd);
-      if (strcmp(upd, "1") == 0) {
+      log_msg("FS", "HAS count %d %s", ent->val->count, ent->val->key);
+      int *upd = (int*)rec_fld(ent->rec, "update");
+      log_msg("FS", "HAS UPD of %d", *upd);
+      if (*upd) {
         log_msg("FS", "HAS UPD");
         struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
         if (fq->uv_stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
@@ -123,7 +122,6 @@ void stat_cb(uv_fs_t* req)
           return;
         }
       }
-      fq->rec = ent->rec;
     }
   }
 

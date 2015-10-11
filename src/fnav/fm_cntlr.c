@@ -36,7 +36,7 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir = "/home/chi/casper/YFS";
+String init_dir = "/home/chi/test";
 static void fm_mv();
 static void fm_page();
 static void fm_mv();
@@ -275,7 +275,7 @@ FM_cntlr* fm_cntlr_init(Pane *p)
 
   tbl_mk("fm_stat");
   tbl_mk_fld("fm_stat", "fullpath", typSTRING);
-  tbl_mk_fld("fm_stat", "update", typSTRING);
+  tbl_mk_fld("fm_stat", "update", typVOID);
   tbl_mk_fld("fm_stat", "stat", typVOID);
   init_fm_hndl(fm, p, &fm->base, fm->cur_dir);
 

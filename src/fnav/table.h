@@ -6,6 +6,7 @@
 
 #define elem_cmp(a, b) (strcmp((a).key, (b).key))
 
+typedef struct fn_rec fn_rec;
 typedef struct fn_val fn_val;
 typedef struct fn_fld fn_fld;
 typedef struct tentry tentry;
@@ -54,7 +55,7 @@ struct fn_lis {
 
 void tables_init();
 void tbl_mk(String name);
-fn_rec* mk_rec(String tn);
+fn_rec* mk_rec(fn_tbl *t);
 void rec_edit(fn_rec *rec, String fname, void *val);
 void tbl_mk_fld(String tn, String name, tFldType typ);
 void tbl_del_val(String tn, String fname, String val);
