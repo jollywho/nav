@@ -8,6 +8,7 @@
 
 typedef struct fn_rec fn_rec;
 typedef struct fn_val fn_val;
+typedef struct fn_val_node fn_val_node;
 typedef struct fn_fld fn_fld;
 typedef struct tentry tentry;
 typedef struct ventry ventry;
@@ -26,10 +27,16 @@ struct fn_val {
   ventry *rlist;
   fn_fld *fld;
   int count;
+  int test;
+};
+
+struct fn_val_node {
+  String key;
+  fn_val *node;
 };
 
 struct fn_rec {
-  fn_val **vals;
+  fn_val_node **vals;
   ventry **vlist;
   int fld_count;
 };
@@ -38,7 +45,7 @@ struct ventry {
   ventry *prev;
   ventry *next;
   fn_rec *rec;
-  fn_val *val;
+  fn_val_node *val;
   unsigned int head;
 };
 

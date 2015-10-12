@@ -27,6 +27,7 @@ char* conspath(const char* str1, const char* str2)
 String fs_parent_dir(String path)
 {
   // TODO: when to free this
+  log_msg("FS", "<<PARENT OF>>: %s", path);
   String tmp = strdup(path);
   return dirname(tmp);
 }
@@ -111,8 +112,7 @@ void stat_cb(uv_fs_t* req)
     ent = fnd_val("fm_stat", "fullpath", fq->req_name);
     if (ent) {
       log_msg("FS", "HAS STAT");
-      log_msg("FS", "HAS count %d %s", ent->val->count, ent->val->key);
-      int *upd = (int*)rec_fld(ent->rec, "update");
+      char *upd = (char*)rec_fld(ent->rec, "update");
       log_msg("FS", "HAS UPD of %d", *upd);
       if (*upd) {
         log_msg("FS", "HAS UPD");

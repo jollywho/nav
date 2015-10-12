@@ -16,7 +16,7 @@ struct fn_buf {
   pos_T nc_size;
 
   fn_handle *hndl;
-  String fname;
+  String vname;
   bool dirty;
   bool queued;
 };
@@ -51,7 +51,7 @@ void buf_set(fn_handle *hndl, String fname)
 {
   log_msg("BUFFER", "set");
   fn_buf *buf = hndl->buf;
-  buf->fname = fname;
+  buf->vname = fname;
   buf->hndl = hndl;
   tbl_listener(hndl, buf_listen);
 }
@@ -80,9 +80,12 @@ void buf_listen(fn_handle *hndl)
 void buf_count_rewind(fn_buf *buf, fn_lis *lis)
 {
   log_msg("BUFFER", "rewind");
+  // TODO: rewind running when attaching lis. want it after insert finishes
   ventry *it = lis->ent;
   int count, sub;
+  log_msg("BUFFER", "rewind at %d", lis->pos);
   for(count = 0, sub = 0; count < lis->pos; count++, sub++) {
+    log_msg("BUFFER", "head? %d %d", it->head, count);
     if (it->head) break;
     log_msg("BUFFER", "druh_nexnd");
     it = it->prev;
@@ -101,7 +104,7 @@ void buf_draw(void **argv)
   fn_lis *lis = buf->hndl->lis;
 
   wclear(buf->nc_win);
-  if (!lis->f_val) {
+  if (!lis->ent) {
     log_msg("BUFFER", "druh NOP");
     buf->dirty = false;
     buf->queued = false;
@@ -118,12 +121,11 @@ void buf_draw(void **argv)
   for(int i = 0; i < lis->pos; i++) {
     if (it->head) break;
     it = it->prev;
-    if (!it->rec) break;
   }
 
   log_msg("BUFFER", "druh_start");
   for(int i = 0; i < buf->nc_size.lnum; i++) {
-    String n = (String)rec_fld(it->rec, buf->fname);
+    String n = (String)rec_fld(it->rec, buf->vname);
     if (isdir(it->rec)) {
       wattron(buf->nc_win, COLOR_PAIR(1));
       DRAW_AT(buf->nc_win, p, n);
@@ -163,7 +165,7 @@ int buf_pgsize(fn_handle *hndl) {
 }
 
 int buf_entsize(fn_handle *hndl) {
-  return hndl->lis->ent->val->count;
+  return hndl->lis->ent->val->node->count;
 }
 
 void buf_mv(fn_buf *buf, int x, int y)

@@ -36,7 +36,7 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir = "/home/chi/test";
+String init_dir = "/home/chi/casper/YFS";
 static void fm_mv();
 static void fm_page();
 static void fm_mv();
@@ -90,9 +90,7 @@ static void fm_left(Cntlr *cntlr)
 {
   log_msg("FM", "cmd left");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  String tmp = buf_val(cntlr->hndl, "dir");
-  tmp = tmp ? tmp : self->cur_dir;
-  self->cur_dir = fs_parent_dir(tmp);
+  self->cur_dir = fs_parent_dir(self->cur_dir);
   cntlr->hndl->fval = self->cur_dir;
   buf_set(cntlr->hndl, "name");
   fs_open(self->fs, self->cur_dir);
