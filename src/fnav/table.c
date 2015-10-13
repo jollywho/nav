@@ -6,6 +6,23 @@
 #include "fnav/table.h"
 #include "fnav/log.h"
 
+fn_tbl* get_tbl(String t);
+
+struct fn_val {
+  String key;
+  void *data;
+  ventry *rlist;
+  fn_fld *fld;
+  int count;
+  UT_hash_handle hh;
+};
+
+struct fn_rec {
+  fn_val **vals;
+  ventry **vlist;
+  int fld_count;
+};
+
 struct fn_fld {
   String key;
   tFldType type;
@@ -27,7 +44,6 @@ fn_tbl *FN_MASTER;
 void tables_init()
 {
   log_msg("INIT", "table");
-  //FN_MASTER = malloc(sizeof(fn_tbl));
 }
 
 void tbl_mk(String name)
@@ -39,6 +55,20 @@ void tbl_mk(String name)
   t->rec_count = 0;
   t->fields = NULL;
   HASH_ADD_KEYPTR(hh, FN_MASTER, t->key, strlen(t->key), t);
+}
+
+void tbl_del(String name)
+{
+  fn_tbl *t = get_tbl(name);
+  fn_fld *f, *ftmp;
+  HASH_ITER(hh, t->fields, f, ftmp) {
+    HASH_DEL(t->fields, f);
+    //TODO: del val
+    //TODO: del lis
+    free(f->key);
+    free(f);
+  }
+  HASH_DEL(FN_MASTER, t);
 }
 
 fn_tbl* get_tbl(String t)
@@ -123,29 +153,17 @@ void* rec_fld(fn_rec *rec, String fname)
 
 int tbl_count(String tn)
 {
-  return (get_tbl(tn)->count);
+  return get_tbl(tn)->count;
 }
 
-void rec_edit(fn_rec *rec, String fname, void *val)
+int ent_count(ventry *e)
 {
-  for(int i=0;i<rec->fld_count;i++) {
-    if (strcmp(rec->vals[i]->fld->key, fname) == 0) {
-      if (rec->vals[i]->fld->type == typSTRING) {
-        rec->vals[i]->key = strdup(val);
-        rec->vals[i]->data = NULL;
-      }
-      else {
-        rec->vals[i]->key = NULL;
-        rec->vals[i]->data = val;
-      }
-    }
-  }
+  return e->val->count;
 }
 
 fn_val* new_entry(fn_rec *rec, fn_fld *fld, void *data, int typ, int indx)
 {
   fn_val *val = malloc(sizeof(fn_val));
-  ventry *ent = malloc(sizeof(ventry));
   val->fld = fld;
   if (typ) {
     val->count = 1;
@@ -153,6 +171,7 @@ fn_val* new_entry(fn_rec *rec, fn_fld *fld, void *data, int typ, int indx)
   }
   else {
     log_msg("TABLE", "trepush");
+    ventry *ent = malloc(sizeof(ventry));
     val->count = 1;
     ent->head = 1;
     ent->next = ent;
@@ -173,7 +192,6 @@ void add_entry(fn_rec *rec, fn_fld *fld, fn_val *v, int typ, int indx)
   /* attach record to an entry. */
   ventry *ent = malloc(sizeof(ventry));
   v->count++;
-    log_msg("TABLE", "::val:: %p", &v);
   ent->head = 0;
   ent->rec = rec;
   ent->val = v;
@@ -242,22 +260,27 @@ void tbl_del_rec(fn_rec *rec)
   for(int i = 0; i < rec->fld_count; i++) {
     log_msg("TABLE", "next");
     ventry *it = rec->vlist[i];
-    if (!it) { free(rec->vals[i]); }
+    if (!it) {
+      if (rec->vals[i]->fld == typVOID) {
+        free(rec->vals[i]->data);
+      }
+      free(rec->vals[i]);
+    }
     if (it) {
       log_msg("TABLE", "got entry");
       it->val->count--;
 
-      // TODO: note: disconnected entries return unstable count and cause crash.
       if (it->val->count < 1 ) {
         log_msg("TABLE", "to delp %s %s", it->val->fld->key, it->val->key);
         HASH_DEL(it->val->fld->vals, it->val);
 
-        //fn_lis *ll = kb_get(FNLIS, it->val->node->fld->ltree, l);
-        //if (ll) {
-        //  log_msg("TAB", "CLEAR ");
-        //  ll->ent = NULL;
-        //  ll->f_val = NULL;
-        //}
+        fn_lis *ll;
+        HASH_FIND_STR(it->val->fld->lis, it->val->key, ll);
+        if (ll) {
+          log_msg("TAB", "CLEAR ");
+          ll->ent = NULL;
+          ll->f_val = NULL;
+        }
         free(it->val->key);
         free(rec->vals[i]);
       }
@@ -329,5 +352,5 @@ void commit(void **data)
   log_msg("TABLE", "commit");
   fn_tbl *t = get_tbl(data[0]);
   tbl_insert(t, data[1]);
-  free(data[1]);
+  clear_trans(data[1]);
 }

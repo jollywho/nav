@@ -34,5 +34,6 @@ void rpc_draw_handle();
 void rpc_handle_for(String cntlr_name, String cmdstr);
 trans_rec* mk_trans_rec(int fld_count);
 void edit_trans(trans_rec *r, String fname, String val, void *data);
+void clear_trans(trans_rec *r);
 
 #endif

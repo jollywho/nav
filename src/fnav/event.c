@@ -10,13 +10,12 @@ uv_timer_t event_timer;
 uint64_t before;
 uint64_t after;
 
-#define TIMESTEP (uint64_t)10
+const uint64_t TIMESTEP = 10;
 
 void main_event_loop(uv_timer_t *handle)
 {
   uv_timer_stop(&event_timer);
   before = os_hrtime();
-
   doloops(TIMESTEP);
   after = os_hrtime();
   int took = (int) ((after - before) / 1000000);

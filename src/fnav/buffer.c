@@ -47,6 +47,12 @@ fn_buf* buf_init()
   return buf;
 }
 
+void buf_destroy(fn_buf *buf)
+{
+  delwin(buf->nc_win);
+  free(buf);
+}
+
 void buf_set(fn_handle *hndl, String fname)
 {
   log_msg("BUFFER", "set");
@@ -165,12 +171,8 @@ int buf_pgsize(fn_handle *hndl) {
   return hndl->buf->nc_size.col / 3;
 }
 
-// my guess is the RB tree is rebalancing itself on insertion
-// which breaks stale pointers, like every entry!
-// this doesnt explain tho why it only breaks moving left dirs.
 int buf_entsize(fn_handle *hndl) {
-  log_msg("BUFFER", "|||COUNT %p|||", hndl->lis->ent->val);
-  return hndl->lis->ent->val->count;
+  return ent_count(hndl->lis->ent);
 }
 
 void buf_mv(fn_buf *buf, int x, int y)

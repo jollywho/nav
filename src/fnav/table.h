@@ -20,21 +20,6 @@ typedef enum {
   //typTABLE /* record format for lists of tables */
 } tFldType;
 
-struct fn_val {
-  String key;
-  void *data;
-  ventry *rlist;
-  fn_fld *fld;
-  int count;
-  UT_hash_handle hh;
-};
-
-struct fn_rec {
-  fn_val **vals;
-  ventry **vlist;
-  int fld_count;
-};
-
 struct ventry {
   ventry *prev;
   ventry *next;
@@ -57,17 +42,18 @@ struct fn_lis {
 
 void tables_init();
 void tbl_mk(String name);
-fn_rec* mk_rec(fn_tbl *t);
-void rec_edit(fn_rec *rec, String fname, void *val);
+void tbl_del(String name);
 void tbl_mk_fld(String tn, String name, tFldType typ);
-void tbl_del_val(String tn, String fname, String val);
+
 void tbl_listener(fn_handle *hndl, buf_cb cb);
-ventry* fnd_val(String tn, String fname, String val);
 void commit(void **data);
 
-int tbl_count(String tn);
+ventry* fnd_val(String tn, String fname, String val);
+void tbl_del_val(String tn, String fname, String val);
 void* rec_fld(fn_rec *rec, String fname);
 
+int tbl_count(String tn);
+int ent_count(ventry *e);
 int FN_MV(ventry *e, int n);
 
 #endif

@@ -38,3 +38,10 @@ void edit_trans(trans_rec *r, String fname, String val, void *data)
   }
   r->count++;
 }
+
+void clear_trans(trans_rec *r)
+{
+  free(r->flds);
+  free(r->data);
+  free(r);
+}

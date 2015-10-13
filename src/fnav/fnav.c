@@ -26,6 +26,7 @@ void init(void)
   init_pair(2, 6, -1);
   curs_set(0);
 #endif
+  loop_init();
   tables_init();
   event_init();
   input_init();

@@ -17,5 +17,6 @@ struct FM_cntlr {
 };
 
 FM_cntlr* fm_cntlr_init(Pane *pane);
+void fm_cntlr_cleanup(FM_cntlr *cntlr);
 
 #endif

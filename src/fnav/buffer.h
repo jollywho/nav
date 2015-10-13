@@ -10,11 +10,14 @@ typedef struct {
 
 
 fn_buf* buf_init();
-void buf_inv(Job *job, JobArg *arg);
+void buf_destroy(fn_buf *buf);
+
 void buf_set(fn_handle *hndl, String fname);
 void buf_mv(fn_buf *buf, int x, int y);
+
 String buf_val(fn_handle *hndl, String fname);
 fn_rec* buf_rec(fn_handle *hndl);
+
 int buf_pgsize(fn_handle *hndl);
 int buf_entsize(fn_handle *hndl);
 void buf_refresh(fn_buf *buf);

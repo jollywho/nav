@@ -36,6 +36,11 @@ void pane_add(Pane *p, Cntlr *c)
   }
 }
 
+void pane_remove(Pane *p, Cntlr *c)
+{
+  //TODO
+}
+
 static CntlrNode* pane_next(Pane *p) {
   return p->focus->next;
 }

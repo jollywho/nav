@@ -288,5 +288,6 @@ FM_cntlr* fm_cntlr_init(Pane *p)
 
 void fm_cntlr_cleanup(FM_cntlr *cntlr)
 {
+  free(cntlr);
   // TODO: careful cleanup + cancel any pending cb
 }

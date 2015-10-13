@@ -20,7 +20,7 @@ void window_loop(Loop *loop, int ms);
 void window_init(void)
 {
   log_msg("INIT", "window");
-  loop_init(&win.loop, window_loop);
+  loop_add(&win.loop, window_loop);
   uv_timer_init(&win.loop.uv, &win.loop.delay);
   uv_timer_init(eventloop(), &win.draw_timer);
   pane_init(&win.pane);
@@ -34,7 +34,7 @@ void window_input(int key)
 
 void window_loop(Loop *loop, int ms)
 {
-  if (!queue_empty(win.loop.events)) {
+  if (!queue_empty(&win.loop.events)) {
     process_loop(&win.loop, ms);
     doupdate();
   }
@@ -43,5 +43,5 @@ void window_loop(Loop *loop, int ms)
 void window_req_draw(fn_buf *buf, argv_callback cb)
 {
   log_msg("WINDOW", "req draw");
-  CREATE_EVENT(win.loop.events, cb, 1, buf);
+  CREATE_EVENT(&win.loop.events, cb, 1, buf);
 }

@@ -47,11 +47,6 @@ bool isdir(fn_rec *rec)
   return (S_ISDIR(st->st_mode));
 }
 
-void fs_loop(Loop *loop, int ms)
-{
-  process_loop(loop, ms);
-}
-
 void send_stat(FS_req *fq, const char* dir, char* upd)
 {
   FS_handle *fh = fq->fs_h;
@@ -62,7 +57,7 @@ void send_stat(FS_req *fq, const char* dir, char* upd)
   edit_trans(r, "fullpath", (void*)dir,NULL);
   edit_trans(r, "update", NULL, (void*)upd);
   edit_trans(r, "stat", NULL,(void*)s);
-  CREATE_EVENT(fh->loop.events, commit, 2, "fm_stat", r);
+  CREATE_EVENT(&fh->loop.events, commit, 2, "fm_stat", r);
 }
 
 void scan_cb(uv_fs_t* req)
@@ -94,7 +89,7 @@ void scan_cb(uv_fs_t* req)
 
     edit_trans(r, "fullpath", (void*)full,NULL);
     free(full);
-    CREATE_EVENT(fh->loop.events, commit, 2, "fm_files", r);
+    CREATE_EVENT(&fh->loop.events, commit, 2, "fm_files", r);
   }
   fq->close_cb(fq);
 }
@@ -132,12 +127,13 @@ void stat_cb(uv_fs_t* req)
 
 void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)
 {
+  FS_handle *fsh = handle->data;
   log_msg("FS", "--watch--");
   if (events & UV_RENAME)
     log_msg("FS", "=%s= renamed", filename);
   if (events & UV_CHANGE)
     log_msg("FS", "=%s= changed", filename);
-  //fs_open(hndl, handle->path);
+  fs_open(fsh, handle->path);
 }
 
 void fs_close_cb(FS_req *fq)
@@ -157,18 +153,29 @@ void fs_open(FS_handle *fsh, String dir)
   fq->rec = NULL;
 
   uv_fs_stat(&fq->fs_h->loop.uv, &fq->uv_fs, dir, stat_cb);
+
+  // TODO: check stat on timer and reopen. set on fqclose or stat NOP.
   //uv_fs_event_stop(&fsh->watcher);
-  //uv_fs_event_init(&fsh->loop.uv, &fsh->watcher);
   //uv_fs_event_start(&fsh->watcher, watch_cb, dir, 1);
   //uv_unref((uv_handle_t*)&fsh->watcher);
+}
+
+void fs_loop(Loop *loop, int ms)
+{
+  process_loop(loop, ms);
 }
 
 FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb)
 {
   log_msg("FS", "open req");
   FS_handle *fsh = malloc(sizeof(FS_handle));
-  fsh->uv_check.data = fsh;
-  loop_init(&fsh->loop, fs_loop);
+  loop_add(&fsh->loop, fs_loop);
+  uv_fs_event_init(&fsh->loop.uv, &fsh->watcher);
   fsh->watcher.data = fsh;
   return fsh;
+}
+
+void fs_cleanup(FS_handle *fsh)
+{
+  free(fsh);
 }

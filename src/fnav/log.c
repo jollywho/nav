@@ -20,6 +20,7 @@ void log_init()
   char *path;
   asprintf(&path, "%s/%s", name, LOG_FILENAME);
   log_file = fopen(path, "w");
+  free(path);
 }
 
 void log_set(const char* obj)

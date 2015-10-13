@@ -13,39 +13,52 @@ struct queue_item {
   QUEUE node;
 };
 
-typedef struct {
-  Loop *loop;
-  loop_cb cb;
-} loopbind;
+struct loop_list {
+  SLIST_HEAD(looplist, loop) p;
+};
 
-// TODO: fix from testing size; dynamic array.
-loopbind loop_pool[5];
-int loop_count;
+struct loop_list loop_pool;
 
-static Queue *queue_new()
+void loop_init()
 {
-  Queue *rv = malloc(sizeof(Queue));
-  QUEUE_INIT(&rv->headtail);
-  return rv;
+  log_msg("INIT", "loop pool");
+  SLIST_INIT(&loop_pool.p);
 }
 
-void loop_init(Loop *loop, loop_cb cb)
+void loop_destoy()
+{
+  SLIST_REMOVE_HEAD(&loop_pool.p, ent);
+}
+
+static void queue_new(Queue *queue)
+{
+  QUEUE_INIT(&queue->headtail);
+}
+
+void loop_add(Loop *loop, loop_cb cb)
 {
   log_msg("INIT", "new loop");
   uv_loop_init(&loop->uv);
   uv_timer_init(&loop->uv, &loop->delay);
-  loop_pool[loop_count].loop = loop;
-  loop_pool[loop_count].cb = cb;
-  loop_count++;
-  loop->events = queue_new();
+  SLIST_INSERT_HEAD(&loop_pool.p, loop, ent);
+  loop->cb = cb;
+  queue_new(&loop->events);
+}
+
+void loop_remove(Loop *loop)
+{
+  SLIST_REMOVE(&loop_pool.p, loop, loop, ent);
+  uv_timer_stop(&loop->delay);
+  uv_loop_close(&loop->uv);
 }
 
 void doloops(int ms)
 {
   int remaining = ms;
   uint64_t before = (remaining > 0) ? os_hrtime() : 0;
-  for (int i = 0; i < loop_count; i++) {
-    loop_pool[i].cb(loop_pool[i].loop, ms);
+  Loop *it;
+  SLIST_FOREACH(it, &loop_pool.p, ent) {
+    it->cb(it, ms);
     if (remaining == 0) {
       break;
     }
@@ -138,7 +151,7 @@ void loop_process_events(Loop *loop, int ms)
   if (ms > 0) {
     uv_timer_stop(&loop->delay);
   }
-  queue_process_events(loop->events, ms);
+  queue_process_events(&loop->events, ms);
 }
 
 void process_loop(Loop *loop, int ms)

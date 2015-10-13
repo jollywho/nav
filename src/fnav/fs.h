@@ -7,7 +7,6 @@
 typedef struct {
   uv_fs_event_t watcher;
   Loop loop;
-  uv_check_t uv_check;
   bool cancel;
 } FS_handle;
 
@@ -27,6 +26,7 @@ typedef struct {
 } FS_req;
 
 FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb);
+void fs_cleanup(FS_handle *fsh);
 void fs_open(FS_handle *h, String dir);
 bool isdir(fn_rec *rec);
 String fs_parent_dir(String path);
