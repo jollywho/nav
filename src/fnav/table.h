@@ -1,14 +1,13 @@
 #ifndef FN_CORE_TABLE_H
 #define FN_CORE_TABLE_H
 
-#include "fnav/lib/kbtree.h"
+#include "fnav/lib/uthash.h"
 #include "fnav/rpc.h"
 
 #define elem_cmp(a, b) (strcmp((a).key, (b).key))
 
 typedef struct fn_rec fn_rec;
 typedef struct fn_val fn_val;
-typedef struct fn_val_node fn_val_node;
 typedef struct fn_fld fn_fld;
 typedef struct tentry tentry;
 typedef struct ventry ventry;
@@ -27,16 +26,11 @@ struct fn_val {
   ventry *rlist;
   fn_fld *fld;
   int count;
-  int test;
-};
-
-struct fn_val_node {
-  String key;
-  fn_val *node;
+  UT_hash_handle hh;
 };
 
 struct fn_rec {
-  fn_val_node **vals;
+  fn_val **vals;
   ventry **vlist;
   int fld_count;
 };
@@ -45,7 +39,7 @@ struct ventry {
   ventry *prev;
   ventry *next;
   fn_rec *rec;
-  fn_val_node *val;
+  fn_val *val;
   unsigned int head;
 };
 
@@ -58,6 +52,7 @@ struct fn_lis {
   buf_cb cb;
   int pos;
   int ofs;
+  UT_hash_handle hh;
 };
 
 void tables_init();

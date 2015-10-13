@@ -81,6 +81,7 @@ void buf_count_rewind(fn_buf *buf, fn_lis *lis)
 {
   log_msg("BUFFER", "rewind");
   // TODO: rewind running when attaching lis. want it after insert finishes
+  // NOTE: pos + ofs = absolute
   ventry *it = lis->ent;
   int count, sub;
   log_msg("BUFFER", "rewind at %d", lis->pos);
@@ -164,8 +165,12 @@ int buf_pgsize(fn_handle *hndl) {
   return hndl->buf->nc_size.col / 3;
 }
 
+// my guess is the RB tree is rebalancing itself on insertion
+// which breaks stale pointers, like every entry!
+// this doesnt explain tho why it only breaks moving left dirs.
 int buf_entsize(fn_handle *hndl) {
-  return hndl->lis->ent->val->node->count;
+  log_msg("BUFFER", "|||COUNT %p|||", hndl->lis->ent->val);
+  return hndl->lis->ent->val->count;
 }
 
 void buf_mv(fn_buf *buf, int x, int y)
