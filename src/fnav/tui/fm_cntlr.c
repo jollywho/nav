@@ -7,10 +7,10 @@
 #include <ncurses.h>
 
 #include "fnav/ascii.h"
-#include "fnav/buffer.h"
-#include "fnav/fm_cntlr.h"
+#include "fnav/tui/buffer.h"
+#include "fnav/tui/fm_cntlr.h"
 #include "fnav/table.h"
-#include "fnav/pane.h"
+#include "fnav/tui/pane.h"
 #include "fnav/log.h"
 
 enum Type { OPERATOR, MOTION };

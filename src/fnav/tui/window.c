@@ -3,10 +3,10 @@
 #include <ncurses.h>
 
 #include "fnav/log.h"
-#include "fnav/window.h"
-#include "fnav/loop.h"
-#include "fnav/event.h"
-#include "fnav/pane.h"
+#include "fnav/tui/window.h"
+#include "fnav/event/loop.h"
+#include "fnav/event/event.h"
+#include "fnav/tui/pane.h"
 
 struct Window {
   Loop loop;
@@ -17,6 +17,13 @@ struct Window {
 Window win;
 void window_loop(Loop *loop, int ms);
 
+void sig_resize(int sig)
+{
+  log_msg("WINDOW", "Signal received: **term resize**");
+  // TODO: redo layout
+}
+
+
 void window_init(void)
 {
   log_msg("INIT", "window");
@@ -24,6 +31,7 @@ void window_init(void)
   uv_timer_init(&win.loop.uv, &win.loop.delay);
   uv_timer_init(eventloop(), &win.draw_timer);
   pane_init(&win.pane);
+  signal(SIGWINCH, sig_resize);
 }
 
 void window_input(int key)

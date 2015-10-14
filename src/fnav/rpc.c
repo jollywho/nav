@@ -3,10 +3,10 @@
 #include <strings.h>
 
 #include "fnav/rpc.h"
-#include "fnav/fm_cntlr.h"
-#include "fnav/event.h"
 #include "fnav/log.h"
-#include "fnav/pane.h"
+#include "fnav/tui/fm_cntlr.h"
+#include "fnav/event/event.h"
+#include "fnav/tui/pane.h"
 
 // Input handler
 void rpc_key_handle(int key)

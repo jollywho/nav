@@ -3,12 +3,12 @@
 #include <uv.h>
 #include <termkey.h>
 
-#include "fnav/input.h"
-#include "fnav/window.h"
-#include "fnav/loop.h"
-#include "fnav/event.h"
+#include "fnav/event/input.h"
+#include "fnav/tui/window.h"
+#include "fnav/event/loop.h"
+#include "fnav/event/event.h"
 #include "fnav/log.h"
-#include "fnav/pane.h"
+#include "fnav/tui/pane.h"
 
 uv_poll_t poll_handle;
 uv_loop_t loop;

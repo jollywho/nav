@@ -10,4 +10,7 @@
 #define ARRAY_SIZE(arr) ((sizeof(arr)/sizeof((arr)[0])) / \
   ((size_t)(!(sizeof(arr) % sizeof((arr)[0])))))
 
+#define MIN(X, Y) (X < Y ? X : Y)
+#define MAX(X, Y) (X > Y ? X : Y)
+
 #endif

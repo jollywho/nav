@@ -5,10 +5,10 @@
 
 #include "fnav/log.h"
 #include "fnav/fnav.h"
-#include "fnav/window.h"
-#include "fnav/loop.h"
-#include "fnav/input.h"
-#include "fnav/event.h"
+#include "fnav/tui/window.h"
+#include "fnav/event/loop.h"
+#include "fnav/event/event.h"
+#include "fnav/event/input.h"
 #include "fnav/table.h"
 
 void init(void)

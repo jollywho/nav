@@ -6,12 +6,12 @@
 
 #include <ncurses.h>
 
-#include "fnav/rpc.h"
-#include "fnav/buffer.h"
-#include "fnav/fs.h"
-#include "fnav/event.h"
-#include "fnav/table.h"
+#include "fnav/event/fs.h"
+#include "fnav/event/event.h"
 #include "fnav/log.h"
+#include "fnav/rpc.h"
+#include "fnav/table.h"
+#include "fnav/tui/buffer.h"
 
 char* conspath(const char* str1, const char* str2)
 {

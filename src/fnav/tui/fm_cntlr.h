@@ -1,8 +1,8 @@
 #ifndef FN_CORE_FM_CNTLR_H
 #define FN_CORE_FM_CNTLR_H
 
-#include "fnav/cntlr.h"
-#include "fnav/fs.h"
+#include "fnav/tui/cntlr.h"
+#include "fnav/event/fs.h"
 
 typedef struct FM_cntlr FM_cntlr;
 

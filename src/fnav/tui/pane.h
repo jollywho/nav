@@ -1,7 +1,8 @@
 #ifndef FN_GUI_PANE_H
 #define FN_GUI_PANE_H
 
-#include "fnav/cntlr.h"
+#include "fnav/tui/cntlr.h"
+
 typedef struct CntlrNode CntlrNode;
 
 struct CntlrNode {

@@ -1,7 +1,7 @@
 #ifndef FN_CORE_EVENT_H
 #define FN_CORE_EVENT_H
 
-#include "fnav/loop.h"
+#include "fnav/event/loop.h"
 
 void event_init(void);
 void stop_event_loop(void);

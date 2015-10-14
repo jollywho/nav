@@ -2,12 +2,12 @@
 #include <ncurses.h>
 #include <limits.h>
 
-#include "fnav/pane.h"
+#include "fnav/tui/buffer.h"
+#include "fnav/tui/pane.h"
 #include "fnav/log.h"
 #include "fnav/table.h"
-#include "fnav/buffer.h"
-#include "fnav/loop.h"
-#include "fnav/fs.h"
+#include "fnav/event/loop.h"
+#include "fnav/event/fs.h"
 
 struct fn_buf {
   WINDOW *nc_win;

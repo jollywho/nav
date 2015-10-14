@@ -1,10 +1,10 @@
 #include <malloc.h>
 #include <ncurses.h>
 
-#include "fnav/loop.h"
-#include "fnav/event.h"
+#include "fnav/event/loop.h"
+#include "fnav/event/event.h"
 #include "fnav/log.h"
-#include "fnav/buffer.h"
+#include "fnav/tui/buffer.h"
 
 typedef struct queue_item QueueItem;
 typedef struct job_item JobItem;

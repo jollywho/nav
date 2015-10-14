@@ -1,7 +1,7 @@
 #ifndef FN_CORE_RPC_H
 #define FN_CORE_RPC_H
 
-#include "fnav/cntlr.h"
+#include "fnav/tui/cntlr.h"
 
 typedef void(*cntlr_cb)();
 typedef void(*buf_cb)();
