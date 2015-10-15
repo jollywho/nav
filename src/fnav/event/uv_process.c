@@ -1,10 +1,11 @@
+#include <assert.h>
 
+#include <uv.h>
+
+#include "fnav/event/loop.h"
+#include "fnav/event/process.h"
+#include "fnav/event/uv_process.h"
 #include "fnav/log.h"
-#include "fnav/event/proc.h"
-
-void proc_init()
-{
-}
 
 static void close_cb(uv_handle_t *handle);
 static void exit_cb(uv_process_t *handle, int64_t status, int term_signal);
@@ -42,12 +43,17 @@ bool uv_process_spawn(UvProcess *uvproc)
 
   int status;
   if ((status = uv_spawn(&proc->loop->uv, &uvproc->uv, &uvproc->uvopts))) {
-    log_msg("PROC", "uv_spawn failed: %s", uv_strerror(status));
+    log_msg("uv_process", "uv_spawn failed: %s", uv_strerror(status));
     return false;
   }
 
   proc->pid = uvproc->uv.pid;
   return true;
+}
+
+void uv_process_close(UvProcess *uvproc)
+{
+  uv_close((uv_handle_t *)&uvproc->uv, close_cb);
 }
 
 static void close_cb(uv_handle_t *handle)
@@ -63,9 +69,4 @@ static void exit_cb(uv_process_t *handle, int64_t status, int term_signal)
   Process *proc = handle->data;
   proc->status = (int)status;
   proc->internal_exit_cb(proc);
-}
-
-void uv_process_close(UvProcess *uvproc)
-{
-  uv_close((uv_handle_t *)&uvproc->uv, close_cb);
 }

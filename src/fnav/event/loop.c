@@ -40,16 +40,17 @@ void loop_add(Loop *loop, loop_cb cb)
   log_msg("INIT", "new loop");
   uv_loop_init(&loop->uv);
   uv_timer_init(&loop->uv, &loop->delay);
+  SLIST_INIT(&loop->children);
   SLIST_INSERT_HEAD(&loop_pool.p, loop, ent);
   loop->cb = cb;
   queue_new(&loop->events);
 }
 
-void loop_remove(Loop *loop)
+void loop_remove(Loop *lp)
 {
-  SLIST_REMOVE(&loop_pool.p, loop, loop, ent);
-  uv_timer_stop(&loop->delay);
-  uv_loop_close(&loop->uv);
+  SLIST_REMOVE(&loop_pool.p, lp, loop, ent);
+  uv_timer_stop(&lp->delay);
+  uv_loop_close(&lp->uv);
 }
 
 void doloops(int ms)

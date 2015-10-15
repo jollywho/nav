@@ -1,5 +1,5 @@
-#ifndef FN_CORE_FNAV_H
-#define FN_CORE_FNAV_H
+#ifndef FN_FNAV_H
+#define FN_FNAV_H
 
 typedef char* String;
 

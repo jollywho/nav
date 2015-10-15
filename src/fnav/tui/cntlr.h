@@ -1,5 +1,5 @@
-#ifndef FN_CORE_CNTLR_H
-#define FN_CORE_CNTLR_H
+#ifndef FN_TUI_CNTLR_H
+#define FN_TUI_CNTLR_H
 
 #include "fnav/fnav.h"
 

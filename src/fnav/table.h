@@ -1,5 +1,5 @@
-#ifndef FN_CORE_TABLE_H
-#define FN_CORE_TABLE_H
+#ifndef FN_TABLE_H
+#define FN_TABLE_H
 
 #include "fnav/lib/uthash.h"
 #include "fnav/rpc.h"

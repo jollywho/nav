@@ -1,5 +1,5 @@
-#ifndef FN_GUI_BUFFER_H
-#define FN_GUI_BUFFER_H
+#ifndef FN_TUI_BUFFER_H
+#define FN_TUI_BUFFER_H
 
 #include "fnav/table.h"
 

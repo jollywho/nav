@@ -11,8 +11,8 @@
 //   stopped(automatic backpressure handling)
 //
 // Reference: http://en.wikipedia.org/wiki/Circular_buffer
-#ifndef NVIM_RBUFFER_H
-#define NVIM_RBUFFER_H
+#ifndef FNAV_RBUFFER_H
+#define FNAV_RBUFFER_H
 
 #include <stddef.h>
 #include <stdint.h>

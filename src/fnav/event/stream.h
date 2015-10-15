@@ -1,5 +1,5 @@
-#ifndef FN_CORE_STREAM_H
-#define FN_CORE_STREAM_H
+#ifndef FN_EVENT_STREAM_H
+#define FN_EVENT_STREAM_H
 
 #include "fnav/event/loop.h"
 #include "fnav/rbuffer.h"
@@ -48,5 +48,11 @@ struct stream {
   bool closed;
   Queue *events;
 };
+
+void stream_init(Loop *loop, Stream *stream, int fd, uv_stream_t *uvstream,
+    void *data);
+void stream_close_handle(Stream *stream);
+void stream_close(Stream *stream, stream_close_cb on_stream_close);
+int stream_set_blocking(int fd, bool blocking);
 
 #endif

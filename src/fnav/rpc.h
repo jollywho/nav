@@ -1,5 +1,5 @@
-#ifndef FN_CORE_RPC_H
-#define FN_CORE_RPC_H
+#ifndef FN_RPC_H
+#define FN_RPC_H
 
 #include "fnav/tui/cntlr.h"
 

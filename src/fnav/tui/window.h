@@ -1,5 +1,5 @@
-#ifndef FN_GUI_WINDOW_H
-#define FN_GUI_WINDOW_H
+#ifndef FN_TUI_WINDOW_H
+#define FN_TUI_WINDOW_H
 
 #include "fnav/tui/cntlr.h"
 

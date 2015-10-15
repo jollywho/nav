@@ -1,5 +1,5 @@
-#ifndef FN_CORE_FS_H
-#define FN_CORE_FS_H
+#ifndef FN_EVENT_FS_H
+#define FN_EVENT_FS_H
 
 #include "fnav/event/loop.h"
 #include "fnav/table.h"

@@ -1,5 +1,5 @@
-#ifndef FN_CORE_LOG_H
-#define FN_CORE_LOG_H
+#ifndef FN_LOG_H
+#define FN_LOG_H
 
 #define NCURSES_ENABLED
 

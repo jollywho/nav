@@ -1,5 +1,5 @@
-#ifndef FN_CORE_FM_CNTLR_H
-#define FN_CORE_FM_CNTLR_H
+#ifndef FN_TUI_FM_CNTLR_H
+#define FN_TUI_FM_CNTLR_H
 
 #include "fnav/tui/cntlr.h"
 #include "fnav/event/fs.h"
