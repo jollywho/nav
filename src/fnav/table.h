@@ -52,8 +52,8 @@ ventry* fnd_val(String tn, String fname, String val);
 void tbl_del_val(String tn, String fname, String val);
 void* rec_fld(fn_rec *rec, String fname);
 
-int tbl_count(String tn);
-int ent_count(ventry *e);
+int tbl_fld_count(String tn);
+int tbl_ent_count(ventry *e);
 int FN_MV(ventry *e, int n);
 
 #endif

@@ -27,8 +27,8 @@ typedef struct {
 
 FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb);
 void fs_cleanup(FS_handle *fsh);
-void fs_open(FS_handle *h, String dir);
+void fs_open(FS_handle *h, const String dir);
 bool isdir(fn_rec *rec);
-String fs_parent_dir(String path);
+String fs_parent_dir(const String path);
 
 #endif

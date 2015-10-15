@@ -24,18 +24,11 @@ char* conspath(const char* str1, const char* str2)
   return result;
 }
 
-String fs_parent_dir(String path)
+String fs_parent_dir(const String path)
 {
   // TODO: when to free this
   log_msg("FS", "<<PARENT OF>>: %s", path);
-  String tmp = strdup(path);
-  return dirname(tmp);
-}
-
-String fs_base_dir(String path)
-{
-  String tmp = strdup(path);
-  return basename(tmp);
+  return dirname(path);
 }
 
 bool isdir(fn_rec *rec)
@@ -53,7 +46,7 @@ void send_stat(FS_req *fq, const char* dir, char* upd)
   struct stat *s = malloc(sizeof(struct stat));
   stat(dir, s);
 
-  trans_rec *r = mk_trans_rec(2);
+  trans_rec *r = mk_trans_rec(tbl_fld_count("fm_stat"));
   edit_trans(r, "fullpath", (void*)dir,NULL);
   edit_trans(r, "update", NULL, (void*)upd);
   edit_trans(r, "stat", NULL,(void*)s);
@@ -76,7 +69,7 @@ void scan_cb(uv_fs_t* req)
   send_stat(fq, req->path, "yes");
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
-    trans_rec *r = mk_trans_rec(3);
+    trans_rec *r = mk_trans_rec(tbl_fld_count("fm_files"));
     edit_trans(r, "name", (void*)dent.name,NULL);
     edit_trans(r, "dir", (void*)req->path,NULL);
     String full = conspath(req->path, dent.name);
@@ -139,15 +132,16 @@ void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int statu
 void fs_close_cb(FS_req *fq)
 {
   log_msg("FS", "reset %s", (char*)fq->req_name);
+  free(fq->req_name);
   free(fq);
 }
 
-void fs_open(FS_handle *fsh, String dir)
+void fs_open(FS_handle *fsh, const String dir)
 {
   log_msg("FS", "fs open %s", dir);
   FS_req *fq = malloc(sizeof(FS_req));
   fq->fs_h = fsh;
-  fq->req_name = dir;
+  fq->req_name = strdup(dir);
   fq->uv_fs.data = fq;
   fq->close_cb = fs_close_cb;
   fq->rec = NULL;
@@ -177,5 +171,6 @@ FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb)
 
 void fs_cleanup(FS_handle *fsh)
 {
+  loop_remove(&fsh->loop);
   free(fsh);
 }

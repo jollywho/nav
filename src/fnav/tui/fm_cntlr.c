@@ -36,7 +36,6 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-String init_dir = "/home/chi/test";
 static void fm_mv();
 static void fm_page();
 static void fm_mv();
@@ -90,7 +89,10 @@ static void fm_left(Cntlr *cntlr)
 {
   log_msg("FM", "cmd left");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  free(self->cur_dir);
+  self->cur_dir = strdup(buf_val(cntlr->hndl, "dir"));
   self->cur_dir = fs_parent_dir(self->cur_dir);
+  log_msg("FS", "<<PARENT OF>>");
   cntlr->hndl->fval = self->cur_dir;
   buf_set(cntlr->hndl, "name");
   fs_open(self->fs, self->cur_dir);
@@ -101,7 +103,8 @@ static void fm_right(Cntlr *cntlr)
   log_msg("FM", "cmd right");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   if (isdir(buf_rec(cntlr->hndl))) {
-    self->cur_dir = buf_val(cntlr->hndl, "fullpath");
+    free(self->cur_dir);
+    self->cur_dir = strdup(buf_val(cntlr->hndl, "fullpath"));
     cntlr->hndl->fval = self->cur_dir;
     buf_set(cntlr->hndl, "name");
     fs_open(self->fs, self->cur_dir);
@@ -264,7 +267,7 @@ FM_cntlr* fm_cntlr_init(Pane *p)
   FM_cntlr *fm = malloc(sizeof(FM_cntlr));
   fm->op_count = 1;
   fm->mo_count = 1;
-  fm->cur_dir = init_dir;
+  asprintf(&fm->cur_dir, "/home/chi/test");
 
   tbl_mk("fm_files");
   tbl_mk_fld("fm_files", "name", typSTRING);

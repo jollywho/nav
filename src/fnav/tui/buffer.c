@@ -172,7 +172,7 @@ int buf_pgsize(fn_handle *hndl) {
 }
 
 int buf_entsize(fn_handle *hndl) {
-  return ent_count(hndl->lis->ent);
+  return tbl_ent_count(hndl->lis->ent);
 }
 
 void buf_mv(fn_buf *buf, int x, int y)

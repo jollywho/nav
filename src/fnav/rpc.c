@@ -20,10 +20,10 @@ void rpc_key_handle(int key)
 trans_rec* mk_trans_rec(int fld_count)
 {
   trans_rec *r = malloc(sizeof(trans_rec));
-  r->flds = malloc(sizeof(String)*fld_count);
-  r->data = malloc(sizeof(void*)*fld_count);
-  r->count = 0;
   r->max = fld_count;
+  r->flds = malloc(sizeof(String)*r->max);
+  r->data = malloc(sizeof(void*)*r->max);
+  r->count = 0;
   return r;
 }
 

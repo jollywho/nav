@@ -9,8 +9,10 @@
 fn_tbl* get_tbl(String t);
 
 struct fn_val {
-  String key;
-  void *data;
+  union {
+    String key;
+    void *data;
+  };
   ventry *rlist;
   fn_fld *fld;
   int count;
@@ -94,21 +96,12 @@ void tbl_mk_fld(String tn, String name, tFldType typ)
   log_msg("TABLE", "made %s", fld->key);
 }
 
-void initflds(fn_fld *f, fn_rec *rec)
-{
-  rec->vals[rec->fld_count] = NULL;
-  rec->vlist[rec->fld_count] = NULL;
-  rec->fld_count++;
-}
-
 fn_rec* mk_rec(fn_tbl *t)
 {
   fn_rec *rec = malloc(sizeof(fn_rec));
   rec->vals = malloc(sizeof(fn_val)*t->count);
   rec->vlist = malloc(sizeof(fn_val)*t->count);
   rec->fld_count = t->count;
-
-  //__kb_traverse(fn_fld, t->fields, initflds, rec);
   return rec;
 }
 
@@ -151,12 +144,12 @@ void* rec_fld(fn_rec *rec, String fname)
   return NULL;
 }
 
-int tbl_count(String tn)
+int tbl_fld_count(String tn)
 {
   return get_tbl(tn)->count;
 }
 
-int ent_count(ventry *e)
+int tbl_ent_count(ventry *e)
 {
   return e->val->count;
 }
