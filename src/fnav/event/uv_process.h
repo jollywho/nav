@@ -22,4 +22,4 @@ static inline UvProcess uv_process_init(Loop *loop, void *data)
 bool uv_process_spawn(UvProcess *uvproc);
 void uv_process_close(UvProcess *uvproc);
 
-#endif 
+#endif

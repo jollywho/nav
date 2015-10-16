@@ -22,6 +22,7 @@ static bool set_duplicating_descriptor(int fd, uv_pipe_t *pipe);
 
 bool pty_process_spawn(PtyProcess *ptyproc)
 {
+  log_msg("PTY_PROCESS", "spawn");
   static struct termios termios;
   if (!termios.c_cflag) {
     init_termios(&termios);
@@ -99,7 +100,7 @@ void pty_process_teardown(Loop *loop)
   uv_signal_stop(&loop->children_watcher);
 }
 
-static void init_child(PtyProcess *ptyproc) 
+static void init_child(PtyProcess *ptyproc)
 {
   unsetenv("COLUMNS");
   unsetenv("LINES");

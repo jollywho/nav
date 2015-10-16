@@ -12,6 +12,7 @@ static void exit_cb(uv_process_t *handle, int64_t status, int term_signal);
 
 bool uv_process_spawn(UvProcess *uvproc)
 {
+  log_msg("UV_PROCESS", "spawn");
   Process *proc = (Process *)uvproc;
   uvproc->uvopts.file = proc->argv[0];
   uvproc->uvopts.args = proc->argv;
@@ -58,6 +59,7 @@ void uv_process_close(UvProcess *uvproc)
 
 static void close_cb(uv_handle_t *handle)
 {
+  log_msg("UV_PROCESS", "close_cb");
   Process *proc = handle->data;
   if (proc->internal_close_cb) {
     proc->internal_close_cb(proc);
@@ -66,6 +68,7 @@ static void close_cb(uv_handle_t *handle)
 
 static void exit_cb(uv_process_t *handle, int64_t status, int term_signal)
 {
+  log_msg("UV_PROCESS", "exit_cb");
   Process *proc = handle->data;
   proc->status = (int)status;
   proc->internal_exit_cb(proc);

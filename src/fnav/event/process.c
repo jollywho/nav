@@ -31,6 +31,7 @@ static void children_kill_cb(uv_timer_t *handle);
 
 bool process_spawn(Process *proc)
 {
+  log_msg("PROCESS", "spawn");
   if (proc->in) {
     uv_pipe_init(&proc->loop->uv, &proc->in->uv.pipe, 0);
   }
@@ -74,7 +75,6 @@ bool process_spawn(Process *proc)
 
   if (proc->in) {
     stream_init(NULL, proc->in, -1, (uv_stream_t *)&proc->in->uv.pipe, data);
-    proc->in->events = proc->events;
     proc->in->internal_data = proc;
     proc->in->internal_close_cb = on_process_stream_close;
     proc->refcount++;
@@ -82,7 +82,6 @@ bool process_spawn(Process *proc)
 
   if (proc->out) {
     stream_init(NULL, proc->out, -1, (uv_stream_t *)&proc->out->uv.pipe, data);
-    proc->out->events = proc->events;
     proc->out->internal_data = proc;
     proc->out->internal_close_cb = on_process_stream_close;
     proc->refcount++;
@@ -90,7 +89,6 @@ bool process_spawn(Process *proc)
 
   if (proc->err) {
     stream_init(NULL, proc->err, -1, (uv_stream_t *)&proc->err->uv.pipe, data);
-    proc->err->events = proc->events;
     proc->err->internal_data = proc;
     proc->err->internal_close_cb = on_process_stream_close;
     proc->refcount++;
@@ -105,6 +103,7 @@ bool process_spawn(Process *proc)
 
 void process_teardown(Loop *loop) 
 {
+  log_msg("PROCESS", "teardown");
   Process *it;
   SLIST_FOREACH(it, &loop->children, ent) {
     Process *proc = it;
@@ -121,6 +120,7 @@ void process_teardown(Loop *loop)
 // Wrappers around `stream_close` that protect against double-closing.
 void process_close_streams(Process *proc) 
 {
+  log_msg("PROCESS", "process_close_streams");
   process_close_in(proc);
   process_close_out(proc);
   process_close_err(proc);
@@ -128,6 +128,7 @@ void process_close_streams(Process *proc)
 
 void process_close_in(Process *proc) 
 {
+  log_msg("PROCESS", "process_close_in");
   CLOSE_PROC_STREAM(proc, in);
 }
 
@@ -144,6 +145,7 @@ void process_close_err(Process *proc)
 /// Ask a process to terminate and eventually kill if it doesn't respond
 void process_stop(Process *proc)
 {
+  log_msg("PROCESS", "process_stop");
   if (proc->stopped_time) {
     return;
   }
@@ -178,6 +180,7 @@ void process_stop(Process *proc)
 /// to those that didn't die from SIGTERM after a while(exit_timeout is 0).
 static void children_kill_cb(uv_timer_t *handle)
 {
+  log_msg("PROCESS", "children_kill_cb");
   Loop *loop = handle->loop->data;
   uint64_t now = os_hrtime();
 
@@ -202,6 +205,7 @@ static void children_kill_cb(uv_timer_t *handle)
 
 static void process_close_event(void **argv)
 {
+  log_msg("PROCESS", "process_close_event");
   Process *proc = argv[0];
   if (proc->type == kProcessTypePty) {
     free(((PtyProcess *)proc)->term_name);
@@ -213,6 +217,7 @@ static void process_close_event(void **argv)
 
 static void decref(Process *proc)
 {
+  log_msg("PROCESS", "decref");
   if (--proc->refcount != 0) {
     return;
   }
@@ -233,6 +238,7 @@ static void decref(Process *proc)
 
 static void process_close(Process *proc)
 {
+  log_msg("PROCESS", "process_close");
   assert(!proc->closed);
   proc->closed = true;
   switch (proc->type) {
@@ -249,6 +255,7 @@ static void process_close(Process *proc)
 
 static void process_close_handles(void **argv)
 {
+  log_msg("PROCESS", "process_close_handles");
   Process *proc = argv[0];
   process_close_streams(proc);
   process_close(proc);
@@ -256,6 +263,7 @@ static void process_close_handles(void **argv)
 
 static void on_process_exit(Process *proc)
 {
+  log_msg("PROCESS", "on_process_exit");
   Loop *loop = proc->loop;
   if (proc->stopped_time && loop->children_stop_requests
       && !--loop->children_stop_requests) {
@@ -272,6 +280,7 @@ static void on_process_exit(Process *proc)
 
 static void on_process_stream_close(Stream *stream, void *data)
 {
+  log_msg("PROCESS", "on_process_stream_close");
   Process *proc = data;
   decref(proc);
 }

@@ -4,6 +4,7 @@
 #include "fnav/event/loop.h"
 #include "fnav/event/stream.h"
 
+extern char *p_sh;          /* 'shell' */
 typedef enum {
   kProcessTypeUv,
   kProcessTypePty
@@ -35,7 +36,6 @@ static inline Process process_init(Loop *loop, ProcessType type, void *data)
     .type = type,
     .data = data,
     .loop = loop,
-    .events = NULL,
     .pid = 0,
     .status = 0,
     .refcount = 0,

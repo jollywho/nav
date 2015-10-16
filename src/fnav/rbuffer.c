@@ -4,10 +4,12 @@
 
 #include "fnav/event/loop.h"
 #include "fnav/rbuffer.h"
+#include "fnav/log.h"
 
 /// Creates a new `RBuffer` instance.
 RBuffer *rbuffer_new(size_t capacity)
 {
+  log_msg("RBUFFER", "new");
   if (!capacity) {
     capacity = 0xffff;
   }
@@ -49,6 +51,7 @@ size_t rbuffer_space(RBuffer *buf)
 /// used. See RBUFFER_UNTIL_FULL for a macro that simplifies this task.
 char *rbuffer_write_ptr(RBuffer *buf, size_t *write_count)
 {
+  log_msg("RBUFFER", "write_ptr");
   if (buf->size == rbuffer_capacity(buf)) {
     *write_count = 0;
     return NULL;
@@ -60,6 +63,7 @@ char *rbuffer_write_ptr(RBuffer *buf, size_t *write_count)
     *write_count = (size_t)(buf->read_ptr - buf->write_ptr);
   }
 
+  log_msg("RBUFFER", "write_ptr end");
   return buf->write_ptr;
 }
 
@@ -98,6 +102,7 @@ void rbuffer_produced(RBuffer *buf, size_t count)
 /// were read. See RBUFFER_UNTIL_EMPTY for a macro that simplifies this task.
 char *rbuffer_read_ptr(RBuffer *buf, size_t *read_count)
 {
+  log_msg("RBUFFER", "read_ptr");
   if (!buf->size) {
     *read_count = 0;
     return NULL;
@@ -134,6 +139,7 @@ void rbuffer_consumed(RBuffer *buf, size_t count)
 // pointers
 size_t rbuffer_write(RBuffer *buf, char *src, size_t src_size)
 {
+  log_msg("RBUFFER", "write");
   size_t size = src_size;
 
   RBUFFER_UNTIL_FULL(buf, wptr, wcnt) {
@@ -153,6 +159,7 @@ size_t rbuffer_write(RBuffer *buf, char *src, size_t src_size)
 
 size_t rbuffer_read(RBuffer *buf, char *dst, size_t dst_size)
 {
+  log_msg("RBUFFER", "read");
   size_t size = dst_size;
 
   RBUFFER_UNTIL_EMPTY(buf, rptr, rcnt) {
@@ -172,6 +179,7 @@ size_t rbuffer_read(RBuffer *buf, char *dst, size_t dst_size)
 
 char *rbuffer_get(RBuffer *buf, size_t index)
 {
+  log_msg("RBUFFER", "rbuffer_get");
   char *rptr = buf->read_ptr + index;
   if (rptr >= buf->end_ptr) {
     rptr -= rbuffer_capacity(buf);

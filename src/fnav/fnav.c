@@ -49,4 +49,5 @@ int main(int argc, char **argv)
   init();
   start_event_loop();
   endwin();
+  log_msg("INIT", "__________END____________");
 }
