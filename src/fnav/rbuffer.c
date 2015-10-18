@@ -25,6 +25,7 @@ RBuffer *rbuffer_new(size_t capacity)
 
 void rbuffer_free(RBuffer *buf)
 {
+  log_msg("RBUFFER", "free");
   free(buf);
 }
 
@@ -123,6 +124,7 @@ char *rbuffer_read_ptr(RBuffer *buf, size_t *read_count)
 /// buffer. The read pointer will be wrapped if required.
 void rbuffer_consumed(RBuffer *buf, size_t count)
 {
+  log_msg("RBUFFER", "consumed");
   buf->read_ptr += count;
   if (buf->read_ptr >= buf->end_ptr) {
       buf->read_ptr -= rbuffer_capacity(buf);

@@ -49,14 +49,13 @@ void rstream_init(Stream *stream, Queue *queue, size_t bufsize)
 /// @param stream The `Stream` instance
 void rstream_start(Stream *stream, stream_read_cb cb)
 {
-  log_msg("rstream", "start");
+  log_msg("RSTREAM", "start");
   stream->read_cb = cb;
   if (stream->uvstream) {
     uv_read_start(stream->uvstream, alloc_cb, read_cb);
   } else {
     uv_idle_start(&stream->uv.idle, fread_idle_cb);
   }
-  log_msg("rstream", "startend");
 }
 
 /// Stops watching for events from a `Stream` instance.
@@ -64,7 +63,7 @@ void rstream_start(Stream *stream, stream_read_cb cb)
 /// @param stream The `Stream` instance
 void rstream_stop(Stream *stream)
 {
-  log_msg("rstream", "stop");
+  log_msg("RSTREAM", "stop");
   if (stream->uvstream) {
     uv_read_stop(stream->uvstream);
   } else {
@@ -113,7 +112,7 @@ static void read_cb(uv_stream_t *uvstream, ssize_t cnt, const uv_buf_t *buf)
         // to `alloc_cb` will return the same unused pointer(`rbuffer_produced`
         // won't be called)
         && cnt != 0) {
-      log_msg("rstream", "Closing Stream(%p) because of %s(%zd)", stream,
+      log_msg("RSTREAM", "Closing Stream(%p) because of %s(%zd)", stream,
            uv_strerror((int)cnt), cnt);
       // Read error or EOF, either way stop the stream and invoke the callback
       // with eof == true
@@ -134,7 +133,7 @@ static void read_cb(uv_stream_t *uvstream, ssize_t cnt, const uv_buf_t *buf)
 // Called by the by the 'idle' handle to emulate a reading event
 static void fread_idle_cb(uv_idle_t *handle)
 {
-  log_msg("rstream", "idle");
+  log_msg("RSTREAM", "idle");
   uv_fs_t req;
   Stream *stream = handle->data;
 
@@ -145,7 +144,7 @@ static void fread_idle_cb(uv_idle_t *handle)
   // upcast is meant to avoid tautological condition warning on 32 bits
   uintmax_t fpos_intmax = stream->fpos;
   if (fpos_intmax > INT64_MAX) {
-    log_msg("rstream", "stream offset overflow");
+    log_msg("RSTREAM", "stream offset overflow");
     //preserve_exit();
   }
 
@@ -176,7 +175,7 @@ static void fread_idle_cb(uv_idle_t *handle)
 
 static void read_event(void **argv)
 {
-  log_msg("rstream", "read event");
+  log_msg("RSTREAM", "read event");
   Stream *stream = argv[0];
   if (stream->read_cb) {
     size_t count = (uintptr_t)argv[1];
@@ -187,7 +186,7 @@ static void read_event(void **argv)
 
 static void invoke_read_cb(Stream *stream, size_t count, bool eof)
 {
-  log_msg("rstream", "invoke_read_cb");
+  log_msg("RSTREAM", "invoke_read_cb");
   CREATE_EVENT(stream->events, read_event, 3, stream,
       (void *)(uintptr_t *)count, (void *)(uintptr_t)eof);
 }

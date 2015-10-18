@@ -79,7 +79,6 @@ void queue_push(Queue *queue, Event event)
   QueueItem *item = malloc(sizeof(QueueItem));
   item->item = event;
   QUEUE_INIT(&item->node);
-  log_msg("rstream", "queue, %p", queue);
   QUEUE_INSERT_TAIL(&queue->headtail, &item->node);
 }
 

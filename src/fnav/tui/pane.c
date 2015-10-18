@@ -1,4 +1,3 @@
-
 #include "fnav/tui/pane.h"
 #include "fnav/tui/window.h"
 #include "fnav/event/event.h"

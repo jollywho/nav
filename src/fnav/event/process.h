@@ -48,7 +48,7 @@ static inline Process process_init(Loop *loop, ProcessType type, void *data)
     .closed = false,
     .term_sent = false,
     .internal_close_cb = NULL,
-    .internal_exit_cb = NULL
+    .internal_exit_cb = NULL,
   };
 }
 bool process_spawn(Process *proc);

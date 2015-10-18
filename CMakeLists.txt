@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.3.1)
 project(fnav)
 set(CMAKE_C_FLAGS "-g")
 add_definitions("-Wall -Wextra -Wno-unused-parameter")
+add_definitions(-D_GNU_SOURCE)
 
 set( CMAKE_EXPORT_COMPILE_COMMANDS 1 )
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")

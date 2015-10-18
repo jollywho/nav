@@ -1,4 +1,5 @@
-#define _GNU_SOURCE
+// filesystem
+
 #include <malloc.h>
 #include <stdio.h>
 #include <sys/time.h>

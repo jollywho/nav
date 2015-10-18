@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -267,7 +266,7 @@ FM_cntlr* fm_cntlr_init(Pane *p)
   FM_cntlr *fm = malloc(sizeof(FM_cntlr));
   fm->op_count = 1;
   fm->mo_count = 1;
-  asprintf(&fm->cur_dir, "/home/chi/test");
+  asprintf(&fm->cur_dir, "/home/chi/casper/YFS/ALL");
 
   tbl_mk("fm_files");
   tbl_mk_fld("fm_files", "name", typSTRING);

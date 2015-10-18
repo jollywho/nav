@@ -44,7 +44,7 @@ bool uv_process_spawn(UvProcess *uvproc)
 
   int status;
   if ((status = uv_spawn(&proc->loop->uv, &uvproc->uv, &uvproc->uvopts))) {
-    log_msg("uv_process", "uv_spawn failed: %s", uv_strerror(status));
+    log_msg("UV_PROCESS", "uv_spawn failed: %s", uv_strerror(status));
     return false;
   }
 
@@ -54,6 +54,7 @@ bool uv_process_spawn(UvProcess *uvproc)
 
 void uv_process_close(UvProcess *uvproc)
 {
+  log_msg("UV_PROCESS", "uv_process_close");
   uv_close((uv_handle_t *)&uvproc->uv, close_cb);
 }
 
