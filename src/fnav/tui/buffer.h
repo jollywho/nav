@@ -3,6 +3,15 @@
 
 #include "fnav/table.h"
 
+typedef struct BufferNode BufferNode;
+
+struct BufferNode {
+  BufferNode *prev;
+  BufferNode *next;
+  fn_buf *buf;
+  Cntlr *cntlr;
+};
+
 typedef struct {
   int lnum;    /* line number */
   int col;     /* column number */
@@ -12,6 +21,7 @@ typedef struct {
 fn_buf* buf_init();
 void buf_destroy(fn_buf *buf);
 
+void buf_set_cntlr(fn_buf *buf, Cntlr *cntlr);
 void buf_set(fn_handle *hndl, String fname);
 void buf_mv(fn_buf *buf, int x, int y);
 

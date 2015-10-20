@@ -19,8 +19,8 @@ typedef struct {
   Process *proc;
 } Shell;
 
-Shell* shell_init();
-shell_cleanup();
+Shell* shell_new();
+void shell_free(Shell *sh);
 void shell_start(Shell *sh);
 void shell_stop(Shell *sh);
 

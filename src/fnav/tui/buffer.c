@@ -2,7 +2,7 @@
 #include <limits.h>
 
 #include "fnav/tui/buffer.h"
-#include "fnav/tui/pane.h"
+#include "fnav/tui/window.h"
 #include "fnav/log.h"
 #include "fnav/table.h"
 #include "fnav/event/loop.h"
@@ -10,7 +10,7 @@
 
 struct fn_buf {
   WINDOW *nc_win;
-  Pane *pane;
+  BufferNode *bn;
   pos_T b_size;
   pos_T nc_size;
 
@@ -52,6 +52,11 @@ void buf_destroy(fn_buf *buf)
   free(buf);
 }
 
+void buf_set_cntlr(fn_buf *buf, Cntlr *cntlr)
+{
+  buf->bn->cntlr = cntlr;
+}
+
 void buf_set(fn_handle *hndl, String fname)
 {
   log_msg("BUFFER", "set");
@@ -72,7 +77,7 @@ void buf_refresh(fn_buf *buf)
   if (buf->queued)
     return;
   buf->queued = true;
-  pane_req_draw(buf, buf_draw);
+  window_req_draw(buf, buf_draw);
 }
 
 void buf_listen(fn_handle *hndl)

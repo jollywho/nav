@@ -9,7 +9,6 @@
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/fm_cntlr.h"
 #include "fnav/table.h"
-#include "fnav/tui/pane.h"
 #include "fnav/log.h"
 
 enum Type { OPERATOR, MOTION };
@@ -241,11 +240,11 @@ int cntlr_input(Cntlr *cntlr, int key)
   return 0;
 }
 
-void init_fm_hndl(FM_cntlr *fm, Pane *p, Cntlr *c, String val)
+static void init_fm_hndl(FM_cntlr *fm, fn_buf *b, Cntlr *c, String val)
 {
   fn_handle *hndl = malloc(sizeof(fn_handle));
   hndl->tname = "fm_files";
-  hndl->buf = buf_init();
+  hndl->buf = b;
   hndl->fname = "dir";
   hndl->fval = val;
   c->hndl = hndl;
@@ -254,11 +253,10 @@ void init_fm_hndl(FM_cntlr *fm, Pane *p, Cntlr *c, String val)
   c->_cancel = cntlr_cancel;
   c->_input = cntlr_input;
   c->top = fm;
-  pane_add(p, c);
   buf_set(c->hndl, "name");
 }
 
-FM_cntlr* fm_cntlr_init(Pane *p)
+FM_cntlr* fm_cntlr_init(fn_buf *buf)
 {
   log_msg("INIT", "FM_CNTLR");
   init_cmds(); //TODO: cleanup loose parts
@@ -277,13 +275,10 @@ FM_cntlr* fm_cntlr_init(Pane *p)
   tbl_mk_fld("fm_stat", "fullpath", typSTRING);
   tbl_mk_fld("fm_stat", "update", typVOID);
   tbl_mk_fld("fm_stat", "stat", typVOID);
-  init_fm_hndl(fm, p, &fm->base, fm->cur_dir);
+  init_fm_hndl(fm, buf, &fm->base, fm->cur_dir);
 
   fm->fs = fs_init(&fm->base, fm->base.hndl, fm_read_scan);
   fs_open(fm->fs, fm->cur_dir);
-
-//  init_fm_hndl(fm, p, &fm->parent, fm->cur_dir);
-//  init_fm_hndl(fm, p, &fm->child, fm->cur_dir);
 
   return fm;
 }

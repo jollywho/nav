@@ -2,7 +2,6 @@
 #include <ncurses.h>
 
 #include "fnav/event/event.h"
-#include "fnav/tui/pane.h"
 #include "fnav/log.h"
 
 uv_loop_t loop;

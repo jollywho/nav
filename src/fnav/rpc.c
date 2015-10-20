@@ -5,7 +5,6 @@
 #include "fnav/log.h"
 #include "fnav/tui/fm_cntlr.h"
 #include "fnav/event/event.h"
-#include "fnav/tui/pane.h"
 
 // Input handler
 void rpc_key_handle(int key)
