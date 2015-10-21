@@ -14,10 +14,11 @@ struct Window {
   BufferNode *blist;
   BufferNode *focus;
   uv_timer_t draw_timer;
+  int buf_count;
 };
 
 Window win;
-Shell *sh; //FIXME: testing purposes only
+Shell *sh; //TODO: testing only
 
 static void window_loop(Loop *loop, int ms);
 
@@ -35,11 +36,13 @@ void window_init(void)
   uv_timer_init(eventloop(), &win.draw_timer);
   win.focus = NULL;
   win.blist = NULL;
+  win.buf_count = 0;
 
   signal(SIGWINCH, sig_resize);
 }
 
 #include "fnav/tui/fm_cntlr.h"
+#include "fnav/tui/layout.h"
 
 void window_input(int key)
 {
@@ -52,10 +55,10 @@ void window_input(int key)
     shell_stop(sh);
   }
   if (key == 'o') {
-    fn_buf *buf = buf_init();
-    window_add_buffer(buf);
+    BufferNode *bn = window_add_buffer();
     // TODO: excmd would normally init a cntlr here
-    win.focus->cntlr = &fm_cntlr_init(buf)->base;
+    win.focus->cntlr = (Cntlr*)fm_cntlr_init(bn->buf);
+    return;
   }
   if (win.focus->cntlr) {
     win.focus->cntlr->_input(win.focus->cntlr, key);
@@ -79,22 +82,27 @@ void window_req_draw(fn_buf *buf, argv_callback cb)
   CREATE_EVENT(&win.loop.events, cb, 1, buf);
 }
 
-void window_add_buffer(fn_buf *buf)
+BufferNode* window_add_buffer()
 {
   log_msg("INIT", "PANE +ADD+");
   BufferNode *cn = malloc(sizeof(BufferNode*));
+  cn->buf = buf_init();
   if (!win.blist) {
-    cn->buf = buf;
+    cn->buf = cn->buf;
     cn->next = cn;
     cn->prev = cn;
     win.blist = cn;
     win.focus = cn;
   }
   else {
-    cn->buf = buf;
+    cn->buf = cn->buf;
     cn->prev = win.blist->prev;
     cn->next = win.blist;
     win.blist->prev->next = cn;
     win.blist->prev = cn;
   }
+  win.buf_count++;
+  pos_T t = {.lnum = 0, .col = 1};
+  layout_add_buffer(cn, win.buf_count, t);
+  return cn;
 }

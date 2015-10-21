@@ -47,15 +47,20 @@ void tables_init()
   log_msg("INIT", "table");
 }
 
-void tbl_mk(String name)
+bool tbl_mk(String name)
 {
-  log_msg("TABLE", "making table {%s} ...", name);
-  fn_tbl *t = malloc(sizeof(fn_tbl));
-  t->key = name;
-  t->count = 0;
-  t->rec_count = 0;
-  t->fields = NULL;
-  HASH_ADD_KEYPTR(hh, FN_MASTER, t->key, strlen(t->key), t);
+  fn_tbl *t = get_tbl(name);
+  if (!t) {
+    log_msg("TABLE", "making table {%s} ...", name);
+    fn_tbl *t = malloc(sizeof(fn_tbl));
+    t->key = name;
+    t->count = 0;
+    t->rec_count = 0;
+    t->fields = NULL;
+    HASH_ADD_KEYPTR(hh, FN_MASTER, t->key, strlen(t->key), t);
+    return true;
+  }
+  return false;
 }
 
 void tbl_del(String name)

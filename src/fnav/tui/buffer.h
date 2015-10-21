@@ -23,6 +23,8 @@ void buf_destroy(fn_buf *buf);
 
 void buf_set_cntlr(fn_buf *buf, Cntlr *cntlr);
 void buf_set(fn_handle *hndl, String fname);
+void buf_set_size(fn_buf *buf, int w, int h);
+void buf_set_ofs(fn_buf *buf, int x, int y);
 void buf_mv(fn_buf *buf, int x, int y);
 
 String buf_val(fn_handle *hndl, String fname);

@@ -41,7 +41,7 @@ struct fn_lis {
 };
 
 void tables_init();
-void tbl_mk(String name);
+bool tbl_mk(String name);
 void tbl_del(String name);
 void tbl_mk_fld(String tn, String name, tFldType typ);
 

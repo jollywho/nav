@@ -13,6 +13,7 @@ struct fn_buf {
   BufferNode *bn;
   pos_T b_size;
   pos_T nc_size;
+  pos_T b_ofs;
 
   fn_handle *hndl;
   String vname;
@@ -38,12 +39,28 @@ fn_buf* buf_init()
 {
   log_msg("INIT", "BUFFER");
   fn_buf *buf = malloc(sizeof(fn_buf));
-  SET_POS(buf->b_size,0,0);
-  getmaxyx(stdscr, buf->nc_size.lnum, buf->nc_size.col);
-  buf->nc_win = newwin(buf->nc_size.lnum, buf->nc_size.col, 0,0);
+  SET_POS(buf->b_size, 0, 0);
+  buf->nc_win = newwin(1,1,0,0);
   buf->dirty = false;
   buf->queued = false;
   return buf;
+}
+
+void buf_set_size(fn_buf *buf, int w, int h)
+{
+  log_msg("BUFFER", "SET SIZE %d %d", w, h);
+  if (h)
+    buf->nc_size.lnum = h;
+  if (w)
+    buf->nc_size.col = w;
+  wresize(buf->nc_win, h, w);
+  buf_refresh(buf);
+}
+
+void buf_set_ofs(fn_buf *buf, int x, int y)
+{
+  SET_POS(buf->b_size, y, x);
+  mvwin(buf->nc_win, y, x);
 }
 
 void buf_destroy(fn_buf *buf)
@@ -124,7 +141,7 @@ void buf_draw(void **argv)
   }
 
   if (buf->dirty) {
-    buf_count_rewind(buf, lis);
+    //buf_count_rewind(buf, lis);
   }
 
   pos_T p = {.lnum = 0, .col = 0};
@@ -135,7 +152,7 @@ void buf_draw(void **argv)
   }
 
   log_msg("BUFFER", "druh_start");
-  for(int i = 0; i < buf->nc_size.lnum; i++) {
+  while (1) {
     String n = (String)rec_fld(it->rec, buf->vname);
     if (isdir(it->rec)) {
       wattron(buf->nc_win, COLOR_PAIR(1));
@@ -181,6 +198,7 @@ int buf_entsize(fn_handle *hndl) {
 
 void buf_mv(fn_buf *buf, int x, int y)
 {
+  // TODO: convert to ncurses scroll
   if (!buf->hndl->lis->ent) return;
   int *pos = &buf->hndl->lis->pos;
   int *ofs = &buf->hndl->lis->ofs;
@@ -191,8 +209,9 @@ void buf_mv(fn_buf *buf, int x, int y)
     if (d == 1) {
       if (*pos < buf->nc_size.lnum * .8)
         (*pos)++;
-      else
+      else {
         (*ofs)++;
+      }
       buf->hndl->lis->ent = ent->next;
     }
     else if (d == -1) {

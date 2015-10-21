@@ -264,17 +264,21 @@ FM_cntlr* fm_cntlr_init(fn_buf *buf)
   FM_cntlr *fm = malloc(sizeof(FM_cntlr));
   fm->op_count = 1;
   fm->mo_count = 1;
-  asprintf(&fm->cur_dir, "/home/chi/casper/YFS/ALL");
+  char init_dir[]="/home/chi/casper/YFS";
+  fm->cur_dir = malloc(strlen(init_dir)+1);
+  strcpy(fm->cur_dir, init_dir);
 
-  tbl_mk("fm_files");
-  tbl_mk_fld("fm_files", "name", typSTRING);
-  tbl_mk_fld("fm_files", "dir", typSTRING);
-  tbl_mk_fld("fm_files", "fullpath", typSTRING);
+  if (tbl_mk("fm_files")) {
+    tbl_mk_fld("fm_files", "name", typSTRING);
+    tbl_mk_fld("fm_files", "dir", typSTRING);
+    tbl_mk_fld("fm_files", "fullpath", typSTRING);
+  }
 
-  tbl_mk("fm_stat");
-  tbl_mk_fld("fm_stat", "fullpath", typSTRING);
-  tbl_mk_fld("fm_stat", "update", typVOID);
-  tbl_mk_fld("fm_stat", "stat", typVOID);
+  if (tbl_mk("fm_stat")) {
+    tbl_mk_fld("fm_stat", "fullpath", typSTRING);
+    tbl_mk_fld("fm_stat", "update", typVOID);
+    tbl_mk_fld("fm_stat", "stat", typVOID);
+  }
   init_fm_hndl(fm, buf, &fm->base, fm->cur_dir);
 
   fm->fs = fs_init(&fm->base, fm->base.hndl, fm_read_scan);
