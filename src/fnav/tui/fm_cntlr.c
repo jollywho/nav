@@ -3,13 +3,15 @@
 #include <string.h>
 #include <strings.h>
 
-#include <ncurses.h>
-
 #include "fnav/ascii.h"
+#include "fnav/table.h"
+#include "fnav/model.h"
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/fm_cntlr.h"
-#include "fnav/table.h"
 #include "fnav/log.h"
+
+// TODO: Key Cmdarg redone as reuseable module.
+// needed for language extension later.
 
 enum Type { OPERATOR, MOTION };
 
@@ -34,12 +36,8 @@ Cmd default_lst[] = {
   { "list",  0,  NULL },
 };
 
-static void fm_mv();
-static void fm_page();
-static void fm_mv();
 static void fm_left();
 static void fm_right();
-static void fm_g_cmd();
 
 static const struct fm_cmd {
   int cmd_char;                 /* (first) command character */
@@ -48,14 +46,8 @@ static const struct fm_cmd {
   short cmd_arg;                /* value for ca.arg */
 } fm_cmds[] =
 {
-  {Ctrl_J,  fm_page,        0,                 FORWARD},
-  {Ctrl_K,  fm_page,        0,                 BACKWARD},
   {'h',     fm_left,        0,                 0},
   {'l',     fm_right,       0,                 0},
-  {'j',     fm_mv,          0,                 FORWARD},
-  {'k',     fm_mv,          0,                 BACKWARD},
-  {'g',     fm_g_cmd,       0,                 BACKWARD},
-  {'G',     fm_g_cmd,       0,                 FORWARD},
 };
 
 void cntlr_cancel(Cntlr *cntlr)
@@ -88,48 +80,27 @@ static void fm_left(Cntlr *cntlr)
   log_msg("FM", "cmd left");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   free(self->cur_dir);
-  self->cur_dir = strdup(buf_val(cntlr->hndl, "dir"));
-  self->cur_dir = fs_parent_dir(self->cur_dir);
-  log_msg("FS", "<<PARENT OF>>");
-  cntlr->hndl->fval = self->cur_dir;
-  buf_set(cntlr->hndl, "name");
-  fs_open(self->fs, self->cur_dir);
+  // TODO: should be model access for value
+//  self->cur_dir = strdup(buf_val(cntlr->hndl, "dir"));
+//  self->cur_dir = fs_parent_dir(self->cur_dir);
+//  log_msg("FS", "<<PARENT OF>>");
+//  cntlr->hndl->fval = self->cur_dir;
+//  buf_set(cntlr->hndl, "name");
+//  fs_open(self->fs, self->cur_dir);
 }
 
 static void fm_right(Cntlr *cntlr)
 {
   log_msg("FM", "cmd right");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  if (isdir(buf_rec(cntlr->hndl))) {
-    free(self->cur_dir);
-    self->cur_dir = strdup(buf_val(cntlr->hndl, "fullpath"));
-    cntlr->hndl->fval = self->cur_dir;
-    buf_set(cntlr->hndl, "name");
-    fs_open(self->fs, self->cur_dir);
-  }
-}
-
-static void fm_mv(Cntlr *cntlr, Cmdarg *arg)
-{
-  log_msg("FM", "cmd mv");
-  FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  buf_mv(cntlr->hndl->buf, 0, arg->arg);
-  log_msg("FM", "set cur: %s", self->cur_dir);
-  log_msg("FM", "waiting on job...");
-}
-
-static void fm_page(Cntlr *cntlr, Cmdarg *arg)
-{
-  log_msg("FM", "cmd page");
-  buf_mv(cntlr->hndl->buf, 0, arg->arg * buf_pgsize(cntlr->hndl));
-  log_msg("FM", "waiting on job...");
-}
-
-static void fm_g_cmd(Cntlr *cntlr, Cmdarg *arg)
-{
-  log_msg("FM", "cmd _g");
-  buf_mv(cntlr->hndl->buf, 0, arg->arg * buf_entsize(cntlr->hndl));
-  log_msg("FM", "waiting on job...");
+  // TODO: should be model access for value
+//  if (isdir(buf_rec(cntlr->hndl))) {
+//    free(self->cur_dir);
+//    self->cur_dir = strdup(buf_val(cntlr->hndl, "fullpath"));
+//    cntlr->hndl->fval = self->cur_dir;
+//    buf_set(cntlr->hndl, "name");
+//    fs_open(self->fs, self->cur_dir);
+//  }
 }
 
 /* Number of commands in nv_cmds[]. */
@@ -237,26 +208,27 @@ int cntlr_input(Cntlr *cntlr, int key)
   if (idx >= 0) {
     fm_cmds[idx].cmd_func(cntlr, &ca);
   }
+  // if not consumed send to buffer
   return 0;
 }
 
-static void init_fm_hndl(FM_cntlr *fm, fn_buf *b, Cntlr *c, String val)
+static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
 {
   fn_handle *hndl = malloc(sizeof(fn_handle));
-  hndl->tname = "fm_files";
+  hndl->tn = "fm_files";
   hndl->buf = b;
-  hndl->fname = "dir";
-  hndl->fval = val;
+  hndl->key_fld = "dir";
+  hndl->key = val;
+  hndl->fname = "name";
   c->hndl = hndl;
   c->cmd_lst = default_lst;
   c->_focus = cntlr_focus;
   c->_cancel = cntlr_cancel;
   c->_input = cntlr_input;
   c->top = fm;
-  buf_set(c->hndl, "name");
 }
 
-FM_cntlr* fm_cntlr_init(fn_buf *buf)
+FM_cntlr* fm_cntlr_init(Buffer *buf)
 {
   log_msg("INIT", "FM_CNTLR");
   init_cmds(); //TODO: cleanup loose parts
@@ -280,8 +252,10 @@ FM_cntlr* fm_cntlr_init(fn_buf *buf)
     tbl_mk_fld("fm_stat", "stat", typVOID);
   }
   init_fm_hndl(fm, buf, &fm->base, fm->cur_dir);
+  model_init(fm->base.hndl);
+  model_open(fm->base.hndl);
 
-  fm->fs = fs_init(&fm->base, fm->base.hndl, fm_read_scan);
+  fm->fs = fs_init(&fm->base, fm->base.hndl);
   fs_open(fm->fs, fm->cur_dir);
 
   return fm;

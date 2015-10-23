@@ -7,7 +7,6 @@
 #include "fnav/tui/buffer.h"
 
 typedef struct queue_item QueueItem;
-typedef struct job_item JobItem;
 struct queue_item {
   Event item;
   QUEUE node;

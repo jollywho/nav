@@ -4,7 +4,7 @@
 #include "fnav/tui/buffer.h"
 
 void window_init(void);
-void window_req_draw(fn_buf *buf, argv_callback cb);
+void window_req_draw(Buffer *buf, argv_callback cb);
 void window_input(int key);
 
 BufferNode* window_add_buffer();

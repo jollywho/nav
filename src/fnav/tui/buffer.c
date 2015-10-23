@@ -1,6 +1,7 @@
 #include <ncurses.h>
 #include <limits.h>
 
+#include "fnav/ascii.h"
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/window.h"
 #include "fnav/log.h"
@@ -8,7 +9,7 @@
 #include "fnav/event/loop.h"
 #include "fnav/event/fs.h"
 
-struct fn_buf {
+struct Buffer {
   WINDOW *nc_win;
   BufferNode *bn;
   pos_T b_size;
@@ -19,6 +20,43 @@ struct fn_buf {
   String vname;
   bool dirty;
   bool queued;
+};
+
+enum Type { OPERATOR, MOTION };
+
+typedef struct {
+  String name;
+  enum Type type;
+  void (*f)();
+} Key;
+
+typedef struct {
+  pos_T start;                  /* start of the operator */
+  pos_T end;                    /* end of the operator */
+  long opcount;                 /* count before an operator */
+  int arg;
+} Cmdarg;
+
+typedef void (*key_func)(Cntlr *cntlr, Cmdarg *arg);
+
+static void init_cmds(void);
+static void buf_mv_page();
+static void buf_mv();
+static void buf_g();
+
+static const struct buf_cmd {
+  int cmd_char;                 /* (first) command character */
+  key_func cmd_func;            /* function for this command */
+  int cmd_flags;                /* FN_ flags */
+  short cmd_arg;                /* value for ca.arg */
+} fm_cmds[] =
+{
+  {Ctrl_J,  buf_mv_page,     0,           FORWARD},
+  {Ctrl_K,  buf_mv_page,     0,           BACKWARD},
+  {'j',     buf_mv,          0,           FORWARD},
+  {'k',     buf_mv,          0,           BACKWARD},
+  {'g',     buf_g,           0,           BACKWARD},
+  {'G',     buf_g,           0,           FORWARD},
 };
 
 #define SET_POS(pos,x,y)       \
@@ -35,18 +73,19 @@ struct fn_buf {
 void buf_listen(fn_handle *hndl);
 void buf_draw(void **argv);
 
-fn_buf* buf_init()
+Buffer* buf_init()
 {
   log_msg("INIT", "BUFFER");
-  fn_buf *buf = malloc(sizeof(fn_buf));
+  Buffer *buf = malloc(sizeof(Buffer));
   SET_POS(buf->b_size, 0, 0);
   buf->nc_win = newwin(1,1,0,0);
   buf->dirty = false;
   buf->queued = false;
+  init_cmds();
   return buf;
 }
 
-void buf_set_size(fn_buf *buf, int w, int h)
+void buf_set_size(Buffer *buf, int w, int h)
 {
   log_msg("BUFFER", "SET SIZE %d %d", w, h);
   if (h)
@@ -57,19 +96,19 @@ void buf_set_size(fn_buf *buf, int w, int h)
   buf_refresh(buf);
 }
 
-void buf_set_ofs(fn_buf *buf, int x, int y)
+void buf_set_ofs(Buffer *buf, int x, int y)
 {
   SET_POS(buf->b_size, y, x);
   mvwin(buf->nc_win, y, x);
 }
 
-void buf_destroy(fn_buf *buf)
+void buf_destroy(Buffer *buf)
 {
   delwin(buf->nc_win);
   free(buf);
 }
 
-void buf_set_cntlr(fn_buf *buf, Cntlr *cntlr)
+void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
 {
   buf->bn->cntlr = cntlr;
 }
@@ -77,18 +116,14 @@ void buf_set_cntlr(fn_buf *buf, Cntlr *cntlr)
 void buf_set(fn_handle *hndl, String fname)
 {
   log_msg("BUFFER", "set");
-  fn_buf *buf = hndl->buf;
-  buf->vname = fname;
-  buf->hndl = hndl;
-  tbl_listener(hndl, buf_listen);
 }
 
-void buf_resize(fn_buf *buf, int w, int h)
+void buf_resize(Buffer *buf, int w, int h)
 {
   SET_POS(buf->b_size, w, h);
 }
 
-void buf_refresh(fn_buf *buf)
+void buf_refresh(Buffer *buf)
 {
   log_msg("BUFFER", "refresh");
   if (buf->queued)
@@ -97,134 +132,131 @@ void buf_refresh(fn_buf *buf)
   window_req_draw(buf, buf_draw);
 }
 
-void buf_listen(fn_handle *hndl)
-{
-  log_msg("BUFFER", "listen cb");
-  hndl->buf->dirty = true;
-  buf_refresh(hndl->buf);
-}
-
-void buf_count_rewind(fn_buf *buf, fn_lis *lis)
-{
-  log_msg("BUFFER", "rewind");
-  // TODO: rewind running when attaching lis. want it after insert finishes
-  // NOTE: pos + ofs = absolute
-  ventry *it = lis->ent;
-  int count, sub;
-  log_msg("BUFFER", "rewind at %d", lis->pos);
-  for(count = 0, sub = 0; count < lis->pos; count++, sub++) {
-    log_msg("BUFFER", "head? %d %d", it->head, count);
-    if (it->head) break;
-    log_msg("BUFFER", "druh_nexnd");
-    it = it->prev;
-    if (lis->ofs > 0 && sub > buf->nc_size.lnum) {
-      sub = 0;
-      lis->ofs--;
-    }
-  }
-  lis->pos = count;
-}
-
 void buf_draw(void **argv)
 {
   log_msg("BUFFER", "druh");
-  fn_buf *buf = (fn_buf*)argv[0];
-  fn_lis *lis = buf->hndl->lis;
-
-  wclear(buf->nc_win);
-  if (!lis->ent) {
-    log_msg("BUFFER", "druh NOP");
-    buf->dirty = false;
-    buf->queued = false;
-    wnoutrefresh(buf->nc_win);
-    return;
-  }
-
-  if (buf->dirty) {
-    //buf_count_rewind(buf, lis);
-  }
-
-  pos_T p = {.lnum = 0, .col = 0};
-  ventry *it = lis->ent;
-  for(int i = 0; i < lis->pos; i++) {
-    if (it->head) break;
-    it = it->prev;
-  }
-
-  log_msg("BUFFER", "druh_start");
-  while (1) {
-    String n = (String)rec_fld(it->rec, buf->vname);
-    if (isdir(it->rec)) {
-      wattron(buf->nc_win, COLOR_PAIR(1));
-      DRAW_AT(buf->nc_win, p, n);
-      wattroff(buf->nc_win, COLOR_PAIR(1));
-    }
-    else {
-      wattron(buf->nc_win, COLOR_PAIR(2));
-      DRAW_AT(buf->nc_win, p, n);
-      wattroff(buf->nc_win, COLOR_PAIR(2));
-    }
-    it = it->next;
-    if (it->head) break;
-    INC_POS(p,0,1);
-  }
-  log_msg("BUFFER", "druh_end");
-  wmove(buf->nc_win, lis->pos, 0);
-  wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
-  wnoutrefresh(buf->nc_win);
-  buf->dirty = false;
-  buf->queued = false;
 }
 
-String buf_val(fn_handle *hndl, String fname)
+void buf_full_invalidate(Buffer *buf, int index)
 {
-  if (!hndl->lis->ent) return NULL;
-  return rec_fld(hndl->lis->ent->rec, fname);
-}
-
-fn_rec* buf_rec(fn_handle *hndl)
-{
-  if (!hndl->lis->ent) return NULL;
-  return hndl->lis->ent->rec;
-}
-
-int buf_pgsize(fn_handle *hndl) {
-  return hndl->buf->nc_size.col / 3;
-}
-
-int buf_entsize(fn_handle *hndl) {
-  return tbl_ent_count(hndl->lis->ent);
-}
-
-void buf_mv(fn_buf *buf, int x, int y)
-{
-  // TODO: convert to ncurses scroll
-  if (!buf->hndl->lis->ent) return;
-  int *pos = &buf->hndl->lis->pos;
-  int *ofs = &buf->hndl->lis->ofs;
-  for (int i = 0; i < abs(y); i++) {
-    ventry *ent = buf->hndl->lis->ent;
-    int d = FN_MV(ent, y);
-
-    if (d == 1) {
-      if (*pos < buf->nc_size.lnum * .8)
-        (*pos)++;
-      else {
-        (*ofs)++;
-      }
-      buf->hndl->lis->ent = ent->next;
-    }
-    else if (d == -1) {
-      if (*pos > buf->nc_size.lnum * .2)
-        (*pos)--;
-      else {
-        if (*ofs > 0)
-          (*ofs)--;
-        else
-          (*pos)--;
-      }
-      buf->hndl->lis->ent = ent->prev;
-    }
-  }
+  // cur set to index.
+  // model_req_line from index until top of buffer then down until bottom.
   buf_refresh(buf);
+}
+
+void buf_scroll(Buffer *buf, int y)
+{
+  // scroll ncurses window N amount vertically.
+  // request lines from buffer's header index until N.
+}
+
+static void buf_mv(Buffer *buf, Cmdarg *arg)
+{
+  // move cursor N times in a dimension.
+  // scroll if located on an edge.
+}
+
+static void buf_mv_page(Buffer *buf, Cmdarg *arg)
+{
+}
+
+static void buf_g(Buffer *buf, Cmdarg *arg)
+{
+}
+
+/* Number of commands in nv_cmds[]. */
+#define FM_CMDS_SIZE ARRAY_SIZE(fm_cmds)
+
+/* Sorted index of commands in nv_cmds[]. */
+static short nv_cmd_idx[FM_CMDS_SIZE];
+
+/* The highest index for which
+ * nv_cmds[idx].cmd_char == nv_cmd_idx[nv_cmds[idx].cmd_char] */
+static int nv_max_linear;
+
+/*
+ * Compare functions for qsort() below, that checks the command character
+ * through the index in nv_cmd_idx[].
+ */
+static int nv_compare(const void *s1, const void *s2)
+{
+  int c1, c2;
+
+  /* The commands are sorted on absolute value. */
+  c1 = fm_cmds[*(const short *)s1].cmd_char;
+  c2 = fm_cmds[*(const short *)s2].cmd_char;
+  if (c1 < 0)
+    c1 = -c1;
+  if (c2 < 0)
+    c2 = -c2;
+  return c1 - c2;
+}
+
+/*
+ * Initialize the nv_cmd_idx[] table.
+ */
+static void init_cmds(void)
+{
+  /* Fill the index table with a one to one relation. */
+  for (short int i = 0; i < (short int)FM_CMDS_SIZE; ++i) {
+    nv_cmd_idx[i] = i;
+  }
+
+  /* Sort the commands by the command character.  */
+  qsort(&nv_cmd_idx, FM_CMDS_SIZE, sizeof(short), nv_compare);
+
+  /* Find the first entry that can't be indexed by the command character. */
+  short int i;
+  for (i = 0; i < (short int)FM_CMDS_SIZE; ++i) {
+    if (i != fm_cmds[nv_cmd_idx[i]].cmd_char) {
+      break;
+    }
+  }
+  nv_max_linear = i - 1;
+}
+
+/*
+ * Search for a command in the commands table.
+ * Returns -1 for invalid command.
+ */
+static int find_command(int cmdchar)
+{
+  int i;
+  int idx;
+  int top, bot;
+  int c;
+
+  /* A multi-byte character is never a command. */
+  if (cmdchar >= 0x100)
+    return -1;
+
+  /* We use the absolute value of the character.  Special keys have a
+   * negative value, but are sorted on their absolute value. */
+  if (cmdchar < 0)
+    cmdchar = -cmdchar;
+
+  /* If the character is in the first part: The character is the index into
+   * nv_cmd_idx[]. */
+  if (cmdchar <= nv_max_linear)
+    return nv_cmd_idx[cmdchar];
+
+  /* Perform a binary search. */
+  bot = nv_max_linear + 1;
+  top = FM_CMDS_SIZE - 1;
+  idx = -1;
+  while (bot <= top) {
+    i = (top + bot) / 2;
+    c = fm_cmds[nv_cmd_idx[i]].cmd_char;
+    if (c < 0)
+      c = -c;
+    if (cmdchar == c) {
+      idx = nv_cmd_idx[i];
+      break;
+    }
+    if (cmdchar > c)
+      bot = i + 1;
+    else
+      top = i - 1;
+  }
+  return idx;
 }

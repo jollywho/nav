@@ -3,29 +3,13 @@
 
 #include "fnav/tui/cntlr.h"
 
-typedef void(*cntlr_cb)();
-typedef void(*buf_cb)();
-
-typedef struct {
-  void *caller;
-  fn_handle *hndl;
-  cntlr_cb read_cb;
-  buf_cb   updt_cb;
-  buf_cb   draw_cb;
-} Job;
-
 typedef struct {
   int count;
   int max;
   String *flds;
   void **data;
+  int flag;
 } trans_rec;
-
-typedef struct {
-  void(*fn)();
-  trans_rec *trec;
-  String tname;
-} JobArg;
 
 void rpc_temp_init();
 void rpc_handle(String cmdstr);

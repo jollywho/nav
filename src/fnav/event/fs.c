@@ -8,11 +8,15 @@
 #include <ncurses.h>
 
 #include "fnav/event/fs.h"
+#include "fnav/model.h"
 #include "fnav/event/event.h"
 #include "fnav/log.h"
 #include "fnav/rpc.h"
 #include "fnav/table.h"
 #include "fnav/tui/buffer.h"
+
+static void fs_close_req(FS_req *fq);
+static void stat_cb(uv_fs_t* req);
 
 char* conspath(const char* str1, const char* str2)
 {
@@ -27,7 +31,6 @@ char* conspath(const char* str1, const char* str2)
 
 String fs_parent_dir(const String path)
 {
-  // TODO: when to free this
   log_msg("FS", "<<PARENT OF>>: %s", path);
   return dirname(path);
 }
@@ -41,7 +44,54 @@ bool isdir(fn_rec *rec)
   return (S_ISDIR(st->st_mode));
 }
 
-void send_stat(FS_req *fq, const char* dir, char* upd)
+void fs_signal_handle(void **data)
+{
+  fn_handle *h = data[0];
+  fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
+  if (l) {
+    model_read_entry(h->model, l);
+  }
+}
+
+void fs_open(FS_handle *fsh, const String dir)
+{
+  log_msg("FS", "fs open %s", dir);
+  FS_req *fq = malloc(sizeof(FS_req));
+  fq->fs_h = fsh;
+  fq->req_name = strdup(dir);
+  fq->uv_fs.data = fq;
+
+  uv_fs_stat(&fq->fs_h->loop.uv, &fq->uv_fs, dir, stat_cb);
+
+  // TODO: check stat on timer and reopen. set on fqclose or stat NOP.
+  //uv_fs_event_stop(&fsh->watcher);
+  //uv_fs_event_start(&fsh->watcher, watch_cb, dir, 1);
+  //uv_unref((uv_handle_t*)&fsh->watcher);
+}
+
+void fs_loop(Loop *loop, int ms)
+{
+  process_loop(loop, ms);
+}
+
+FS_handle* fs_init(Cntlr *c, fn_handle *h)
+{
+  log_msg("FS", "open req");
+  FS_handle *fsh = malloc(sizeof(FS_handle));
+  loop_add(&fsh->loop, fs_loop);
+  uv_fs_event_init(&fsh->loop.uv, &fsh->watcher);
+  fsh->hndl = h;
+  fsh->watcher.data = fsh;
+  return fsh;
+}
+
+void fs_cleanup(FS_handle *fsh)
+{
+  loop_remove(&fsh->loop);
+  free(fsh);
+}
+
+static void send_stat(FS_req *fq, const char* dir, char* upd)
 {
   FS_handle *fh = fq->fs_h;
   struct stat *s = malloc(sizeof(struct stat));
@@ -54,7 +104,7 @@ void send_stat(FS_req *fq, const char* dir, char* upd)
   CREATE_EVENT(&fh->loop.events, commit, 2, "fm_stat", r);
 }
 
-void scan_cb(uv_fs_t* req)
+static void scan_cb(uv_fs_t* req)
 {
   log_msg("FS", "--scan--");
   log_msg("FS", "path: %s", req->path);
@@ -85,10 +135,10 @@ void scan_cb(uv_fs_t* req)
     free(full);
     CREATE_EVENT(&fh->loop.events, commit, 2, "fm_files", r);
   }
-  fq->close_cb(fq);
+  fs_close_req(fq);
 }
 
-void stat_cb(uv_fs_t* req)
+static void stat_cb(uv_fs_t* req)
 {
   log_msg("FS", "stat cb");
   FS_req *fq = req->data;
@@ -119,7 +169,8 @@ void stat_cb(uv_fs_t* req)
   }
 }
 
-void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int status)
+static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,
+    int status)
 {
   FS_handle *fsh = handle->data;
   log_msg("FS", "--watch--");
@@ -130,48 +181,10 @@ void watch_cb(uv_fs_event_t *handle, const char *filename, int events, int statu
   fs_open(fsh, handle->path);
 }
 
-void fs_close_cb(FS_req *fq)
+static void fs_close_req(FS_req *fq)
 {
   log_msg("FS", "reset %s", (char*)fq->req_name);
+  CREATE_EVENT(&fq->fs_h->loop.events, fs_signal_handle, 1, fq->fs_h->hndl);
   free(fq->req_name);
   free(fq);
-}
-
-void fs_open(FS_handle *fsh, const String dir)
-{
-  log_msg("FS", "fs open %s", dir);
-  FS_req *fq = malloc(sizeof(FS_req));
-  fq->fs_h = fsh;
-  fq->req_name = strdup(dir);
-  fq->uv_fs.data = fq;
-  fq->close_cb = fs_close_cb;
-  fq->rec = NULL;
-
-  uv_fs_stat(&fq->fs_h->loop.uv, &fq->uv_fs, dir, stat_cb);
-
-  // TODO: check stat on timer and reopen. set on fqclose or stat NOP.
-  //uv_fs_event_stop(&fsh->watcher);
-  //uv_fs_event_start(&fsh->watcher, watch_cb, dir, 1);
-  //uv_unref((uv_handle_t*)&fsh->watcher);
-}
-
-void fs_loop(Loop *loop, int ms)
-{
-  process_loop(loop, ms);
-}
-
-FS_handle* fs_init(Cntlr *c, fn_handle *h, cntlr_cb read_cb)
-{
-  log_msg("FS", "open req");
-  FS_handle *fsh = malloc(sizeof(FS_handle));
-  loop_add(&fsh->loop, fs_loop);
-  uv_fs_event_init(&fsh->loop.uv, &fsh->watcher);
-  fsh->watcher.data = fsh;
-  return fsh;
-}
-
-void fs_cleanup(FS_handle *fsh)
-{
-  loop_remove(&fsh->loop);
-  free(fsh);
 }

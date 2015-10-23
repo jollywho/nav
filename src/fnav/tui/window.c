@@ -76,7 +76,7 @@ static void window_loop(Loop *loop, int ms)
   }
 }
 
-void window_req_draw(fn_buf *buf, argv_callback cb)
+void window_req_draw(Buffer *buf, argv_callback cb)
 {
   log_msg("WINDOW", "req draw");
   CREATE_EVENT(&win.loop.events, cb, 1, buf);

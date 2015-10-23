@@ -13,16 +13,17 @@ typedef void (*argv_callback)(void **argv);
 typedef struct Window Window;
 typedef struct Cntlr Cntlr;
 typedef struct fn_tbl fn_tbl;
-typedef struct fn_buf fn_buf;
+typedef struct Buffer Buffer;
 typedef struct fn_handle fn_handle;
-typedef struct fn_lis fn_lis;
+typedef struct Model Model;
 
 struct fn_handle {
-  fn_buf *buf;
-  String tname;
-  String fname;
-  String fval;
-  fn_lis *lis;
+  Buffer *buf;
+  Model *model;
+  String tn;      // listening table name
+  String key;     // listening value
+  String key_fld; // listening field
+  String fname;   // filter field
 };
 
 struct Cntlr {

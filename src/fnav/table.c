@@ -6,6 +6,8 @@
 #include "fnav/log.h"
 
 fn_tbl* get_tbl(String t);
+static void tbl_del_rec(fn_rec *rec);
+static void tbl_insert(fn_tbl *t, trans_rec *trec);
 
 struct fn_val {
   union {
@@ -29,6 +31,18 @@ struct fn_fld {
   tFldType type;
   fn_val *vals;
   fn_lis *lis;
+  UT_hash_handle hh;
+};
+
+struct fn_lis {
+  String key;       // listening value
+  fn_fld *key_fld;  // listening field
+  fn_fld *fname;    // filter field
+  String fval;      // filter val
+  ventry *ent;      // filter val entry
+  fn_rec *rec;      // record for both listening & filter
+  int lnum;
+  int index;
   UT_hash_handle hh;
 };
 
@@ -124,6 +138,44 @@ ventry* fnd_val(String tn, String fname, String val)
   return NULL;
 }
 
+fn_lis* fnd_lis(String tn, String key_fld, String key)
+{
+  fn_tbl *t = get_tbl(tn);
+  fn_fld *f;
+  HASH_FIND_STR(t->fields, key_fld, f);
+  if (f) {
+    fn_lis *l;
+    HASH_FIND_STR(f->lis, key, l);
+    if (l) {
+      return l;
+    }
+  }
+  return NULL;
+}
+
+void lis_data(fn_lis *lis, ventry *ent, int *index, int *lnum)
+{
+  *ent = *lis->ent;
+  *index = lis->index;
+  *lnum = lis->lnum;
+}
+
+ventry* lis_set_val(fn_lis *lis, String fname)
+{
+  for(int i = 0; i < lis->rec->fld_count; i++) {
+    ventry *it= lis->rec->vlist[i];
+    if (it) {
+      if (strcmp(it->val->fld->key, fname) == 0) {
+        lis->ent = it;
+        lis->fname = it->val->fld;
+        lis->fval = it->val->key;
+        return it;
+      }
+    }
+  }
+  return NULL;
+}
+
 int FN_MV(ventry *e, int n)
 {
   return ((n > 0) ?
@@ -158,7 +210,66 @@ int tbl_ent_count(ventry *e)
   return e->val->count;
 }
 
-fn_val* new_entry(fn_rec *rec, fn_fld *fld, void *data, int typ, int indx)
+void tbl_del_val(String tn, String fname, String val)
+{
+  log_msg("TABLE", "delete_val() %s %s,%s",tn ,fname, val);
+  fn_tbl *t = get_tbl(tn);
+  fn_fld *f;
+  HASH_FIND_STR(t->fields, fname, f);
+  if (f) {
+    fn_val *v;
+    HASH_FIND_STR(f->vals, val, v);
+    if (v) {
+      /* iterate entries of val. */
+      ventry *it = v->rlist;
+      int count = v->count;
+        log_msg("TAB", "DELCOUN %d", v->count);
+      for (int i = 0; i < count; i++) {
+        log_msg("TAB", "ITERHEAD %s %s %s",tn,fname,val);
+        it = it->next;
+        tbl_del_rec(it->rec);
+      }
+    }
+  }
+}
+
+void tbl_add_lis(String tn, String key_fld, String key)
+{
+  log_msg("TABLE", "SET LIS %s|%s", key_fld, key);
+
+  /* create listener for fn_val entry list */
+  fn_tbl *t = get_tbl(tn);
+  fn_fld *ff;
+  HASH_FIND_STR(t->fields, key_fld, ff);
+  if (ff) {
+    fn_lis *ll;
+    HASH_FIND_STR(ff->lis, key, ll);
+    if (!ll) {
+      log_msg("TABLE", "new lis");
+      /* create new listener */
+      ll = malloc(sizeof(fn_lis));
+      ll->key = strdup(key);
+      ll->key_fld = ff;
+      ll->fname = NULL;
+      ll->fval = NULL;
+      ll->ent = NULL;
+      ll->rec = NULL;
+      ll->index = 0;
+      ll->lnum = 0;
+      HASH_ADD_STR(ff->lis, key, ll);
+    }
+  }
+}
+
+void commit(void **data)
+{
+  log_msg("TABLE", "commit");
+  fn_tbl *t = get_tbl(data[0]);
+  tbl_insert(t, data[1]);
+  clear_trans(data[1]);
+}
+
+static fn_val* new_entry(fn_rec *rec, fn_fld *fld, void *data, int typ, int indx)
 {
   fn_val *val = malloc(sizeof(fn_val));
   val->fld = fld;
@@ -184,7 +295,7 @@ fn_val* new_entry(fn_rec *rec, fn_fld *fld, void *data, int typ, int indx)
   return val;
 }
 
-void add_entry(fn_rec *rec, fn_fld *fld, fn_val *v, int typ, int indx)
+static void add_entry(fn_rec *rec, fn_fld *fld, fn_val *v, int typ, int indx)
 {
   /* attach record to an entry. */
   ventry *ent = malloc(sizeof(ventry));
@@ -200,7 +311,23 @@ void add_entry(fn_rec *rec, fn_fld *fld, fn_val *v, int typ, int indx)
   rec->vals[indx] = v;
 }
 
-void tbl_insert(fn_tbl *t, trans_rec *trec)
+static void check_set_lis(fn_fld *f, fn_val *val, fn_rec *rec)
+{
+  /* check if field has lis. */
+  if (HASH_COUNT(f->lis) > 0) {
+    fn_lis *ll;
+    HASH_FIND_STR(f->lis, val->key, ll);
+    if (ll) {
+      log_msg("TABLE", "SET LIS");
+      /* if lis hasn't obtained a rec, set it now. */
+      if (!ll->ent) {
+        ll->rec = rec;
+      }
+    }
+  }
+}
+
+static void tbl_insert(fn_tbl *t, trans_rec *trec)
 {
   log_msg("TABLE", "rec");
   t->rec_count++;
@@ -231,27 +358,11 @@ void tbl_insert(fn_tbl *t, trans_rec *trec)
     else {
       add_entry(rec, f, v, 0, i);
     }
-
-    /* check if field has lis. */
-    if (HASH_COUNT(f->lis) > 0) {
-      fn_lis *ll;
-      HASH_FIND_STR(f->lis, rec->vals[i]->key, ll);
-      /* field has lis so call it. */
-      if (ll) {
-        log_msg("TABLE", "CALL");
-        /* if lis hasn't obtained a val, set it now. */
-        if (!ll->f_val) {
-          ll->f_val = rec->vals[i];
-          ll->ent = rec->vlist[i];
-        }
-        ll->hndl->lis = ll;
-        ll->cb(ll->hndl);
-      }
-    }
+    check_set_lis(f, rec->vals[i], rec);
   }
 }
 
-void tbl_del_rec(fn_rec *rec)
+static void tbl_del_rec(fn_rec *rec)
 {
   log_msg("TABLE", "delete_rec()");
   for(int i = 0; i < rec->fld_count; i++) {
@@ -276,7 +387,6 @@ void tbl_del_rec(fn_rec *rec)
         if (ll) {
           log_msg("TAB", "CLEAR ");
           ll->ent = NULL;
-          ll->f_val = NULL;
         }
         free(it->val->key);
         free(rec->vals[i]);
@@ -289,65 +399,4 @@ void tbl_del_rec(fn_rec *rec)
   free(rec->vals);
   free(rec->vlist);
   free(rec);
-}
-
-void tbl_del_val(String tn, String fname, String val)
-{
-  log_msg("TABLE", "delete_val() %s %s,%s",tn ,fname, val);
-  fn_tbl *t = get_tbl(tn);
-  fn_fld *f;
-  HASH_FIND_STR(t->fields, fname, f);
-  if (f) {
-    fn_val *v;
-    HASH_FIND_STR(f->vals, val, v);
-    if (v) {
-      /* iterate entries of val. */
-      ventry *it = v->rlist;
-      int count = v->count;
-        log_msg("TAB", "DELCOUN %d", v->count);
-      for (int i = 0; i < count; i++) {
-        log_msg("TAB", "ITERHEAD %s %s %s",tn,fname,val);
-        it = it->next;
-        tbl_del_rec(it->rec);
-      }
-    }
-  }
-}
-
-void tbl_listener(fn_handle *hndl, buf_cb cb)
-{
-  log_msg("TABLE", "SET LIS %s|%s", hndl->fname, hndl->fval);
-
-  /* create listener for fn_val entry list */
-  fn_tbl *t = get_tbl(hndl->tname);
-  fn_fld *ff;
-  HASH_FIND_STR(t->fields, hndl->fname, ff);
-  if (ff) {
-    fn_lis *ll;
-    HASH_FIND_STR(ff->lis, hndl->fval, ll);
-    if (!ll) {
-      log_msg("TABLE", "new lis");
-      /* create new listener */
-      ll = malloc(sizeof(fn_lis));
-      ll->key = strdup(hndl->fval);
-      ll->f_fld = NULL;
-      ll->f_val = NULL;
-      ll->hndl = hndl;
-      ll->ent = NULL;
-      ll->cb = cb;
-      ll->pos = 0;
-      ll->ofs = 0;
-      HASH_ADD_STR(ff->lis, key, ll);
-    }
-    ll->hndl->lis = ll;
-    ll->cb(ll->hndl);
-  }
-}
-
-void commit(void **data)
-{
-  log_msg("TABLE", "commit");
-  fn_tbl *t = get_tbl(data[0]);
-  tbl_insert(t, data[1]);
-  clear_trans(data[1]);
 }
