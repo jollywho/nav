@@ -12,6 +12,7 @@
 struct Buffer {
   WINDOW *nc_win;
   BufferNode *bn;
+  Cntlr *cntlr;
   pos_T b_size;
   pos_T nc_size;
   pos_T b_ofs;
@@ -37,12 +38,14 @@ typedef struct {
   int arg;
 } Cmdarg;
 
-typedef void (*key_func)(Cntlr *cntlr, Cmdarg *arg);
+typedef void (*key_func)(Buffer *buf, Cmdarg *arg);
 
 static void init_cmds(void);
+static int find_command(int cmdchar);
 static void buf_mv_page();
 static void buf_mv();
 static void buf_g();
+static void buf_ex_cmd();
 
 static const struct buf_cmd {
   int cmd_char;                 /* (first) command character */
@@ -53,6 +56,7 @@ static const struct buf_cmd {
 {
   {Ctrl_J,  buf_mv_page,     0,           FORWARD},
   {Ctrl_K,  buf_mv_page,     0,           BACKWARD},
+  {'o',     buf_ex_cmd,      0,           0},
   {'j',     buf_mv,          0,           FORWARD},
   {'k',     buf_mv,          0,           BACKWARD},
   {'g',     buf_g,           0,           BACKWARD},
@@ -75,7 +79,7 @@ void buf_draw(void **argv);
 
 Buffer* buf_init()
 {
-  log_msg("INIT", "BUFFER");
+  log_msg("BUFFER", "init");
   Buffer *buf = malloc(sizeof(Buffer));
   SET_POS(buf->b_size, 0, 0);
   buf->nc_win = newwin(1,1,0,0);
@@ -110,7 +114,7 @@ void buf_destroy(Buffer *buf)
 
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
 {
-  buf->bn->cntlr = cntlr;
+  buf->cntlr = cntlr;
 }
 
 void buf_set(fn_handle *hndl, String fname)
@@ -150,6 +154,26 @@ void buf_scroll(Buffer *buf, int y)
   // request lines from buffer's header index until N.
 }
 
+// input entry point.
+// proper commands are chosen based on buffer state.
+int buf_input(BufferNode *bn, int key)
+{
+  log_msg("BUFFER", "input");
+  Buffer *buf = bn->buf;
+  if (buf->cntlr) {
+    buf->cntlr->_input(buf->cntlr, key);
+  }
+  Cmdarg ca;
+  int idx = find_command(key);
+  ca.arg = fm_cmds[idx].cmd_arg;
+  if (idx >= 0) {
+    fm_cmds[idx].cmd_func(buf, &ca);
+  }
+  // if not consumed send to buffer
+  return 0;
+}
+
+
 static void buf_mv(Buffer *buf, Cmdarg *arg)
 {
   // move cursor N times in a dimension.
@@ -162,6 +186,11 @@ static void buf_mv_page(Buffer *buf, Cmdarg *arg)
 
 static void buf_g(Buffer *buf, Cmdarg *arg)
 {
+}
+
+static void buf_ex_cmd(Buffer *buf, Cmdarg *arg)
+{
+  window_ex_cmd_start();;
 }
 
 /* Number of commands in nv_cmds[]. */

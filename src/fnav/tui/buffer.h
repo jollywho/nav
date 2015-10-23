@@ -9,7 +9,6 @@ struct BufferNode {
   BufferNode *prev;
   BufferNode *next;
   Buffer *buf;
-  Cntlr *cntlr;
 };
 
 typedef struct {
@@ -28,6 +27,7 @@ void buf_set_ofs(Buffer *buf, int x, int y);
 
 void buf_full_invalidate(Buffer *buf, int index);
 int buf_lines(Buffer *buf);
+int buf_input(BufferNode *bn, int key);
 
 void buf_refresh(Buffer *buf);
 

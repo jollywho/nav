@@ -29,6 +29,18 @@ struct ventry {
   unsigned int head;
 };
 
+struct fn_lis {
+  String key;       // listening value
+  fn_fld *key_fld;  // listening field
+  fn_fld *fname;    // filter field
+  String fval;      // filter val
+  ventry *ent;      // filter val entry
+  fn_rec *rec;      // record for both listening & filter
+  int lnum;
+  int index;
+  UT_hash_handle hh;
+};
+
 void tables_init();
 bool tbl_mk(String name);
 void tbl_del(String name);
@@ -39,7 +51,6 @@ void commit(void **data);
 
 ventry* fnd_val(String tn, String fname, String val);
 fn_lis* fnd_lis(String tn, String key_fld, String key);
-void lis_data(fn_lis *lis, ventry *ent, int *index, int *lnum);
 ventry* lis_set_val(fn_lis *lis, String fname);
 void* rec_fld(fn_rec *rec, String fname);
 

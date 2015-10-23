@@ -208,7 +208,7 @@ int cntlr_input(Cntlr *cntlr, int key)
   if (idx >= 0) {
     fm_cmds[idx].cmd_func(cntlr, &ca);
   }
-  // if not consumed send to buffer
+  // if consumed return 1
   return 0;
 }
 
@@ -228,7 +228,7 @@ static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
   c->top = fm;
 }
 
-FM_cntlr* fm_cntlr_init(Buffer *buf)
+void fm_cntlr_init(Buffer *buf)
 {
   log_msg("INIT", "FM_CNTLR");
   init_cmds(); //TODO: cleanup loose parts
@@ -254,11 +254,10 @@ FM_cntlr* fm_cntlr_init(Buffer *buf)
   init_fm_hndl(fm, buf, &fm->base, fm->cur_dir);
   model_init(fm->base.hndl);
   model_open(fm->base.hndl);
+  buf_set_cntlr(buf, &fm->base);
 
   fm->fs = fs_init(&fm->base, fm->base.hndl);
   fs_open(fm->fs, fm->cur_dir);
-
-  return fm;
 }
 
 void fm_cntlr_cleanup(FM_cntlr *cntlr)

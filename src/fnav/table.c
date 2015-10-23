@@ -34,18 +34,6 @@ struct fn_fld {
   UT_hash_handle hh;
 };
 
-struct fn_lis {
-  String key;       // listening value
-  fn_fld *key_fld;  // listening field
-  fn_fld *fname;    // filter field
-  String fval;      // filter val
-  ventry *ent;      // filter val entry
-  fn_rec *rec;      // record for both listening & filter
-  int lnum;
-  int index;
-  UT_hash_handle hh;
-};
-
 struct fn_tbl {
   String key;
   fn_fld *fields;
@@ -140,6 +128,7 @@ ventry* fnd_val(String tn, String fname, String val)
 
 fn_lis* fnd_lis(String tn, String key_fld, String key)
 {
+  log_msg("TABLE", "fnd_lis %s %s", key_fld, key);
   fn_tbl *t = get_tbl(tn);
   fn_fld *f;
   HASH_FIND_STR(t->fields, key_fld, f);
@@ -153,15 +142,9 @@ fn_lis* fnd_lis(String tn, String key_fld, String key)
   return NULL;
 }
 
-void lis_data(fn_lis *lis, ventry *ent, int *index, int *lnum)
-{
-  *ent = *lis->ent;
-  *index = lis->index;
-  *lnum = lis->lnum;
-}
-
 ventry* lis_set_val(fn_lis *lis, String fname)
 {
+  log_msg("TABLE", "lis_set_val");
   for(int i = 0; i < lis->rec->fld_count; i++) {
     ventry *it= lis->rec->vlist[i];
     if (it) {
@@ -311,12 +294,13 @@ static void add_entry(fn_rec *rec, fn_fld *fld, fn_val *v, int typ, int indx)
   rec->vals[indx] = v;
 }
 
-static void check_set_lis(fn_fld *f, fn_val *val, fn_rec *rec)
+static void check_set_lis(fn_fld *f, String key, fn_rec *rec)
 {
+  log_msg("TABLE", "check set lis %s %s", f->key, key);
   /* check if field has lis. */
   if (HASH_COUNT(f->lis) > 0) {
     fn_lis *ll;
-    HASH_FIND_STR(f->lis, val->key, ll);
+    HASH_FIND_STR(f->lis, key, ll);
     if (ll) {
       log_msg("TABLE", "SET LIS");
       /* if lis hasn't obtained a rec, set it now. */
@@ -358,7 +342,7 @@ static void tbl_insert(fn_tbl *t, trans_rec *trec)
     else {
       add_entry(rec, f, v, 0, i);
     }
-    check_set_lis(f, rec->vals[i], rec);
+    check_set_lis(f, rec->vals[i]->key, rec);
   }
 }
 

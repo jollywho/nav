@@ -6,6 +6,8 @@
 #include "fnav/tui/window.h"
 #include "fnav/event/loop.h"
 #include "fnav/event/event.h"
+#include "fnav/tui/layout.h"
+#include "fnav/tui/ex_cmd.h"
 
 #include "fnav/event/shell.h"
 
@@ -15,6 +17,7 @@ struct Window {
   BufferNode *focus;
   uv_timer_t draw_timer;
   int buf_count;
+  bool ex;
 };
 
 Window win;
@@ -37,12 +40,11 @@ void window_init(void)
   win.focus = NULL;
   win.blist = NULL;
   win.buf_count = 0;
+  win.ex = false;
 
   signal(SIGWINCH, sig_resize);
+  window_add_buffer();
 }
-
-#include "fnav/tui/fm_cntlr.h"
-#include "fnav/tui/layout.h"
 
 void window_input(int key)
 {
@@ -54,18 +56,25 @@ void window_input(int key)
   if (key == '2') {
     shell_stop(sh);
   }
-  if (key == 'o') {
-    BufferNode *bn = window_add_buffer();
-    // TODO: excmd would normally init a cntlr here
-    win.focus->cntlr = (Cntlr*)fm_cntlr_init(bn->buf);
-    return;
-  }
-  if (win.focus->cntlr) {
-    win.focus->cntlr->_input(win.focus->cntlr, key);
+
+  if (win.ex) {
+    ex_input(win.focus, key);
   }
   else {
-    // buffer input
+    buf_input(win.focus, key);
   }
+}
+
+void window_ex_cmd_start()
+{
+  win.ex = true;
+  // for now use mockup input
+  ex_input(win.focus, 'o');
+}
+
+void window_ex_cmd_end()
+{
+  win.ex = false;
 }
 
 static void window_loop(Loop *loop, int ms)
@@ -82,7 +91,7 @@ void window_req_draw(Buffer *buf, argv_callback cb)
   CREATE_EVENT(&win.loop.events, cb, 1, buf);
 }
 
-BufferNode* window_add_buffer()
+void window_add_buffer()
 {
   log_msg("INIT", "PANE +ADD+");
   BufferNode *cn = malloc(sizeof(BufferNode*));
@@ -104,5 +113,4 @@ BufferNode* window_add_buffer()
   win.buf_count++;
   pos_T t = {.lnum = 0, .col = 1};
   layout_add_buffer(cn, win.buf_count, t);
-  return cn;
 }

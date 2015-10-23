@@ -46,6 +46,7 @@ bool isdir(fn_rec *rec)
 
 void fs_signal_handle(void **data)
 {
+  log_msg("FS", "fs_signal_handle");
   fn_handle *h = data[0];
   fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
   if (l) {

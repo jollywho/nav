@@ -8,7 +8,7 @@
 #include "fnav/table.h"
 #include "fnav/tui/buffer.h"
 
-static int refind_line(ventry *ent, int lnum);
+static void refind_line(fn_lis *lis);
 
 struct fn_line {
   int index;
@@ -18,7 +18,7 @@ struct fn_line {
 
 struct Model {
   fn_handle *hndl;
-  ventry *lis_ent;
+  fn_lis *lis;
   fn_line *lines;
   bool dirty;
 };
@@ -43,14 +43,13 @@ void model_close(fn_handle *hndl)
 
 void model_read_entry(Model *m, fn_lis *lis)
 {
-  ventry *ent = NULL;
-  int index, lnum;
-  lis_data(lis, ent, &index, &lnum);
-  if (!ent) {
-    ent = lis_set_val(lis, m->hndl->fname);
+  log_msg("MODEL", "model_read_entry");
+  if (!lis->ent) {
+    lis->ent = lis_set_val(lis, m->hndl->fname);
   }
-  lnum = refind_line(ent, lnum);
-  buf_full_invalidate(m->hndl->buf, index);
+  m->lis = lis;
+  refind_line(m->lis);
+  buf_full_invalidate(m->hndl->buf, m->lis->index);
 }
 
 void model_read_stream(void **arg)
@@ -59,25 +58,22 @@ void model_read_stream(void **arg)
 
 fn_line* model_req_line(Model *m, int index)
 {
+  log_msg("MODEL", "model_req_line");
   // create line from entry
   fn_line *ln = malloc(sizeof(fn_line));
   ln->index = index;
-  ln->data = m->lis_ent;
+  ln->data = m->lis->ent;
   HASH_ADD_INT(m->lines, index, ln);
   return ln;
 }
 
-static int refind_line(ventry *ent, int lnum)
+static void refind_line(fn_lis *lis)
 {
   log_msg("MODEL", "rewind");
   int count;
-  for(count = lnum; count > 0; --count) {
-    if (ent->head) break;
-    ent = ent->prev;
+  for(count = lis->lnum; count > 0; --count) {
+    if (lis->ent->head) break;
+    lis->ent = lis->ent->prev;
   }
-  return count;
-}
-
-static void gen_lines()
-{
+  lis->lnum = count;
 }
