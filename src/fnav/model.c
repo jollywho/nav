@@ -56,7 +56,7 @@ void model_read_stream(void **arg)
 {
 }
 
-fn_line* model_req_line(Model *m, int index)
+void model_req_line(Model *m, int index)
 {
   log_msg("MODEL", "model_req_line");
   // create line from entry
@@ -64,7 +64,13 @@ fn_line* model_req_line(Model *m, int index)
   ln->index = index;
   ln->data = m->lis->ent;
   HASH_ADD_INT(m->lines, index, ln);
-  return ln;
+}
+
+String model_str_line(Model *m, int index)
+{
+  fn_line *ln;
+  HASH_FIND_INT(m->lines, &index, ln);
+  return ent_str(ln->data);
 }
 
 static void refind_line(fn_lis *lis)

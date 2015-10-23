@@ -1,24 +1,30 @@
 #include <ncurses.h>
 #include <limits.h>
 
-#include "fnav/ascii.h"
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/window.h"
+#include "fnav/ascii.h"
 #include "fnav/log.h"
 #include "fnav/table.h"
-#include "fnav/event/loop.h"
-#include "fnav/event/fs.h"
+#include "fnav/model.h"
+
+struct queued_line {
+  int lnum;
+  String val;
+};
 
 struct Buffer {
   WINDOW *nc_win;
   BufferNode *bn;
   Cntlr *cntlr;
+
   pos_T b_size;
-  pos_T nc_size;
   pos_T b_ofs;
 
+  pos_T nc_size;
+  pos_T cur;
+
   fn_handle *hndl;
-  String vname;
   bool dirty;
   bool queued;
 };
@@ -71,8 +77,8 @@ static const struct buf_cmd {
   (pos.col) += (x);            \
   (pos.lnum) += (y);           \
 
-#define DRAW_AT(win,pos,str)   \
-  mvwprintw(win, pos.lnum, pos.col, str);
+#define DRAW_LINE(buf,pos,str)   \
+  mvwprintw(buf->nc_win, pos.lnum, 0, str);
 
 void buf_listen(fn_handle *hndl);
 void buf_draw(void **argv);
@@ -82,6 +88,7 @@ Buffer* buf_init()
   log_msg("BUFFER", "init");
   Buffer *buf = malloc(sizeof(Buffer));
   SET_POS(buf->b_size, 0, 0);
+  SET_POS(buf->cur, 0, 0);
   buf->nc_win = newwin(1,1,0,0);
   buf->dirty = false;
   buf->queued = false;
@@ -115,9 +122,10 @@ void buf_destroy(Buffer *buf)
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
 {
   buf->cntlr = cntlr;
+  buf->hndl = cntlr->hndl;
 }
 
-void buf_set(fn_handle *hndl, String fname)
+void buf_set(fn_handle *hndl)
 {
   log_msg("BUFFER", "set");
 }
@@ -138,13 +146,27 @@ void buf_refresh(Buffer *buf)
 
 void buf_draw(void **argv)
 {
-  log_msg("BUFFER", "druh");
+  log_msg("BUFFER", "draw");
+  Buffer *buf = (Buffer*)argv[0];
+  if (!buf->cntlr) {
+    buf->queued = false;
+    return;
+  }
+  String it = model_str_line(buf->hndl->model, buf->cur.lnum);
+  DRAW_LINE(buf, buf->cur, it);
+  wmove(buf->nc_win, buf->cur.lnum, 0);
+  wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
+  wnoutrefresh(buf->nc_win);
+  buf->dirty = false;
+  buf->queued = false;
 }
 
 void buf_full_invalidate(Buffer *buf, int index)
 {
-  // cur set to index.
+  log_msg("BUFFER", "buf_full_invalidate");
+  buf->cur.lnum = index;
   // model_req_line from index until top of buffer then down until bottom.
+  model_req_line(buf->hndl->model, index);
   buf_refresh(buf);
 }
 

@@ -21,7 +21,7 @@ Buffer* buf_init();
 void buf_destroy(Buffer *buf);
 
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr);
-void buf_set(fn_handle *hndl, String fname);
+void buf_set(fn_handle *hndl);
 void buf_set_size(Buffer *buf, int w, int h);
 void buf_set_ofs(Buffer *buf, int x, int y);
 

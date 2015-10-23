@@ -10,6 +10,7 @@ void model_open(fn_handle *hndl);
 void model_close(fn_handle *hndl);
 void model_read_entry(Model *m, fn_lis *lis);
 void model_read_stream(void **arg);
-fn_line* model_req_line(Model *m, int index);
+void model_req_line(Model *m, int index);
+String model_str_line(Model *m, int index);
 
 #endif

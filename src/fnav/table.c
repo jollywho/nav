@@ -193,6 +193,11 @@ int tbl_ent_count(ventry *e)
   return e->val->count;
 }
 
+String ent_str(ventry *ent)
+{
+  return ent->val->key;
+}
+
 void tbl_del_val(String tn, String fname, String val)
 {
   log_msg("TABLE", "delete_val() %s %s,%s",tn ,fname, val);
