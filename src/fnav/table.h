@@ -52,8 +52,10 @@ void commit(void **data);
 ventry* fnd_val(String tn, String fname, String val);
 fn_lis* fnd_lis(String tn, String key_fld, String key);
 ventry* lis_set_val(fn_lis *lis, String fname);
+ventry* lis_get_val(fn_lis *lis, String fname);
 void* rec_fld(fn_rec *rec, String fname);
 String ent_str(ventry *ent);
+ventry* ent_head(ventry *ent);
 
 void tbl_del_val(String tn, String fname, String val);
 

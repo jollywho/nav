@@ -77,8 +77,8 @@ static const struct buf_cmd {
   (pos.col) += (x);            \
   (pos.lnum) += (y);           \
 
-#define DRAW_LINE(buf,pos,str)   \
-  mvwprintw(buf->nc_win, pos.lnum, 0, str);
+#define DRAW_LINE(buf,lnum,str)   \
+  mvwprintw(buf->nc_win, lnum, 0, str);
 
 void buf_listen(fn_handle *hndl);
 void buf_draw(void **argv);
@@ -90,6 +90,7 @@ Buffer* buf_init()
   SET_POS(buf->b_size, 0, 0);
   SET_POS(buf->cur, 0, 0);
   buf->nc_win = newwin(1,1,0,0);
+  scrollok(buf->nc_win, true);
   buf->dirty = false;
   buf->queued = false;
   init_cmds();
@@ -152,8 +153,12 @@ void buf_draw(void **argv)
     buf->queued = false;
     return;
   }
-  String it = model_str_line(buf->hndl->model, buf->cur.lnum);
-  DRAW_LINE(buf, buf->cur, it);
+  for (int i = 0; i < buf->nc_size.lnum; ++i)  {
+    String it = model_str_line(buf->hndl->model, i);
+    if (it) {
+      DRAW_LINE(buf, i, it);
+    }
+  }
   wmove(buf->nc_win, buf->cur.lnum, 0);
   wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
   wnoutrefresh(buf->nc_win);
@@ -164,9 +169,9 @@ void buf_draw(void **argv)
 void buf_full_invalidate(Buffer *buf, int index)
 {
   log_msg("BUFFER", "buf_full_invalidate");
+  // reset buffer.
   buf->cur.lnum = index;
-  // model_req_line from index until top of buffer then down until bottom.
-  model_req_line(buf->hndl->model, index);
+  wclear(buf->nc_win);
   buf_refresh(buf);
 }
 
@@ -198,8 +203,15 @@ int buf_input(BufferNode *bn, int key)
 
 static void buf_mv(Buffer *buf, Cmdarg *arg)
 {
+  log_msg("BUFFER", "buf_mv %d", arg->arg);
   // move cursor N times in a dimension.
   // scroll if located on an edge.
+  buf->cur.lnum += arg->arg;
+  model_set_curs(buf->hndl->model, buf->cur.lnum);
+  wscrl(buf->nc_win, arg->arg);
+  wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
+  wnoutrefresh(buf->nc_win);
+  doupdate();
 }
 
 static void buf_mv_page(Buffer *buf, Cmdarg *arg)

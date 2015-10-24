@@ -17,6 +17,24 @@
 
 static void fs_close_req(FS_req *fq);
 static void stat_cb(uv_fs_t* req);
+void fs_loop(Loop *loop, int ms);
+
+FS_handle* fs_init(Cntlr *c, fn_handle *h)
+{
+  log_msg("FS", "open req");
+  FS_handle *fsh = malloc(sizeof(FS_handle));
+  loop_add(&fsh->loop, fs_loop);
+  uv_fs_event_init(&fsh->loop.uv, &fsh->watcher);
+  fsh->hndl = h;
+  fsh->watcher.data = fsh;
+  return fsh;
+}
+
+void fs_cleanup(FS_handle *fsh)
+{
+  loop_remove(&fsh->loop);
+  free(fsh);
+}
 
 char* conspath(const char* str1, const char* str2)
 {
@@ -35,11 +53,9 @@ String fs_parent_dir(const String path)
   return dirname(path);
 }
 
-bool isdir(fn_rec *rec)
+bool isdir(String path)
 {
-  if (!rec) return false;
-  String full = rec_fld(rec, "fullpath");
-  ventry *ent = fnd_val("fm_stat", "fullpath", full);
+  ventry *ent = fnd_val("fm_stat", "fullpath", path);
   struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
   return (S_ISDIR(st->st_mode));
 }
@@ -49,8 +65,9 @@ void fs_signal_handle(void **data)
   log_msg("FS", "fs_signal_handle");
   fn_handle *h = data[0];
   fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
+  ventry *head = lis_get_val(l, "dir");
   if (l) {
-    model_read_entry(h->model, l);
+    model_read_entry(h->model, l, head);
   }
 }
 
@@ -73,23 +90,6 @@ void fs_open(FS_handle *fsh, const String dir)
 void fs_loop(Loop *loop, int ms)
 {
   process_loop(loop, ms);
-}
-
-FS_handle* fs_init(Cntlr *c, fn_handle *h)
-{
-  log_msg("FS", "open req");
-  FS_handle *fsh = malloc(sizeof(FS_handle));
-  loop_add(&fsh->loop, fs_loop);
-  uv_fs_event_init(&fsh->loop.uv, &fsh->watcher);
-  fsh->hndl = h;
-  fsh->watcher.data = fsh;
-  return fsh;
-}
-
-void fs_cleanup(FS_handle *fsh)
-{
-  loop_remove(&fsh->loop);
-  free(fsh);
 }
 
 static void send_stat(FS_req *fq, const char* dir, char* upd)

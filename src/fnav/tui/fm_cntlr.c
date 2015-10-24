@@ -80,27 +80,30 @@ static void fm_left(Cntlr *cntlr)
   log_msg("FM", "cmd left");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   free(self->cur_dir);
-  // TODO: should be model access for value
-//  self->cur_dir = strdup(buf_val(cntlr->hndl, "dir"));
-//  self->cur_dir = fs_parent_dir(self->cur_dir);
-//  log_msg("FS", "<<PARENT OF>>");
-//  cntlr->hndl->fval = self->cur_dir;
-//  buf_set(cntlr->hndl, "name");
-//  fs_open(self->fs, self->cur_dir);
+  String path = model_curs_value(cntlr->hndl->model, "dir");
+  model_close(cntlr->hndl);
+  self->cur_dir = strdup(path);
+  self->cur_dir = fs_parent_dir(self->cur_dir);
+  cntlr->hndl->key = self->cur_dir;
+  model_open(cntlr->hndl);
+  buf_set_cntlr(cntlr->hndl->buf, cntlr);
+  fs_open(self->fs, self->cur_dir);
 }
 
 static void fm_right(Cntlr *cntlr)
 {
   log_msg("FM", "cmd right");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  // TODO: should be model access for value
-//  if (isdir(buf_rec(cntlr->hndl))) {
-//    free(self->cur_dir);
-//    self->cur_dir = strdup(buf_val(cntlr->hndl, "fullpath"));
-//    cntlr->hndl->fval = self->cur_dir;
-//    buf_set(cntlr->hndl, "name");
-//    fs_open(self->fs, self->cur_dir);
-//  }
+  String path = model_curs_value(cntlr->hndl->model, "fullpath");
+  if (isdir(path)) {
+    free(self->cur_dir);
+    model_close(cntlr->hndl);
+    self->cur_dir = strdup(path);
+    cntlr->hndl->key = self->cur_dir;
+    model_open(cntlr->hndl);
+    buf_set_cntlr(cntlr->hndl->buf, cntlr);
+    fs_open(self->fs, self->cur_dir);
+  }
 }
 
 /* Number of commands in nv_cmds[]. */

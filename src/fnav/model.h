@@ -8,9 +8,10 @@ typedef struct fn_line fn_line;
 void model_init(fn_handle *hndl);
 void model_open(fn_handle *hndl);
 void model_close(fn_handle *hndl);
-void model_read_entry(Model *m, fn_lis *lis);
+void model_read_entry(Model *m, fn_lis *lis, ventry *head);
 void model_read_stream(void **arg);
-void model_req_line(Model *m, int index);
 String model_str_line(Model *m, int index);
+void* model_curs_value(Model *m, String field);
+void model_set_curs(Model *m, int index);
 
 #endif

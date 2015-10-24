@@ -146,12 +146,26 @@ ventry* lis_set_val(fn_lis *lis, String fname)
 {
   log_msg("TABLE", "lis_set_val");
   for(int i = 0; i < lis->rec->fld_count; i++) {
-    ventry *it= lis->rec->vlist[i];
+    ventry *it = lis->rec->vlist[i];
     if (it) {
       if (strcmp(it->val->fld->key, fname) == 0) {
         lis->ent = it;
         lis->fname = it->val->fld;
         lis->fval = it->val->key;
+        return it;
+      }
+    }
+  }
+  return NULL;
+}
+
+ventry* lis_get_val(fn_lis *lis, String fname)
+{
+  log_msg("TABLE", "lis_get_val");
+  for(int i = 0; i < lis->rec->fld_count; i++) {
+    ventry *it = lis->rec->vlist[i];
+    if (it) {
+      if (strcmp(it->val->fld->key, fname) == 0) {
         return it;
       }
     }
@@ -196,6 +210,11 @@ int tbl_ent_count(ventry *e)
 String ent_str(ventry *ent)
 {
   return ent->val->key;
+}
+
+ventry* ent_head(ventry *ent)
+{
+  return ent->val->rlist;
 }
 
 void tbl_del_val(String tn, String fname, String val)
