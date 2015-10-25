@@ -20,9 +20,14 @@ struct Buffer {
 
   pos_T b_size;
   pos_T b_ofs;
-
-  pos_T nc_size;
   pos_T cur;
+
+  int lnum;
+  int index;
+  int start;
+  int count;;
+  int top;
+  int bot;
 
   fn_handle *hndl;
   bool dirty;
@@ -101,9 +106,9 @@ void buf_set_size(Buffer *buf, int w, int h)
 {
   log_msg("BUFFER", "SET SIZE %d %d", w, h);
   if (h)
-    buf->nc_size.lnum = h;
+    buf->b_size.lnum = h;
   if (w)
-    buf->nc_size.col = w;
+    buf->b_size.col = w;
   wresize(buf->nc_win, h, w);
   buf_refresh(buf);
 }
@@ -153,11 +158,10 @@ void buf_draw(void **argv)
     buf->queued = false;
     return;
   }
-  for (int i = 0; i < buf->nc_size.lnum; ++i)  {
-    String it = model_str_line(buf->hndl->model, i);
-    if (it) {
-      DRAW_LINE(buf, i, it);
-    }
+  int st = buf->start;
+  for (int i = 0; i < buf->count; ++i, ++st) {
+    String it = model_str_line(buf->hndl->model, buf->top + st);
+    DRAW_LINE(buf, st, it);
   }
   wmove(buf->nc_win, buf->cur.lnum, 0);
   wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
@@ -170,15 +174,15 @@ void buf_full_invalidate(Buffer *buf, int index)
 {
   log_msg("BUFFER", "buf_full_invalidate");
   // reset buffer.
-  buf->cur.lnum = index;
   wclear(buf->nc_win);
+  int count = model_count(buf->hndl->model);
+  count = count > buf->b_size.lnum ? buf->b_size.lnum : count;
+  buf->index = 0;
+  buf->cur.lnum = 0;
+  buf->start = 0;
+  buf->bot = count;
+  buf->count = count;
   buf_refresh(buf);
-}
-
-void buf_scroll(Buffer *buf, int y)
-{
-  // scroll ncurses window N amount vertically.
-  // request lines from buffer's header index until N.
 }
 
 // input entry point.
@@ -200,18 +204,71 @@ int buf_input(BufferNode *bn, int key)
   return 0;
 }
 
+void buf_scroll(Buffer *buf, int y)
+{
+  log_msg("BUFFER", "scroll %d %d", buf->cur.lnum, y);
+  int top1 = buf->top;
+  int bot1 = buf->bot;
+  buf->top += y;
+  if (buf->top < 0) {
+    buf->top = 0;
+  }
+  else if (buf->top > model_count(buf->hndl->model)) {
+    buf->top = model_count(buf->hndl->model);
+  }
+  int diff = buf->top - top1;
+  buf->bot = diff;
+  if (y > 0) {
+    if (buf->top > top1) {
+      buf->start = 0;
+      buf->count = diff;
+    }
+    else {
+      buf->start = bot1 - buf->top;
+      buf->count = buf->top - top1;
+    }
+  }
+  else {
+    buf->start = 0;
+    buf->count = top1 - buf->top;
+  }
+  wscrl(buf->nc_win, diff);
+  buf_refresh(buf);
+}
 
 static void buf_mv(Buffer *buf, Cmdarg *arg)
 {
   log_msg("BUFFER", "buf_mv %d", arg->arg);
   // move cursor N times in a dimension.
   // scroll if located on an edge.
-  buf->cur.lnum += arg->arg;
-  model_set_curs(buf->hndl->model, buf->cur.lnum);
-  wscrl(buf->nc_win, arg->arg);
-  wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
-  wnoutrefresh(buf->nc_win);
-  doupdate();
+  int y = arg->arg;
+  buf->lnum += y;
+  buf->index += y;
+
+  // TODO: make these boundary checkassigns into macro
+  if (buf->lnum < 0) {
+    buf->lnum = 0;
+  }
+  if (buf->index < 0) {
+    buf->index = 0;
+  }
+  if (buf->lnum > model_count(buf->hndl->model)) {
+    buf->lnum = model_count(buf->hndl->model);
+  }
+
+  if (y < 0 && buf->cur.lnum < buf->b_size.lnum * 0.2) {
+    buf_scroll(buf, arg->arg);
+  }
+  if (y > 0 && buf->cur.lnum > buf->b_size.lnum * 0.8) {
+    buf_scroll(buf, arg->arg);
+  }
+  else {
+    wmove(buf->nc_win, buf->lnum, 0);
+    wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
+    wnoutrefresh(buf->nc_win);
+    doupdate();
+  }
+  model_set_curs(buf->hndl->model, buf->index);
 }
 
 static void buf_mv_page(Buffer *buf, Cmdarg *arg)
