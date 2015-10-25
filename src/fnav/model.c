@@ -23,7 +23,6 @@ struct Model {
   fn_rec *cur;
   ventry *head;
   bool dirty;
-  int count;
   UT_array *lines;
 };
 
@@ -34,7 +33,6 @@ void model_init(fn_handle *hndl)
   Model *model = malloc(sizeof(Model));
   model->hndl = hndl;
   hndl->model = model;
-  model->count = 0;
   utarray_new(model->lines, &intpair_icd);
 }
 
@@ -45,9 +43,9 @@ void model_open(fn_handle *hndl)
 
 void model_close(fn_handle *hndl)
 {
-  // TODO: save old lis attributes in table
   Model *m = hndl->model;
-  m->count = 0;
+  Buffer *b = hndl->buf;
+  lis_save(m->lis, buf_top(b), buf_line(b));
   utarray_clear(m->lines);
 }
 
@@ -59,10 +57,10 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   }
   m->head = head;
   m->hndl->model->lis = lis;
-  m->cur = lis->rec;
+  m->cur = lis->ent->next->rec;
   generate_lines(m);
   refind_line(m->lis);
-  buf_full_invalidate(m->hndl->buf, m->lis->index);
+  buf_full_invalidate(m->hndl->buf, m->lis->index, m->lis->lnum);
 }
 
 void model_read_stream(void **arg)
@@ -76,7 +74,6 @@ static void generate_lines(Model *m)
   for (int i = 0; i < tbl_ent_count(m->head); ++i) {
     fn_line ln;
     ln.rec = it->rec;
-    ++m->count;
     utarray_push_back(m->lines, &ln);
     it = it->next;
   }
@@ -90,7 +87,7 @@ String model_str_line(Model *m, int index)
 
 int model_count(Model *m)
 {
-  return m->count;
+  return utarray_len(m->lines);
 }
 
 void* model_curs_value(Model *m, String field)

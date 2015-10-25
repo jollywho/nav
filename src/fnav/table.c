@@ -173,6 +173,12 @@ ventry* lis_get_val(fn_lis *lis, String fname)
   return NULL;
 }
 
+void lis_save(fn_lis *lis, int index, int lnum)
+{
+  lis->index = index;
+  lis->lnum = lnum;
+}
+
 int FN_MV(ventry *e, int n)
 {
   return ((n > 0) ?
