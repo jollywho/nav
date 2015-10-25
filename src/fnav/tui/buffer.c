@@ -206,8 +206,8 @@ void buf_scroll(Buffer *buf, int y)
   if (buf->top < 0) {
     buf->top = 0;
   }
-  else if (buf->top > model_count(buf->hndl->model)) {
-    buf->top = model_count(buf->hndl->model) - 1;
+  else if (buf->top + buf->b_size.lnum > model_count(buf->hndl->model)) {
+    buf->top = model_count(buf->hndl->model) - buf->b_size.lnum;
   }
   int diff = prev - buf->top;
   buf->lnum += diff;
@@ -224,18 +224,19 @@ static void buf_mv(Buffer *buf, Cmdarg *arg)
   if (y < 0 && buf->lnum < buf->b_size.lnum * 0.2) {
     buf_scroll(buf, arg->arg);
   }
-  if (y > 0 && buf->lnum > buf->b_size.lnum * 0.8) {
+  else if (y > 0 && buf->lnum > buf->b_size.lnum * 0.8) {
     buf_scroll(buf, arg->arg);
   }
 
   if (buf->lnum < 0) {
     buf->lnum = 0;
   }
-  if (buf->lnum > buf->b_size.lnum) {
+  else if (buf->lnum > buf->b_size.lnum) {
     buf->lnum = buf->b_size.lnum;
   }
-  if (buf->lnum > model_count(buf->hndl->model) - 1) {
-    buf->lnum = model_count(buf->hndl->model) - 1;
+  if (buf->lnum + buf->top > model_count(buf->hndl->model) - 1) {
+    int count = model_count(buf->hndl->model) - buf->top;
+    buf->lnum = count - 1;
   }
   model_set_curs(buf->hndl->model, buf->top + buf->lnum);
   buf_refresh(buf);
