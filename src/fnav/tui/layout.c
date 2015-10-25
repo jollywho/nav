@@ -7,19 +7,18 @@
 
 void layout_add_buffer(BufferNode *focus, int count, pos_T dir)
 {
-  int maxh, maxw;
-  getmaxyx(stdscr, maxh, maxw);
-  int dw = (count * dir.col);
-  int dh = (count * dir.lnum);
-  int w = dw ? maxw / dw : 0;
-  int h = dh ? maxh / dh : 0;
+  int maxr, maxc;
+  getmaxyx(stdscr, maxr, maxc);
+  int dr = (count * dir.lnum);
+  int dc = (count * dir.col);
+  int r = dr ? maxr / dr : 0;
+  int c = dc ? maxc / dc : 0;
   if (count == 1) {
-    buf_set_size(focus->buf, maxw, maxh);
+    buf_set_size(focus->buf, maxr, maxc);
   }
   else {
-    // FIXME: table listener singleton is overwritten on second fm_cntlr.
-    buf_set_size(focus->next->buf, w, 0);
-    buf_set_ofs(focus->next->buf, w, h);
-    buf_set_size(focus->buf, w, maxh);
+    buf_set_size(focus->next->buf, maxr, c);
+    buf_set_ofs(focus->next->buf, r, c);
+    buf_set_size(focus->buf, maxr, c);
   }
 }

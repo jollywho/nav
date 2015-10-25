@@ -70,7 +70,7 @@ static const struct buf_cmd {
   {'G',     buf_g,           0,           FORWARD},
 };
 
-#define SET_POS(pos,x,y)       \
+#define SET_POS(pos,y,x)       \
   (pos.col) = (x);             \
   (pos.lnum) = (y);            \
 
@@ -78,8 +78,8 @@ static const struct buf_cmd {
   (pos.col) += (x);            \
   (pos.lnum) += (y);           \
 
-#define DRAW_LINE(buf,lnum,str)   \
-  mvwprintw(buf->nc_win, lnum, 0, str);
+#define DRAW_LINE(buf,ln,ofs,str)   \
+  mvwprintw(buf->nc_win, (ln), 0, str);
 
 void buf_listen(fn_handle *hndl);
 void buf_draw(void **argv);
@@ -89,6 +89,7 @@ Buffer* buf_init()
   log_msg("BUFFER", "init");
   Buffer *buf = malloc(sizeof(Buffer));
   SET_POS(buf->b_size, 0, 0);
+  SET_POS(buf->b_ofs, 0, 0);
   SET_POS(buf->cur, 0, 0);
   buf->nc_win = newwin(1,1,0,0);
   scrollok(buf->nc_win, true);
@@ -98,21 +99,19 @@ Buffer* buf_init()
   return buf;
 }
 
-void buf_set_size(Buffer *buf, int w, int h)
+void buf_set_size(Buffer *buf, int r, int c)
 {
-  log_msg("BUFFER", "SET SIZE %d %d", w, h);
-  if (h)
-    buf->b_size.lnum = h;
-  if (w)
-    buf->b_size.col = w;
-  wresize(buf->nc_win, h, w);
-  buf_refresh(buf);
+  log_msg("BUFFER", "SET SIZE %d %d", r, c);
+  SET_POS(buf->b_size, r, c);
+  wresize(buf->nc_win, buf->b_size.lnum, buf->b_size.col);
 }
 
-void buf_set_ofs(Buffer *buf, int x, int y)
+void buf_set_ofs(Buffer *buf, int r, int c)
 {
-  SET_POS(buf->b_size, y, x);
-  mvwin(buf->nc_win, y, x);
+  log_msg("BUFFER", "SET OFS %d %d", r, c);
+  SET_POS(buf->b_ofs, r, c);
+  mvwin(buf->nc_win, r, c);
+  buf_refresh(buf);
 }
 
 void buf_destroy(Buffer *buf)
@@ -130,11 +129,6 @@ void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
 void buf_set(fn_handle *hndl)
 {
   log_msg("BUFFER", "set");
-}
-
-void buf_resize(Buffer *buf, int w, int h)
-{
-  SET_POS(buf->b_size, w, h);
 }
 
 void buf_refresh(Buffer *buf)
@@ -158,9 +152,8 @@ void buf_draw(void **argv)
   for (int i = 0; i < buf->b_size.lnum; ++i) {
     String it = model_str_line(buf->hndl->model, buf->top + i);
     if (!it) break;
-    DRAW_LINE(buf, i, it);
+    DRAW_LINE(buf, i, buf->b_ofs, it);
   }
-  log_msg("BUFFER", "draw cur %d %d", buf->lnum, buf->top);
   wmove(buf->nc_win, buf->lnum, 0);
   wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
   wnoutrefresh(buf->nc_win);
@@ -257,7 +250,7 @@ static void buf_g(Buffer *buf, Cmdarg *arg)
 
 static void buf_ex_cmd(Buffer *buf, Cmdarg *arg)
 {
-  window_ex_cmd_start();;
+  window_ex_cmd_start();
 }
 
 /* Number of commands in nv_cmds[]. */

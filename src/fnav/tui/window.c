@@ -56,6 +56,17 @@ void window_input(int key)
   if (key == '2') {
     shell_stop(sh);
   }
+  if (key == 'f') {
+    window_add_buffer();
+    ex_input(win.focus, 'o');
+    return;
+  }
+  if (key == 'L') {
+    win.focus = win.focus->next;
+  }
+  if (key == 'H') {
+    win.focus = win.focus->prev;
+  }
 
   if (win.ex) {
     ex_input(win.focus, key);
@@ -101,7 +112,6 @@ void window_add_buffer()
     cn->next = cn;
     cn->prev = cn;
     win.blist = cn;
-    win.focus = cn;
   }
   else {
     cn->buf = cn->buf;
@@ -110,6 +120,7 @@ void window_add_buffer()
     win.blist->prev->next = cn;
     win.blist->prev = cn;
   }
+  win.focus = cn;
   win.buf_count++;
   pos_T t = {.lnum = 0, .col = 1};
   layout_add_buffer(cn, win.buf_count, t);
