@@ -52,15 +52,17 @@ void model_close(fn_handle *hndl)
 void model_read_entry(Model *m, fn_lis *lis, ventry *head)
 {
   log_msg("MODEL", "model_read_entry");
+  fn_handle *h = m->hndl;
   if (!lis->ent) {
-    lis->ent = lis_set_val(lis, m->hndl->fname);
+    lis->ent = lis_set_val(lis, h->fname);
   }
+
   m->head = head;
-  m->hndl->model->lis = lis;
   m->cur = lis->ent->next->rec;
+  h->model->lis = lis;
   generate_lines(m);
   refind_line(m->lis);
-  buf_full_invalidate(m->hndl->buf, m->lis->index, m->lis->lnum);
+  buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
 }
 
 void model_read_stream(void **arg)

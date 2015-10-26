@@ -144,13 +144,14 @@ void buf_draw(void **argv)
 {
   log_msg("BUFFER", "draw");
   Buffer *buf = (Buffer*)argv[0];
+  Model *m = buf->hndl->model;
   if (!buf->cntlr) {
     buf->queued = false;
     return;
   }
   wclear(buf->nc_win);
   for (int i = 0; i < buf->b_size.lnum; ++i) {
-    String it = model_str_line(buf->hndl->model, buf->top + i);
+    String it = model_str_line(m, buf->top + i);
     if (!it) break;
     DRAW_LINE(buf, i, it);
   }
@@ -163,12 +164,13 @@ void buf_draw(void **argv)
 
 void buf_full_invalidate(Buffer *buf, int index, int lnum)
 {
+  // buffer reset and reentrance
   log_msg("BUFFER", "buf_full_invalidate");
-  // reset buffer.
+  Model *m = buf->hndl->model;
   wclear(buf->nc_win);
   buf->top = index;
   buf->lnum = lnum;
-  model_set_curs(buf->hndl->model, buf->top + buf->lnum);
+  model_set_curs(m, buf->top + buf->lnum);
   buf_refresh(buf);
 }
 
@@ -191,7 +193,7 @@ int buf_input(BufferNode *bn, int key)
   return 0;
 }
 
-void buf_scroll(Buffer *buf, int y)
+void buf_scroll(Buffer *buf, int y, int m_max)
 {
   log_msg("BUFFER", "scroll %d %d", buf->cur.lnum, y);
   int prev = buf->top;
@@ -199,8 +201,8 @@ void buf_scroll(Buffer *buf, int y)
   if (buf->top < 0) {
     buf->top = 0;
   }
-  else if (buf->top + buf->b_size.lnum > model_count(buf->hndl->model)) {
-    buf->top = model_count(buf->hndl->model) - buf->b_size.lnum;
+  else if (buf->top + buf->b_size.lnum > m_max) {
+    buf->top = m_max - buf->b_size.lnum;
   }
   int diff = prev - buf->top;
   buf->lnum += diff;
@@ -211,14 +213,16 @@ static void buf_mv(Buffer *buf, Cmdarg *arg)
   log_msg("BUFFER", "buf_mv %d", arg->arg);
   // move cursor N times in a dimension.
   // scroll if located on an edge.
+  Model *m = buf->hndl->model;
   int y = arg->arg;
+  int m_max = model_count(buf->hndl->model);
   buf->lnum += y;
 
   if (y < 0 && buf->lnum < buf->b_size.lnum * 0.2) {
-    buf_scroll(buf, arg->arg);
+    buf_scroll(buf, arg->arg, m_max);
   }
   else if (y > 0 && buf->lnum > buf->b_size.lnum * 0.8) {
-    buf_scroll(buf, arg->arg);
+    buf_scroll(buf, arg->arg, m_max);
   }
 
   if (buf->lnum < 0) {
@@ -227,11 +231,11 @@ static void buf_mv(Buffer *buf, Cmdarg *arg)
   else if (buf->lnum > buf->b_size.lnum) {
     buf->lnum = buf->b_size.lnum;
   }
-  if (buf->lnum + buf->top > model_count(buf->hndl->model) - 1) {
-    int count = model_count(buf->hndl->model) - buf->top;
+  if (buf->lnum + buf->top > m_max - 1) {
+    int count = m_max - buf->top;
     buf->lnum = count - 1;
   }
-  model_set_curs(buf->hndl->model, buf->top + buf->lnum);
+  model_set_curs(m, buf->top + buf->lnum);
   buf_refresh(buf);
 }
 

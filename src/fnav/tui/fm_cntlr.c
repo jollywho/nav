@@ -79,16 +79,20 @@ static void fm_left(Cntlr *cntlr)
 {
   log_msg("FM", "cmd left");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  fn_handle *h = cntlr->hndl;
+  String cur_dir = self->cur_dir;
+
   if (!self->fs->running) {
-    free(self->cur_dir);
-    String path = model_curs_value(cntlr->hndl->model, "dir");
-    model_close(cntlr->hndl);
-    self->cur_dir = strdup(path);
-    self->cur_dir = fs_parent_dir(self->cur_dir);
-    cntlr->hndl->key = self->cur_dir;
-    model_open(cntlr->hndl);
-    buf_set_cntlr(cntlr->hndl->buf, cntlr);
-    fs_open(self->fs, self->cur_dir);
+    free(cur_dir);
+    String path = model_curs_value(h->model, "dir");
+    model_close(h);
+    cur_dir = strdup(path);
+    cur_dir = fs_parent_dir(cur_dir);
+    h->key = cur_dir;
+    model_open(h);
+    buf_set_cntlr(h->buf, cntlr);
+    fs_open(self->fs, cur_dir);
+    self->cur_dir = cur_dir;
   }
 }
 
@@ -96,16 +100,20 @@ static void fm_right(Cntlr *cntlr)
 {
   log_msg("FM", "cmd right");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  fn_handle *h = cntlr->hndl;
+  String cur_dir = self->cur_dir;
+
   if (!self->fs->running) {
-    String path = model_curs_value(cntlr->hndl->model, "fullpath");
+    String path = model_curs_value(h->model, "fullpath");
     if (isdir(path)) {
-      free(self->cur_dir);
-      model_close(cntlr->hndl);
-      self->cur_dir = strdup(path);
-      cntlr->hndl->key = self->cur_dir;
-      model_open(cntlr->hndl);
-      buf_set_cntlr(cntlr->hndl->buf, cntlr);
-      fs_open(self->fs, self->cur_dir);
+      free(cur_dir);
+      model_close(h);
+      cur_dir = strdup(path);
+      h->key = cur_dir;
+      model_open(h);
+      buf_set_cntlr(h->buf, cntlr);
+      fs_open(self->fs, cur_dir);
+      self->cur_dir = cur_dir;
     }
   }
 }

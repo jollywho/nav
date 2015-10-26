@@ -148,10 +148,11 @@ ventry* lis_set_val(fn_lis *lis, String fname)
   for(int i = 0; i < lis->rec->fld_count; i++) {
     ventry *it = lis->rec->vlist[i];
     if (it) {
-      if (strcmp(it->val->fld->key, fname) == 0) {
+      fn_val *val = it->val;
+      if (strcmp(val->fld->key, fname) == 0) {
         lis->ent = it;
-        lis->fname = it->val->fld;
-        lis->fval = it->val->key;
+        lis->fname = val->fld;
+        lis->fval = val->key;
         return it;
       }
     }
@@ -190,13 +191,13 @@ void* rec_fld(fn_rec *rec, String fname)
 {
   if (!rec) return NULL;
   for(int i = 0; i < rec->fld_count; i++) {
-
-    if (strcmp(rec->vals[i]->fld->key, fname) == 0) {
-      if (rec->vals[i]->fld->type == typSTRING) {
-        return rec->vals[i]->key;
+    fn_val *val = rec->vals[i];
+    if (strcmp(val->fld->key, fname) == 0) {
+      if (val->fld->type == typSTRING) {
+        return val->key;
       }
       else {
-        return rec->vals[i]->data;
+        return val->data;
       }
     }
   }
@@ -389,19 +390,19 @@ static void tbl_del_rec(fn_rec *rec)
     }
     if (it) {
       log_msg("TABLE", "got entry");
+      fn_val *val = it->val;
       it->val->count--;
 
-      if (it->val->count < 1 ) {
-        log_msg("TABLE", "to delp %s %s", it->val->fld->key, it->val->key);
-        HASH_DEL(it->val->fld->vals, it->val);
-
+      if (val->count < 1 ) {
+        fn_fld *fld = val->fld;
+        HASH_DEL(fld->vals, val);
         fn_lis *ll;
-        HASH_FIND_STR(it->val->fld->lis, it->val->key, ll);
+        HASH_FIND_STR(fld->lis, val->key, ll);
         if (ll) {
           log_msg("TAB", "CLEAR ");
           ll->ent = NULL;
         }
-        free(it->val->key);
+        free(val->key);
         free(rec->vals[i]);
       }
       it->next->prev = it->prev;
