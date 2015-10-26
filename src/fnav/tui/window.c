@@ -43,7 +43,8 @@ void window_init(void)
   win.ex = false;
 
   signal(SIGWINCH, sig_resize);
-  window_add_buffer();
+  pos_T dir = {.lnum = 0, .col = 0};
+  window_add_buffer(dir);
 }
 
 void window_input(int key)
@@ -57,7 +58,14 @@ void window_input(int key)
     shell_stop(sh);
   }
   if (key == 'v') {
-    window_add_buffer();
+    pos_T dir = {.lnum = 0, .col = 1};
+    window_add_buffer(dir);
+    ex_input(win.focus, 'o');
+    return;
+  }
+  if (key == 's') {
+    pos_T dir = {.lnum = 1, .col = 0};
+    window_add_buffer(dir);
     ex_input(win.focus, 'o');
     return;
   }
@@ -102,7 +110,7 @@ void window_req_draw(Buffer *buf, argv_callback cb)
   CREATE_EVENT(&win.loop.events, cb, 1, buf);
 }
 
-void window_add_buffer()
+void window_add_buffer(pos_T dir)
 {
   log_msg("INIT", "PANE +ADD+");
   BufferNode *cn = malloc(sizeof(BufferNode*));
@@ -122,6 +130,5 @@ void window_add_buffer()
   }
   win.focus = cn;
   win.buf_count++;
-  pos_T t = {.lnum = 0, .col = 1};
-  layout_add_buffer(cn, win.buf_count, t);
+  layout_add_buffer(cn, win.buf_count, dir);
 }
