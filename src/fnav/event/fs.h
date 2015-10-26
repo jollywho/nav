@@ -9,6 +9,7 @@ typedef struct {
   fn_handle *hndl;
   Loop loop;
   bool cancel;
+  bool running;
 } FS_handle;
 
 typedef struct {

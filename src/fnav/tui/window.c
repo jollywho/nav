@@ -56,7 +56,7 @@ void window_input(int key)
   if (key == '2') {
     shell_stop(sh);
   }
-  if (key == 'f') {
+  if (key == 'v') {
     window_add_buffer();
     ex_input(win.focus, 'o');
     return;

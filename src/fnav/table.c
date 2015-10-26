@@ -326,7 +326,6 @@ static void add_entry(fn_rec *rec, fn_fld *fld, fn_val *v, int typ, int indx)
 
 static void check_set_lis(fn_fld *f, String key, fn_rec *rec)
 {
-  log_msg("TABLE", "check set lis %s %s", f->key, key);
   /* check if field has lis. */
   if (HASH_COUNT(f->lis) > 0) {
     fn_lis *ll;

@@ -26,6 +26,7 @@ FS_handle* fs_init(Cntlr *c, fn_handle *h)
   loop_add(&fsh->loop, fs_loop);
   uv_fs_event_init(&fsh->loop.uv, &fsh->watcher);
   fsh->hndl = h;
+  fsh->running = false;
   fsh->watcher.data = fsh;
   return fsh;
 }
@@ -63,12 +64,14 @@ bool isdir(String path)
 void fs_signal_handle(void **data)
 {
   log_msg("FS", "fs_signal_handle");
-  fn_handle *h = data[0];
+  FS_handle *fsh = data[0];
+  fn_handle *h = fsh->hndl;
   fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
   ventry *head = lis_get_val(l, "dir");
-  if (l) {
+  if (l && head) {
     model_read_entry(h->model, l, head);
   }
+  fsh->running = false;
 }
 
 void fs_open(FS_handle *fsh, const String dir)
@@ -78,6 +81,7 @@ void fs_open(FS_handle *fsh, const String dir)
   fq->fs_h = fsh;
   fq->req_name = strdup(dir);
   fq->uv_fs.data = fq;
+  fsh->running = true;
 
   uv_fs_stat(&fq->fs_h->loop.uv, &fq->uv_fs, dir, stat_cb);
 
@@ -159,7 +163,7 @@ static void stat_cb(uv_fs_t* req)
         struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
         if (fq->uv_stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
           log_msg("FS", "NOP");
-          CREATE_EVENT(&fq->fs_h->loop.events, fs_signal_handle, 1, fq->fs_h->hndl);
+          CREATE_EVENT(&fq->fs_h->loop.events, fs_signal_handle, 1, fq->fs_h);
           return;
         }
       }
@@ -186,7 +190,7 @@ static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,
 static void fs_close_req(FS_req *fq)
 {
   log_msg("FS", "reset %s", (char*)fq->req_name);
-  CREATE_EVENT(&fq->fs_h->loop.events, fs_signal_handle, 1, fq->fs_h->hndl);
+  CREATE_EVENT(&fq->fs_h->loop.events, fs_signal_handle, 1, fq->fs_h);
   free(fq->req_name);
   free(fq);
 }
