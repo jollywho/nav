@@ -6,8 +6,8 @@
 typedef struct BufferNode BufferNode;
 
 struct BufferNode {
-  BufferNode *prev;
-  BufferNode *next;
+  BufferNode *parent;
+  BufferNode *child;
   Buffer *buf;
 };
 
@@ -22,8 +22,8 @@ void buf_destroy(Buffer *buf);
 
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr);
 void buf_set(fn_handle *hndl);
-void buf_set_size(Buffer *buf, int w, int h);
-void buf_set_ofs(Buffer *buf, int x, int y);
+void buf_set_size(Buffer *buf, int r, int c);
+void buf_set_ofs(Buffer *buf, int y, int x);
 
 void buf_full_invalidate(Buffer *buf, int index, int lnum);
 int buf_input(BufferNode *bn, int key);
@@ -32,5 +32,7 @@ void buf_refresh(Buffer *buf);
 
 int buf_line(Buffer *buf);
 int buf_top(Buffer *buf);
+pos_T buf_size(Buffer *buf);
+pos_T buf_ofs(Buffer *buf);
 
 #endif

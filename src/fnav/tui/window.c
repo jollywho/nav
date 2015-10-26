@@ -13,7 +13,6 @@
 
 struct Window {
   Loop loop;
-  BufferNode *blist;
   BufferNode *focus;
   uv_timer_t draw_timer;
   int buf_count;
@@ -38,7 +37,6 @@ void window_init(void)
   uv_timer_init(&win.loop.uv, &win.loop.delay);
   uv_timer_init(eventloop(), &win.draw_timer);
   win.focus = NULL;
-  win.blist = NULL;
   win.buf_count = 0;
   win.ex = false;
 
@@ -70,10 +68,14 @@ void window_input(int key)
     return;
   }
   if (key == 'L') {
-    win.focus = win.focus->next;
+    if (win.focus->child) {
+      win.focus = win.focus->child;
+    }
   }
   if (key == 'H') {
-    win.focus = win.focus->prev;
+    if (win.focus->parent) {
+      win.focus = win.focus->parent;
+    }
   }
 
   if (win.ex) {
@@ -115,18 +117,17 @@ void window_add_buffer(pos_T dir)
   log_msg("INIT", "PANE +ADD+");
   BufferNode *cn = malloc(sizeof(BufferNode*));
   cn->buf = buf_init();
-  if (!win.blist) {
+  if (!win.focus) {
+    cn->parent = NULL;
+    cn->child = NULL;
     cn->buf = cn->buf;
-    cn->next = cn;
-    cn->prev = cn;
-    win.blist = cn;
   }
   else {
+    //FIXME: swap creates abandoned nodes
+    cn->parent = win.focus;
+    cn->child = NULL;
     cn->buf = cn->buf;
-    cn->prev = win.blist->prev;
-    cn->next = win.blist;
-    win.blist->prev->next = cn;
-    win.blist->prev = cn;
+    win.focus->child = cn;
   }
   win.focus = cn;
   win.buf_count++;

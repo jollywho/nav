@@ -19,6 +19,7 @@ struct Buffer {
   Cntlr *cntlr;
 
   pos_T b_size;
+  pos_T b_ofs;
   pos_T cur;
 
   int lnum; // cursor
@@ -88,6 +89,7 @@ Buffer* buf_init()
   log_msg("BUFFER", "init");
   Buffer *buf = malloc(sizeof(Buffer));
   SET_POS(buf->b_size, 0, 0);
+  SET_POS(buf->b_ofs, 0, 0);
   SET_POS(buf->cur, 0, 0);
   buf->nc_win = newwin(1,1,0,0);
   scrollok(buf->nc_win, true);
@@ -104,10 +106,11 @@ void buf_set_size(Buffer *buf, int r, int c)
   wresize(buf->nc_win, buf->b_size.lnum, buf->b_size.col);
 }
 
-void buf_set_ofs(Buffer *buf, int r, int c)
+void buf_set_ofs(Buffer *buf, int y, int x)
 {
-  log_msg("BUFFER", "SET OFS %d %d", r, c);
-  mvwin(buf->nc_win, r, c);
+  log_msg("BUFFER", "SET OFS %d %d", y, x);
+  SET_POS(buf->b_ofs, y, x);
+  mvwin(buf->nc_win, y, x);
   buf_refresh(buf);
 }
 
@@ -236,6 +239,10 @@ int buf_line(Buffer *buf)
 {return buf->lnum;}
 int buf_top(Buffer *buf)
 {return buf->top;}
+pos_T buf_size(Buffer *buf)
+{return buf->b_size;}
+pos_T buf_ofs(Buffer *buf)
+{return buf->b_ofs;}
 
 static void buf_mv_page(Buffer *buf, Cmdarg *arg)
 {
