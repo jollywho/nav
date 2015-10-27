@@ -3,13 +3,15 @@
 #include <malloc.h>
 
 #include "fnav/event/shell.h"
+#include "fnav/model.h"
+
 char* p_sh = "/bin/sh";
 
 static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
     bool eof);
 static void shell_loop(Loop *loop, int ms);
 
-Shell* shell_new()
+Shell* shell_init(Cntlr *c, fn_handle *h)
 {
   log_msg("SHELL", "init");
   Shell *sh = malloc(sizeof(Shell));
@@ -28,8 +30,13 @@ Shell* shell_new()
   sh->proc->out = &sh->out;
   sh->proc->err = &sh->err;
 
-  char *rv[3] = { (char*)p_sh, NULL, NULL };
+  //char *rv[3] = { (char*)p_sh, NULL, NULL };
+  char *rv[3] = { "vim", NULL, NULL };
   sh->proc->argv = rv;
+  sh->hndl = h;
+  sh->out.model = h->model;
+  sh->ptyproc.width = 76;
+  sh->ptyproc.height = 27;
   return sh;
 }
 
@@ -64,14 +71,14 @@ static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
     return;
   }
 
-  log_msg("out", "%s", ptr);
-  //// No output written, force emptying the Rbuffer if it is full.
-  //if (!written && rbuffer_size(buf) == rbuffer_capacity(buf)) {
-  //  written = cnt;
-  //}
-  //if (written) {
+  size_t written = model_read_stream(stream->model, ptr, cnt, false, eof);
+  // No output written, force emptying the Rbuffer if it is full.
+  if (!written && rbuffer_size(buf) == rbuffer_capacity(buf)) {
+    written = cnt;
+  }
+  if (written) {
     rbuffer_consumed(buf, count);
-  //}
+  }
 }
 
 static void shell_loop(Loop *loop, int ms)

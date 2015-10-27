@@ -21,7 +21,7 @@ typedef struct {
   String req_name;
 } FS_req;
 
-FS_handle* fs_init(Cntlr *c, fn_handle *h);
+FS_handle* fs_init(fn_handle *h);
 void fs_cleanup(FS_handle *fsh);
 void fs_open(FS_handle *h, const String dir);
 bool isdir(String path);

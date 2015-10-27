@@ -141,16 +141,16 @@ void loop_process_events(Loop *loop, int ms)
 
   if (ms > 0) {
     uv_timer_start(&loop->delay, timeout_cb, (uint64_t)ms, (uint64_t)ms);
-    uv_unref((uv_handle_t*)&loop->delay);
   }
   else if (ms == 0)
     mode = UV_RUN_NOWAIT;
 
+  mode = UV_RUN_NOWAIT; // FIXME: UV_RUN_ONCE is blocking
   uv_run(&loop->uv, mode);
 
   if (ms > 0) {
-    uv_timer_stop(&loop->delay);
   }
+    uv_timer_stop(&loop->delay);
   queue_process_events(&loop->events, ms);
 }
 

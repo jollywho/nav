@@ -9,6 +9,7 @@
 #include "fnav/log.h"
 #include "fnav/table.h"
 #include "fnav/tui/buffer.h"
+#include "fnav/tui/sbuffer.h"
 
 static void refind_line(fn_lis *lis);
 static void generate_lines(Model *m);
@@ -65,8 +66,15 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
 }
 
-void model_read_stream(void **arg)
+size_t model_read_stream(Model *m, char *output, size_t remaining,
+    bool to_buffer, bool eof)
 {
+  if (!output) {
+    return 0;
+  }
+  sbuf_write(m->hndl->buf, output, remaining);
+  // write to sbuffer
+  return (size_t)(output);
 }
 
 static void generate_lines(Model *m)

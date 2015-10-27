@@ -243,7 +243,7 @@ static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
   c->top = fm;
 }
 
-void fm_cntlr_init(Buffer *buf)
+void fm_init(Buffer *buf)
 {
   log_msg("INIT", "FM_CNTLR");
   init_cmds(); //TODO: cleanup loose parts
@@ -271,11 +271,11 @@ void fm_cntlr_init(Buffer *buf)
   model_open(fm->base.hndl);
   buf_set_cntlr(buf, &fm->base);
 
-  fm->fs = fs_init(&fm->base, fm->base.hndl);
+  fm->fs = fs_init(fm->base.hndl);
   fs_open(fm->fs, fm->cur_dir);
 }
 
-void fm_cntlr_cleanup(FM_cntlr *cntlr)
+void fm_cleanup(FM_cntlr *cntlr)
 {
   free(cntlr);
   // TODO: careful cleanup + cancel any pending cb

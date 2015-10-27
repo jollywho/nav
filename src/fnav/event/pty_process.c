@@ -101,12 +101,6 @@ void pty_process_teardown(Loop *loop)
 
 static void init_child(PtyProcess *ptyproc)
 {
-  unsetenv("COLUMNS");
-  unsetenv("LINES");
-  unsetenv("TERMCAP");
-  unsetenv("COLORTERM");
-  unsetenv("COLORFGBG");
-
   signal(SIGCHLD, SIG_DFL);
   signal(SIGHUP, SIG_DFL);
   signal(SIGINT, SIG_DFL);

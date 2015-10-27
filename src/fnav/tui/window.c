@@ -9,8 +9,6 @@
 #include "fnav/tui/layout.h"
 #include "fnav/tui/ex_cmd.h"
 
-#include "fnav/event/shell.h"
-
 struct Window {
   Loop loop;
   BufferNode *focus;
@@ -20,7 +18,6 @@ struct Window {
 };
 
 Window win;
-Shell *sh; //TODO: testing only
 
 static void window_loop(Loop *loop, int ms);
 
@@ -48,24 +45,18 @@ void window_init(void)
 void window_input(int key)
 {
   log_msg("WINDOW", "input");
-  if (key == '1') {
-    sh = shell_new();
-    shell_start(sh);
-  }
-  if (key == '2') {
-    shell_stop(sh);
-  }
   if (key == 'v') {
     pos_T dir = {.lnum = 0, .col = 1};
     window_add_buffer(dir);
-    ex_input(win.focus, 'o');
     return;
   }
   if (key == 's') {
     pos_T dir = {.lnum = 1, .col = 0};
     window_add_buffer(dir);
-    ex_input(win.focus, 'o');
     return;
+  }
+  if (key == ';') {
+    window_ex_cmd_start();
   }
   if (key == 'L') {
     if (win.focus->child) {
@@ -89,8 +80,6 @@ void window_input(int key)
 void window_ex_cmd_start()
 {
   win.ex = true;
-  // for now use mockup input
-  ex_input(win.focus, 'o');
 }
 
 void window_ex_cmd_end()
@@ -112,9 +101,19 @@ void window_req_draw(Buffer *buf, argv_callback cb)
   CREATE_EVENT(&win.loop.events, cb, 1, buf);
 }
 
+void window_draw_all()
+{
+  log_msg("WINDOW", "DRAW_ALL");
+  BufferNode *it = win.focus; 
+  for (int i = 0; i < win.buf_count; ++i) {
+    buf_refresh(it->buf);
+    it = it->parent;
+  }
+}
+
 void window_add_buffer(pos_T dir)
 {
-  log_msg("INIT", "PANE +ADD+");
+  log_msg("WINDOW", "PANE +ADD+");
   BufferNode *cn = malloc(sizeof(BufferNode*));
   cn->buf = buf_init();
   if (!win.focus) {

@@ -17,9 +17,10 @@ typedef struct {
   stream_read_cb data_cb;
   PtyProcess ptyproc;
   Process *proc;
+  fn_handle *hndl;
 } Shell;
 
-Shell* shell_new();
+Shell* shell_init(Cntlr *c, fn_handle *h);
 void shell_free(Shell *sh);
 void shell_start(Shell *sh);
 void shell_stop(Shell *sh);

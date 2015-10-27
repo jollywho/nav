@@ -1,4 +1,3 @@
-#include <ncurses.h>
 #include <limits.h>
 
 #include "fnav/tui/buffer.h"
@@ -7,28 +6,6 @@
 #include "fnav/log.h"
 #include "fnav/table.h"
 #include "fnav/model.h"
-
-struct queued_line {
-  int lnum;
-  String val;
-};
-
-struct Buffer {
-  WINDOW *nc_win;
-  BufferNode *bn;
-  Cntlr *cntlr;
-
-  pos_T b_size;
-  pos_T b_ofs;
-  pos_T cur;
-
-  int lnum; // cursor
-  int top;  // index
-
-  fn_handle *hndl;
-  bool dirty;
-  bool queued;
-};
 
 enum Type { OPERATOR, MOTION };
 
@@ -52,7 +29,6 @@ static int find_command(int cmdchar);
 static void buf_mv_page();
 static void buf_mv();
 static void buf_g();
-static void buf_ex_cmd();
 
 static const struct buf_cmd {
   int cmd_char;                 /* (first) command character */
@@ -63,7 +39,6 @@ static const struct buf_cmd {
 {
   {Ctrl_J,  buf_mv_page,     0,           FORWARD},
   {Ctrl_K,  buf_mv_page,     0,           BACKWARD},
-  {'o',     buf_ex_cmd,      0,           0},
   {'j',     buf_mv,          0,           FORWARD},
   {'k',     buf_mv,          0,           BACKWARD},
   {'g',     buf_g,           0,           BACKWARD},
@@ -95,6 +70,9 @@ Buffer* buf_init()
   scrollok(buf->nc_win, true);
   buf->dirty = false;
   buf->queued = false;
+  buf->attached = false;
+  buf->closed = false;
+  buf->input_cb = NULL;
   init_cmds();
   return buf;
 }
@@ -114,6 +92,12 @@ void buf_set_ofs(Buffer *buf, int y, int x)
   buf_refresh(buf);
 }
 
+void buf_set_pass(Buffer *buf)
+{
+  buf->closed = true;
+  delwin(buf->nc_win);
+}
+
 void buf_destroy(Buffer *buf)
 {
   delwin(buf->nc_win);
@@ -124,6 +108,7 @@ void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
 {
   buf->cntlr = cntlr;
   buf->hndl = cntlr->hndl;
+  buf->attached = true;
 }
 
 void buf_set(fn_handle *hndl)
@@ -144,19 +129,19 @@ void buf_draw(void **argv)
 {
   log_msg("BUFFER", "draw");
   Buffer *buf = (Buffer*)argv[0];
-  Model *m = buf->hndl->model;
-  if (!buf->cntlr) {
-    buf->queued = false;
+  if (buf->closed)
     return;
-  }
   wclear(buf->nc_win);
-  for (int i = 0; i < buf->b_size.lnum; ++i) {
-    String it = model_str_line(m, buf->top + i);
-    if (!it) break;
-    DRAW_LINE(buf, i, it);
+  if (buf->attached) {
+    Model *m = buf->hndl->model;
+    for (int i = 0; i < buf->b_size.lnum; ++i) {
+      String it = model_str_line(m, buf->top + i);
+      if (!it) break;
+      DRAW_LINE(buf, i, it);
+    }
+    wmove(buf->nc_win, buf->lnum, 0);
+    wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
   }
-  wmove(buf->nc_win, buf->lnum, 0);
-  wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
   wnoutrefresh(buf->nc_win);
   buf->dirty = false;
   buf->queued = false;
@@ -180,16 +165,22 @@ int buf_input(BufferNode *bn, int key)
 {
   log_msg("BUFFER", "input");
   Buffer *buf = bn->buf;
+  if (buf->input_cb) {
+    buf->input_cb(bn, key);
+    return 1;
+  }
+  if (!buf->attached)
+    return 0;
   if (buf->cntlr) {
     buf->cntlr->_input(buf->cntlr, key);
   }
+  // TODO: check consumed
   Cmdarg ca;
   int idx = find_command(key);
   ca.arg = fm_cmds[idx].cmd_arg;
   if (idx >= 0) {
     fm_cmds[idx].cmd_func(buf, &ca);
   }
-  // if not consumed send to buffer
   return 0;
 }
 
@@ -254,11 +245,6 @@ static void buf_mv_page(Buffer *buf, Cmdarg *arg)
 
 static void buf_g(Buffer *buf, Cmdarg *arg)
 {
-}
-
-static void buf_ex_cmd(Buffer *buf, Cmdarg *arg)
-{
-  window_ex_cmd_start();
 }
 
 /* Number of commands in nv_cmds[]. */

@@ -20,7 +20,7 @@ void main_event_loop(uv_timer_t *handle)
   int took = (int) ((after - before) / 1000000);
   int ms = TIMESTEP - took;
   if (ms < 0) ms = 0;
-  uv_timer_start(&event_timer, main_event_loop, ms, ms);
+  uv_timer_start(&event_timer, main_event_loop, (uint64_t)ms, (uint64_t)ms);
 }
 
 void event_init(void)

@@ -19,7 +19,7 @@ static void fs_close_req(FS_req *fq);
 static void stat_cb(uv_fs_t* req);
 void fs_loop(Loop *loop, int ms);
 
-FS_handle* fs_init(Cntlr *c, fn_handle *h)
+FS_handle* fs_init(fn_handle *h)
 {
   log_msg("FS", "open req");
   FS_handle *fsh = malloc(sizeof(FS_handle));
