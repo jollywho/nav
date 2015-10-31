@@ -24,6 +24,6 @@ void ex_input(BufferNode *bn, int key)
 void window_ex_cmd()
 {
   log_msg("EXCMD", "window_ex_cmd");
-  char *test = "yqs eii {name: something age:>1995 multi:\"long enough\"}";
+  char *test = "yqs eii {name: something, age:>1995 multi:\"long enough\" ids: [\"1\", \"tes tes\", 99]} | op download {id:33}";
   tokenize_line(&test);
 }
