@@ -58,6 +58,9 @@ void window_input(int key)
   if (key == ';') {
     window_ex_cmd_start();
   }
+  if (key == ':') {
+    window_ex_cmd();
+  }
   if (key == 'L') {
     if (win.focus->child) {
       win.focus = win.focus->child;

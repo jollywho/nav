@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <strings.h>
+#include <ctype.h>
 
 #include "fnav/rpc.h"
 #include "fnav/log.h"

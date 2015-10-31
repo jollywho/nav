@@ -5,6 +5,7 @@
 #include "fnav/tui/window.h"
 #include "fnav/tui/fm_cntlr.h"
 #include "fnav/tui/sh_cntlr.h"
+#include "fnav/cmdstr.h"
 
 void ex_input(BufferNode *bn, int key)
 {
@@ -18,4 +19,11 @@ void ex_input(BufferNode *bn, int key)
     sh_init(bn->buf);
     window_ex_cmd_end();
   }
+}
+
+void window_ex_cmd()
+{
+  log_msg("EXCMD", "window_ex_cmd");
+  char *test = "yqs eii {name: something age:>1995 multi:\"long enough\"}";
+  tokenize_line(&test);
 }
