@@ -24,13 +24,8 @@ struct Token {
 
 void token_init(void *elt) {
   Token *dst = (Token*)elt;
-  dst->word = malloc(sizeof(1));
+  dst->word = NULL;
   dst->argt = WORD_T;
-}
-void token_copy(void *_dst, const void *_src) {
-  Token *dst = (Token*)_dst, *src = (Token*)_src;
-  dst->argt = src->argt;
-  dst->word = src->word ? strdup(src->word) : NULL;
 }
 
 void token_dtor(void *_elt) {
@@ -38,11 +33,16 @@ void token_dtor(void *_elt) {
   if (elt->word) free(elt->word);
 }
 
-UT_icd icd = {sizeof(Token), token_init, token_copy, token_dtor};
+UT_icd icd = {sizeof(Token), NULL, NULL, token_dtor};
 
-#define PUTCH(word,len,ch) \
-  word = realloc(word, len + 1); \
-  word[len++] = ch;
+void PUTCH(char **str, size_t *len, char ch){
+  size_t *l = len;
+  char* tmp = realloc(*str, *l+2);
+  (*str)=tmp;
+  (*str)[*l]= ch;
+  (*str)[*l+1]='\0';
+  ++(*l);
+}
 
 char* addword(char **str, UT_array *tokens, uint32_t type)
 {
@@ -72,13 +72,13 @@ char* addword(char **str, UT_array *tokens, uint32_t type)
       case ',':
         goto pushtoken;
       case '>':
-        PUTCH(tok.word, len, ch);
+        PUTCH(&tok.word, &len, ch);
         goto pushtoken;
       case '<':
-        PUTCH(tok.word, len, ch);
+        PUTCH(&tok.word, &len, ch);
         goto pushtoken;
       default:
-        PUTCH(tok.word, len, ch);
+        PUTCH(&tok.word, &len, ch);
     }
   }
 pushtoken:
@@ -88,6 +88,8 @@ pushtoken:
     //    log_msg("CMDSTR", "word: %s\n", word);
     utarray_push_back(tokens, &tok);
   }
+  else
+    token_dtor(&tok);
   return ptr;
 }
 
@@ -108,7 +110,7 @@ char* addstring(char **str, UT_array *tokens, uint32_t type)
         ++ptr;
         goto pushtoken;
       default:
-        PUTCH(tok.word, len, ch);
+        PUTCH(&tok.word, &len, ch);
     }
   }
 pushtoken:
@@ -118,6 +120,8 @@ pushtoken:
     tok.argt |= type;
     utarray_push_back(tokens, &tok);
   }
+  else
+    token_dtor(&tok);
   return ptr;
 }
 
@@ -165,7 +169,7 @@ pushbrace:
   return ptr;
 }
 
-void tokenize_line(char **str)
+void tokenize_line(const char **str)
 {
   log_msg("CMDSTR", "tokenize_line");
   char ch;
@@ -173,7 +177,7 @@ void tokenize_line(char **str)
   UT_array *tokens;
   utarray_new(tokens, &icd);
 
-  ptr = *str;
+  ptr = (char*)*str;
   while (*ptr != '\0') {
     switch(ch = *ptr++) {
       case '"':
@@ -195,4 +199,5 @@ void tokenize_line(char **str)
   while ( (p=(Token*)utarray_next(tokens,p))) {
     log_msg("test", "%s %d", p->word, p->argt);
   }
+  utarray_free(tokens);
 }

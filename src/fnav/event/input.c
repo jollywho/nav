@@ -149,17 +149,11 @@ void event_input()
         key.code.number = newkey;
       }
       if (key.modifiers) {
-        log_msg("EXCMD", "KEYNUM %d", key.code.number);
         int mask = 0x0;
         mask |= name_to_mod_mask(*bp);
         key.code.number = extract_modifiers(key.code.number, &mask);
       }
     }
-    log_msg("EXCMD", "KEYNUM %d", key.code.number);
-    log_msg("EXCMD", "KEYNUM %d", key.code.number);
-    log_msg("EXCMD", "KEYNUM %d", key.code.number);
-    log_msg("EXCMD", "KEYNUM %d", key.code.number);
-    log_msg("EXCMD", "%s", buf);
     window_input(key.code.number);
   }
 }

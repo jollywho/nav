@@ -74,14 +74,12 @@ void ex_input(BufferNode *bn, int key)
     return;
   }
   if (key == BS) {
-    log_msg("EXCMD", "DELCH");
     curstr[curpos] = ' ';
     curpos--;
     if (curpos < CURMIN)
       curpos = CURMIN;
   }
   else if (key == Ctrl_U) {
-  log_msg("EXCMD", "clear");
     reset_line();
   }
   else {
