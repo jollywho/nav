@@ -45,37 +45,23 @@ void window_init(void)
 void window_input(int key)
 {
   log_msg("WINDOW", "input");
-  if (key == 'v') {
-    pos_T dir = {.lnum = 0, .col = 1};
-    window_add_buffer(dir);
-    return;
-  }
-  if (key == 's') {
-    pos_T dir = {.lnum = 1, .col = 0};
-    window_add_buffer(dir);
-    return;
-  }
-  if (key == ';') {
-    window_ex_cmd_start();
-  }
-  if (key == ':') {
-    window_ex_cmd();
-  }
-  if (key == 'L') {
-    if (win.focus->child) {
-      win.focus = win.focus->child;
-    }
-  }
-  if (key == 'H') {
-    if (win.focus->parent) {
-      win.focus = win.focus->parent;
-    }
-  }
-
   if (win.ex) {
     ex_input(win.focus, key);
   }
   else {
+    if (key == ';') {
+      window_ex_cmd_start();
+    }
+    if (key == 'L') {
+      if (win.focus->child) {
+        win.focus = win.focus->child;
+      }
+    }
+    if (key == 'H') {
+      if (win.focus->parent) {
+        win.focus = win.focus->parent;
+      }
+    }
     buf_input(win.focus, key);
   }
 }
@@ -83,6 +69,7 @@ void window_input(int key)
 void window_ex_cmd_start()
 {
   win.ex = true;
+  window_ex_cmd();
 }
 
 void window_ex_cmd_end()

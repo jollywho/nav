@@ -3,6 +3,7 @@
 #include <uv.h>
 #include <termkey.h>
 
+#include "fnav/ascii.h"
 #include "fnav/event/input.h"
 #include "fnav/tui/window.h"
 #include "fnav/event/loop.h"
@@ -15,6 +16,48 @@ uv_loop_t loop;
 TermKey *tk;
 void event_input();
 
+typedef unsigned char char_u;
+
+static struct key_name_entry {
+  int key;              /* Special key code or ascii value */
+  char  *name;        /* Name of key */
+} key_names_table[] =
+{
+  {' ',               (char *)"Space"},
+  {TAB,               (char *)"Tab"},
+  {NL,                (char *)"NL"},
+  {NL,                (char *)"NewLine"},     /* Alternative name */
+  {NL,                (char *)"LineFeed"},    /* Alternative name */
+  {NL,                (char *)"LF"},          /* Alternative name */
+  {CAR,               (char *)"CR"},
+  {CAR,               (char *)"Return"},      /* Alternative name */
+  {CAR,               (char *)"Enter"},       /* Alternative name */
+  {ESC,               (char *)"Esc"},
+  {ESC,               (char *)"Escape"},
+  {CSI,               (char *)"CSI"},
+  {'|',               (char *)"Bar"},
+  {'\\',              (char *)"Bslash"},
+  {BS,                (char *)"Del"},
+  {DEL,               (char *)"Delete"},      /* Alternative name */
+  {0,                 NULL}
+};
+
+int get_special_key_code(char *name)
+{
+  char  *table_name;
+  int i;
+
+  for (i = 0; key_names_table[i].name != NULL; i++) {
+    table_name = key_names_table[i].name;
+    if (strcasecmp(name, table_name) == 0) {
+      log_msg("_", "%s", key_names_table[i].name);
+      return key_names_table[i].key;
+    }
+  }
+
+  return 0;
+}
+
 void input_check()
 {
   log_msg("INPUT", "INPUT CHECK");
@@ -25,7 +68,7 @@ void input_init(void)
 {
   log_msg("INIT", "INPUT");
   tk = termkey_new(0,0);
-  termkey_set_flags(tk, TERMKEY_FLAG_UTF8);
+  termkey_set_flags(tk, TERMKEY_FLAG_UTF8 | TERMKEY_CANON_DELBS);
 
   uv_poll_init(eventloop(), &poll_handle, 0);
   uv_poll_start(&poll_handle, UV_READABLE, input_check);
@@ -40,8 +83,26 @@ void event_input()
 
   while ((ret = termkey_getkey_force(tk, &key)) == TERMKEY_RES_KEY) {
     if (key.modifiers) {
-      unsigned int mask = (1 << key.modifiers) -1;
+      unsigned int mask = (1 << key.modifiers) - 1;
       key.code.number &= key.code.number & mask;
+    }
+    if (TERMKEY_SYM_BACKSPACE == key.code.sym) {
+      key.code.number = BS;
+    }
+    size_t len;
+    char buf[64];
+    char *bp;
+    len = termkey_strfkey(tk, buf, sizeof(buf), &key, TERMKEY_FORMAT_VIM);
+
+    /* temp workaround for special key codes */
+    if (buf[0] == '<') {
+      bp = buf;
+      bp++;
+      bp[len - 2] = '\0';
+      int newkey = get_special_key_code(bp);
+      if (newkey) {
+        key.code.number = newkey;
+      }
     }
     window_input(key.code.number);
   }

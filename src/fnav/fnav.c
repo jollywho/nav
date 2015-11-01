@@ -5,6 +5,7 @@
 #include "fnav/log.h"
 #include "fnav/fnav.h"
 #include "fnav/tui/window.h"
+#include "fnav/tui/ex_cmd.h"
 #include "fnav/event/loop.h"
 #include "fnav/event/event.h"
 #include "fnav/event/input.h"

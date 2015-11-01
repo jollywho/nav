@@ -35,4 +35,9 @@ struct Cntlr {
   int  (*_input)(Cntlr *cntlr, int key);
 };
 
+typedef struct {
+  int lnum;    /* line number */
+  int col;     /* column number */
+} pos_T;
+
 #endif

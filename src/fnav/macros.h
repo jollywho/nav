@@ -13,4 +13,7 @@
 #define MIN(X, Y) (X < Y ? X : Y)
 #define MAX(X, Y) (X > Y ? X : Y)
 
+#define TOUPPER_ASC(c) (((c) < 'a' || (c) > 'z') ? (c) : (c) - ('a' - 'A'))
+#define TOLOWER_ASC(c) (((c) < 'A' || (c) > 'Z') ? (c) : (c) + ('a' - 'A'))
+
 #endif

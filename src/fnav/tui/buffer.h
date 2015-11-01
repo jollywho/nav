@@ -13,12 +13,6 @@ struct BufferNode {
   BufferNode *child;
   Buffer *buf;
 };
-
-typedef struct {
-  int lnum;    /* line number */
-  int col;     /* column number */
-} pos_T;
-
 struct Buffer {
   WINDOW *nc_win;
   BufferNode *bn;

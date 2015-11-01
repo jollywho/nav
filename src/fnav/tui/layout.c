@@ -5,18 +5,19 @@
 #include "fnav/tui/layout.h"
 #include "fnav/log.h"
 
-double ceil(double x)
+pos_T layout_size()
 {
-	if(x<0)return (int)x;
-	return ((int)x)+1;
+  pos_T size;
+  getmaxyx(stdscr, size.lnum, size.col);
+  return size;
 }
 
 void layout_add_buffer(BufferNode *focus, int count, pos_T dir)
 {
-  int maxr, maxc;
-  getmaxyx(stdscr, maxr, maxc);
+  pos_T max = layout_size();
+  max.lnum -= 1; // cmdline
   if (count == 1) {
-    buf_set_size(focus->buf, maxr, maxc);
+    buf_set_size(focus->buf, max.lnum, max.col);
   }
   else {
     pos_T oldsize = buf_size(focus->parent->buf);
