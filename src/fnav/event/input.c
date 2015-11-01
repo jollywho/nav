@@ -42,6 +42,21 @@ static struct key_name_entry {
   {0,                 NULL}
 };
 
+static struct modmasktable {
+  short mod_mask;               /* Bit-mask for particular key modifier */
+  short mod_flag;               /* Bit(s) for particular key modifier */
+  char_u name;                  /* Single letter name of modifier */
+} mod_mask_table[] =
+{
+  {MOD_MASK_ALT,              MOD_MASK_ALT,           (char_u)'M'},
+  {MOD_MASK_META,             MOD_MASK_META,          (char_u)'T'},
+  {MOD_MASK_CTRL,             MOD_MASK_CTRL,          (char_u)'C'},
+  {MOD_MASK_SHIFT,            MOD_MASK_SHIFT,         (char_u)'S'},
+  /* 'A' must be the last one */
+  {MOD_MASK_ALT,              MOD_MASK_ALT,           (char_u)'A'},
+  {0, 0, NUL}
+};
+
 int get_special_key_code(char *name)
 {
   char  *table_name;
@@ -55,6 +70,17 @@ int get_special_key_code(char *name)
     }
   }
 
+  return 0;
+}
+
+int name_to_mod_mask(int c)
+{
+  int i;
+
+  c = TOUPPER_ASC(c);
+  for (i = 0; mod_mask_table[i].mod_mask != 0; i++)
+    if (c == mod_mask_table[i].name)
+      return mod_mask_table[i].mod_flag;
   return 0;
 }
 
@@ -74,6 +100,32 @@ void input_init(void)
   uv_poll_start(&poll_handle, UV_READABLE, input_check);
 }
 
+int extract_modifiers(int key, int *modp)
+{
+  int modifiers = *modp;
+
+  if ((modifiers & MOD_MASK_SHIFT) && ASCII_ISALPHA(key)) {
+    key = TOUPPER_ASC(key);
+    modifiers &= ~MOD_MASK_SHIFT;
+  }
+  if ((modifiers & MOD_MASK_CTRL)
+      && ((key >= '?' && key <= '_') || ASCII_ISALPHA(key))
+      ) {
+    key = Ctrl_chr(key);
+    modifiers &= ~MOD_MASK_CTRL;
+    /* <C-@> is <Nul> */
+    if (key == 0)
+      key = K_ZERO;
+  }
+  if ((modifiers & MOD_MASK_ALT) && key < 0x80) {
+    key |= 0x80;
+    modifiers &= ~MOD_MASK_ALT;         /* remove the META modifier */
+  }
+
+  *modp = modifiers;
+  return key;
+}
+
 void event_input()
 {
   TermKeyKey key;
@@ -82,13 +134,6 @@ void event_input()
   termkey_advisereadable(tk);
 
   while ((ret = termkey_getkey_force(tk, &key)) == TERMKEY_RES_KEY) {
-    if (key.modifiers) {
-      unsigned int mask = (1 << key.modifiers) - 1;
-      key.code.number &= key.code.number & mask;
-    }
-    if (TERMKEY_SYM_BACKSPACE == key.code.sym) {
-      key.code.number = BS;
-    }
     size_t len;
     char buf[64];
     char *bp;
@@ -103,7 +148,18 @@ void event_input()
       if (newkey) {
         key.code.number = newkey;
       }
+      if (key.modifiers) {
+        log_msg("EXCMD", "KEYNUM %d", key.code.number);
+        int mask = 0x0;
+        mask |= name_to_mod_mask(*bp);
+        key.code.number = extract_modifiers(key.code.number, &mask);
+      }
     }
+    log_msg("EXCMD", "KEYNUM %d", key.code.number);
+    log_msg("EXCMD", "KEYNUM %d", key.code.number);
+    log_msg("EXCMD", "KEYNUM %d", key.code.number);
+    log_msg("EXCMD", "KEYNUM %d", key.code.number);
+    log_msg("EXCMD", "%s", buf);
     window_input(key.code.number);
   }
 }

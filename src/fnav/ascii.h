@@ -74,4 +74,26 @@
 #define NV_NCH_NOP  (0x02|NV_NCH) /* get second char when no operator pending */
 #define NV_NCH_ALW  (0x04|NV_NCH) /* always get a second char */
 
+/* Bits for modifier mask */
+/* 0x01 cannot be used, because the modifier must be 0x02 or higher */
+#define MOD_MASK_SHIFT      0x02
+#define MOD_MASK_CTRL       0x04
+#define MOD_MASK_ALT        0x08        /* aka META */
+#define MOD_MASK_META       0x10        /* META when it's different from ALT */
+
+#define KEY2TERMCAP0(x)         ((-(x)) & 0xff)
+#define KEY2TERMCAP1(x)         (((unsigned)(-(x)) >> 8) & 0xff)
+#define TERMCAP2KEY(a, b)       (-((a) + ((int)(b) << 8)))
+
+#define KS_EXTRA                253
+#define KS_ZERO                 255
+#define KE_FILLER               ('X')
+#define K_S_TAB         TERMCAP2KEY('k', 'B')
+#define K_ZERO          TERMCAP2KEY(KS_ZERO, KE_FILLER)
+
+# define ASCII_ISLOWER(c) ((unsigned)(c) >= 'a' && (unsigned)(c) <= 'z')
+# define ASCII_ISUPPER(c) ((unsigned)(c) >= 'A' && (unsigned)(c) <= 'Z')
+# define ASCII_ISALPHA(c) (ASCII_ISUPPER(c) || ASCII_ISLOWER(c))
+# define ASCII_ISALNUM(c) (ASCII_ISALPHA(c) || ascii_isdigit(c))
+
 #endif

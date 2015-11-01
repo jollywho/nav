@@ -193,6 +193,6 @@ void tokenize_line(char **str)
   }
   Token *p = NULL;
   while ( (p=(Token*)utarray_next(tokens,p))) {
-    log_msg("test", "%s %d\n", p->word, p->argt);
+    log_msg("test", "%s %d", p->word, p->argt);
   }
 }

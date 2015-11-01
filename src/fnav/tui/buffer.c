@@ -38,7 +38,7 @@ static const struct buf_cmd {
 } fm_cmds[] =
 {
   {Ctrl_J,  buf_mv_page,     0,           FORWARD},
-  {Ctrl_K,  buf_mv_page,     0,           BACKWARD},
+  {Ctrl_U,  buf_mv_page,     0,           BACKWARD},
   {'j',     buf_mv,          0,           FORWARD},
   {'k',     buf_mv,          0,           BACKWARD},
   {'g',     buf_g,           0,           BACKWARD},
@@ -241,6 +241,7 @@ pos_T buf_ofs(Buffer *buf)
 
 static void buf_mv_page(Buffer *buf, Cmdarg *arg)
 {
+  log_msg("BUFFER", "buf_mv_page");
 }
 
 static void buf_g(Buffer *buf, Cmdarg *arg)

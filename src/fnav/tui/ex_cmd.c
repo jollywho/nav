@@ -14,25 +14,34 @@ char *curstr;
 int curpos;
 int maxpos;
 
+#define CURMIN -1
+
 void cmdline_init()
 {
   log_msg("CMDLINE", "init");
   pos_T max = layout_size();
   nc_win = newwin(1, 0, max.lnum - 1, 0);
   curstr = malloc(max.col * sizeof(char*));
-  curpos = -1;
+  curpos = CURMIN;
   maxpos = max.col;
   memset(curstr, '\0', maxpos);
 }
 
 void cmdline_draw()
 {
-  log_msg("CMDLINE", "curstr %s", curstr);
+  log_msg("CMDLINE", "draw %s", curstr);
   mvwprintw(nc_win, 0, 0, ":");
   mvwprintw(nc_win, 0, 1, curstr);
   wmove(nc_win, 0, curpos + 2);
   wnoutrefresh(nc_win);
   doupdate();
+}
+
+void reset_line()
+{
+  memset(curstr, '\0', maxpos);
+  wclear(nc_win);
+  curpos = -1;
 }
 
 void ex_input(BufferNode *bn, int key)
@@ -44,6 +53,7 @@ void ex_input(BufferNode *bn, int key)
   }
   if (key == CAR) {
     // TODO: tokenize
+    // TODO: rpc cmds table
     if (strcmp(curstr, "fm") == 0) {
       fm_init(bn->buf);
       window_ex_cmd_end();
@@ -64,8 +74,15 @@ void ex_input(BufferNode *bn, int key)
     return;
   }
   if (key == BS) {
+    log_msg("EXCMD", "DELCH");
     curstr[curpos] = ' ';
     curpos--;
+    if (curpos < CURMIN)
+      curpos = CURMIN;
+  }
+  else if (key == Ctrl_U) {
+  log_msg("EXCMD", "clear");
+    reset_line();
   }
   else {
     curpos++;
@@ -77,6 +94,7 @@ void ex_input(BufferNode *bn, int key)
     // FIXME: wide char support
     curstr[curpos] = key;
   }
+  tokenize_line(&curstr);
   cmdline_draw();
 }
 
@@ -84,8 +102,6 @@ void window_ex_cmd()
 {
   cmdline_init();
   log_msg("EXCMD", "window_ex_cmd");
-  char *test = "yqs eii {name: something, age:>1995 multi:\"long enough\" ids: [\"1\", \"tes tes\", 99]} | op download {id:33}";
-  tokenize_line(&test);
   curs_set(1);
   cmdline_draw();
 }
