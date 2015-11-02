@@ -13,6 +13,7 @@ WINDOW *nc_win;
 char *curstr;
 int curpos;
 int maxpos;
+Cmdstr cmdstr;
 
 #define CURMIN -1
 
@@ -25,6 +26,7 @@ void cmdline_init()
   curpos = CURMIN;
   maxpos = max.col;
   memset(curstr, '\0', maxpos);
+  cmdstr_init(&cmdstr);
 }
 
 void cmdline_draw()
@@ -42,6 +44,13 @@ void reset_line()
   memset(curstr, '\0', maxpos);
   wclear(nc_win);
   curpos = -1;
+}
+
+void del_word()
+{
+  int prev = cmdstr_prev_word(&cmdstr, curpos);
+
+  // delete from curpos to found index
 }
 
 void ex_input(BufferNode *bn, int key)
@@ -82,6 +91,9 @@ void ex_input(BufferNode *bn, int key)
   else if (key == Ctrl_U) {
     reset_line();
   }
+  else if (key == Ctrl_W) {
+    del_word();
+  }
   else {
     curpos++;
     if (curpos >= maxpos) {
@@ -92,7 +104,7 @@ void ex_input(BufferNode *bn, int key)
     // FIXME: wide char support
     curstr[curpos] = key;
   }
-  tokenize_line(&curstr);
+  tokenize_line(&cmdstr, &curstr);
   cmdline_draw();
 }
 
@@ -108,6 +120,7 @@ void stop_ex_cmd()
 {
   log_msg("EXCMD", "stop_ex_cmd");
   free(curstr);
+  cmdstr_cleanup(&cmdstr);
   wclear(nc_win);
   wnoutrefresh(nc_win);
   doupdate();

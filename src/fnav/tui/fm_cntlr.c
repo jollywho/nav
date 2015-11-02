@@ -13,14 +13,6 @@
 // TODO: Key Cmdarg redone as reuseable module.
 // needed for language extension later.
 
-enum Type { OPERATOR, MOTION };
-
-typedef struct {
-  String name;
-  enum Type type;
-  void (*f)();
-} Key;
-
 typedef struct {
   pos_T start;                  /* start of the operator */
   pos_T end;                    /* end of the operator */
@@ -29,12 +21,6 @@ typedef struct {
 } Cmdarg;
 
 typedef void (*key_func)(Cntlr *cntlr, Cmdarg *arg);
-
-Cmd default_lst[] = {
-  { "open",  0,  NULL },
-  { "cd",    0,  NULL },
-  { "list",  0,  NULL },
-};
 
 static void fm_left();
 static void fm_right();
@@ -236,7 +222,6 @@ static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
   hndl->key = val;
   hndl->fname = "name";
   c->hndl = hndl;
-  c->cmd_lst = default_lst;
   c->_focus = cntlr_focus;
   c->_cancel = cntlr_cancel;
   c->_input = cntlr_input;

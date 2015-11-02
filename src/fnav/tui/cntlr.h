@@ -27,7 +27,6 @@ struct fn_handle {
 };
 
 struct Cntlr {
-  Cmd *cmd_lst;
   fn_handle *hndl;
   void *top;
   void (*_cancel)(Cntlr *cntlr);

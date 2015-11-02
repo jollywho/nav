@@ -1,8 +1,8 @@
 #include <stdint.h>
+
 #include <ctype.h>
 #include "fnav/cmdstr.h"
 #include "fnav/log.h"
-#include "fnav/lib/utarray.h"
 
 void trim(char *str)
 {
@@ -35,7 +35,22 @@ void token_dtor(void *_elt) {
 
 UT_icd icd = {sizeof(Token), NULL, NULL, token_dtor};
 
-void PUTCH(char **str, size_t *len, char ch){
+void cmdstr_init(Cmdstr *cmdstr)
+{
+  utarray_new(cmdstr->tokens, &icd);
+}
+
+void cmdstr_cleanup(Cmdstr *cmdstr)
+{
+  utarray_free(cmdstr->tokens);
+}
+
+int cmdstr_prev_word(Cmdstr *cmdstr, int pos)
+{
+  return 0;
+}
+
+static void PUTCH(char **str, size_t *len, char ch){
   size_t *l = len;
   char* tmp = realloc(*str, *l+2);
   (*str)=tmp;
@@ -44,7 +59,7 @@ void PUTCH(char **str, size_t *len, char ch){
   ++(*l);
 }
 
-char* addword(char **str, UT_array *tokens, uint32_t type)
+static char* addword(char **str, UT_array *tokens, uint32_t type)
 {
   char ch;
   char* ptr;
@@ -85,7 +100,6 @@ pushtoken:
   if (len > 0) {
     tok.word[len] = '\0';
     tok.argt |= type;
-    //    log_msg("CMDSTR", "word: %s\n", word);
     utarray_push_back(tokens, &tok);
   }
   else
@@ -93,7 +107,7 @@ pushtoken:
   return ptr;
 }
 
-char* addstring(char **str, UT_array *tokens, uint32_t type)
+static char* addstring(char **str, UT_array *tokens, uint32_t type)
 {
   char ch;
   char* ptr;
@@ -115,7 +129,6 @@ char* addstring(char **str, UT_array *tokens, uint32_t type)
   }
 pushtoken:
   if (len > 0) {
-    //  printf("string: %s %d\n", word, len);
     tok.word[len] = '\0';
     tok.argt |= type;
     utarray_push_back(tokens, &tok);
@@ -125,7 +138,7 @@ pushtoken:
   return ptr;
 }
 
-char* addarray(char **str, UT_array *tokens, uint32_t type)
+static char* addarray(char **str, UT_array *tokens, uint32_t type)
 {
   char ch;
   char* ptr;
@@ -145,7 +158,7 @@ pusharray:
   return ptr;
 }
 
-char* addbrace(char **str, UT_array *tokens, uint32_t type)
+static char* addbrace(char **str, UT_array *tokens, uint32_t type)
 {
   char ch;
   char* ptr;
@@ -169,13 +182,12 @@ pushbrace:
   return ptr;
 }
 
-void tokenize_line(const char **str)
+void tokenize_line(Cmdstr *cmdstr, char * const *str)
 {
   log_msg("CMDSTR", "tokenize_line");
   char ch;
   char *ptr;
-  UT_array *tokens;
-  utarray_new(tokens, &icd);
+  UT_array *tokens = cmdstr->tokens;
 
   ptr = (char*)*str;
   while (*ptr != '\0') {
@@ -199,5 +211,4 @@ void tokenize_line(const char **str)
   while ( (p=(Token*)utarray_next(tokens,p))) {
     log_msg("test", "%s %d", p->word, p->argt);
   }
-  utarray_free(tokens);
 }
