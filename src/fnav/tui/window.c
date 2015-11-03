@@ -69,7 +69,7 @@ void window_input(int key)
 void window_ex_cmd_start()
 {
   win.ex = true;
-  window_ex_cmd();
+  start_ex_cmd();
 }
 
 void window_ex_cmd_end()

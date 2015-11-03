@@ -6,7 +6,7 @@
 #include "fnav/log.h"
 #include "fnav/tui/buffer.h"
 
-typedef struct queue_item QueueItem;
+typedef struct queue_item queue_item;
 struct queue_item {
   Event item;
   QUEUE node;
@@ -75,7 +75,7 @@ void doloops(int ms)
 
 void queue_push(Queue *queue, Event event)
 {
-  QueueItem *item = malloc(sizeof(QueueItem));
+  queue_item *item = malloc(sizeof(queue_item));
   item->item = event;
   QUEUE_INIT(&item->node);
   QUEUE_INSERT_TAIL(&queue->headtail, &item->node);
@@ -91,15 +91,15 @@ bool queue_empty(Queue *queue)
   return QUEUE_EMPTY(&queue->headtail);
 }
 
-static QueueItem *queue_node_data(QUEUE *queue)
+static queue_item *queue_node_data(QUEUE *queue)
 {
-  return QUEUE_DATA(queue, QueueItem, node);
+  return QUEUE_DATA(queue, queue_item, node);
 }
 
 static Event queue_pop(Queue *queue)
 {
   QUEUE *h = QUEUE_HEAD(&queue->headtail);
-  QueueItem *item = queue_node_data(h);
+  queue_item *item = queue_node_data(h);
   QUEUE_REMOVE(&item->node);
   Event e;
 

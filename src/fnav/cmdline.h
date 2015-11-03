@@ -1,0 +1,84 @@
+#ifndef FN_CMDLINE_H
+#define FN_CMDLINE_H
+
+#include "fnav.h"
+#include "fnav/lib/utarray.h"
+
+typedef struct Token Token;
+typedef struct Pair Pair;
+typedef struct Dict Dict;
+typedef struct List List;
+typedef struct Cmdstr Cmdstr;
+typedef struct Cmdline Cmdline;
+
+typedef struct {
+  char v_type;              /* see below: VAR_NUMBER, VAR_STRING, etc. */
+  union {
+    int      v_number;      /* number value                */
+    char    *v_string;      /* string value (can be NULL!) */
+    Pair    *v_pair;        /* pair value (can be NULL!)   */
+    List    *v_list;        /* list value (can be NULL!)   */
+    Dict    *v_dict;        /* dict value (can be NULL!)   */
+  } vval;
+} typ_T;
+
+#define VAR_NUMBER  1       /* "v_number" is used          */
+#define VAR_STRING  2       /* "v_string" is used          */
+#define VAR_FUNC    3       /* "v_string" is function name */
+#define VAR_LIST    4       /* "v_list" is used            */
+#define VAR_DICT    5       /* "v_dict" is used            */
+
+struct Token {
+  unsigned int argt;        /* see below: XFILE, BUFFER, etc.         */
+  int block;                /* block level flag           */
+  int start;                /* start pos of token in line */
+  int end;                  /* start pos of token in line */
+  char esc;                 /* escape char for token      */
+  typ_T var;
+};
+
+#define XFILE     0x01
+#define BUFFER    0x02
+#define FIELD     0x04
+#define FUNCTION  0x08
+#define RANGE     0x10
+#define REGEX     0x20
+
+struct Pair {
+  Token *key;
+  Token *value;
+};
+
+struct List {
+  UT_array *items;
+};
+
+struct Dict {
+  UT_array *items;
+};
+
+struct Cmdstr {
+  char pipet;               /* pipe flag types */
+  Token args;
+};
+
+#define PIPE_CMD     1
+#define PIPE_CNTLR   2
+
+struct Cmdline {
+  UT_array *cmds;
+  UT_array *tokens;
+  String line;
+};
+
+UT_icd dict_icd = {sizeof(Pair), NULL };
+UT_icd list_icd = {sizeof(Token), NULL };
+UT_icd cmd_icd = {sizeof(Cmdstr), NULL };
+
+void cmdline_init(Cmdline *cmdline, int size);
+void cmdline_build(Cmdline *cmdline);
+void cmdline_destroy(Cmdline *cmdline);
+void cmdline_cleanup(Cmdline *cmdline);
+int cmdline_prev_word(Cmdline *cmdline, int pos);
+
+#endif

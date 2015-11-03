@@ -1,39 +1,40 @@
 // ex_cmd
 // command line
+#include "fnav/tui/ex_cmd.h"
+#include "fnav/cmdline.h"
 #include "fnav/ascii.h"
 #include "fnav/log.h"
 #include "fnav/tui/layout.h"
-#include "fnav/tui/ex_cmd.h"
 #include "fnav/tui/window.h"
 #include "fnav/tui/fm_cntlr.h"
 #include "fnav/tui/sh_cntlr.h"
-#include "fnav/cmdstr.h"
 
 WINDOW *nc_win;
-char *curstr;
 int curpos;
 int maxpos;
-Cmdstr cmdstr;
+Cmdline cmd;
 
 #define CURMIN -1
 
-void cmdline_init()
+static void cmdline_draw();
+
+void start_ex_cmd()
 {
-  log_msg("CMDLINE", "init");
+  log_msg("EXCMD", "start");
   pos_T max = layout_size();
+  curs_set(1);
   nc_win = newwin(1, 0, max.lnum - 1, 0);
-  curstr = malloc(max.col * sizeof(char*));
   curpos = CURMIN;
   maxpos = max.col;
-  memset(curstr, '\0', maxpos);
-  cmdstr_init(&cmdstr);
+  cmdline_init(&cmd, max.col);
+  cmdline_draw();
 }
 
-void cmdline_draw()
+static void cmdline_draw()
 {
-  log_msg("CMDLINE", "draw %s", curstr);
+  log_msg("CMDLINE", "draw %s", cmd.line);
   mvwprintw(nc_win, 0, 0, ":");
-  mvwprintw(nc_win, 0, 1, curstr);
+  mvwprintw(nc_win, 0, 1, cmd.line);
   wmove(nc_win, 0, curpos + 2);
   wnoutrefresh(nc_win);
   doupdate();
@@ -41,15 +42,14 @@ void cmdline_draw()
 
 void reset_line()
 {
-  memset(curstr, '\0', maxpos);
+  memset(cmd.line, '\0', maxpos);
   wclear(nc_win);
   curpos = -1;
 }
 
 void del_word()
 {
-  int prev = cmdstr_prev_word(&cmdstr, curpos);
-
+  int prev = cmdstr_prev_word(&cmd.line, curpos);
   // delete from curpos to found index
 }
 
@@ -61,21 +61,20 @@ void ex_input(BufferNode *bn, int key)
     return;
   }
   if (key == CAR) {
-    // TODO: tokenize
     // TODO: rpc cmds table
-    if (strcmp(curstr, "fm") == 0) {
+    if (strcmp(cmd.line, "fm") == 0) {
       fm_init(bn->buf);
       window_ex_cmd_end();
     }
-    if (strcmp(curstr, "sh") == 0) {
+    if (strcmp(cmd.line, "sh") == 0) {
       sh_init(bn->buf);
       window_ex_cmd_end();
     }
-    if (strcmp(curstr, "new") == 0) {
+    if (strcmp(cmd.line, "new") == 0) {
       pos_T dir = {.lnum = 1, .col = 0};
       window_add_buffer(dir);
     }
-    if (strcmp(curstr, "vnew") == 0) {
+    if (strcmp(cmd.line, "vnew") == 0) {
       pos_T dir = {.lnum = 0, .col = 1};
       window_add_buffer(dir);
     }
@@ -83,7 +82,7 @@ void ex_input(BufferNode *bn, int key)
     return;
   }
   if (key == BS) {
-    curstr[curpos] = ' ';
+    cmd.line[curpos] = ' ';
     curpos--;
     if (curpos < CURMIN)
       curpos = CURMIN;
@@ -98,29 +97,20 @@ void ex_input(BufferNode *bn, int key)
     curpos++;
     if (curpos >= maxpos) {
       maxpos = 2 * curpos;
-      curstr = realloc(curstr, maxpos * sizeof(char*));
-      curstr[maxpos] = '\0';
+      cmd.line = realloc(cmd.line, maxpos * sizeof(char*));
+      cmd.line[maxpos] = '\0';
     }
     // FIXME: wide char support
-    curstr[curpos] = key;
+    cmd.line[curpos] = key;
   }
-  tokenize_line(&cmdstr, &curstr);
-  cmdline_draw();
-}
-
-void window_ex_cmd()
-{
-  cmdline_init();
-  log_msg("EXCMD", "window_ex_cmd");
-  curs_set(1);
+  cmdline_build(&cmd);
   cmdline_draw();
 }
 
 void stop_ex_cmd()
 {
   log_msg("EXCMD", "stop_ex_cmd");
-  free(curstr);
-  cmdstr_cleanup(&cmdstr);
+  cmdline_destroy(&cmd);
   wclear(nc_win);
   wnoutrefresh(nc_win);
   doupdate();

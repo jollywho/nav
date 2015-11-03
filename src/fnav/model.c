@@ -27,14 +27,14 @@ struct Model {
   UT_array *lines;
 };
 
-UT_icd intpair_icd = {sizeof(fn_line), NULL };
+UT_icd icd = {sizeof(fn_line), NULL };
 
 void model_init(fn_handle *hndl)
 {
   Model *model = malloc(sizeof(Model));
   model->hndl = hndl;
   hndl->model = model;
-  utarray_new(model->lines, &intpair_icd);
+  utarray_new(model->lines, &icd);
 }
 
 void model_open(fn_handle *hndl)
