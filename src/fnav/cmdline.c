@@ -79,7 +79,7 @@ void cmdline_create_token(Cmdline *cmdline, char *str, int st, int ed)
   char *vstr = malloc(len);
   strncpy(vstr, &str[st], len);
   vstr[len] = '\0';
-  Token token = { 
+  Token token = {
     .start = st,
     .end = ed,
     .var = {
@@ -100,8 +100,14 @@ void cmdline_tokenize(Cmdline *cmdline)
   st = ed = pos = 0;
   for(;;) {
     ch = str[pos++];
-    if (ch == ' ') {
+    if (ch == '"') {
+    }
+    if (strpbrk(&ch, ":|<>,[]{} ")) {
       cmdline_create_token(cmdline, str, st, ed);
+      if (ch != ' ') {
+        cmdline_create_token(cmdline, str, pos-1, pos);
+        ed = pos;
+      }
       st = pos;
     }
     else if (ch == '\0') {
@@ -113,12 +119,11 @@ void cmdline_tokenize(Cmdline *cmdline)
   }
 }
 
-static void pop(String string, Token *token, int end, QUEUE *stack)
+static Token* pop(String string, Token *token, QUEUE *stack)
 {
   Token *parent = token_pop(stack);
 
   // if token->typ string
-  //  copy string start, end
   //  if this string is numeric
   //    convert to int. adjust type
   // return
@@ -130,9 +135,10 @@ static void pop(String string, Token *token, int end, QUEUE *stack)
   //    parent->value = token
   //  default:
   //    error, out of possible options
+  return parent;
 }
 
-static Token* push(String string, int start, QUEUE *stack, int type)
+static Token* push(String string, QUEUE *stack, int type)
 {
   Token *token;
   //init type
@@ -163,7 +169,7 @@ void cmdline_parse(Cmdline *cmdline)
 
   cmdline_cmdstr_new(cmdline, &cmd, &stack);
   log_msg("CMDLINE", "cmdline_parse");
-  Token *word, *token;
+  Token *word, *tok;
   word = (Token*)utarray_front(cmdline->tokens);
   token_push(&stack, &cmd.args);
   word = NULL;
@@ -173,41 +179,40 @@ void cmdline_parse(Cmdline *cmdline)
     //while ((ch = str[pos++]) != '\0') {
     //  switch(ch) {
     //    //  case colon         -> push(..,.., token->esc) #change word into pair
-    //    case '"':
-    //      t = push(str, pos, stack, VAR_STRING);
-    //      char *cur = &cmdline->line[word->start+pos];
-    //      char *ret = strchr(cur, '"');
-    //      if (ret) {
-    //        int end = cur - ret;
-    //        pop(str, token, end);
-    //      }
-    //      break;
     //    case '|':
     //      if (str[pos++] == '>')
     //        cmd.pipet = PIPE_CNTLR;
     //      else
     //        cmd.pipet = PIPE_CMD;;
     //      goto breakout;
-    //    case ',':
-    //      pop(str, token, pos);
+    //    case '"':
+    //      tok = push(str, pos, &stack, VAR_STRING);
+    //      char *cur = &cmdline->line[word->start+pos];
+    //      char *ret = strchr(cur, '"');
+    //      if (ret) {
+    //        int end = cur - ret;
+    //        tok = pop(str, tok, end, &stack);
+    //      }
     //      break;
+    //    case ',':
+    //    case '}':
+    //    case ']':
+    //      /* fallthrough */
+    //      tok = pop(str, tok, pos, &stack);
+    //      break;
+    //    //
+    //    //
     //    case '{':
-    //      push(str, VAR_DICT, pos);
+    //      tok = push(str, pos, &stack, VAR_DICT);
     //      break;
     //    case '[':
-    //      push(str, VAR_LIST, stack, pos);
-    //      break;
-    //    case '}':
-    //      pop(str, token, pos, &stack);
-    //      break;
-    //    case ']':
-    //      pop(str, token, pos, &stack);
+    //      tok = push(str, pos, &stack, VAR_LIST);
     //      break;
     //    default:
-    //      token = push(str, pos, stack, VAR_STRING);
+    //      tok = push(str, pos, &stack, VAR_STRING);
     //  }
     //}
-    //pop(str, t, pos, &stack);
+    //tok = pop(str, tok, pos, &stack);
     log_msg("_", "%s", word->var.vval.v_string);
   }
 breakout:
