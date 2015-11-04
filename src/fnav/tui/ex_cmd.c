@@ -32,7 +32,6 @@ void start_ex_cmd()
 
 static void cmdline_draw()
 {
-  log_msg("CMDLINE", "draw %s", cmd.line);
   mvwprintw(nc_win, 0, 0, ":");
   mvwprintw(nc_win, 0, 1, cmd.line);
   wmove(nc_win, 0, curpos + 2);

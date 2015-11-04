@@ -70,6 +70,7 @@ int cmdline_prev_word(Cmdline *cmdline, int pos)
 
 void cmdline_reset(Cmdline *cmdline)
 {
+  utarray_free(cmdline->cmds);
 }
 
 void cmdline_create_token(Cmdline *cmdline, char *str, int st, int ed)
@@ -101,8 +102,16 @@ void cmdline_tokenize(Cmdline *cmdline)
   for(;;) {
     ch = str[pos++];
     if (ch == '"') {
+      char *ret = strchr(&str[pos], '"');
+      if (ret) {
+        int end = (ret - &str[pos]) + pos;
+        cmdline_create_token(cmdline, str, pos, end);
+        end++;
+        pos = end;
+        st = end;
+      }
     }
-    if (strpbrk(&ch, ":|<>,[]{} ")) {
+    else if (strpbrk(&ch, ":|<>,[]{} ")) {
       cmdline_create_token(cmdline, str, st, ed);
       if (ch != ' ') {
         cmdline_create_token(cmdline, str, pos-1, pos);
@@ -186,13 +195,6 @@ void cmdline_parse(Cmdline *cmdline)
     //        cmd.pipet = PIPE_CMD;;
     //      goto breakout;
     //    case '"':
-    //      tok = push(str, pos, &stack, VAR_STRING);
-    //      char *cur = &cmdline->line[word->start+pos];
-    //      char *ret = strchr(cur, '"');
-    //      if (ret) {
-    //        int end = cur - ret;
-    //        tok = pop(str, tok, end, &stack);
-    //      }
     //      break;
     //    case ',':
     //    case '}':
@@ -223,7 +225,6 @@ void cmdline_build(Cmdline *cmdline)
 {
   log_msg("CMDSTR", "tokenize_line");
 
-  cmdline_reset(cmdline);
 
   cmdline_tokenize(cmdline);
 
@@ -231,4 +232,6 @@ void cmdline_build(Cmdline *cmdline)
   utarray_new(cmdline->cmds, &cmd_icd);
 
   cmdline_parse(cmdline);
+
+  cmdline_reset(cmdline);
 }
