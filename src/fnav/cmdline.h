@@ -71,10 +71,6 @@ struct Cmdline {
   String line;
 };
 
-UT_icd dict_icd = {sizeof(Pair), NULL };
-UT_icd list_icd = {sizeof(Token), NULL };
-UT_icd cmd_icd = {sizeof(Cmdstr), NULL };
-
 void cmdline_init(Cmdline *cmdline, int size);
 void cmdline_build(Cmdline *cmdline);
 void cmdline_destroy(Cmdline *cmdline);

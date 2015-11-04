@@ -49,7 +49,7 @@ void reset_line()
 
 void del_word()
 {
-  int prev = cmdstr_prev_word(&cmd.line, curpos);
+  int prev = cmdline_prev_word(&cmd, curpos);
   // delete from curpos to found index
 }
 
