@@ -2,6 +2,7 @@
 #define FN_CMDLINE_H
 
 #include "fnav.h"
+#include "fnav/lib/queue.h"
 #include "fnav/lib/utarray.h"
 
 typedef struct Token Token;
@@ -24,7 +25,7 @@ typedef struct {
 
 #define VAR_NUMBER  1       /* "v_number" is used          */
 #define VAR_STRING  2       /* "v_string" is used          */
-#define VAR_FUNC    3       /* "v_string" is function name */
+#define VAR_PAIR    3       /* "v_pair" is used            */
 #define VAR_LIST    4       /* "v_list" is used            */
 #define VAR_DICT    5       /* "v_dict" is used            */
 
@@ -59,6 +60,7 @@ struct Dict {
 
 struct Cmdstr {
   char pipet;               /* pipe flag types */
+  QUEUE stack;
   Token args;
 };
 

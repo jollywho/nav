@@ -12,7 +12,7 @@ UT_icd list_icd = { sizeof(Token),  NULL };
 UT_icd cmd_icd  = { sizeof(Cmdstr), NULL };
 
 typedef struct {
-  Token *item;
+  Token item;
   QUEUE node;
 } queue_item;
 
@@ -33,7 +33,7 @@ void cmdline_destroy(Cmdline *cmdline)
 {
 }
 
-void token_push(QUEUE *queue, Token *token)
+void token_push(QUEUE *queue, Token token)
 {
   queue_item *item = malloc(sizeof(queue_item));
   item->item = token;
@@ -41,14 +41,19 @@ void token_push(QUEUE *queue, Token *token)
   QUEUE_INSERT_HEAD(queue, &item->node);
 }
 
-static Token* token_pop(QUEUE *stack)
+static queue_item *queue_node_data(QUEUE *queue)
+{
+  return QUEUE_DATA(queue, queue_item, node);
+}
+
+static Token token_pop(QUEUE *stack)
 {
   QUEUE *h = QUEUE_HEAD(stack);
-  queue_item *item = QUEUE_DATA(&h, queue_item, node);
+  queue_item *item = queue_node_data(h);
   QUEUE_REMOVE(&item->node);
-  Token *tok = item->item;
+  Token token = item->item;
   free(item);
-  return tok;
+  return token;
 }
 
 static void list_init(typ_T *t)
@@ -128,15 +133,10 @@ void cmdline_tokenize(Cmdline *cmdline)
   }
 }
 
-static Token* pop(String string, Token *token, QUEUE *stack)
+static void pop(QUEUE *stack)
 {
-  Token *parent = token_pop(stack);
-
-  // if token->typ string
-  //  if this string is numeric
-  //    convert to int. adjust type
-  // return
-
+  log_msg("CMDLINE", "pop");
+  Token parent = token_pop(stack);
   // switch(parent typ)
   //  case: array or dict
   //    pushback_list(parent, token)
@@ -144,25 +144,25 @@ static Token* pop(String string, Token *token, QUEUE *stack)
   //    parent->value = token
   //  default:
   //    error, out of possible options
-  return parent;
 }
 
-static Token* push(String string, QUEUE *stack, int type)
+static void push(Token *token, QUEUE *stack)
 {
-  Token *token;
-  //init type
+  log_msg("CMDLINE", "push");
+  token_push(stack, *token);
+  //if string
+  //  if this string is numeric
+  //    convert to int. adjust type
   //if pair
   //  it = queue_remove_head
   //  token->key = it;
   //queue_push_head token
-  return token;
 }
 
 void cmdline_cmdstr_new(Cmdline *cmdline, Cmdstr *cmd, QUEUE *stack)
 {
   log_msg("CMDLINE", "cmdline_cmdstr_new");
   /* create base cmdstr to hold all subtypes */
-  cmd->args.start = 0;
   QUEUE_INIT(stack);
   list_init(&cmd->args.var);
   utarray_push_back(cmdline->cmds, cmd);
@@ -172,50 +172,49 @@ void cmdline_parse(Cmdline *cmdline)
 {
   log_msg("CMDLINE", "cmdline_parse");
   char ch;
-  int pos = 0;
-  QUEUE stack;
   Cmdstr cmd;
+  QUEUE *stack = &cmd.stack;
 
-  cmdline_cmdstr_new(cmdline, &cmd, &stack);
-  log_msg("CMDLINE", "cmdline_parse");
-  Token *word, *tok;
-  word = (Token*)utarray_front(cmdline->tokens);
-  token_push(&stack, &cmd.args);
-  word = NULL;
+  cmdline_cmdstr_new(cmdline, &cmd, stack);
+  token_push(stack, cmd.args);
 
+  Token *word = NULL;
+  Token *block = NULL;
   while( (word = (Token*)utarray_next(cmdline->tokens, word))) {
     char *str = word->var.vval.v_string;
-    //while ((ch = str[pos++]) != '\0') {
-    //  switch(ch) {
-    //    //  case colon         -> push(..,.., token->esc) #change word into pair
-    //    case '|':
-    //      if (str[pos++] == '>')
-    //        cmd.pipet = PIPE_CNTLR;
-    //      else
-    //        cmd.pipet = PIPE_CMD;;
-    //      goto breakout;
-    //    case '"':
-    //      break;
-    //    case ',':
-    //    case '}':
-    //    case ']':
-    //      /* fallthrough */
-    //      tok = pop(str, tok, pos, &stack);
-    //      break;
-    //    //
-    //    //
-    //    case '{':
-    //      tok = push(str, pos, &stack, VAR_DICT);
-    //      break;
-    //    case '[':
-    //      tok = push(str, pos, &stack, VAR_LIST);
-    //      break;
-    //    default:
-    //      tok = push(str, pos, &stack, VAR_STRING);
-    //  }
-    //}
-    //tok = pop(str, tok, pos, &stack);
-    log_msg("_", "%s", word->var.vval.v_string);
+    switch(ch = str[0]) {
+      case '|':
+        if (str[1] == '>')
+          cmd.pipet = PIPE_CNTLR;
+        else
+          cmd.pipet = PIPE_CMD;
+        goto breakout;
+      case '"':
+        break;
+      case ',':
+      case '}':
+      case ']':
+        /* fallthrough */
+        pop(stack);
+        break;
+        //
+      case ':':
+        //pair_init(&block->var);
+        //push(block, &stack);
+        break;
+      case '{':
+        dict_init(&block->var);
+        push(block, stack);
+        break;
+      case '[':
+        list_init(&block->var);
+        push(block, stack);
+        break;
+      default:
+        push(word, stack);
+    }
+    pop(stack);
+    log_msg("_", "%s", str);
   }
 breakout:
   return;
