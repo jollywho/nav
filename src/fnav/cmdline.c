@@ -1,21 +1,40 @@
 #include <malloc.h>
 #include <string.h>
 #include <ctype.h>
-#include "fnav/lib/queue.h"
 
+#include "fnav/lib/queue.h"
 #include "fnav/cmdline.h"
+#include "fnav/cmd.h"
 #include "fnav/ascii.h"
 #include "fnav/log.h"
 
 static void cmdline_reset(Cmdline *cmdline);
-UT_icd dict_icd = { sizeof(Pair),   NULL };
-UT_icd list_icd = { sizeof(Token),  NULL };
-UT_icd cmd_icd  = { sizeof(Cmdstr), NULL };
+static UT_icd dict_icd = { sizeof(Pair),   NULL };
+static UT_icd list_icd = { sizeof(Token),  NULL };
+static UT_icd cmd_icd  = { sizeof(Cmdstr), NULL };
 
 typedef struct {
   Token item;
   QUEUE node;
 } queue_item;
+
+
+//
+void testcmd(Token *args)
+{
+  log_msg("TEST", "RAN SUCC");
+}
+
+static const Cmd_Param_T param_table[] = 
+{
+  {"test", VAR_STRING, BUFFER },
+};
+
+static const Cmd_T cmdtable[] = {
+  {"test", testcmd, 0},
+};
+
+///
 
 void cmdline_init(Cmdline *cmdline, int size)
 {
@@ -23,6 +42,12 @@ void cmdline_init(Cmdline *cmdline, int size)
   memset(cmdline->line, '\0', size);
   utarray_new(cmdline->cmds, &list_icd);
   utarray_new(cmdline->tokens, &list_icd);
+  //
+  Cmd_T *cmd = malloc(sizeof(Cmd_T));
+  cmd = memcpy(cmd, &cmdtable[0], sizeof(Cmd_T));
+  cmd->param = (Cmd_Param_T*)&param_table[0];
+  cmd_add(cmd);
+  cmd_find("test")->cmd_func(NULL);
 }
 
 void cmdline_cleanup(Cmdline *cmdline)
@@ -209,7 +234,7 @@ static void cmdline_parse(Cmdline *cmdline, Cmdstr *cmd)
       case ',':
       case '}':
       case ']':
-        /* fallthrough */
+        /*FALLTHROUGH*/
         pop(stack);
         break;
         //

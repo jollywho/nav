@@ -30,20 +30,12 @@ typedef struct {
 #define VAR_DICT    5       /* "v_dict" is used            */
 
 struct Token {
-  unsigned int argt;        /* see below: XFILE, BUFFER, etc.         */
   int block;                /* block level flag           */
   int start;                /* start pos of token in line */
   int end;                  /* start pos of token in line */
   char esc;                 /* escape char for token      */
   typ_T var;
 };
-
-#define XFILE     0x01
-#define BUFFER    0x02
-#define FIELD     0x04
-#define FUNCTION  0x08
-#define RANGE     0x10
-#define REGEX     0x20
 
 struct Pair {
   Token *key;
@@ -74,8 +66,9 @@ struct Cmdline {
 };
 
 void cmdline_init(Cmdline *cmdline, int size);
-void cmdline_build(Cmdline *cmdline);
 void cmdline_cleanup(Cmdline *cmdline);
-int cmdline_prev_word(Cmdline *cmdline, int pos);
+void cmdline_build(Cmdline *cmdline);
+
+int  cmdline_prev_word(Cmdline *cmdline, int pos);
 
 #endif
