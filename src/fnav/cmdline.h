@@ -75,7 +75,6 @@ struct Cmdline {
 
 void cmdline_init(Cmdline *cmdline, int size);
 void cmdline_build(Cmdline *cmdline);
-void cmdline_destroy(Cmdline *cmdline);
 void cmdline_cleanup(Cmdline *cmdline);
 int cmdline_prev_word(Cmdline *cmdline, int pos);
 

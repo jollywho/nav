@@ -109,7 +109,7 @@ void ex_input(BufferNode *bn, int key)
 void stop_ex_cmd()
 {
   log_msg("EXCMD", "stop_ex_cmd");
-  cmdline_destroy(&cmd);
+  cmdline_cleanup(&cmd);
   wclear(nc_win);
   wnoutrefresh(nc_win);
   doupdate();
