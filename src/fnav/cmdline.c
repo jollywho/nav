@@ -22,7 +22,9 @@ typedef struct {
 //
 void testcmd(Token *args)
 {
+  // assume takes string
   log_msg("TEST", "RAN SUCC");
+  log_msg("TEST", "arg0: %s", args->var.vval.v_string);
 }
 
 static const Cmd_Param_T param_table[] = 
@@ -47,7 +49,6 @@ void cmdline_init(Cmdline *cmdline, int size)
   cmd = memcpy(cmd, &cmdtable[0], sizeof(Cmd_T));
   cmd->param = (Cmd_Param_T*)&param_table[0];
   cmd_add(cmd);
-  cmd_find("test")->cmd_func(NULL);
 }
 
 void cmdline_cleanup(Cmdline *cmdline)
@@ -220,7 +221,7 @@ static void cmdline_parse(Cmdline *cmdline, Cmdstr *cmd)
   stack_push(stack, cmd->args);
 
   Token *word = NULL;
-  while( (word = (Token*)utarray_next(cmdline->tokens, word))) {
+  while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
     char *str = word->var.vval.v_string;
     switch(ch = str[0]) {
       case '|':
@@ -269,8 +270,11 @@ void cmdline_build(Cmdline *cmdline)
 
   Cmdstr cmd;
   cmdline_parse(cmdline, &cmd);
-  Token *word = NULL;
-  while( (word = (Token*)utarray_next(cmd.args.var.vval.v_list->items, word))) {
-    log_msg("_", "%d", word->var.v_type);
-  }
+}
+
+void cmdline_req_run(Cmdline *cmdline)
+{
+  Cmdstr *cmd;
+  cmd = (Cmdstr*)utarray_front(cmdline->cmds);
+  cmd_run(cmd);
 }
