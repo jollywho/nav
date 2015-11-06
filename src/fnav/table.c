@@ -55,10 +55,8 @@ bool tbl_mk(String name)
   if (!t) {
     log_msg("TABLE", "making table {%s} ...", name);
     fn_tbl *t = malloc(sizeof(fn_tbl));
+    *t = (fn_tbl){0};
     t->key = name;
-    t->count = 0;
-    t->rec_count = 0;
-    t->fields = NULL;
     HASH_ADD_KEYPTR(hh, FN_MASTER, t->key, strlen(t->key), t);
     return true;
   }
@@ -93,10 +91,9 @@ void tbl_mk_fld(String tn, String name, tFldType typ)
   log_msg("TABLE", "making {%s} field {%s} ...", tn, name);
   fn_tbl *t = get_tbl(tn);
   fn_fld *fld = malloc(sizeof(fn_fld));
+  *fld = (fn_fld){0};
   fld->key = strdup(name);
   fld->type = typ;
-  fld->vals = NULL;
-  fld->lis = NULL;
   t->count++;
   HASH_ADD_KEYPTR(hh, t->fields, fld->key, strlen(fld->key), fld);
   log_msg("TABLE", "made %s", fld->key);
@@ -180,13 +177,6 @@ void lis_save(fn_lis *lis, int index, int lnum)
   lis->lnum = lnum;
 }
 
-int FN_MV(ventry *e, int n)
-{
-  return ((n > 0) ?
-    (e->next->head ? 0 : (1)) :
-    (e->head ? 0 : (-1)));
-}
-
 void* rec_fld(fn_rec *rec, String fname)
 {
   if (!rec) return NULL;
@@ -262,14 +252,9 @@ void tbl_add_lis(String tn, String key_fld, String key)
       log_msg("TABLE", "new lis");
       /* create new listener */
       ll = malloc(sizeof(fn_lis));
+      *ll = (fn_lis){0};
       ll->key = strdup(key);
       ll->key_fld = ff;
-      ll->fname = NULL;
-      ll->fval = NULL;
-      ll->ent = NULL;
-      ll->rec = NULL;
-      ll->index = 0;
-      ll->lnum = 0;
       HASH_ADD_STR(ff->lis, key, ll);
     }
   }
@@ -298,8 +283,10 @@ static fn_val* new_entry(fn_rec *rec, fn_fld *fld, void *data, int typ, int indx
     ent->head = 1;
     ent->next = ent;
     ent->prev = ent;
+
     val->rlist = ent;
     val->key = data;
+
     ent->rec = rec;
     ent->val = val;
     rec->vlist[indx] = ent;

@@ -6,8 +6,6 @@
 #include "fnav/log.h"
 #include "fnav/tui/layout.h"
 #include "fnav/tui/window.h"
-#include "fnav/tui/fm_cntlr.h"
-#include "fnav/tui/sh_cntlr.h"
 
 WINDOW *nc_win;
 int curpos;
@@ -60,23 +58,6 @@ void ex_input(BufferNode *bn, int key)
     return;
   }
   if (key == CAR) {
-    // TODO: replace these with cmd_table
-    //if (strcmp(cmd.line, "fm") == 0) {
-    //  fm_init(bn->buf);
-    //  window_ex_cmd_end();
-    //}
-    //if (strcmp(cmd.line, "sh") == 0) {
-    //  sh_init(bn->buf);
-    //  window_ex_cmd_end();
-    //}
-    //if (strcmp(cmd.line, "new") == 0) {
-    //  pos_T dir = {.lnum = 1, .col = 0};
-    //  window_add_buffer(dir);
-    //}
-    //if (strcmp(cmd.line, "vnew") == 0) {
-    //  pos_T dir = {.lnum = 0, .col = 1};
-    //  window_add_buffer(dir);
-    //}
     cmdline_req_run(&cmd);
     stop_ex_cmd();
     return;

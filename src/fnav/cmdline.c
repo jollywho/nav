@@ -20,17 +20,12 @@ typedef struct {
 
 
 //
-void testcmd(Token *args)
+void testcmd(Token *args, int cmd_flags)
 {
   // assume takes string
   log_msg("TEST", "RAN SUCC");
   log_msg("TEST", "arg0: %s", args->var.vval.v_string);
 }
-
-static const Cmd_Param_T param_table[] = 
-{
-  {"test", VAR_STRING, BUFFER },
-};
 
 static const Cmd_T cmdtable[] = {
   {"test", testcmd, 0},
@@ -47,7 +42,6 @@ void cmdline_init(Cmdline *cmdline, int size)
   //
   Cmd_T *cmd = malloc(sizeof(Cmd_T));
   cmd = memcpy(cmd, &cmdtable[0], sizeof(Cmd_T));
-  cmd->param = (Cmd_Param_T*)&param_table[0];
   cmd_add(cmd);
 }
 

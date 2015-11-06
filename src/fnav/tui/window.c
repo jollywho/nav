@@ -8,6 +8,9 @@
 #include "fnav/event/event.h"
 #include "fnav/tui/layout.h"
 #include "fnav/tui/ex_cmd.h"
+#include "fnav/tui/fm_cntlr.h"
+#include "fnav/tui/sh_cntlr.h"
+#include "fnav/cmd.h"
 
 struct Window {
   Loop loop;
@@ -20,12 +23,24 @@ struct Window {
 Window win;
 
 static void window_loop(Loop *loop, int ms);
+static void new(Token *arg, int cmd_flags);
 
 void sig_resize(int sig)
 {
   log_msg("WINDOW", "Signal received: **term resize**");
   // TODO: redo layout
 }
+
+#define DIR_HORZ  0
+#define DIR_VERT  1
+
+#define CMDS_SIZE ARRAY_SIZE(cmdtable)
+
+static const Cmd_T cmdtable[] = {
+  {"new",    new,     DIR_HORZ},
+  {"vnew",   new,     DIR_VERT},
+  {"vne",    new,     DIR_VERT},
+};
 
 void window_init(void)
 {
@@ -40,6 +55,12 @@ void window_init(void)
   signal(SIGWINCH, sig_resize);
   pos_T dir = {.lnum = 0, .col = 0};
   window_add_buffer(dir);
+
+  for (int i = 0; i < CMDS_SIZE; i++) {
+    Cmd_T *cmd = malloc(sizeof(Cmd_T));
+    cmd = memcpy(cmd, &cmdtable[i], sizeof(Cmd_T));
+    cmd_add(cmd);
+  }
 }
 
 void window_input(int key)
@@ -63,6 +84,19 @@ void window_input(int key)
       }
     }
     buf_input(win.focus, key);
+  }
+}
+
+static void new(Token *arg, int cmd_flags)
+{
+  pos_T dir;
+  ((int*)(&dir))[cmd_flags] = 1;
+  window_add_buffer(dir);
+  if (strcmp(arg->var.vval.v_string, "fm") == 0) {
+    fm_init(win.focus->buf);
+  }
+  else if (strcmp(arg->var.vval.v_string, "sh") == 0) {
+    fm_init(win.focus->buf);
   }
 }
 

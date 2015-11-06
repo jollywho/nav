@@ -42,5 +42,5 @@ void cmd_run(Cmdstr *cmdstr)
     //TODO: validate params vs tokens
   }
   word = (Token*)utarray_next(args->items, func);
-  fun->cmd_func(word);
+  fun->cmd_func(word, fun->cmd_flags);
 }

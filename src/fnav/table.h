@@ -4,8 +4,6 @@
 #include "fnav/lib/uthash.h"
 #include "fnav/rpc.h"
 
-#define elem_cmp(a, b) (strcmp((a).key, (b).key))
-
 typedef struct fn_rec fn_rec;
 typedef struct fn_val fn_val;
 typedef struct fn_fld fn_fld;
@@ -62,6 +60,5 @@ void tbl_del_val(String tn, String fname, String val);
 
 int tbl_fld_count(String tn);
 int tbl_ent_count(ventry *e);
-int FN_MV(ventry *e, int n);
 
 #endif
