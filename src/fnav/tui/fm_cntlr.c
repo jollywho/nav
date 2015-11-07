@@ -209,6 +209,7 @@ int cntlr_input(Cntlr *cntlr, int key)
   if (idx >= 0) {
     fm_cmds[idx].cmd_func(cntlr, &ca);
   }
+  // TODO: send to pipe_cntlrs if not consumed
   // if consumed return 1
   return 0;
 }
@@ -222,7 +223,6 @@ static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
   hndl->key = val;
   hndl->fname = "name";
   c->hndl = hndl;
-  c->_focus = cntlr_focus;
   c->_cancel = cntlr_cancel;
   c->_input = cntlr_input;
   c->top = fm;

@@ -55,7 +55,7 @@ static void cmdline_reset(Cmdline *cmdline)
 {
   utarray_free(cmdline->cmds);
   utarray_free(cmdline->tokens);
-  utarray_new(cmdline->cmds, &list_icd);
+  utarray_new(cmdline->cmds, &cmd_icd);
   utarray_new(cmdline->tokens, &list_icd);
 }
 
@@ -202,27 +202,27 @@ static void push(Token token, QUEUE *stack)
   //  token->key = it;
 }
 
-static void cmdline_parse(Cmdline *cmdline, Cmdstr *cmd)
+static Token* cmdline_parse(Cmdline *cmdline, Token *word)
 {
   log_msg("CMDLINE", "cmdline_parse");
   char ch;
+  Cmdstr cmd;
 
-  QUEUE *stack = &cmd->stack;
+  QUEUE *stack = &cmd.stack;
   QUEUE_INIT(stack);
 
-  cmd->args = list_init();
-  utarray_push_back(cmdline->cmds, cmd);
-  stack_push(stack, cmd->args);
+  cmd.args = list_init();
+  utarray_push_back(cmdline->cmds, &cmd);
+  stack_push(stack, cmd.args);
 
-  Token *word = NULL;
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
     char *str = word->var.vval.v_string;
     switch(ch = str[0]) {
       case '|':
         if (str[1] == '>')
-          cmd->pipet = PIPE_CNTLR;
+          cmd.pipet = PIPE_CNTLR;
         else
-          cmd->pipet = PIPE_CMD;
+          cmd.pipet = PIPE_CMD;
         goto breakout;
       case '"':
         break;
@@ -248,8 +248,9 @@ static void cmdline_parse(Cmdline *cmdline, Cmdstr *cmd)
         pop(stack);
     }
   }
+  return NULL;
 breakout:
-  return;
+  return word;
 }
 
 void cmdline_build(Cmdline *cmdline)
@@ -259,16 +260,26 @@ void cmdline_build(Cmdline *cmdline)
   cmdline_reset(cmdline);
   cmdline_tokenize(cmdline);
 
-  /* init cmdline list of cmds */
-  utarray_new(cmdline->cmds, &cmd_icd);
-
-  Cmdstr cmd;
-  cmdline_parse(cmdline, &cmd);
+  /* parse until empty */
+  Token *word = NULL;
+  for(;;) {
+    word = cmdline_parse(cmdline, word);
+    if (!word) break;
+  }
 }
 
 void cmdline_req_run(Cmdline *cmdline)
 {
-  Cmdstr *cmd;
-  cmd = (Cmdstr*)utarray_front(cmdline->cmds);
-  cmd_run(cmd);
+  Cmdstr *cmd, *lhs;
+  cmd = lhs = NULL;
+  while ((cmd = (Cmdstr*)utarray_next(cmdline->cmds, cmd))) {
+    cmd_run(cmd);
+    if (lhs) {
+      // attach_cntlr(lhs, cmd);
+      lhs = NULL;
+    }
+    if (cmd->pipet == PIPE_CNTLR) {
+      lhs = cmd;
+    }
+  }
 }

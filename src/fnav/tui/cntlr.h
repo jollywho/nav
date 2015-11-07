@@ -30,8 +30,8 @@ struct Cntlr {
   fn_handle *hndl;
   void *top;
   void (*_cancel)(Cntlr *cntlr);
-  void (*_focus)(Cntlr *cntlr);
   int  (*_input)(Cntlr *cntlr, int key);
+  void (*_open)(Cntlr *cntlr, Cntlr *cb_cntlr);
 };
 
 typedef struct {

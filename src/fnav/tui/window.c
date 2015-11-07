@@ -23,7 +23,8 @@ struct Window {
 Window win;
 
 static void window_loop(Loop *loop, int ms);
-static void new(Token *arg, int cmd_flags);
+static void win_new(Token *arg, int cmd_flags);
+static void win_close(Token *arg, int cmd_flags);
 
 void sig_resize(int sig)
 {
@@ -37,9 +38,10 @@ void sig_resize(int sig)
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
 
 static const Cmd_T cmdtable[] = {
-  {"new",    new,     DIR_HORZ},
-  {"vnew",   new,     DIR_VERT},
-  {"vne",    new,     DIR_VERT},
+  {"q",      win_close,   0},
+  {"new",    win_new,     DIR_HORZ},
+  {"vnew",   win_new,     DIR_VERT},
+  {"vne",    win_new,     DIR_VERT},
 };
 
 void window_init(void)
@@ -87,17 +89,27 @@ void window_input(int key)
   }
 }
 
-static void new(Token *arg, int cmd_flags)
+static void win_new(Token *arg, int cmd_flags)
 {
   pos_T dir;
   ((int*)(&dir))[cmd_flags] = 1;
-  window_add_buffer(dir);
+  if (win.buf_count > 1)
+    window_add_buffer(dir);
+  // TODO: replace with cntlr name lookup.
+  //       load. init here. add to cntlr list etc.
+  //       open. create instance.
+  //       close. close instance.
+  //       unload. cleanup here. remove from cntlr list.
   if (strcmp(arg->var.vval.v_string, "fm") == 0) {
     fm_init(win.focus->buf);
   }
   else if (strcmp(arg->var.vval.v_string, "sh") == 0) {
     fm_init(win.focus->buf);
   }
+}
+
+static void win_close(Token *arg, int cmd_flags)
+{
 }
 
 void window_ex_cmd_start()
