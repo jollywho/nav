@@ -11,7 +11,7 @@ struct Op_cntlr {
   fn_handle *hndl;
 };
 
-void op_init(Cntlr *attach);
+void op_init();
 void op_cleanup(Op_cntlr *cntlr);
 
 #endif

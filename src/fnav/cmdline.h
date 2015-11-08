@@ -51,7 +51,7 @@ struct Dict {
 };
 
 struct Cmdstr {
-  char pipet;               /* pipe flag types */
+  int pipet;               /* pipe flag types */
   QUEUE stack;
   Token args;
 };

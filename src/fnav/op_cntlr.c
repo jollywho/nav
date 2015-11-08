@@ -1,9 +1,12 @@
 #include <malloc.h>
+#include "fnav/log.h"
 #include "fnav/table.h"
+#include "fnav/event/hook.h"
 #include "fnav/tui/op_cntlr.h"
 
-void op_callback(Op_cntlr *cntlr, Model *m)
+static void diropen_cb(Cntlr *host, Cntlr *caller)
 {
+  // OP = caller.top
   // check key
   // get curs value of default field
   // validate path
@@ -31,9 +34,17 @@ void op_loop(Loop *loop, int ms)
 {
 }
 
-void op_init(Cntlr *attach)
+static void pipe_attach_cb(Cntlr *host, Cntlr *caller)
 {
-  Op_cntlr *cntlr = malloc(sizeof(Op_cntlr*));
+  // 
+  //hook_add(&LHS, &cntlr->base, diropen_cb, "diropen");
+}
+
+void op_init()
+{
+  log_msg("OP", "INIT");
+  Op_cntlr *cntlr = malloc(sizeof(Op_cntlr));
+  cntlr->base.top = cntlr;
   loop_add(&cntlr->loop, op_loop);
   uv_timer_init(&cntlr->loop.uv, &cntlr->loop.delay);
   if (tbl_mk("op_procs")) {
@@ -43,6 +54,8 @@ void op_init(Cntlr *attach)
     tbl_mk_fld("op_procs", "uv_proc", typVOID);
     tbl_mk_fld("op_procs", "uv_opts", typVOID);
   }
+  hook_init(&cntlr->base);
+  hook_add(&cntlr->base, &cntlr->base, pipe_attach_cb, "pipe_attach");
 }
 
 void op_cleanup(Op_cntlr *cntlr);

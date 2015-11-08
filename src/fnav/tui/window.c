@@ -93,8 +93,7 @@ static void win_new(Token *arg, int cmd_flags)
 {
   pos_T dir;
   ((int*)(&dir))[cmd_flags] = 1;
-  if (win.buf_count > 1)
-    window_add_buffer(dir);
+  window_add_buffer(dir);
   // TODO: replace with cntlr name lookup.
   //       load. init here. add to cntlr list etc.
   //       open. create instance.

@@ -16,6 +16,7 @@ typedef struct fn_tbl fn_tbl;
 typedef struct Buffer Buffer;
 typedef struct fn_handle fn_handle;
 typedef struct Model Model;
+typedef struct HookHandler HookHandler;
 
 struct fn_handle {
   Buffer *buf;
@@ -31,7 +32,7 @@ struct Cntlr {
   void *top;
   void (*_cancel)(Cntlr *cntlr);
   int  (*_input)(Cntlr *cntlr, int key);
-  void (*_open)(Cntlr *cntlr, Cntlr *cb_cntlr);
+  HookHandler *event_hooks;
 };
 
 typedef struct {

@@ -6,6 +6,7 @@
 #include "fnav/ascii.h"
 #include "fnav/table.h"
 #include "fnav/model.h"
+#include "fnav/event/hook.h"
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/fm_cntlr.h"
 #include "fnav/log.h"
@@ -232,7 +233,6 @@ void fm_init(Buffer *buf)
 {
   log_msg("INIT", "FM_CNTLR");
   init_cmds(); //TODO: cleanup loose parts
-
   FM_cntlr *fm = malloc(sizeof(FM_cntlr));
   fm->op_count = 1;
   fm->mo_count = 1;
@@ -255,6 +255,7 @@ void fm_init(Buffer *buf)
   model_init(fm->base.hndl);
   model_open(fm->base.hndl);
   buf_set_cntlr(buf, &fm->base);
+  hook_init(&fm->base);
 
   fm->fs = fs_init(fm->base.hndl);
   fs_open(fm->fs, fm->cur_dir);

@@ -18,31 +18,12 @@ typedef struct {
   QUEUE node;
 } queue_item;
 
-
-//
-void testcmd(Token *args, int cmd_flags)
-{
-  // assume takes string
-  log_msg("TEST", "RAN SUCC");
-  log_msg("TEST", "arg0: %s", args->var.vval.v_string);
-}
-
-static const Cmd_T cmdtable[] = {
-  {"test", testcmd, 0},
-};
-
-///
-
 void cmdline_init(Cmdline *cmdline, int size)
 {
   cmdline->line = malloc(size * sizeof(char*));
   memset(cmdline->line, '\0', size);
   utarray_new(cmdline->cmds, &list_icd);
   utarray_new(cmdline->tokens, &list_icd);
-  //
-  Cmd_T *cmd = malloc(sizeof(Cmd_T));
-  cmd = memcpy(cmd, &cmdtable[0], sizeof(Cmd_T));
-  cmd_add(cmd);
 }
 
 void cmdline_cleanup(Cmdline *cmdline)
@@ -202,27 +183,35 @@ static void push(Token token, QUEUE *stack)
   //  token->key = it;
 }
 
+static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)
+{
+  Token *nword = (Token*)utarray_next(cmdline->tokens, word);
+  if (!nword) return word;
+  char ch = nword->var.vval.v_string[0];
+  if (ch == '>')
+    (*cmd).pipet = PIPE_CNTLR;
+  else
+    (*cmd).pipet = PIPE_CMD;
+  return nword;
+}
+
 static Token* cmdline_parse(Cmdline *cmdline, Token *word)
 {
   log_msg("CMDLINE", "cmdline_parse");
   char ch;
-  Cmdstr cmd;
+  Cmdstr cmd = {.pipet = 0};
 
   QUEUE *stack = &cmd.stack;
   QUEUE_INIT(stack);
 
   cmd.args = list_init();
-  utarray_push_back(cmdline->cmds, &cmd);
   stack_push(stack, cmd.args);
 
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
     char *str = word->var.vval.v_string;
     switch(ch = str[0]) {
       case '|':
-        if (str[1] == '>')
-          cmd.pipet = PIPE_CNTLR;
-        else
-          cmd.pipet = PIPE_CMD;
+        word = pipe_type(cmdline, word, &cmd);
         goto breakout;
       case '"':
         break;
@@ -248,8 +237,10 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
         pop(stack);
     }
   }
+  utarray_push_back(cmdline->cmds, &cmd);
   return NULL;
 breakout:
+  utarray_push_back(cmdline->cmds, &cmd);
   return word;
 }
 
@@ -268,6 +259,8 @@ void cmdline_build(Cmdline *cmdline)
   }
 }
 
+#include "fnav/tui/op_cntlr.h"
+
 void cmdline_req_run(Cmdline *cmdline)
 {
   Cmdstr *cmd, *lhs;
@@ -275,11 +268,17 @@ void cmdline_req_run(Cmdline *cmdline)
   while ((cmd = (Cmdstr*)utarray_next(cmdline->cmds, cmd))) {
     cmd_run(cmd);
     if (lhs) {
-      // attach_cntlr(lhs, cmd);
+      // have lhs so this iteration should be rhs.
+      // check arg0 is a loaded cntlr.
+      //send_hook_msg("pipe_attach", rhs, lhs);
+      op_init();
       lhs = NULL;
     }
     if (cmd->pipet == PIPE_CNTLR) {
       lhs = cmd;
+      // FIXME: search backwards in cmds to find cntlr
+      // flag should be set by function that accepts a cntlr.
+      // iow: when it validates the token as a cntlr
     }
   }
 }

@@ -3,7 +3,7 @@
 #include "fnav/log.h"
 
 Cmd_T *cmd_table;
-static UT_icd cmd_icd = { sizeof(Cmd_T),   NULL };
+static UT_icd cmd_icd = { sizeof(Cmd_T), NULL };
 
 void cmd_add(Cmd_T *cmd)
 {
