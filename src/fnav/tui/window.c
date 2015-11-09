@@ -56,7 +56,7 @@ void window_init(void)
 
   signal(SIGWINCH, sig_resize);
   pos_T dir = {.lnum = 0, .col = 0};
-  window_add_buffer(dir);
+  //window_add_buffer(dir);
 
   for (int i = 0; i < CMDS_SIZE; i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
@@ -69,12 +69,17 @@ void window_input(int key)
 {
   log_msg("WINDOW", "input");
   if (win.ex) {
-    ex_input(win.focus, key);
+    ex_input(key);
   }
   else {
     if (key == ';') {
-      window_ex_cmd_start();
+      window_ex_cmd_start(0);
     }
+    if (key == '/') {
+      window_ex_cmd_start(1);
+    }
+    if (!win.focus)
+      return;
     if (key == 'L') {
       if (win.focus->child) {
         win.focus = win.focus->child;
@@ -92,8 +97,9 @@ void window_input(int key)
 static void* win_new(List *args, int cmd_flags)
 {
   pos_T dir;
-  ((int*)(&dir))[cmd_flags] = 1;
-  //window_add_buffer(dir);
+  dir.col = cmd_flags == DIR_VERT ? 1 : 0;
+  dir.lnum = cmd_flags == DIR_HORZ ? 1 : 0;
+  window_add_buffer(dir);
   // TODO: replace with cntlr name lookup.
   //       load. init here. add to cntlr list etc.
   //       open. create instance.
@@ -108,10 +114,10 @@ static void* win_close(List *arg, int cmd_flags)
   return NULL;
 }
 
-void window_ex_cmd_start()
+void window_ex_cmd_start(int state)
 {
   win.ex = true;
-  start_ex_cmd();
+  start_ex_cmd(state);
 }
 
 void window_ex_cmd_end()

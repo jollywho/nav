@@ -9,6 +9,9 @@ struct Op_cntlr {
   Cntlr base;
   Loop loop;
   fn_handle *hndl;
+  uv_process_t proc;
+  uv_process_options_t opts;
+  bool ready;
 };
 
 Cntlr* op_init();

@@ -1,20 +1,27 @@
+#include <errno.h>
 #include <malloc.h>
 #include "fnav/log.h"
 #include "fnav/table.h"
 #include "fnav/model.h"
 #include "fnav/event/hook.h"
 #include "fnav/tui/op_cntlr.h"
-void op_loop(Loop *loop, int ms);
+
+void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal) {
+  log_msg("OP", "exit_cb");
+  uv_close((uv_handle_t*) req, NULL);
+  Op_cntlr *op = (Op_cntlr*)req->data;
+  op->ready = true;
+}
 
 static void create_proc(Op_cntlr *op, String path)
 {
   log_msg("OP", "create_proc");
-  uv_process_t *proc = malloc(sizeof(uv_process_t));
-  uv_process_options_t *opts = malloc(sizeof(uv_process_options_t));
-  opts->file = "mpv";
-  opts->flags = UV_PROCESS_DETACHED;
-  char *rv[4] = { "mpv", "--fs", path, NULL };
-  opts->args = rv;
+  op->opts.file = "mpv";
+  op->opts.flags = UV_PROCESS_DETACHED;
+  op->opts.exit_cb = exit_cb;
+  char *rv[] = {"mpv", "--fs", path, NULL};
+  op->opts.args = rv;
+  op->proc.data = op;
 
   //trans_rec *r = mk_trans_rec(tbl_fld_count("op_procs"));
   //edit_trans(r, "ext",     (void*)"mkv",  NULL);
@@ -25,8 +32,17 @@ static void create_proc(Op_cntlr *op, String path)
   //edit_trans(r, "uv_proc", NULL,          (void*)proc);
   //edit_trans(r, "uv_opts", NULL,          (void*)opts);
   //CREATE_EVENT(&op->loop.events, commit, 2, "op_procs", r);
-  uv_spawn(&op->loop.uv, proc, opts);
-  uv_unref((uv_handle_t*) &proc);
+  if (!op->ready) {
+    log_msg("OP", "kill");
+    uv_process_kill(&op->proc, SIGINT);
+    uv_close((uv_handle_t*)&op->proc, NULL);
+    uv_run(&op->loop.uv, UV_RUN_NOWAIT);
+  }
+  log_msg("OP", "spawn");
+  int ret = uv_spawn(&op->loop.uv, &op->proc, &op->opts);
+  op->ready = false;
+  log_msg("?", "%s", uv_strerror(ret));
+  uv_unref((uv_handle_t*) &op->proc);
 }
 
 const char *file_ext(const char *filename) {
@@ -70,6 +86,7 @@ Cntlr* op_init()
   log_msg("OP", "INIT");
   Op_cntlr *op = malloc(sizeof(Op_cntlr));
   op->base.top = op;
+  op->ready = true;
   loop_add(&op->loop, op_loop);
   uv_timer_init(&op->loop.uv, &op->loop.delay);
   if (tbl_mk("op_procs")) {

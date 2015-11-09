@@ -296,6 +296,7 @@ void cmdline_req_run(Cmdline *cmdline)
       //  error if arg0 not cntlr
       //tmp = cmd;
       //PREV_CMD(cmdline, tmp);
+      // TODO: handle ":|> op" with lhs as window's focused cntlr.
       if (cmd->ret_t == CNTLR) {
         lhs = cmd->ret;
       }

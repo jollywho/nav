@@ -19,12 +19,13 @@ add_executable(fnav ${SOURCES})
 
 set(CURSES_NEED_WIDE true)
 find_package(Curses REQUIRED)
-find_package(Curses REQUIRED)
-find_package(LibTermkey REQUIRED)
+find_package(PCRE REQUIRED)
 find_package(LibUV REQUIRED)
+find_package(LibTermkey REQUIRED)
+target_link_libraries(fnav ${CURSES_LIBRARY})
+target_link_libraries(fnav ${PCRE_LIBRARY})
 target_link_libraries(fnav ${LIBUV_LIBRARIES})
 target_link_libraries(fnav ${LIBTERMKEY_LIBRARIES})
-target_link_libraries(fnav ${CURSES_LIBRARY})
 target_link_libraries(fnav util)
 
 set_target_properties(fnav PROPERTIES

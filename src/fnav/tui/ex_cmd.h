@@ -3,8 +3,8 @@
 
 #include "fnav/tui/buffer.h"
 
-void start_ex_cmd();
+void start_ex_cmd(int ex_state);
 void stop_ex_cmd();
-void ex_input(BufferNode *bn, int key);
+void ex_input(int key);
 
 #endif

@@ -2,6 +2,7 @@
 // command line
 #include "fnav/tui/ex_cmd.h"
 #include "fnav/cmdline.h"
+#include "fnav/regex.h"
 #include "fnav/ascii.h"
 #include "fnav/log.h"
 #include "fnav/tui/layout.h"
@@ -12,13 +13,17 @@ int curpos;
 int maxpos;
 Cmdline cmd;
 
+char state_symbol[] = {':', '/'};
+int ex_state;
+
 #define CURMIN -1
 
 static void cmdline_draw();
 
-void start_ex_cmd()
+void start_ex_cmd(int state)
 {
   log_msg("EXCMD", "start");
+  ex_state = state;
   pos_T max = layout_size();
   curs_set(1);
   nc_win = newwin(1, 0, max.lnum - 1, 0);
@@ -30,7 +35,8 @@ void start_ex_cmd()
 
 static void cmdline_draw()
 {
-  mvwprintw(nc_win, 0, 0, ":");
+  // TODO: print ':' for cmd and '/' for search
+  mvwaddch(nc_win, 0, 0, state_symbol[ex_state]);
   mvwprintw(nc_win, 0, 1, cmd.line);
   wmove(nc_win, 0, curpos + 2);
   wnoutrefresh(nc_win);
@@ -50,7 +56,30 @@ void del_word()
   // delete from curpos to found index
 }
 
-void ex_input(BufferNode *bn, int key)
+static void ex_enter()
+{
+  if (ex_state == 0) {
+    cmdline_req_run(&cmd);
+  }
+  else {
+    regex_req_enter();
+  }
+  stop_ex_cmd();
+}
+
+static void ex_onkey()
+{
+  if (ex_state == 0) {
+    cmdline_build(&cmd);
+  }
+  else {
+    regex_build(cmd.line);
+    regex_focus();
+  }
+  cmdline_draw();
+}
+
+void ex_input(int key)
 {
   log_msg("EXCMD", "input");
   if (key == ESC) {
@@ -58,8 +87,7 @@ void ex_input(BufferNode *bn, int key)
     return;
   }
   if (key == CAR) {
-    cmdline_req_run(&cmd);
-    stop_ex_cmd();
+    ex_enter();
     return;
   }
   if (key == BS) {
@@ -84,8 +112,7 @@ void ex_input(BufferNode *bn, int key)
     // FIXME: wide char support
     cmd.line[curpos] = key;
   }
-  cmdline_build(&cmd);
-  cmdline_draw();
+  ex_onkey();
 }
 
 void stop_ex_cmd()
