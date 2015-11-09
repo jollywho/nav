@@ -21,26 +21,17 @@ Cmd_T* cmd_find(String name)
   return cmd;
 }
 
-#define TOKEN_LIST(token) \
-  token->args.var.vval.v_list
-
-#define TOKEN_STR(token) \
-  token->var.vval.v_string
-
 void cmd_run(Cmdstr *cmdstr)
 {
   log_msg("CMD", "cmd_run");
   Token *word, *func = NULL;
   List *args = TOKEN_LIST(cmdstr);
+
   if (utarray_len(args->items) < 1) return;
-
   word = func = (Token*)utarray_front(args->items);
-  Cmd_T *fun = cmd_find(TOKEN_STR(word));
-  if (!fun) return; // :'(
+  Cmd_T *fun = cmd_find(TOKEN_STR(word->var));
 
-  while((word = (Token*)utarray_next(args->items, word))) {
-    //TODO: validate params vs tokens
-  }
-  word = (Token*)utarray_next(args->items, func);
-  fun->cmd_func(word, fun->cmd_flags);
+  if (!fun) return; // :'(
+  cmdstr->ret_t = CNTLR;
+  cmdstr->ret = fun->cmd_func(args, fun->cmd_flags);
 }

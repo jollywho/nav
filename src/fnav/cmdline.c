@@ -3,6 +3,8 @@
 #include <ctype.h>
 
 #include "fnav/lib/queue.h"
+#include "fnav/tui/cntlr.h"
+#include "fnav/event/hook.h"
 #include "fnav/cmdline.h"
 #include "fnav/cmd.h"
 #include "fnav/ascii.h"
@@ -77,7 +79,7 @@ static Token stack_head(QUEUE *stack)
 static Token list_init()
 {
   Token token;
-  List *l = malloc(sizeof(List*));
+  List *l = malloc(sizeof(List));
   token.var.v_type = VAR_LIST;
   utarray_new(l->items, &list_icd);
   token.var.vval.v_list = l;
@@ -87,7 +89,7 @@ static Token list_init()
 static Token dict_init()
 {
   Token token;
-  Dict *d = malloc(sizeof(Dict*));
+  Dict *d = malloc(sizeof(Dict));
   token.var.v_type = VAR_DICT;
   utarray_new(d->items, &dict_icd);
   token.var.vval.v_dict = d;
@@ -259,26 +261,48 @@ void cmdline_build(Cmdline *cmdline)
   }
 }
 
-#include "fnav/tui/op_cntlr.h"
+#define NEXT_CMD(cl,c) \
+  (c = (Cmdstr*)utarray_next(cl->cmds, c))
+
+#define PREV_CMD(cl,c) \
+  (c = (Cmdstr*)utarray_prev(cl->cmds, c))
 
 void cmdline_req_run(Cmdline *cmdline)
 {
-  Cmdstr *cmd, *lhs;
-  cmd = lhs = NULL;
-  while ((cmd = (Cmdstr*)utarray_next(cmdline->cmds, cmd))) {
+  log_msg("CMDLINE", "cmdline_req_run");
+  Cmdstr *cmd;
+  cmd = NULL;
+
+  while (NEXT_CMD(cmdline, cmd)) {
     cmd_run(cmd);
-    if (lhs) {
-      // have lhs so this iteration should be rhs.
-      // check arg0 is a loaded cntlr.
-      //send_hook_msg("pipe_attach", rhs, lhs);
-      op_init();
-      lhs = NULL;
-    }
     if (cmd->pipet == PIPE_CNTLR) {
-      lhs = cmd;
-      // FIXME: search backwards in cmds to find cntlr
-      // flag should be set by function that accepts a cntlr.
-      // iow: when it validates the token as a cntlr
+      Cntlr *lhs, *rhs;
+      lhs = rhs = NULL;
+
+      // search for rhs in next cmd.
+      //  break if no arg0. error if arg0 not cntlr
+      Cmdstr *tmp = cmd;
+      NEXT_CMD(cmdline, tmp);
+      List *args = TOKEN_LIST(tmp);
+      Token *word = (Token*)utarray_front(args->items);
+      String arg = TOKEN_STR(word->var);
+
+      if (!cntlr_isloaded(arg)) {
+        log_msg("ERROR", "cntlr %s not valid", arg);
+      }
+      rhs = cntlr_open(arg, NULL);
+
+      // search for lhs backwards in cmds.
+      //  error if arg0 not cntlr
+      //tmp = cmd;
+      //PREV_CMD(cmdline, tmp);
+      if (cmd->ret_t == CNTLR) {
+        lhs = cmd->ret;
+      }
+      if (lhs && rhs) {
+        send_hook_msg("pipe_attach", rhs, lhs);
+        cmd = tmp;
+      }
     }
   }
 }

@@ -102,6 +102,8 @@ static void fm_right(Cntlr *cntlr)
       fs_open(self->fs, cur_dir);
       self->cur_dir = cur_dir;
     }
+    else
+      send_hook_msg("fileopen", cntlr, NULL);
   }
 }
 
@@ -229,7 +231,7 @@ static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
   c->top = fm;
 }
 
-void fm_init(Buffer *buf)
+Cntlr* fm_init(Buffer *buf)
 {
   log_msg("INIT", "FM_CNTLR");
   init_cmds(); //TODO: cleanup loose parts
@@ -259,6 +261,7 @@ void fm_init(Buffer *buf)
 
   fm->fs = fs_init(fm->base.hndl);
   fs_open(fm->fs, fm->cur_dir);
+  return &fm->base;
 }
 
 void fm_cleanup(FM_cntlr *cntlr)

@@ -2,7 +2,6 @@
 // all ncurses drawing should be done here.
 #include <ncurses.h>
 
-#include "fnav/log.h"
 #include "fnav/tui/window.h"
 #include "fnav/event/loop.h"
 #include "fnav/event/event.h"
@@ -11,6 +10,7 @@
 #include "fnav/tui/fm_cntlr.h"
 #include "fnav/tui/sh_cntlr.h"
 #include "fnav/cmd.h"
+#include "fnav/log.h"
 
 struct Window {
   Loop loop;
@@ -23,8 +23,8 @@ struct Window {
 Window win;
 
 static void window_loop(Loop *loop, int ms);
-static void win_new(Token *arg, int cmd_flags);
-static void win_close(Token *arg, int cmd_flags);
+static void* win_new(List *args, int cmd_flags);
+static void* win_close(List *args, int cmd_flags);
 
 void sig_resize(int sig)
 {
@@ -89,26 +89,23 @@ void window_input(int key)
   }
 }
 
-static void win_new(Token *arg, int cmd_flags)
+static void* win_new(List *args, int cmd_flags)
 {
   pos_T dir;
   ((int*)(&dir))[cmd_flags] = 1;
-  window_add_buffer(dir);
+  //window_add_buffer(dir);
   // TODO: replace with cntlr name lookup.
   //       load. init here. add to cntlr list etc.
   //       open. create instance.
   //       close. close instance.
   //       unload. cleanup here. remove from cntlr list.
-  if (strcmp(arg->var.vval.v_string, "fm") == 0) {
-    fm_init(win.focus->buf);
-  }
-  else if (strcmp(arg->var.vval.v_string, "sh") == 0) {
-    fm_init(win.focus->buf);
-  }
+  Token *word = (Token*)utarray_eltptr(args->items, 1);
+  return cntlr_open(TOKEN_STR(word->var), win.focus->buf);
 }
 
-static void win_close(Token *arg, int cmd_flags)
+static void* win_close(List *arg, int cmd_flags)
 {
+  return NULL;
 }
 
 void window_ex_cmd_start()

@@ -12,7 +12,7 @@ trans_rec* mk_trans_rec(int fld_count)
   trans_rec *r = malloc(sizeof(trans_rec));
   r->max = fld_count;
   r->flds = malloc(sizeof(String)*r->max);
-  r->data = malloc(sizeof(void*)*r->max);
+  r->data = malloc(sizeof(void**)*r->max);
   r->count = 0;
   return r;
 }

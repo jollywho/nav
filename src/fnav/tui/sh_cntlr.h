@@ -12,7 +12,7 @@ struct Sh_cntlr {
   fn_handle *hndl;
 };
 
-void sh_init(Buffer *buf);
+Cntlr* sh_init(Buffer *buf);
 void sh_cleanup(Sh_cntlr *cntlr);
 
 #endif

@@ -3,12 +3,6 @@
 
 #include "fnav/fnav.h"
 
-typedef struct {
-  String name;
-  int required_parameters;
-  void (*fn)();
-} Cmd;
-
 typedef void (*argv_callback)(void **argv);
 typedef struct Window Window;
 typedef struct Cntlr Cntlr;
@@ -39,5 +33,10 @@ typedef struct {
   int lnum;    /* line number */
   int col;     /* column number */
 } pos_T;
+
+typedef Cntlr* (*cntlr_open_cb)(Buffer *b);
+void cntlr_load(String name, cntlr_open_cb fn);
+Cntlr* cntlr_open(String name, Buffer *buf);
+int cntlr_isloaded(String name);
 
 #endif

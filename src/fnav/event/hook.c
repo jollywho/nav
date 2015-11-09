@@ -8,7 +8,18 @@ struct HookHandler {
   UT_array *hooks;
 };
 
-static UT_icd hook_icd = { sizeof(Hook), NULL };
+void intchar_copy(void *_dst, const void *_src) {
+  Hook *dst = (Hook*)_dst, *src = (Hook*)_src;
+  dst->caller = src->caller;
+  dst->fn = src->fn;
+  dst->msg = src->msg ? strdup(src->msg) : NULL;
+}
+
+void intchar_dtor(void *_elt) {
+  Hook *elt = (Hook*)_elt;
+  if (elt->msg) free(elt->msg);
+}
+static UT_icd hook_icd = { sizeof(Hook),NULL,intchar_copy,intchar_dtor };
 
 void hook_init(Cntlr *host)
 {
@@ -17,24 +28,27 @@ void hook_init(Cntlr *host)
   utarray_new(host->event_hooks->hooks, &hook_icd);
 }
 
-int hook_cmp(const void *a, const void *b)
+static int hook_cmp(const void *_a, const void *_b)
 {
-  Hook *c1 = (Hook*)a;
-  Hook *c2 = (Hook*)b;
-  return strcmp(c1->msg, c2->msg);
+  Hook *a = (Hook*)_a, *b = (Hook*)_b;
+  return strcmp(a->msg,b->msg);
 }
 
 void hook_add(Cntlr *host, Cntlr *caller, hook_cb fn, String msg)
 {
   log_msg("HOOK", "ADD");
-  Hook hook = { fn, caller, msg };
+  Hook hook = {fn,caller,msg};
   utarray_push_back(host->event_hooks->hooks, &hook);
   utarray_sort(host->event_hooks->hooks, hook_cmp);
 }
 
 void send_hook_msg(String msg, Cntlr *host, Cntlr *caller)
 {
-  Hook *hook = (Hook*)utarray_find(host->event_hooks->hooks, msg, hook_cmp);
+  log_msg("HOOK", "(<%s>) msg sent", msg);
+  Hook find = { .msg = msg };
+  Hook *hook = (Hook*)utarray_find(host->event_hooks->hooks, &find, hook_cmp);
+  if (!hook) return;
   if (!caller)
     caller = hook->caller;
+  hook->fn(host, caller);
 }

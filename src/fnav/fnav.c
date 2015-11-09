@@ -13,7 +13,7 @@
 
 void init(void)
 {
-//  log_set("FS");
+//  log_set("CMDLINE");
   log_init();
   log_msg("INIT", "__________INIT_START____________");
 #ifdef NCURSES_ENABLED

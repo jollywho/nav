@@ -2,6 +2,7 @@
 #define FN_CMDLINE_H
 
 #include "fnav.h"
+#include "fnav/tui/cntlr.h"
 #include "fnav/lib/queue.h"
 #include "fnav/lib/utarray.h"
 
@@ -37,6 +38,12 @@ struct Token {
   typ_T var;
 };
 
+#define TOKEN_LIST(token) \
+  token->args.var.vval.v_list
+
+#define TOKEN_STR(var) \
+  var.vval.v_string
+
 struct Pair {
   Token *key;
   Token *value;
@@ -54,6 +61,8 @@ struct Cmdstr {
   int pipet;               /* pipe flag types */
   QUEUE stack;
   Token args;
+  int ret_t;
+  void *ret;
 };
 
 #define PIPE_CMD     1

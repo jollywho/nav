@@ -4,10 +4,11 @@
 #include "fnav/model.h"
 #include "fnav/log.h"
 
-void sh_init(Buffer *buf)
+Cntlr* sh_init(Buffer *buf)
 {
   log_msg("SH_CNTLR", "init");
   Sh_cntlr *sh = malloc(sizeof(Sh_cntlr));
+  sh->base.top = sh;
   sh->hndl = malloc(sizeof(fn_handle));
   sh->base.hndl = sh->hndl;
   model_init(sh->base.hndl);
@@ -19,6 +20,7 @@ void sh_init(Buffer *buf)
   int height = buf_size(buf).lnum;
   shell_start(sh->sh);
 //  pty_process_resize(&sh->sh->ptyproc, width, height);
+  return &sh->base;
 }
 
 void sh_cleanup(Sh_cntlr *cntlr)
