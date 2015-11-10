@@ -6,6 +6,7 @@
 #include "fnav/log.h"
 #include "fnav/table.h"
 #include "fnav/model.h"
+#include "fnav/regex.h"
 
 enum Type { OPERATOR, MOTION };
 
@@ -28,6 +29,7 @@ static void init_cmds(void);
 static int find_command(int cmdchar);
 static void buf_mv_page();
 static void buf_mv();
+static void buf_search();
 static void buf_g();
 
 static const struct buf_cmd {
@@ -39,6 +41,8 @@ static const struct buf_cmd {
 {
   {Ctrl_J,  buf_mv_page,     0,           FORWARD},
   {Ctrl_U,  buf_mv_page,     0,           BACKWARD},
+  {'n',     buf_search,      0,           FORWARD},
+  {'N',     buf_search,      0,           BACKWARD},
   {'j',     buf_mv,          0,           FORWARD},
   {'k',     buf_mv,          0,           BACKWARD},
   {'g',     buf_g,           0,           BACKWARD},
@@ -73,6 +77,7 @@ Buffer* buf_init()
   buf->attached = false;
   buf->closed = false;
   buf->input_cb = NULL;
+  buf->matches = NULL;
   init_cmds();
   return buf;
 }
@@ -111,9 +116,11 @@ void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
   buf->attached = true;
 }
 
-void buf_set(fn_handle *hndl)
+void buf_set_linematch(Buffer *buf, LineMatch *match)
 {
-  log_msg("BUFFER", "set");
+  log_msg("BUFFER", "buf_set_linematch");
+  regex_destroy(buf);
+  buf->matches = match;
 }
 
 void buf_refresh(Buffer *buf)
@@ -199,6 +206,17 @@ void buf_scroll(Buffer *buf, int y, int m_max)
   buf->lnum += diff;
 }
 
+static void buf_search()
+{
+}
+
+void buf_move(Buffer *buf, int y, int x)
+{
+  log_msg("BUFFER", "buf_move");
+  Cmdarg arg = {.arg = y};
+  buf_mv(buf, &arg);
+}
+
 static void buf_mv(Buffer *buf, Cmdarg *arg)
 {
   log_msg("BUFFER", "buf_mv %d", arg->arg);
@@ -230,6 +248,8 @@ static void buf_mv(Buffer *buf, Cmdarg *arg)
   buf_refresh(buf);
 }
 
+int buf_index(Buffer *buf)
+{return buf->top+buf->lnum;}
 int buf_line(Buffer *buf)
 {return buf->lnum;}
 int buf_top(Buffer *buf)

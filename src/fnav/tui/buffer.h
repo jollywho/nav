@@ -5,6 +5,7 @@
 #include "fnav/table.h"
 
 typedef struct BufferNode BufferNode;
+typedef struct LineMatch LineMatch;
 
 typedef void (*buffer_input_cb)(BufferNode *buf, int key);
 
@@ -19,6 +20,7 @@ struct Buffer {
   Cntlr *cntlr;
 
   buffer_input_cb input_cb;
+  LineMatch *matches;
 
   pos_T b_size;
   pos_T b_ofs;
@@ -38,16 +40,20 @@ Buffer* buf_init();
 void buf_destroy(Buffer *buf);
 
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr);
-void buf_set(fn_handle *hndl);
 void buf_set_size(Buffer *buf, int r, int c);
 void buf_set_ofs(Buffer *buf, int y, int x);
 void buf_set_pass(Buffer *buf);
+
+void buf_set_linematch(Buffer *buf, LineMatch *match);
 
 void buf_full_invalidate(Buffer *buf, int index, int lnum);
 int buf_input(BufferNode *bn, int key);
 
 void buf_refresh(Buffer *buf);
 
+void buf_move(Buffer *buf, int y, int x);
+
+int buf_index(Buffer *buf);
 int buf_line(Buffer *buf);
 int buf_top(Buffer *buf);
 pos_T buf_size(Buffer *buf);
