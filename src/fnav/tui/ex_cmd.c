@@ -35,7 +35,6 @@ void start_ex_cmd(int state)
 
 static void cmdline_draw()
 {
-  // TODO: print ':' for cmd and '/' for search
   mvwaddch(nc_win, 0, 0, state_symbol[ex_state]);
   mvwprintw(nc_win, 0, 1, cmd.line);
   wmove(nc_win, 0, curpos + 2);

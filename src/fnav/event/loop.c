@@ -39,6 +39,7 @@ void loop_add(Loop *loop, loop_cb cb)
   log_msg("INIT", "new loop");
   uv_loop_init(&loop->uv);
   uv_timer_init(&loop->uv, &loop->delay);
+  uv_signal_init(&loop->uv, &loop->children_watcher);
   SLIST_INIT(&loop->children);
   SLIST_INSERT_HEAD(&loop_pool.p, loop, ent);
   loop->cb = cb;

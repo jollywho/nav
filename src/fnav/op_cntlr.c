@@ -1,3 +1,4 @@
+#include <sys/wait.h>
 #include <errno.h>
 #include <malloc.h>
 #include "fnav/log.h"
@@ -11,6 +12,37 @@ void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal) {
   uv_close((uv_handle_t*) req, NULL);
   Op_cntlr *op = (Op_cntlr*)req->data;
   op->ready = true;
+}
+
+static void chld_handler(uv_signal_t *handle, int signum)
+{
+  log_msg("OP", "chldhand");
+  int stat = 0;
+  int pid;
+
+  do {
+    pid = waitpid(-1, &stat, WNOHANG);
+  } while (pid < 0 && errno == EINTR);
+
+  if (pid <= 0) {
+    return;
+  }
+
+  //Loop *loop = handle->loop->data;
+
+  //Process *it;
+  //SLIST_FOREACH(it, &loop->children, ent) {
+  //  Process *proc = it;
+  //  if (proc->pid == pid) {
+  //    if (WIFEXITED(stat)) {
+  //      proc->status = WEXITSTATUS(stat);
+  //    } else if (WIFSIGNALED(stat)) {
+  //      proc->status = WTERMSIG(stat);
+  //    }
+  //    proc->internal_exit_cb(proc);
+  //    break;
+  //  }
+  //}
 }
 
 static void create_proc(Op_cntlr *op, String path)
@@ -34,11 +66,13 @@ static void create_proc(Op_cntlr *op, String path)
   //CREATE_EVENT(&op->loop.events, commit, 2, "op_procs", r);
   if (!op->ready) {
     log_msg("OP", "kill");
-    uv_process_kill(&op->proc, SIGINT);
+    uv_kill(op->proc.pid, SIGKILL);
     uv_close((uv_handle_t*)&op->proc, NULL);
     uv_run(&op->loop.uv, UV_RUN_NOWAIT);
   }
   log_msg("OP", "spawn");
+  uv_signal_start(&op->loop.children_watcher, chld_handler, SIGCHLD);
+  //uv_disable_stdio_inheritance();
   int ret = uv_spawn(&op->loop.uv, &op->proc, &op->opts);
   op->ready = false;
   log_msg("?", "%s", uv_strerror(ret));

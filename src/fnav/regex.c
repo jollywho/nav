@@ -30,6 +30,7 @@ void regex_build(String line)
 // stop pivot
 void regex_req_enter()
 {
+  log_msg("REGEX", "regex_req_enter");
 }
 
 // use active buffernode's built match.
@@ -37,9 +38,11 @@ void regex_req_enter()
 // wrapping on edges.
 void regex_next()
 {
+  log_msg("REGEX", "regex_next");
 }
 
 // pivot buffernode focus to next match
 void regex_focus()
 {
+  log_msg("REGEX", "regex_focus");
 }

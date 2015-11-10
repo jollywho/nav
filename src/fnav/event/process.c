@@ -171,7 +171,7 @@ void process_stop(Process *proc)
   if (!loop->children_stop_requests++) {
     // When there's at least one stop request pending, start a timer that
     // will periodically check if a signal should be send to a to the job
-    log_msg("process", "Starting job kill timer");
+    log_msg("PROCESS", "Starting job kill timer");
     uv_timer_start(&loop->children_kill_timer, children_kill_cb, 100, 100);
   }
 }
