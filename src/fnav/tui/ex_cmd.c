@@ -51,7 +51,7 @@ void reset_line()
 
 void del_word()
 {
-  int prev = cmdline_prev_word(&cmd, curpos);
+  //int prev = cmdline_prev_word(&cmd, curpos);
   // delete from curpos to found index
 }
 
@@ -90,7 +90,9 @@ void ex_input(int key)
     return;
   }
   if (key == BS) {
-    cmd.line[curpos] = ' ';
+    wclear(nc_win);
+    //FIXME: this will split line when cursor movement added
+    cmd.line[curpos] = '\0';
     curpos--;
     if (curpos < CURMIN)
       curpos = CURMIN;

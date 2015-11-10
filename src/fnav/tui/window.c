@@ -94,6 +94,10 @@ void window_input(int key)
   }
 }
 
+BufferNode* window_get_focus() {
+  return win.focus;
+}
+
 static void* win_new(List *args, int cmd_flags)
 {
   pos_T dir;
