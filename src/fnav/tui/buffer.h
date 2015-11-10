@@ -53,7 +53,6 @@ void buf_refresh(Buffer *buf);
 
 void buf_move(Buffer *buf, int y, int x);
 
-int buf_index(Buffer *buf);
 int buf_line(Buffer *buf);
 int buf_top(Buffer *buf);
 pos_T buf_size(Buffer *buf);

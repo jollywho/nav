@@ -40,7 +40,7 @@ static const struct buf_cmd {
 } fm_cmds[] =
 {
   {Ctrl_J,  buf_mv_page,     0,           FORWARD},
-  {Ctrl_U,  buf_mv_page,     0,           BACKWARD},
+  {Ctrl_K,  buf_mv_page,     0,           BACKWARD},
   {'n',     buf_search,      0,           FORWARD},
   {'N',     buf_search,      0,           BACKWARD},
   {'j',     buf_mv,          0,           FORWARD},
@@ -206,8 +206,13 @@ void buf_scroll(Buffer *buf, int y, int m_max)
   buf->lnum += diff;
 }
 
-static void buf_search()
+static void buf_search(Buffer *buf, Cmdarg *arg)
 {
+  log_msg("BUFFER", "buf_search");
+  if (arg->arg == FORWARD)
+    regex_next();
+  if (arg->arg == BACKWARD)
+    regex_prev();
 }
 
 void buf_move(Buffer *buf, int y, int x)
@@ -248,8 +253,6 @@ static void buf_mv(Buffer *buf, Cmdarg *arg)
   buf_refresh(buf);
 }
 
-int buf_index(Buffer *buf)
-{return buf->top+buf->lnum;}
 int buf_line(Buffer *buf)
 {return buf->lnum;}
 int buf_top(Buffer *buf)
@@ -262,6 +265,9 @@ pos_T buf_ofs(Buffer *buf)
 static void buf_mv_page(Buffer *buf, Cmdarg *arg)
 {
   log_msg("BUFFER", "buf_mv_page");
+  int dir = arg->arg;
+  int y = (buf->b_size.lnum / 2) * dir;
+  buf_move(buf, y, 0);
 }
 
 static void buf_g(Buffer *buf, Cmdarg *arg)

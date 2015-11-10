@@ -11,7 +11,8 @@ struct LineMatch {
   UT_array *linenum;
 };
 
-int pivot_line = 0;
+int pivot_top = 0;
+int pivot_lnum = 0;
 
 // compile pcre for each line in all window buffers
 // add built list to each buffernode
@@ -95,7 +96,7 @@ void regex_destroy(Buffer *buf)
 static int focus_cur_line()
 {
   Buffer *buf = window_get_focus();
-  return buf_index(buf);
+  return buf_line(buf) + buf_top(buf);
 }
 
 static int line_diff(int to, int from)
@@ -110,13 +111,15 @@ static void regex_focus(int to, int from)
 
 void regex_pivot()
 {
-  //FIXME: do full invalidate
-  regex_focus(pivot_line, focus_cur_line());
+  Buffer *buf = window_get_focus();
+  buf_full_invalidate(buf, pivot_top, pivot_lnum);
 }
 
 void regex_start_pivot()
 {
-  pivot_line = focus_cur_line();
+  Buffer *buf = window_get_focus();
+  pivot_top = buf_top(buf);
+  pivot_lnum = buf_line(buf);
 }
 
 void regex_stop_pivot()
@@ -134,6 +137,7 @@ void regex_next()
   int line = focus_cur_line();
   LineMatch *matches = buf->matches;
 
+  if (!matches) return;
   if (utarray_len(matches->linenum) < 1) return;
   int *next = (int*)utarray_front(matches->linenum);
   if (!next) return;
@@ -146,7 +150,15 @@ int intsort(const void *a, const void*b) {
   return _a - _b;
 }
 
+void regex_prev()
+{
+}
+
 static void find_next(UT_array *linenum)
 {
   log_msg("REGEX", "regex_focus");
+  // get end index of matches
+  // if line > end, divide indices in half as new line
+  // if line < end, that is the result
+  //
 }
