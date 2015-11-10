@@ -11,6 +11,8 @@ struct LineMatch {
   UT_array *linenum;
 };
 
+int pivot_line = 0;
+
 // compile pcre for each line in all window buffers
 // add built list to each buffernode
 void regex_build(String line)
@@ -42,8 +44,8 @@ void regex_build(String line)
     return;
   }
 
-  Model *m = window_get_focus()->buf->hndl->model;
-  Buffer *buf = window_get_focus()->buf;
+  Buffer *buf = window_get_focus();
+  Model *m = buf->hndl->model;
   LineMatch *matches = malloc(sizeof(LineMatch));
   utarray_new(matches->linenum, &ut_int_icd);
 
@@ -70,7 +72,8 @@ void regex_build(String line)
 
       for(int j = 0; j < ret; j++) {
         log_msg("REGEX", "PCRE SUBSTR: %s", &match[j]);
-        utarray_push_back(matches->linenum, &i);
+        if (strlen(&match[j]) > 0)
+          utarray_push_back(matches->linenum, &i);
       }
       pcre_free_substring(match);
     }
@@ -89,30 +92,61 @@ void regex_destroy(Buffer *buf)
   free(buf->matches);
 }
 
-// stop pivot
-void regex_req_enter()
+static int focus_cur_line()
 {
-  log_msg("REGEX", "regex_req_enter");
+  Buffer *buf = window_get_focus();
+  return buf_index(buf);
 }
 
-// use active buffernode's built match.
-// find next entry closest to cursor positon in forward direction,
-// wrapping on edges.
-void regex_next()
+static int line_diff(int to, int from)
+{ return to - from; }
+
+static void regex_focus(int to, int from)
 {
-  log_msg("REGEX", "regex_next");
+  log_msg("REGEX", "regex_focus");
+  Buffer *buf = window_get_focus();
+  buf_move(buf, line_diff(to, from), 0);
+}
+
+void regex_pivot()
+{
+  //FIXME: do full invalidate
+  regex_focus(pivot_line, focus_cur_line());
+}
+
+void regex_start_pivot()
+{
+  pivot_line = focus_cur_line();
+}
+
+void regex_stop_pivot()
+{
+  log_msg("REGEX", "regex_req_enter");
+  //pivot_line = focus_cur_line();
 }
 
 // pivot buffernode focus to closest match.
 // varies by direction: '/', '?'
-void regex_focus()
+void regex_next()
+{
+  log_msg("REGEX", "regex_next");
+  Buffer *buf = window_get_focus();
+  int line = focus_cur_line();
+  LineMatch *matches = buf->matches;
+
+  if (utarray_len(matches->linenum) < 1) return;
+  int *next = (int*)utarray_front(matches->linenum);
+  if (!next) return;
+  regex_focus(*next, line);
+}
+
+int intsort(const void *a, const void*b) {
+  int _a = *(int*)a;
+  int _b = *(int*)b;
+  return _a - _b;
+}
+
+static void find_next(UT_array *linenum)
 {
   log_msg("REGEX", "regex_focus");
-  Buffer *buf = window_get_focus()->buf;
-  int line = buf_index(buf);
-  LineMatch *matches = buf->matches;
-  int *next = (int*)utarray_front(matches->linenum);
-  int diff = *next - line;
-  log_msg("REGEX", "]] %d %d %d", line, *next, diff);
-  buf_move(buf, diff, 0);
 }

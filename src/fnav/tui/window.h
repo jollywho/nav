@@ -11,6 +11,6 @@ void window_add_buffer(pos_T dir);
 void window_ex_cmd_start(int state);
 void window_ex_cmd_end();
 void window_draw_all();
-BufferNode* window_get_focus();
+Buffer* window_get_focus();
 
 #endif

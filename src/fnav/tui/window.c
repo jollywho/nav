@@ -94,8 +94,9 @@ void window_input(int key)
   }
 }
 
-BufferNode* window_get_focus() {
-  return win.focus;
+Buffer* window_get_focus()
+{
+  return win.focus ? win.focus->buf : NULL;
 }
 
 static void* win_new(List *args, int cmd_flags)

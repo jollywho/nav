@@ -29,6 +29,8 @@ void start_ex_cmd(int state)
   nc_win = newwin(1, 0, max.lnum - 1, 0);
   curpos = CURMIN;
   maxpos = max.col;
+  if (window_get_focus() && state == 1)
+    regex_start_pivot();
   cmdline_init(&cmd, max.col);
   cmdline_draw();
 }
@@ -61,7 +63,7 @@ static void ex_enter()
     cmdline_req_run(&cmd);
   }
   else {
-    regex_req_enter();
+    regex_stop_pivot();
   }
   stop_ex_cmd();
 }
@@ -73,16 +75,24 @@ static void ex_onkey()
   }
   else {
     regex_build(cmd.line);
-    regex_focus();
+    regex_next();
   }
   cmdline_draw();
+}
+
+static void ex_onesc()
+{
+  if (ex_state == 1) {
+    regex_pivot();
+  }
+  stop_ex_cmd();
 }
 
 void ex_input(int key)
 {
   log_msg("EXCMD", "input");
   if (key == ESC) {
-    stop_ex_cmd();
+    ex_onesc();
     return;
   }
   if (key == CAR) {

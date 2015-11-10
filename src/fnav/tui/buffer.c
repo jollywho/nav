@@ -266,6 +266,9 @@ static void buf_mv_page(Buffer *buf, Cmdarg *arg)
 
 static void buf_g(Buffer *buf, Cmdarg *arg)
 {
+  int dir = arg->arg;
+  int y = model_count(buf->hndl->model) * dir;
+  buf_move(buf, y, 0);
 }
 
 /* Number of commands in nv_cmds[]. */
