@@ -143,7 +143,7 @@ void buf_draw(void **argv)
     Model *m = buf->hndl->model;
     for (int i = 0; i < buf->b_size.lnum; ++i) {
       String it = model_str_line(m, buf->top + i);
-      if (!it) break;
+      if (!it) continue;
       DRAW_LINE(buf, i, it);
     }
     wmove(buf->nc_win, buf->lnum, 0);
@@ -196,11 +196,11 @@ void buf_scroll(Buffer *buf, int y, int m_max)
   log_msg("BUFFER", "scroll %d %d", buf->cur.lnum, y);
   int prev = buf->top;
   buf->top += y;
+  if (buf->top + buf->b_size.lnum > m_max) {
+    buf->top = m_max - buf->b_size.lnum;
+  }
   if (buf->top < 0) {
     buf->top = 0;
-  }
-  else if (buf->top + buf->b_size.lnum > m_max) {
-    buf->top = m_max - buf->b_size.lnum;
   }
   int diff = prev - buf->top;
   buf->lnum += diff;
