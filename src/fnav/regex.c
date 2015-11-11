@@ -147,16 +147,12 @@ void regex_hover()
 
   int *ret = nearest_next_match(pivot_matches->linenum, line);
   if (ret) {
-    log_msg("REGEX", "}}}}}}}}}}");
     regex_focus(*ret, line);
   }
   else {
     NEXT_OR_WRAP(pivot_matches, ret);
     regex_focus(*ret, line);
   }
-  log_msg("REGEX", "_____________________");
-  //else
-  //  regex_pivot();
 }
 
 // pivot buffernode focus to closest match.

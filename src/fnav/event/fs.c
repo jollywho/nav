@@ -15,9 +15,13 @@
 #include "fnav/table.h"
 #include "fnav/tui/buffer.h"
 
+#define RFRESH_RATE 100
+
 static void fs_close_req(FS_req *fq);
 static void stat_cb(uv_fs_t* req);
 void fs_loop(Loop *loop, int ms);
+static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,
+    int status);
 
 FS_handle* fs_init(fn_handle *h)
 {
@@ -25,9 +29,11 @@ FS_handle* fs_init(fn_handle *h)
   FS_handle *fsh = malloc(sizeof(FS_handle));
   loop_add(&fsh->loop, fs_loop);
   uv_fs_event_init(&fsh->loop.uv, &fsh->watcher);
+  uv_timer_init(&fsh->loop.uv, &fsh->watcher_timer);
   fsh->hndl = h;
   fsh->running = false;
   fsh->watcher.data = fsh;
+  fsh->watcher_timer.data = fsh;
   return fsh;
 }
 
@@ -69,6 +75,7 @@ void fs_signal_handle(void **data)
   fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
   ventry *head = lis_get_val(l, "dir");
   if (l && head) {
+    model_close(h);
     model_read_entry(h->model, l, head);
   }
   fsh->running = false;
@@ -82,13 +89,13 @@ void fs_open(FS_handle *fsh, const String dir)
   fq->req_name = strdup(dir);
   fq->uv_fs.data = fq;
   fsh->running = true;
+  fsh->path = dir;
 
   uv_fs_stat(&fq->fs_h->loop.uv, &fq->uv_fs, dir, stat_cb);
 
-  // TODO: check stat on timer and reopen. set on fqclose or stat NOP.
-  //uv_fs_event_stop(&fsh->watcher);
-  //uv_fs_event_start(&fsh->watcher, watch_cb, dir, 1);
-  //uv_unref((uv_handle_t*)&fsh->watcher);
+  uv_fs_event_stop(&fsh->watcher);
+  uv_fs_event_start(&fsh->watcher, watch_cb, dir, 1);
+  uv_unref((uv_handle_t*)&fsh->watcher);
 }
 
 void fs_loop(Loop *loop, int ms)
@@ -175,16 +182,26 @@ static void stat_cb(uv_fs_t* req)
   }
 }
 
+static void watch_timer_cb(uv_timer_t *handle)
+{
+  log_msg("FS", "--watch_timer--");
+  FS_handle *fsh = handle->data;
+  if (!fsh->running)
+    fs_open(fsh, fsh->path);
+}
+
 static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,
     int status)
 {
-  FS_handle *fsh = handle->data;
   log_msg("FS", "--watch--");
+  FS_handle *fsh = handle->data;
+  uv_fs_event_stop(&fsh->watcher);
+  uv_timer_start(&fsh->watcher_timer, watch_timer_cb, RFRESH_RATE, RFRESH_RATE);
+
   if (events & UV_RENAME)
     log_msg("FS", "=%s= renamed", filename);
   if (events & UV_CHANGE)
     log_msg("FS", "=%s= changed", filename);
-  fs_open(fsh, handle->path);
 }
 
 static void fs_close_req(FS_req *fq)
