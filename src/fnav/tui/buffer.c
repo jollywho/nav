@@ -82,6 +82,13 @@ Buffer* buf_init()
   return buf;
 }
 
+void buf_cleanup(Buffer *buf)
+{
+  log_msg("BUFFER", "cleanup");
+  delwin(buf->nc_win);
+  free(buf);
+}
+
 void buf_set_size(Buffer *buf, int r, int c)
 {
   log_msg("BUFFER", "SET SIZE %d %d", r, c);
@@ -101,12 +108,6 @@ void buf_set_pass(Buffer *buf)
 {
   buf->closed = true;
   delwin(buf->nc_win);
-}
-
-void buf_destroy(Buffer *buf)
-{
-  delwin(buf->nc_win);
-  free(buf);
 }
 
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
@@ -178,6 +179,7 @@ int buf_input(BufferNode *bn, int key)
   }
   if (!buf->attached)
     return 0;
+  if (model_blocking(buf->hndl)) return 0;
   if (buf->cntlr) {
     buf->cntlr->_input(buf->cntlr, key);
   }
@@ -261,6 +263,8 @@ pos_T buf_size(Buffer *buf)
 {return buf->b_size;}
 pos_T buf_ofs(Buffer *buf)
 {return buf->b_ofs;}
+Cntlr *buf_cntlr(Buffer *buf)
+{return buf->cntlr;}
 
 static void buf_mv_page(Buffer *buf, Cmdarg *arg)
 {

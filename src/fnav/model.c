@@ -23,7 +23,7 @@ struct Model {
   fn_lis *lis;
   fn_rec *cur;
   ventry *head;
-  bool dirty;
+  bool blocking;
   UT_array *lines;
 };
 
@@ -37,6 +37,13 @@ void model_init(fn_handle *hndl)
   utarray_new(model->lines, &icd);
 }
 
+void model_cleanup(fn_handle *hndl)
+{
+  Model *m = hndl->model;
+  utarray_free(m->lines);
+  free(m);
+}
+
 void model_open(fn_handle *hndl)
 {
   tbl_add_lis(hndl->tn, hndl->key_fld, hndl->key);
@@ -44,11 +51,16 @@ void model_open(fn_handle *hndl)
 
 void model_close(fn_handle *hndl)
 {
+  log_msg("MODEL", "model_close");
   Model *m = hndl->model;
   Buffer *b = hndl->buf;
+  m->blocking = true;
   lis_save(m->lis, buf_top(b), buf_line(b));
   utarray_clear(m->lines);
 }
+
+int model_blocking(fn_handle *hndl)
+{return hndl->model->blocking;}
 
 void model_read_entry(Model *m, fn_lis *lis, ventry *head)
 {
@@ -64,6 +76,7 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   generate_lines(m);
   refind_line(m->lis);
   buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
+  m->blocking = false;
 }
 
 size_t model_read_stream(Model *m, char *output, size_t remaining,
@@ -107,6 +120,7 @@ void* model_curs_value(Model *m, String field)
 
 void model_set_curs(Model *m, int index)
 {
+  log_msg("MODEL", "model_set_curs");
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
   m->cur = res->rec;
 }

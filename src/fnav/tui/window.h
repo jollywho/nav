@@ -8,6 +8,7 @@ void window_req_draw(Buffer *buf, argv_callback cb);
 void window_input(int key);
 
 void window_add_buffer(pos_T dir);
+void window_remove_buffer();
 void window_ex_cmd_start(int state);
 void window_ex_cmd_end();
 void window_draw_all();

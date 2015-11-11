@@ -37,7 +37,9 @@ struct Buffer {
 };
 
 Buffer* buf_init();
-void buf_destroy(Buffer *buf);
+void buf_cleanup(Buffer *buf);
+
+Cntlr *buf_cntlr(Buffer *buf);
 
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr);
 void buf_set_size(Buffer *buf, int r, int c);

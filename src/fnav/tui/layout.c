@@ -12,7 +12,7 @@ pos_T layout_size()
   return size;
 }
 
-void layout_add_buffer(BufferNode *focus, int count, pos_T dir)
+void layout_balance(BufferNode *focus, int count, pos_T dir)
 {
   pos_T max = layout_size();
   max.lnum -= 1; // cmdline

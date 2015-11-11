@@ -15,7 +15,7 @@
 #include "fnav/table.h"
 #include "fnav/tui/buffer.h"
 
-#define RFRESH_RATE 100
+#define RFRESH_RATE 500
 
 static void fs_close_req(FS_req *fq);
 static void stat_cb(uv_fs_t* req);
@@ -39,6 +39,10 @@ FS_handle* fs_init(fn_handle *h)
 
 void fs_cleanup(FS_handle *fsh)
 {
+  log_msg("FS", "cleanup");
+  //TODO: spin until loop cleared
+  uv_fs_event_stop(&fsh->watcher);
+  uv_timer_stop(&fsh->watcher_timer);
   loop_remove(&fsh->loop);
   free(fsh);
 }
@@ -75,7 +79,6 @@ void fs_signal_handle(void **data)
   fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
   ventry *head = lis_get_val(l, "dir");
   if (l && head) {
-    model_close(h);
     model_read_entry(h->model, l, head);
   }
   fsh->running = false;
@@ -186,8 +189,10 @@ static void watch_timer_cb(uv_timer_t *handle)
 {
   log_msg("FS", "--watch_timer--");
   FS_handle *fsh = handle->data;
-  if (!fsh->running)
+  if (!fsh->running) {
+    model_close(fsh->hndl);
     fs_open(fsh, fsh->path);
+  }
 }
 
 static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,

@@ -33,8 +33,8 @@ static const struct fm_cmd {
   short cmd_arg;                /* value for ca.arg */
 } fm_cmds[] =
 {
-  {'h',     fm_left,        0,                 0},
-  {'l',     fm_right,       0,                 0},
+  {'h',     fm_left,        0,             BACKWARD},
+  {'l',     fm_right,       0,             FORWARD},
 };
 
 void cntlr_cancel(Cntlr *cntlr)
@@ -62,49 +62,47 @@ void cntlr_focus(Cntlr *cntlr)
   buf_refresh(cntlr->hndl->buf);
 }
 
-static void fm_left(Cntlr *cntlr)
+int fm_opendir(Cntlr *cntlr, String path, short arg)
 {
-  log_msg("FM", "cmd left");
+  log_msg("FS", "fm_opendir %s", path);
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   fn_handle *h = cntlr->hndl;
   String cur_dir = self->cur_dir;
 
   if (!self->fs->running) {
     free(cur_dir);
-    String path = model_curs_value(h->model, "dir");
     model_close(h);
     cur_dir = strdup(path);
-    cur_dir = fs_parent_dir(cur_dir);
+    if (arg == BACKWARD)
+      cur_dir = fs_parent_dir(cur_dir);
     h->key = cur_dir;
     model_open(h);
     buf_set_cntlr(h->buf, cntlr);
     fs_open(self->fs, cur_dir);
     self->cur_dir = cur_dir;
+    return 1;
   }
+  return 0;
 }
 
-static void fm_right(Cntlr *cntlr)
+static void fm_left(Cntlr *cntlr, Cmdarg *arg)
+{
+  log_msg("FM", "cmd left");
+  fn_handle *h = cntlr->hndl;
+  String path = model_curs_value(h->model, "dir");
+  fm_opendir(cntlr, path, arg->arg);
+}
+
+static void fm_right(Cntlr *cntlr, Cmdarg *arg)
 {
   log_msg("FM", "cmd right");
-  FM_cntlr *self = (FM_cntlr*)cntlr->top;
   fn_handle *h = cntlr->hndl;
-  String cur_dir = self->cur_dir;
 
-  if (!self->fs->running) {
-    String path = model_curs_value(h->model, "fullpath");
-    if (isdir(path)) {
-      free(cur_dir);
-      model_close(h);
-      cur_dir = strdup(path);
-      h->key = cur_dir;
-      model_open(h);
-      buf_set_cntlr(h->buf, cntlr);
-      fs_open(self->fs, cur_dir);
-      self->cur_dir = cur_dir;
-    }
-    else
-      send_hook_msg("fileopen", cntlr, NULL);
-  }
+  String path = model_curs_value(h->model, "fullpath");
+  if (isdir(path))
+    fm_opendir(cntlr, path, arg->arg);
+  else
+    send_hook_msg("fileopen", cntlr, NULL);
 }
 
 /* Number of commands in nv_cmds[]. */
@@ -233,9 +231,10 @@ static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
 
 Cntlr* fm_init(Buffer *buf)
 {
-  log_msg("INIT", "FM_CNTLR");
+  log_msg("FM_CNTLR", "init");
   init_cmds(); //TODO: cleanup loose parts
   FM_cntlr *fm = malloc(sizeof(FM_cntlr));
+  fm->base.name = "fm";
   fm->op_count = 1;
   fm->mo_count = 1;
   char init_dir[]="/home/chi/casper/YFS";
@@ -264,8 +263,17 @@ Cntlr* fm_init(Buffer *buf)
   return &fm->base;
 }
 
-void fm_cleanup(FM_cntlr *cntlr)
+void fm_cleanup(Cntlr *cntlr)
 {
-  free(cntlr);
-  // TODO: careful cleanup + cancel any pending cb
+  log_msg("FM_CNTLR", "cleanup");
+  FM_cntlr *fm = cntlr->top;
+  fn_handle *h = cntlr->hndl;
+  model_close(h);
+  model_cleanup(h);
+  //hook remove
+  //hook cleanup
+  fs_cleanup(fm->fs);
+  free(h);
+  free(fm->cur_dir);
+  free(fm);
 }

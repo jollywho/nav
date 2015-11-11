@@ -6,31 +6,47 @@
 #define TABLE_SIZE ARRAY_SIZE(cntlr_table)
 struct _cntlr_table {
   String name;
-  cntlr_open_cb fn;
+  cntlr_open_cb open_cb;
+  cntlr_close_cb close_cb;
 } cntlr_table[] = {
-  {"fm", fm_init},
+  {"fm", fm_init, fm_cleanup},
   {"sh", sh_init},
   {"op", op_init},
 };
 
-void cntlr_load(String name, cntlr_open_cb fn);
+void cntlr_load(String name, cntlr_open_cb open_cb, cntlr_close_cb close_cb);
 
-Cntlr* cntlr_open(String name, Buffer *buf)
+static int find_cntlr(String name)
 {
   for (int i = 0; i < TABLE_SIZE; i++) {
     if (strcmp(cntlr_table[i].name, name) == 0) {
-      return cntlr_table[i].fn(buf);
+      return i;
     }
+  }
+  return -1;
+}
+
+Cntlr* cntlr_open(String name, Buffer *buf)
+{
+  int i = find_cntlr(name);
+  if (i != -1) {
+    return cntlr_table[i].open_cb(buf);
   }
   return NULL;
 }
 
+void cntlr_close(Cntlr *cntlr)
+{
+  int i = find_cntlr(cntlr->name);
+  if (i != -1) {
+    return cntlr_table[i].close_cb(cntlr);
+  }
+}
+
 int cntlr_isloaded(String name)
 {
-  for (int i = 0; i < TABLE_SIZE; i++) {
-    if (strcmp(cntlr_table[i].name, name) == 0) {
-      return 1;
-    }
+  if (find_cntlr(name)) {
+    return 1;
   }
   return 0;
 }

@@ -22,6 +22,7 @@ struct fn_handle {
 };
 
 struct Cntlr {
+  String name;
   fn_handle *hndl;
   void *top;
   void (*_cancel)(Cntlr *cntlr);
@@ -35,8 +36,10 @@ typedef struct {
 } pos_T;
 
 typedef Cntlr* (*cntlr_open_cb)(Buffer *b);
-void cntlr_load(String name, cntlr_open_cb fn);
+typedef void (*cntlr_close_cb)(Cntlr *cntlr);
+void cntlr_load(String name, cntlr_open_cb open_cb, cntlr_close_cb close_cb);
 Cntlr* cntlr_open(String name, Buffer *buf);
+void cntlr_close(Cntlr *cntlr);
 int cntlr_isloaded(String name);
 
 #endif

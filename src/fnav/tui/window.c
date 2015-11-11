@@ -38,7 +38,8 @@ void sig_resize(int sig)
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
 
 static const Cmd_T cmdtable[] = {
-  {"q",      win_close,   0},
+  {"clo",    win_close,   0},
+  {"close",  win_close,   0},
   {"new",    win_new,     DIR_HORZ},
   {"vnew",   win_new,     DIR_VERT},
   {"vne",    win_new,     DIR_VERT},
@@ -55,8 +56,6 @@ void window_init(void)
   win.ex = false;
 
   signal(SIGWINCH, sig_resize);
-  pos_T dir = {.lnum = 0, .col = 0};
-  //window_add_buffer(dir);
 
   for (int i = 0; i < CMDS_SIZE; i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
@@ -114,8 +113,11 @@ static void* win_new(List *args, int cmd_flags)
   return cntlr_open(TOKEN_STR(word->var), win.focus->buf);
 }
 
-static void* win_close(List *arg, int cmd_flags)
+static void* win_close(List *args, int cmd_flags)
 {
+  log_msg("WINDOW", "fdsf +ADD+");
+  cntlr_close(buf_cntlr(win.focus->buf));
+  window_remove_buffer();
   return NULL;
 }
 
@@ -154,9 +156,22 @@ void window_draw_all()
   }
 }
 
+void window_remove_buffer()
+{
+  log_msg("WINDOW", "BUFFER +CLOSE+");
+  BufferNode *bn = win.focus;
+  buf_cleanup(bn->buf);
+  free(bn);
+  //FIXME: need new design for parent/child
+  win.focus = NULL;
+  win.buf_count--;
+  pos_T t = {0,1};
+  layout_balance(win.focus, win.buf_count, t);
+}
+
 void window_add_buffer(pos_T dir)
 {
-  log_msg("WINDOW", "PANE +ADD+");
+  log_msg("WINDOW", "BUFFER +ADD+");
   BufferNode *cn = malloc(sizeof(BufferNode*));
   cn->buf = buf_init();
   if (!win.focus) {
@@ -173,5 +188,5 @@ void window_add_buffer(pos_T dir)
   }
   win.focus = cn;
   win.buf_count++;
-  layout_add_buffer(cn, win.buf_count, dir);
+  layout_balance(cn, win.buf_count, dir);
 }

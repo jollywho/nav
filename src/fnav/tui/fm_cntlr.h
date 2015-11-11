@@ -15,6 +15,6 @@ struct FM_cntlr {
 };
 
 Cntlr* fm_init(Buffer *buf);
-void fm_cleanup(FM_cntlr *cntlr);
+void fm_cleanup(Cntlr *cntlr);
 
 #endif
