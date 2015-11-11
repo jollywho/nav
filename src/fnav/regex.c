@@ -14,7 +14,14 @@ struct LineMatch {
 LineMatch *pivot_matches;
 int pivot_top = 0;
 int pivot_lnum = 0;
-static int* nearest_match(UT_array *matches, int line);
+static int* nearest_next_match(UT_array *matches, int line);
+
+#define NEXT_OR_WRAP(match,l) \
+  l = (int*)utarray_next(match->linenum, l); \
+  l = l ? l : (int*)utarray_next(match->linenum, l);
+#define PREV_OR_WRAP(match,l) \
+  l = (int*)utarray_prev(match->linenum, l); \
+  l = l ? l : (int*)utarray_prev(match->linenum, l);
 
 // compile pcre for each line in all window buffers
 // add built list to each buffernode
@@ -138,20 +145,19 @@ void regex_hover()
   if (!pivot_matches) return;
   if (utarray_len(pivot_matches->linenum) < 1) return;
 
-  int *ret = nearest_match(pivot_matches->linenum, line);
+  int *ret = nearest_next_match(pivot_matches->linenum, line);
   if (ret) {
+    log_msg("REGEX", "}}}}}}}}}}");
     regex_focus(*ret, line);
   }
-  else
-    regex_pivot();
+  else {
+    NEXT_OR_WRAP(pivot_matches, ret);
+    regex_focus(*ret, line);
+  }
+  log_msg("REGEX", "_____________________");
+  //else
+  //  regex_pivot();
 }
-
-#define NEXT_OR_WRAP(match,l) \
-  l = (int*)utarray_next(match->linenum, l); \
-  l = l ? l : (int*)utarray_next(match->linenum, l);
-#define PREV_OR_WRAP(match,l) \
-  l = (int*)utarray_prev(match->linenum, l); \
-  l = l ? l : (int*)utarray_prev(match->linenum, l);
 
 // pivot buffernode focus to closest match.
 // varies by direction: '/', '?'
@@ -164,8 +170,10 @@ void regex_next(int line)
   if (!matches) return;
   if (utarray_len(matches->linenum) < 1) return;
 
-  int *ret = nearest_match(matches->linenum, line);
-  NEXT_OR_WRAP(matches, ret);
+  int *ret = nearest_next_match(matches->linenum, line);
+  if (ret)
+  if (*ret == line)
+    NEXT_OR_WRAP(matches, ret);
   regex_focus(*ret, line);
 }
 
@@ -178,14 +186,16 @@ void regex_prev(int line)
   if (!matches) return;
   if (utarray_len(matches->linenum) < 1) return;
 
-  int *ret = nearest_match(matches->linenum, line);
-  PREV_OR_WRAP(matches, ret);
+  int *ret = nearest_next_match(matches->linenum, line);
+  if (ret)
+  if (*ret >= line)
+    PREV_OR_WRAP(matches, ret);
   regex_focus(*ret, line);
 }
 
-static int* nearest_match(UT_array *matches, int line)
+static int* nearest_next_match(UT_array *matches, int line)
 {
-  log_msg("REGEX", "find_next");
+  log_msg("REGEX", "nearest_next_match");
   int *it = NULL;
   while ((it = (int*)utarray_next(matches, it))) {
     if (*it == line) {
