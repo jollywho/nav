@@ -30,7 +30,7 @@ void start_ex_cmd(int state)
   curpos = CURMIN;
   maxpos = max.col;
   if (window_get_focus() && state == 1)
-    regex_start_pivot();
+    regex_mk_pivot();
   cmdline_init(&cmd, max.col);
   cmdline_draw();
 }
@@ -63,7 +63,7 @@ static void ex_enter()
     cmdline_req_run(&cmd);
   }
   else {
-    regex_stop_pivot();
+    regex_keep_pivot();
   }
   stop_ex_cmd();
 }
@@ -75,7 +75,8 @@ static void ex_onkey()
   }
   else {
     regex_build(cmd.line);
-    regex_next();
+    regex_pivot();
+    regex_hover();
   }
   cmdline_draw();
 }

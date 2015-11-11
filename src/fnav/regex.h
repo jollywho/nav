@@ -8,11 +8,12 @@ typedef struct Regexmatch Regexmatch;
 void regex_build(String line);
 void regex_destroy(Buffer *buf);
 
-void regex_start_pivot();
-void regex_stop_pivot();
+void regex_mk_pivot();
+void regex_keep_pivot();
 void regex_pivot();
 
-void regex_next();
-void regex_prev();
+void regex_hover();
+void regex_next(int line);
+void regex_prev(int line);
 
 #endif

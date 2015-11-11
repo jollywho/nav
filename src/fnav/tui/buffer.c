@@ -210,9 +210,9 @@ static void buf_search(Buffer *buf, Cmdarg *arg)
 {
   log_msg("BUFFER", "buf_search");
   if (arg->arg == FORWARD)
-    regex_next();
+    regex_next(buf->top + buf->lnum);
   if (arg->arg == BACKWARD)
-    regex_prev();
+    regex_prev(buf->top + buf->lnum);
 }
 
 void buf_move(Buffer *buf, int y, int x)
