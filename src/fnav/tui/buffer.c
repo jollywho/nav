@@ -71,7 +71,6 @@ Buffer* buf_init()
   SET_POS(buf->b_ofs, 0, 0);
   SET_POS(buf->cur, 0, 0);
   buf->nc_win = newwin(1,1,0,0);
-  scrollok(buf->nc_win, true);
   buf->dirty = false;
   buf->queued = false;
   buf->attached = false;
@@ -89,18 +88,18 @@ void buf_cleanup(Buffer *buf)
   free(buf);
 }
 
-void buf_set_size(Buffer *buf, int r, int c)
+void buf_set_size(Buffer *buf, pos_T size)
 {
-  log_msg("BUFFER", "SET SIZE %d %d", r, c);
-  SET_POS(buf->b_size, r, c);
+  log_msg("BUFFER", "SET SIZE %d %d", size.col, size.lnum);
+  buf->b_size = size;
   wresize(buf->nc_win, buf->b_size.lnum, buf->b_size.col);
 }
 
-void buf_set_ofs(Buffer *buf, int y, int x)
+void buf_set_ofs(Buffer *buf, pos_T pos)
 {
-  log_msg("BUFFER", "SET OFS %d %d", y, x);
-  SET_POS(buf->b_ofs, y, x);
-  mvwin(buf->nc_win, y, x);
+  log_msg("BUFFER", "SET OFS %d %d", pos.col, pos.lnum);
+  buf->b_ofs = pos;
+  mvwin(buf->nc_win, pos.lnum, pos.col);
   buf_refresh(buf);
 }
 
@@ -169,12 +168,11 @@ void buf_full_invalidate(Buffer *buf, int index, int lnum)
 
 // input entry point.
 // proper commands are chosen based on buffer state.
-int buf_input(BufferNode *bn, int key)
+int buf_input(Buffer *buf, int key)
 {
   log_msg("BUFFER", "input");
-  Buffer *buf = bn->buf;
   if (buf->input_cb) {
-    buf->input_cb(bn, key);
+    buf->input_cb(buf, key);
     return 1;
   }
   if (!buf->attached)

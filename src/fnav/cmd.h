@@ -15,12 +15,12 @@
 typedef struct Cmd_T Cmd_T;
 typedef struct Cmd_Arg_T Cmd_Arg_T;
 typedef struct Cmd_Param_T Cmd_Param_T;
-typedef void* (*Cmd_Func_T)(List *args, int cmd_flags);
+typedef void* (*Cmd_Func_T)(List *args, int flags);
 
 struct Cmd_T {
   char *name;
   Cmd_Func_T cmd_func;
-  int cmd_flags;
+  int flags;
   UT_hash_handle hh;
 };
 

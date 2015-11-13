@@ -4,7 +4,7 @@
 #include "fnav/tui/sbuffer.h"
 #include "fnav/log.h"
 
-static void on_input_cb(BufferNode *buf, int key);
+static void on_input_cb(Buffer *buf, int key);
 
 void sbuffer_init(Buffer *buf)
 {
@@ -13,7 +13,7 @@ void sbuffer_init(Buffer *buf)
   buf_set_pass(buf);
 }
 
-void on_input_cb(BufferNode *buf, int key)
+void on_input_cb(Buffer *buf, int key)
 {
   log_msg("SBUFFER", "on_input_cb");
 }

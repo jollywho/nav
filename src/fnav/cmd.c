@@ -33,5 +33,5 @@ void cmd_run(Cmdstr *cmdstr)
 
   if (!fun) return; // :'(
   cmdstr->ret_t = CNTLR;
-  cmdstr->ret = fun->cmd_func(args, fun->cmd_flags);
+  cmdstr->ret = fun->cmd_func(args, fun->flags);
 }

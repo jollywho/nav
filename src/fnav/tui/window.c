@@ -14,35 +14,31 @@
 
 struct Window {
   Loop loop;
-  BufferNode *focus;
+  Layout layout;
   uv_timer_t draw_timer;
-  int buf_count;
   bool ex;
 };
 
 Window win;
 
-static void window_loop(Loop *loop, int ms);
-static void* win_new(List *args, int cmd_flags);
-static void* win_close(List *args, int cmd_flags);
+static void window_loop();
+static void* win_new();
+static void* win_close();
 
 void sig_resize(int sig)
 {
   log_msg("WINDOW", "Signal received: **term resize**");
-  // TODO: redo layout
+  // TODO: resize layout
 }
-
-#define DIR_HORZ  0
-#define DIR_VERT  1
 
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
 
 static const Cmd_T cmdtable[] = {
-  {"clo",    win_close,   0},
-  {"close",  win_close,   0},
-  {"new",    win_new,     DIR_HORZ},
-  {"vnew",   win_new,     DIR_VERT},
-  {"vne",    win_new,     DIR_VERT},
+  {"clo",    win_close,   0 },
+  {"close",  win_close,   0 },
+  {"new",    win_new,     MOVE_UP},
+  {"vnew",   win_new,     MOVE_LEFT},
+  {"vne",    win_new,     MOVE_LEFT},
 };
 
 void window_init(void)
@@ -51,11 +47,10 @@ void window_init(void)
   loop_add(&win.loop, window_loop);
   uv_timer_init(&win.loop.uv, &win.loop.delay);
   uv_timer_init(eventloop(), &win.draw_timer);
-  win.focus = NULL;
-  win.buf_count = 0;
   win.ex = false;
 
   signal(SIGWINCH, sig_resize);
+  layout_init(&win.layout);
 
   for (int i = 0; i < CMDS_SIZE; i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
@@ -77,46 +72,33 @@ void window_input(int key)
     if (key == '/') {
       window_ex_cmd_start(1);
     }
-    if (!win.focus)
-      return;
-    if (key == 'L') {
-      if (win.focus->child) {
-        win.focus = win.focus->child;
-      }
-    }
-    if (key == 'H') {
-      if (win.focus->parent) {
-        win.focus = win.focus->parent;
-      }
-    }
-    buf_input(win.focus, key);
   }
+  if (window_get_focus())
+    buf_input(layout_buf(&win.layout), key);
 }
 
 Buffer* window_get_focus()
 {
-  return win.focus ? win.focus->buf : NULL;
+  return layout_buf(&win.layout);
 }
 
-static void* win_new(List *args, int cmd_flags)
+static void* win_new(List *args, enum move_dir flags)
 {
-  pos_T dir;
-  dir.col = cmd_flags == DIR_VERT ? 1 : 0;
-  dir.lnum = cmd_flags == DIR_HORZ ? 1 : 0;
-  window_add_buffer(dir);
+  log_msg("WINDOW", "win_new");
+  window_add_buffer(flags);
   // TODO: replace with cntlr name lookup.
   //       load. init here. add to cntlr list etc.
   //       open. create instance.
   //       close. close instance.
   //       unload. cleanup here. remove from cntlr list.
   Token *word = (Token*)utarray_eltptr(args->items, 1);
-  return cntlr_open(TOKEN_STR(word->var), win.focus->buf);
+  return cntlr_open(TOKEN_STR(word->var), layout_buf(&win.layout));
 }
 
 static void* win_close(List *args, int cmd_flags)
 {
-  log_msg("WINDOW", "fdsf +ADD+");
-  cntlr_close(buf_cntlr(win.focus->buf));
+  log_msg("WINDOW", "win_close");
+  cntlr_close(buf_cntlr(layout_buf(&win.layout)));
   window_remove_buffer();
   return NULL;
 }
@@ -149,44 +131,19 @@ void window_req_draw(Buffer *buf, argv_callback cb)
 void window_draw_all()
 {
   log_msg("WINDOW", "DRAW_ALL");
-  BufferNode *it = win.focus; 
-  for (int i = 0; i < win.buf_count; ++i) {
-    buf_refresh(it->buf);
-    it = it->parent;
-  }
 }
 
 void window_remove_buffer()
 {
   log_msg("WINDOW", "BUFFER +CLOSE+");
-  BufferNode *bn = win.focus;
-  buf_cleanup(bn->buf);
-  free(bn);
-  //FIXME: need new design for parent/child
-  win.focus = NULL;
-  win.buf_count--;
-  pos_T t = {0,1};
-  layout_balance(win.focus, win.buf_count, t);
+  //buf_cleanup(bn->buf);
+  //free(bn);
+  layout_remove_buffer(&win.layout);
 }
 
-void window_add_buffer(pos_T dir)
+void window_add_buffer(enum move_dir dir)
 {
   log_msg("WINDOW", "BUFFER +ADD+");
-  BufferNode *cn = malloc(sizeof(BufferNode*));
-  cn->buf = buf_init();
-  if (!win.focus) {
-    cn->parent = NULL;
-    cn->child = NULL;
-    cn->buf = cn->buf;
-  }
-  else {
-    //FIXME: swap creates abandoned nodes
-    cn->parent = win.focus;
-    cn->child = NULL;
-    cn->buf = cn->buf;
-    win.focus->child = cn;
-  }
-  win.focus = cn;
-  win.buf_count++;
-  layout_balance(cn, win.buf_count, dir);
+  Buffer *buf = buf_init();
+  layout_add_buffer(&win.layout, buf, dir);
 }

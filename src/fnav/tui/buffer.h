@@ -4,19 +4,12 @@
 #include <ncurses.h>
 #include "fnav/table.h"
 
-typedef struct BufferNode BufferNode;
 typedef struct LineMatch LineMatch;
 
-typedef void (*buffer_input_cb)(BufferNode *buf, int key);
+typedef void (*buffer_input_cb)(Buffer *buf, int key);
 
-struct BufferNode {
-  BufferNode *parent;
-  BufferNode *child;
-  Buffer *buf;
-};
 struct Buffer {
   WINDOW *nc_win;
-  BufferNode *bn;
   Cntlr *cntlr;
 
   buffer_input_cb input_cb;
@@ -36,20 +29,28 @@ struct Buffer {
   bool closed;
 };
 
+enum move_dir {
+  MOVE_UP,
+  MOVE_DOWN,
+  MOVE_LEFT,
+  MOVE_RIGHT
+};
+
 Buffer* buf_init();
 void buf_cleanup(Buffer *buf);
 
 Cntlr *buf_cntlr(Buffer *buf);
 
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr);
-void buf_set_size(Buffer *buf, int r, int c);
-void buf_set_ofs(Buffer *buf, int y, int x);
+void buf_set_size(Buffer *buf, pos_T size);
+void buf_set_ofs(Buffer *buf, pos_T pos);
+
 void buf_set_pass(Buffer *buf);
 
 void buf_set_linematch(Buffer *buf, LineMatch *match);
 
 void buf_full_invalidate(Buffer *buf, int index, int lnum);
-int buf_input(BufferNode *bn, int key);
+int buf_input(Buffer *bn, int key);
 
 void buf_refresh(Buffer *buf);
 

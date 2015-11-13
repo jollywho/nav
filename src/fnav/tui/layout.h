@@ -3,8 +3,17 @@
 
 #include "fnav/tui/buffer.h"
 
-void layout_balance(BufferNode *focus, int count, pos_T dir);
-void layout_buffer_from_curs(BufferNode *bn, pos_T dir);
+typedef struct Container Container;
+typedef struct {
+  Container *c;
+} Layout;
+
+void layout_init(Layout *layout);
+void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir);
+void layout_remove_buffer(Layout *layout);
+
+void layout_movement(Layout *layout, enum move_dir dir);
+Buffer* layout_buf(Layout *layout);
 
 pos_T layout_size();
 
