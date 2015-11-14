@@ -72,6 +72,10 @@ void window_input(int key)
     if (key == '/') {
       window_ex_cmd_start(1);
     }
+    if (key == 'L')
+      layout_movement(&win.layout, MOVE_DOWN);
+    if (key == 'H')
+      layout_movement(&win.layout, MOVE_UP);
     if (window_get_focus())
       buf_input(layout_buf(&win.layout), key);
   }
