@@ -46,46 +46,56 @@ void layout_init(Layout *layout)
   layout->c = root;
 }
 
-static Container* holding_container(Container *c)
-{return c->parent->parent ? c->parent->parent : c->parent;}
+static Container* holding_container(Container *c, Container *p)
+{
+  if (c->dir == L_VERT || p->parent == NULL) {
+    return p;
+  }
+  else
+    return p->parent;
+}
 
 static void resize_container(Container *c)
 {
   log_msg("LAYOUT", "resize_container");
-  int s_y = 1;
-  int s_x = 1;
-  if (c->dir == L_HORIZ) { s_y = c->count; }
-  if (c->dir == L_VERT ) { s_x = c->count; }
+  int s_y = 1; int s_x = 1; int os_y = 0; int os_x = 0;
+  if (c->dir == L_HORIZ) { s_y = c->count; os_y = 1; }
+  if (c->dir == L_VERT ) { s_x = c->count; os_x = 1; }
 
+  int i = 0;
   Container *it = TAILQ_FIRST(&c->p);
-  while (it != NULL) {
+  while (++i, it != NULL) {
     log_msg("LAYOUT", "___ITAM____");
-    int c_w = 0;
-    Container *prev = NULL;
-    prev = TAILQ_PREV(it, cont, ent);
-    if (!prev) {
-      prev = c;
-    }
+
+    // use prev item in entry to set sizes. otherwise use the parent
+    int c_w = 1;
+    Container *prev = TAILQ_PREV(it, cont, ent);
+    if (!prev) { prev = c; c_w = 0; }
 
     log_msg("LAYOUT", "prev ofs [%d, %d]", prev->ofs.lnum, prev->ofs.col);
     log_msg("LAYOUT", "prev siz [%d, %d]", prev->size.lnum, prev->size.col);
 
-    it->size = (pos_T){
-      prev->size.lnum  / (s_y),
-      prev->size.col   / (s_x)};
-
-    // add prev size to ofs unless it is the holding container
-    if (prev != c) { c_w = 1; }
+    int new_lnum = c->size.lnum / s_y;
+    int new_col  = c->size.col  / s_x;
+    int rem_lnum = c->size.lnum % s_y;
+    int rem_col  = c->size.col  % s_x;
+    if (i == c->count && (rem_lnum || rem_col)) {
+      new_lnum += rem_lnum;
+      new_col  += rem_col;
+    }
+    log_msg("LAYOUT", "new siz [%d, %d]", new_lnum, new_col);
+    it->size = (pos_T){ new_lnum, new_col };
 
     it->ofs  = (pos_T){
-      prev->ofs.lnum + (prev->size.lnum * (s_y-1) * c_w),
-      prev->ofs.col  + (prev->size.col  * (s_x-1) * c_w)};
+      prev->ofs.lnum + (prev->size.lnum * os_y * c_w),
+      prev->ofs.col  + (prev->size.col  * os_x * c_w)};
 
-    log_msg("LAYOUT", "s_y c_w [%d, %d]",  s_y, c_w);
-    log_msg("LAYOUT", "s_x c_w [%d, %d]",  s_x, c_w);
-
-    buf_set_ofs(it->buf,  it->ofs);
-    buf_set_size(it->buf, it->size);
+    if (TAILQ_FIRST(&it->p))
+      resize_container(it);
+    else {
+      buf_set_size(it->buf, it->size);
+      buf_set_ofs(it->buf,  it->ofs);
+    }
     it = TAILQ_NEXT(it, ent);
   }
 }
@@ -95,24 +105,21 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
   log_msg("LAYOUT", "layout_add_buffer");
   Container *c = malloc(sizeof(Container));
   c->buf = next;
-  c->parent = layout->c;
   create_container(c, dir);
-  if (c->dir == L_HORIZ) { // new
-    log_msg("LAYOUT", "L_HORIZ");
-    Container *hc = holding_container(c);
-    hc->count++;
-    TAILQ_INSERT_TAIL(&hc->p, c, ent);
-  }
-  if (c->dir == L_VERT) {  // vnew
-    log_msg("LAYOUT", "L_VERT");
-  }
-  resize_container(holding_container(c));
+  Container *hc = holding_container(c, layout->c);
+  c->parent = hc;
+  hc->count++;
+  //TODO: if VERT create another container and copy hc contents into it
+  TAILQ_INSERT_TAIL(&hc->p, c, ent);
+  resize_container(hc);
   layout->c = c;
 }
 
 void layout_remove_buffer(Layout *layout)
 {
-  layout->c->buf = NULL;
+  Container *c = (Container*)layout->c;
+  // all of current children must be added to current parent
+  resize_container(c);
 }
 
 void layout_movement(Layout *layout, enum move_dir dir)

@@ -6,7 +6,6 @@
 typedef struct Container Container;
 typedef struct {
   Container *c;
-  bool root;
 } Layout;
 
 void layout_init(Layout *layout);
