@@ -140,8 +140,8 @@ void window_draw_all()
 {
   log_msg("WINDOW", "DRAW_ALL");
   //TODO: if nothing to draw, refresh all
-  refresh();
-  doupdate();
+  //refresh();
+  //doupdate();
 }
 
 void window_remove_buffer()
