@@ -90,14 +90,14 @@ void buf_cleanup(Buffer *buf)
 
 void buf_set_size(Buffer *buf, pos_T size)
 {
-  log_msg("BUFFER", "SET SIZE %d %d", size.col, size.lnum);
+  log_msg("BUFFER", "SET SIZE %d %d", size.lnum, size.col);
   buf->b_size = size;
   wresize(buf->nc_win, buf->b_size.lnum, buf->b_size.col);
 }
 
 void buf_set_ofs(Buffer *buf, pos_T pos)
 {
-  log_msg("BUFFER", "SET OFS %d %d", pos.col, pos.lnum);
+  log_msg("BUFFER", "SET OFS %d %d", pos.lnum, pos.col);
   buf->b_ofs = pos;
   mvwin(buf->nc_win, pos.lnum, pos.col);
   buf_refresh(buf);

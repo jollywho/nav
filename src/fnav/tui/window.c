@@ -72,9 +72,9 @@ void window_input(int key)
     if (key == '/') {
       window_ex_cmd_start(1);
     }
+    if (window_get_focus())
+      buf_input(layout_buf(&win.layout), key);
   }
-  if (window_get_focus())
-    buf_input(layout_buf(&win.layout), key);
 }
 
 Buffer* window_get_focus()
@@ -91,8 +91,12 @@ static void* win_new(List *args, enum move_dir flags)
   //       open. create instance.
   //       close. close instance.
   //       unload. cleanup here. remove from cntlr list.
+  Cntlr *ret = NULL;
   Token *word = (Token*)utarray_eltptr(args->items, 1);
-  return cntlr_open(TOKEN_STR(word->var), layout_buf(&win.layout));
+  if (word) {
+    ret = cntlr_open(TOKEN_STR(word->var), layout_buf(&win.layout));
+  }
+  return ret;
 }
 
 static void* win_close(List *args, int cmd_flags)
@@ -131,6 +135,9 @@ void window_req_draw(Buffer *buf, argv_callback cb)
 void window_draw_all()
 {
   log_msg("WINDOW", "DRAW_ALL");
+  //TODO: if nothing to draw, refresh all
+  refresh();
+  doupdate();
 }
 
 void window_remove_buffer()
@@ -139,6 +146,7 @@ void window_remove_buffer()
   //buf_cleanup(bn->buf);
   //free(bn);
   layout_remove_buffer(&win.layout);
+  window_draw_all();
 }
 
 void window_add_buffer(enum move_dir dir)

@@ -9,7 +9,7 @@ uv_timer_t event_timer;
 uint64_t before;
 uint64_t after;
 
-const uint64_t TIMESTEP = 20;
+const uint64_t TIMESTEP = 1;
 
 void main_event_loop(uv_timer_t *handle)
 {
