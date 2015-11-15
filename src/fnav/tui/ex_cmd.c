@@ -25,11 +25,10 @@ void start_ex_cmd(int state)
   log_msg("EXCMD", "start");
   ex_state = state;
   pos_T max = layout_size();
-  curs_set(1);
   nc_win = newwin(1, 0, max.lnum - 1, 0);
   curpos = CURMIN;
   maxpos = max.col;
-  if (window_get_focus() && state == 1)
+  if (window_get_focus() && state == EX_REG_STATE)
     regex_mk_pivot();
   cmdline_init(&cmd, max.col);
   cmdline_draw();
@@ -37,11 +36,17 @@ void start_ex_cmd(int state)
 
 static void cmdline_draw()
 {
+  curs_set(1);
   mvwaddch(nc_win, 0, 0, state_symbol[ex_state]);
   mvwprintw(nc_win, 0, 1, cmd.line);
   wmove(nc_win, 0, curpos + 2);
   wnoutrefresh(nc_win);
   doupdate();
+}
+
+void cmdline_refresh()
+{
+  cmdline_draw();
 }
 
 void reset_line()

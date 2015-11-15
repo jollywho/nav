@@ -67,10 +67,10 @@ void window_input(int key)
   }
   else {
     if (key == ';') {
-      window_ex_cmd_start(0);
+      window_ex_cmd_start(EX_CMD_STATE);
     }
     if (key == '/') {
-      window_ex_cmd_start(1);
+      window_ex_cmd_start(EX_REG_STATE);
     }
     if (key == 'L')
       layout_movement(&win.layout, MOVE_DOWN);
@@ -127,6 +127,8 @@ static void window_loop(Loop *loop, int ms)
   if (!queue_empty(&win.loop.events)) {
     process_loop(&win.loop, ms);
     doupdate();
+    if (win.ex)
+      cmdline_refresh();
   }
 }
 
@@ -139,9 +141,9 @@ void window_req_draw(Buffer *buf, argv_callback cb)
 void window_draw_all()
 {
   log_msg("WINDOW", "DRAW_ALL");
-  //TODO: if nothing to draw, refresh all
-  //refresh();
-  //doupdate();
+  clear();
+  refresh();
+  doupdate();
 }
 
 void window_remove_buffer()

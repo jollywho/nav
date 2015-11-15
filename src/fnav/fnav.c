@@ -22,7 +22,7 @@ void init(void)
   initscr();
   start_color();
   use_default_colors();
-  init_pair(1, 5, -1);
+  init_pair(1, 7, 1);
   init_pair(2, 6, -1);
   curs_set(0);
 #endif

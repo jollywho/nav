@@ -58,7 +58,7 @@ static const struct buf_cmd {
   (pos.lnum) += (y);           \
 
 #define DRAW_LINE(buf,ln,str)   \
-  mvwprintw(buf->nc_win, ln, 0, str);
+  mvwaddstr(buf->nc_win, ln, 0, str);
 
 void buf_listen(fn_handle *hndl);
 void buf_draw(void **argv);
@@ -141,13 +141,17 @@ void buf_draw(void **argv)
   wclear(buf->nc_win);
   if (buf->attached) {
     Model *m = buf->hndl->model;
+    wattron(buf->nc_win, COLOR_PAIR(2));
     for (int i = 0; i < buf->b_size.lnum; ++i) {
       String it = model_str_line(m, buf->top + i);
       if (!it) continue;
       DRAW_LINE(buf, i, it);
     }
-    wmove(buf->nc_win, buf->lnum, 0);
-    wchgat(buf->nc_win, -1, A_REVERSE, 1, NULL);
+    wattroff(buf->nc_win, COLOR_PAIR(2));
+    wattron(buf->nc_win, COLOR_PAIR(1));
+    String it = model_str_line(m, buf->top + buf->lnum);
+    DRAW_LINE(buf, buf->lnum, it);
+    wattroff(buf->nc_win, COLOR_PAIR(1));
   }
   wnoutrefresh(buf->nc_win);
   buf->dirty = false;

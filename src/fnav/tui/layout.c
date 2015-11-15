@@ -60,7 +60,6 @@ static void resize_container(Container *c)
   log_msg("LAYOUT", "_*_***resize_container***_*_");
   int s_y = 1; int s_x = 1; int os_y = 0; int os_x = 0;
 
-    log_msg("LAYOUT", "--CONT COUNT %d--", c->count);
   int i = 0;
   Container *it = TAILQ_FIRST(&c->p);
   while (++i, it != NULL) {
@@ -110,7 +109,11 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
   Container *hc = holding_container(c, layout->c);
   c->parent = hc;
   hc->count++;
-  TAILQ_INSERT_TAIL(&hc->p, c, ent);
+
+  if (!TAILQ_EMPTY(&hc->p))
+    TAILQ_INSERT_BEFORE(layout->c, c, ent);
+  else
+    TAILQ_INSERT_TAIL(&hc->p, c, ent);
 
   if (c->dir != layout->c->dir) {
     Container *sub = malloc(sizeof(Container));
@@ -135,10 +138,9 @@ void layout_remove_buffer(Layout *layout)
   Container *hc = holding_container(c, c->parent);
   Container *hcp = holding_container(hc, hc->parent);
 
-  // add all children to container's parent
+  /* add all children to container's parent. */
   Container *it = TAILQ_FIRST(&c->p);
   while (it != NULL) {
-    log_msg("LAYOUT", "--itam--");
     TAILQ_CONCAT(&hcp->p, &it->p, ent);
     hc->count--;
     hcp->count++;
@@ -149,7 +151,8 @@ void layout_remove_buffer(Layout *layout)
   TAILQ_REMOVE(&hc->p, c, ent);
   hc->count--;
   resize_container(hcp);
-  layout->c = TAILQ_LAST(&hcp->p, cont);
+  Container *first = TAILQ_FIRST(&hcp->p);
+  layout->c = first ? first : hcp;
 }
 
 void layout_movement(Layout *layout, enum move_dir dir)
