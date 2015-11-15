@@ -99,7 +99,7 @@ void buf_set_ofs(Buffer *buf, pos_T pos)
 {
   log_msg("BUFFER", "SET OFS %d %d", pos.lnum, pos.col);
   buf->b_ofs = pos;
-  mvwin(buf->nc_win, pos.lnum, pos.col);
+  mvwin(buf->nc_win, buf->b_ofs.lnum, buf->b_ofs.col);
   buf_refresh(buf);
 }
 

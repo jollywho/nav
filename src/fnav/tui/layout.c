@@ -3,17 +3,19 @@
 #include <sys/queue.h>
 
 #include "fnav/tui/layout.h"
+#include "fnav/tui/overlay.h"
 #include "fnav/log.h"
 
 enum dir_type { L_HORIZ, L_VERT };
 
 struct Container {
   Buffer *buf;
+  Overlay *ov;
   pos_T size;
   pos_T ofs;
   enum dir_type dir;
   Container *parent;
-  Container *sub;
+  int sub;
   int count;
   TAILQ_HEAD(cont, Container) p;
   TAILQ_ENTRY(Container) ent;
@@ -30,9 +32,9 @@ static void create_container(Container *c, enum move_dir dir)
 {
   if (dir == MOVE_UP   || dir == MOVE_DOWN ) c->dir = L_HORIZ;
   if (dir == MOVE_LEFT || dir == MOVE_RIGHT) c->dir = L_VERT;
-  c->sub = NULL;
   c->count = 0;
   TAILQ_INIT(&c->p);
+  c->ov = overlay_new();
 }
 
 void layout_init(Layout *layout)
@@ -42,7 +44,7 @@ void layout_init(Layout *layout)
   root->buf = NULL;
   root->parent = NULL;
   root->size = layout_size();
-  root->size.lnum--;  //cmdline
+  root->size.lnum--;  //cmdline, status
   root->ofs = (pos_T){0,0};
   create_container(root, MOVE_UP);
   layout->c = root;
@@ -75,15 +77,17 @@ static void resize_container(Container *c)
       new_col  += rem_col;
     }
     // use prev item in entry to set sizes. otherwise use the parent
-    int c_w = 1;
+    int c_w = 1; int sep = 0;
     Container *prev = TAILQ_PREV(it, cont, ent);
     if (!prev) {
       prev = c; c_w = 0;
     }
-    it->size = (pos_T){ new_lnum, new_col };
+    if (it->dir == L_VERT && i == c->count)
+      sep = 1;
+    it->size = (pos_T){ new_lnum - (1*os_y), new_col - sep };
 
     it->ofs  = (pos_T){
-      prev->ofs.lnum + (prev->size.lnum * os_y * c_w),
+      prev->ofs.lnum + (prev->size.lnum * os_y * c_w) + (c_w*os_y) ,
       prev->ofs.col  + (prev->size.col  * os_x * c_w)};
 
     log_msg("LAYOUT", "--(%d %d)--", it->size.lnum, it->size.col);
@@ -92,6 +96,8 @@ static void resize_container(Container *c)
     if (TAILQ_EMPTY(&it->p)) {
       buf_set_size(it->buf, it->size);
       buf_set_ofs(it->buf,  it->ofs);
+      overlay_set(it->ov, it->size, it->ofs, sep);
+      overlay_draw(it->ov);
     }
     else {
       resize_container(it);
@@ -108,23 +114,27 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
   create_container(c, dir);
   Container *hc = holding_container(c, layout->c);
   c->parent = hc;
-  hc->count++;
 
   if (!TAILQ_EMPTY(&hc->p))
     TAILQ_INSERT_BEFORE(layout->c, c, ent);
   else
     TAILQ_INSERT_TAIL(&hc->p, c, ent);
+  hc->count++;
 
   if (c->dir != layout->c->dir) {
-    Container *sub = malloc(sizeof(Container));
-    create_container(sub, dir);
-    sub->buf = hc->buf;
-    sub->size = hc->size;
-    sub->ofs = hc->ofs;
-    sub->parent = hc;
-    c->sub = sub;
+    Container *clone = malloc(sizeof(Container));
+    create_container(clone, dir);
+    // new dir type c add to hc as normal
+    // create clone of hc. mmove from hc: buf,ov
+    // set sub flag on hc to show it is container only
+    // insert clone into hc before c
+    // inc hc count
+    clone->buf = hc->buf;
+    clone->ov = hc->ov;
+    clone->parent = hc;
+    hc->sub = 1;
     hc->count++;
-    TAILQ_INSERT_TAIL(&hc->p, sub, ent);
+    TAILQ_INSERT_BEFORE(c, clone, ent);
   }
 
   resize_container(hc);
@@ -146,8 +156,8 @@ void layout_remove_buffer(Layout *layout)
     hcp->count++;
     it = TAILQ_NEXT(it, ent);
   }
-  if (c->sub)
-    TAILQ_REMOVE(&hc->p, c->sub, ent);
+  //if (c->sub)
+    //TAILQ_REMOVE(&hc->p, c->sub, ent);
   TAILQ_REMOVE(&hc->p, c, ent);
   hc->count--;
   resize_container(hcp);

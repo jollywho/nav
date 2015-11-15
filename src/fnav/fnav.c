@@ -24,6 +24,8 @@ void init(void)
   use_default_colors();
   init_pair(1, 7, 1);
   init_pair(2, 6, -1);
+  init_pair(3, 7, 0);
+  init_pair(4, 0, 4);
   curs_set(0);
 #endif
   loop_init();
