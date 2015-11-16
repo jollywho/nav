@@ -33,8 +33,12 @@ enum move_dir {
   MOVE_UP,
   MOVE_DOWN,
   MOVE_LEFT,
-  MOVE_RIGHT
+  MOVE_RIGHT,
+  NUM_MOVE_DIR
 };
+enum dir_type { L_HORIZ = 2, L_VERT = 0 };
+
+#define MOVE_DIR_TYPE(x,t) (((x) + t) % NUM_MOVE_DIR )
 
 Buffer* buf_init();
 void buf_cleanup(Buffer *buf);

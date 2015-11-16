@@ -15,6 +15,8 @@ void layout_remove_buffer(Layout *layout);
 void layout_movement(Layout *layout, enum move_dir dir);
 Buffer* layout_buf(Layout *layout);
 
+void layout_set_status(Layout *layout, String label);
+
 pos_T layout_size();
 
 #endif

@@ -73,9 +73,13 @@ void window_input(int key)
     if (key == '/') {
       window_ex_cmd_start(EX_REG_STATE);
     }
-    if (key == 'L')
-      layout_movement(&win.layout, MOVE_DOWN);
     if (key == 'H')
+      layout_movement(&win.layout, MOVE_LEFT);
+    if (key == 'L')
+      layout_movement(&win.layout, MOVE_RIGHT);
+    if (key == 'J')
+      layout_movement(&win.layout, MOVE_DOWN);
+    if (key == 'K')
       layout_movement(&win.layout, MOVE_UP);
     if (window_get_focus())
       buf_input(layout_buf(&win.layout), key);
@@ -140,6 +144,11 @@ void window_req_draw(void *obj, argv_callback cb)
 {
   log_msg("WINDOW", "req draw");
   CREATE_EVENT(&win.loop.events, cb, 1, obj);
+}
+
+void window_set_status(String label)
+{
+  layout_set_status(&win.layout, label);
 }
 
 void window_draw_all()

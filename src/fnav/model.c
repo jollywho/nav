@@ -10,6 +10,7 @@
 #include "fnav/table.h"
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/sbuffer.h"
+#include "fnav/tui/window.h"
 
 static void refind_line(fn_lis *lis);
 static void generate_lines(Model *m);
@@ -47,6 +48,7 @@ void model_cleanup(fn_handle *hndl)
 void model_open(fn_handle *hndl)
 {
   tbl_add_lis(hndl->tn, hndl->key_fld, hndl->key);
+  window_set_status(hndl->key);
 }
 
 void model_close(fn_handle *hndl)

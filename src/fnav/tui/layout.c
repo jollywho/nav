@@ -6,8 +6,6 @@
 #include "fnav/tui/overlay.h"
 #include "fnav/log.h"
 
-enum dir_type { L_HORIZ, L_VERT };
-
 struct Container {
   Buffer *buf;
   Overlay *ov;
@@ -181,12 +179,20 @@ void layout_movement(Layout *layout, enum move_dir dir)
   Container *c = layout->c;
   Container *p = TAILQ_PREV(c, cont, ent);
   Container *n = TAILQ_NEXT(c, ent);
+  log_msg("LAYOUT", "############ %d", dir);
+  dir = MOVE_DIR_TYPE(dir, c->dir);
+  log_msg("LAYOUT", "############ %d", dir);
 
-  if (dir == MOVE_UP && p)
+  if (dir == MOVE_LEFT && p)
     layout->c = p;
-  if (dir == MOVE_DOWN && n)
+  if (dir == MOVE_RIGHT && n)
     layout->c = n;
 }
 
 Buffer* layout_buf(Layout *layout)
 {return layout->c->buf;}
+
+void layout_set_status(Layout *layout, String label)
+{
+  overlay_edit_name(layout->c->ov, label);
+}
