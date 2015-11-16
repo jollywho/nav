@@ -37,6 +37,7 @@ Cntlr* cntlr_open(String name, Buffer *buf)
 
 void cntlr_close(Cntlr *cntlr)
 {
+  if (!cntlr) return;
   int i = find_cntlr(cntlr->name);
   if (i != -1) {
     return cntlr_table[i].close_cb(cntlr);

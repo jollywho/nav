@@ -107,7 +107,10 @@ static void* win_new(List *args, enum move_dir flags)
 static void* win_close(List *args, int cmd_flags)
 {
   log_msg("WINDOW", "win_close");
-  cntlr_close(buf_cntlr(layout_buf(&win.layout)));
+  Buffer *buf = layout_buf(&win.layout);
+  if (buf) {
+    cntlr_close(buf_cntlr(buf));
+  }
   window_remove_buffer();
   return NULL;
 }

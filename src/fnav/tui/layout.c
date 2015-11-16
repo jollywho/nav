@@ -33,6 +33,7 @@ static void create_container(Container *c, enum move_dir dir)
   if (dir == MOVE_UP   || dir == MOVE_DOWN ) c->dir = L_HORIZ;
   if (dir == MOVE_LEFT || dir == MOVE_RIGHT) c->dir = L_VERT;
   c->count = 0;
+  c->sub = 0;
   TAILQ_INIT(&c->p);
   c->ov = overlay_new();
 }
@@ -47,6 +48,7 @@ void layout_init(Layout *layout)
   root->size.lnum--;  //cmdline, status
   root->ofs = (pos_T){0,0};
   create_container(root, MOVE_UP);
+  root->sub = 1;
   layout->c = root;
 }
 
@@ -67,6 +69,7 @@ static void resize_container(Container *c)
   while (++i, it != NULL) {
     if (it->dir == L_HORIZ) { s_y = c->count ; os_y = 1; }
     if (it->dir == L_VERT ) { s_x = c->count ; os_x = 1; }
+  log_msg("LAYOUT", "_*_***TYPD %d***_*_", it->dir);
 
     int new_lnum = c->size.lnum / s_y;
     int new_col  = c->size.col  / s_x;
@@ -84,21 +87,19 @@ static void resize_container(Container *c)
     }
     if (it->dir == L_VERT && i == c->count)
       sep = 1;
-    it->size = (pos_T){ new_lnum - (1*os_y), new_col - sep };
+    it->size = (pos_T){ new_lnum , new_col  };
 
     it->ofs  = (pos_T){
-      prev->ofs.lnum + (prev->size.lnum * os_y * c_w) + (c_w*os_y) ,
+      prev->ofs.lnum + (prev->size.lnum * os_y * c_w),
       prev->ofs.col  + (prev->size.col  * os_x * c_w)};
-
-    log_msg("LAYOUT", "--(%d %d)--", it->size.lnum, it->size.col);
-    log_msg("LAYOUT", "--(%d %d)--", it->ofs.lnum, it->ofs.col);
 
     if (TAILQ_EMPTY(&it->p)) {
       buf_set_size(it->buf, it->size);
       buf_set_ofs(it->buf,  it->ofs);
-      overlay_set(it->ov, it->size, it->ofs, sep);
+      overlay_set(it->ov, it->buf);
     }
     else {
+      overlay_clear(it->ov);
       resize_container(it);
     }
     it = TAILQ_NEXT(it, ent);
@@ -122,6 +123,7 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
 
   if (c->dir != layout->c->dir) {
     Container *clone = malloc(sizeof(Container));
+    log_msg("LAYOUT", "##############");
     create_container(clone, dir);
     clone->buf = hc->buf;
     clone->ov = hc->ov;
@@ -131,7 +133,8 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
     TAILQ_INSERT_BEFORE(c, clone, ent);
   }
 
-  resize_container(hc);
+  Container *hcp = holding_container(hc, hc->parent);
+  resize_container(hcp);
   layout->c = c;
 }
 
@@ -162,7 +165,6 @@ void layout_remove_buffer(Layout *layout)
   TAILQ_REMOVE(&hc->p, c, ent);
   hc->count--;
   if (hc->count == 1 && hc->dir != next->dir) {
-    log_msg("LAYOUT", "###############");
     hc->buf = next->buf;
     hc->ov = next->ov;
     hc->sub = 0;
@@ -179,11 +181,7 @@ void layout_movement(Layout *layout, enum move_dir dir)
   Container *c = layout->c;
   Container *p = TAILQ_PREV(c, cont, ent);
   Container *n = TAILQ_NEXT(c, ent);
-  //if (c->parent->parent != NULL) {
-  //  Container *l = TAILQ_FIRST(&c->parent->parent->p);
-  //  if (dir == MOVE_LEFT && l)
-  //    layout->c = l;
-  //}
+
   if (dir == MOVE_UP && p)
     layout->c = p;
   if (dir == MOVE_DOWN && n)

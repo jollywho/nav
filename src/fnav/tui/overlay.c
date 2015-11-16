@@ -11,17 +11,24 @@ Overlay* overlay_new()
   return ov;
 }
 
-void overlay_set(Overlay *ov, pos_T size, pos_T ofs, int sep)
+void overlay_clear(Overlay *ov)
+{
+  wclear(ov->nc_win_st);
+  wnoutrefresh(ov->nc_win_st);
+}
+
+void overlay_set(Overlay *ov, Buffer *buf)
 {
   log_msg("OVERLAY", "overlay_set");
-  log_msg("OVERLAY SIZE", "--(%d %d)--", size.lnum, size.col);
-  log_msg("OVERLAY OFS", "--(%d %d)--", ofs.lnum, ofs.col);
-  wclear(ov->nc_win_st);
+  pos_T size = buf_size(buf);
+  pos_T ofs  = buf_ofs(buf);
+  size.lnum--;
+  buf_set_size(buf, size);
+  overlay_clear(ov);
   ov->ov_size = size;
-  ov->ov_ofs = (pos_T){ofs.lnum + size.lnum, ofs.col};
-  ov->separator = sep;
-  wresize(ov->nc_win_st,  1, ov->ov_size.col);
-  mvwin(ov->nc_win_st,  ov->ov_ofs.lnum, ov->ov_ofs.col);
+  ov->ov_ofs = (pos_T){ ofs.lnum + size.lnum , ofs.col };
+  wresize(ov->nc_win_st, 1, ov->ov_size.col);
+  mvwin(ov->nc_win_st, ov->ov_ofs.lnum, ov->ov_ofs.col);
   //mvwin(ov->nc_win_sep, ofs.lnum, ofs.col);
   //wresize(ov->nc_win_sep, size.lnum, 1);
   window_req_draw(ov, overlay_draw);
