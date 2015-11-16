@@ -34,6 +34,7 @@ void sig_resize(int sig)
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
 
 static const Cmd_T cmdtable[] = {
+  {"q",      win_close,   0 },
   {"clo",    win_close,   0 },
   {"close",  win_close,   0 },
   {"new",    win_new,     MOVE_UP},
@@ -132,18 +133,15 @@ static void window_loop(Loop *loop, int ms)
   }
 }
 
-void window_req_draw(Buffer *buf, argv_callback cb)
+void window_req_draw(void *obj, argv_callback cb)
 {
   log_msg("WINDOW", "req draw");
-  CREATE_EVENT(&win.loop.events, cb, 1, buf);
+  CREATE_EVENT(&win.loop.events, cb, 1, obj);
 }
 
 void window_draw_all()
 {
   log_msg("WINDOW", "DRAW_ALL");
-  clear();
-  refresh();
-  doupdate();
 }
 
 void window_remove_buffer()

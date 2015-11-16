@@ -97,7 +97,6 @@ static void resize_container(Container *c)
       buf_set_size(it->buf, it->size);
       buf_set_ofs(it->buf,  it->ofs);
       overlay_set(it->ov, it->size, it->ofs, sep);
-      overlay_draw(it->ov);
     }
     else {
       resize_container(it);
@@ -124,11 +123,6 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
   if (c->dir != layout->c->dir) {
     Container *clone = malloc(sizeof(Container));
     create_container(clone, dir);
-    // new dir type c add to hc as normal
-    // create clone of hc. mmove from hc: buf,ov
-    // set sub flag on hc to show it is container only
-    // insert clone into hc before c
-    // inc hc count
     clone->buf = hc->buf;
     clone->ov = hc->ov;
     clone->parent = hc;
@@ -139,6 +133,14 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
 
   resize_container(hc);
   layout->c = c;
+}
+
+static Container* next_or_prev(Container *it)
+{
+  return
+    TAILQ_NEXT(it, ent) ?
+    TAILQ_NEXT(it,ent) :
+    TAILQ_PREV(it, cont, ent);
 }
 
 void layout_remove_buffer(Layout *layout)
@@ -156,13 +158,20 @@ void layout_remove_buffer(Layout *layout)
     hcp->count++;
     it = TAILQ_NEXT(it, ent);
   }
-  //if (c->sub)
-    //TAILQ_REMOVE(&hc->p, c->sub, ent);
+  Container *next = next_or_prev(c);
   TAILQ_REMOVE(&hc->p, c, ent);
   hc->count--;
+  if (hc->count == 1 && hc->dir != next->dir) {
+    log_msg("LAYOUT", "###############");
+    hc->buf = next->buf;
+    hc->ov = next->ov;
+    hc->sub = 0;
+    hc->count--;
+    TAILQ_REMOVE(&hc->p, next, ent);
+    next = hc;
+  }
   resize_container(hcp);
-  Container *first = TAILQ_FIRST(&hcp->p);
-  layout->c = first ? first : hcp;
+  layout->c = next;
 }
 
 void layout_movement(Layout *layout, enum move_dir dir)
