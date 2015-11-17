@@ -1,6 +1,7 @@
 // layout
 // buffer tiling management
 #include <sys/queue.h>
+#include <sys/ioctl.h>
 
 #include "fnav/tui/layout.h"
 #include "fnav/tui/overlay.h"
@@ -21,9 +22,9 @@ struct Container {
 
 pos_T layout_size()
 {
-  pos_T size;
-  getmaxyx(stdscr, size.lnum, size.col);
-  return size;
+  struct winsize w;
+  ioctl(0, TIOCGWINSZ, &w);
+  return (pos_T){w.ws_row,w.ws_col};
 }
 
 static void create_container(Container *c, enum move_dir dir)
@@ -175,8 +176,22 @@ void layout_remove_buffer(Layout *layout)
   layout->c = next;
 }
 
-static Container *inner_comp(Container *c)
+static Container *inner_comp(Container *t, Container *c)
 {
+  // item = first of c
+  // if target.ofs + height > item.pos
+  //  if sub
+  //    inner_comp(t, tailq_first(item.p))
+  //  else
+  //    if t.dir == L_VERT
+  //      if dir == MOVE_UP
+  //        inner_comp(t, tailq_first(tailq_last(c.p).p)
+  //      else
+  //        inner_comp(t, tailq_first(item.p)
+  //    else
+  //      return item
+  // else
+  //  next item
   return 0;
 }
 
@@ -189,12 +204,14 @@ void layout_movement(Layout *layout, enum move_dir dir)
   Container *hc = holding_container(c, c->parent);
   Container *hcp = holding_container(hc, hc->parent);
 
-  Container *pp = NULL, *nn = NULL;
-  if (!TAILQ_EMPTY(&hcp->p) && hc != hcp) {
-    pp = TAILQ_PREV(hc, cont, ent);
-    nn = TAILQ_NEXT(hc, ent);
-  }
   dir = MOVE_DIR_TYPE(dir, c->dir);
+
+  Container *pp = NULL;
+  if (!TAILQ_EMPTY(&hcp->p) && hc != hcp) {
+    if (dir == MOVE_UP)   pp = TAILQ_PREV(hc, cont, ent);
+    if (dir == MOVE_DOWN) pp = TAILQ_NEXT(hc, ent);
+    pp = inner_comp(c, pp);
+  }
 
   switch(dir) {
     case MOVE_LEFT:
@@ -211,7 +228,7 @@ void layout_movement(Layout *layout, enum move_dir dir)
       if (pp) layout->c = pp;
       break;
     case MOVE_DOWN:
-      if (nn) layout->c = nn;
+      //if (nn) layout->c = nn;
       break;
     default:
       return;
@@ -224,4 +241,13 @@ Buffer* layout_buf(Layout *layout)
 void layout_set_status(Layout *layout, String label)
 {
   overlay_edit_name(layout->c->ov, label);
+}
+
+void layout_refresh(Layout *rootc)
+{
+  Container *root = rootc->c;
+  root->size = layout_size();
+  root->size.lnum--;  //cmdline, status
+  root->ofs = (pos_T){0,0};
+  resize_container(root);
 }

@@ -15,6 +15,7 @@
 struct Window {
   Loop loop;
   Layout layout;
+  Layout root;
   uv_timer_t draw_timer;
   bool ex;
 };
@@ -28,7 +29,8 @@ static void* win_close();
 void sig_resize(int sig)
 {
   log_msg("WINDOW", "Signal received: **term resize**");
-  // TODO: resize layout
+  clear();
+  layout_refresh(&win.root);
 }
 
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
@@ -52,6 +54,7 @@ void window_init(void)
 
   signal(SIGWINCH, sig_resize);
   layout_init(&win.layout);
+  win.root = win.layout;
 
   for (int i = 0; i < CMDS_SIZE; i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
