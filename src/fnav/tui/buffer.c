@@ -92,7 +92,8 @@ void buf_set_size(Buffer *buf, pos_T size)
 {
   log_msg("BUFFER", "SET SIZE %d %d", size.lnum, size.col);
   buf->b_size = size;
-  wresize(buf->nc_win, buf->b_size.lnum, buf->b_size.col);
+  delwin(buf->nc_win);
+  buf->nc_win = newwin(size.lnum, size.col, 0, 0);
 }
 
 void buf_set_ofs(Buffer *buf, pos_T pos)

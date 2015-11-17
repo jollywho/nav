@@ -31,6 +31,8 @@ void sig_resize(int sig)
   log_msg("WINDOW", "Signal received: **term resize**");
   clear();
   layout_refresh(&win.root);
+  refresh();
+  doupdate();
 }
 
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)

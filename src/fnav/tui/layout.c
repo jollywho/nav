@@ -154,13 +154,13 @@ void layout_remove_buffer(Layout *layout)
 
   /* add all children to container's parent. */
   Container *it = TAILQ_FIRST(&c->p);
-  while (it != NULL) {
-    it->parent = hcp;
-    TAILQ_CONCAT(&hcp->p, &it->p, ent);
-    c->count--;
-    hcp->count++;
-    it = TAILQ_NEXT(it, ent);
-  }
+  //while (it != NULL) {
+  //  it->parent = hcp;
+  //  TAILQ_CONCAT(&hcp->p, &it->p, ent);
+  //  c->count--;
+  //  hcp->count++;
+  //  it = TAILQ_NEXT(it, ent);
+  //}
   Container *next = next_or_prev(c);
   TAILQ_REMOVE(&hc->p, c, ent);
   hc->count--;

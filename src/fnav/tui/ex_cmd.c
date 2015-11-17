@@ -36,6 +36,7 @@ void start_ex_cmd(int state)
 
 static void cmdline_draw()
 {
+  log_msg("EXCMD", "cmdline_draw");
   curs_set(1);
   mvwaddch(nc_win, 0, 0, state_symbol[ex_state]);
   mvwprintw(nc_win, 0, 1, cmd.line);
@@ -46,6 +47,10 @@ static void cmdline_draw()
 
 void cmdline_refresh()
 {
+  pos_T max = layout_size();
+  delwin(nc_win);
+  nc_win = newwin(1, 0, max.lnum - 1, 0);
+  maxpos = max.col;
   cmdline_draw();
 }
 
@@ -139,6 +144,7 @@ void stop_ex_cmd()
   wclear(nc_win);
   wnoutrefresh(nc_win);
   doupdate();
+  delwin(nc_win);
   curs_set(0);
   window_ex_cmd_end();
 }
