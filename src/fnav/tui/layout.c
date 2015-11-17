@@ -46,7 +46,7 @@ void layout_init(Layout *layout)
   root->size.lnum--;  //cmdline, status
   root->ofs = (pos_T){0,0};
   create_container(root, MOVE_UP);
-  root->sub = 1;
+  root->sub = 5;
   layout->c = root;
 }
 
@@ -154,8 +154,9 @@ void layout_remove_buffer(Layout *layout)
   /* add all children to container's parent. */
   Container *it = TAILQ_FIRST(&c->p);
   while (it != NULL) {
+    it->parent = hcp;
     TAILQ_CONCAT(&hcp->p, &it->p, ent);
-    hc->count--;
+    c->count--;
     hcp->count++;
     it = TAILQ_NEXT(it, ent);
   }
@@ -174,19 +175,47 @@ void layout_remove_buffer(Layout *layout)
   layout->c = next;
 }
 
+static Container *inner_comp(Container *c)
+{
+  return 0;
+}
+
 void layout_movement(Layout *layout, enum move_dir dir)
 {
+  log_msg("LAYOUT", "layout_movement");
   Container *c = layout->c;
   Container *p = TAILQ_PREV(c, cont, ent);
   Container *n = TAILQ_NEXT(c, ent);
-  log_msg("LAYOUT", "############ %d", dir);
-  dir = MOVE_DIR_TYPE(dir, c->dir);
-  log_msg("LAYOUT", "############ %d", dir);
+  Container *hc = holding_container(c, c->parent);
+  Container *hcp = holding_container(hc, hc->parent);
 
-  if (dir == MOVE_LEFT && p)
-    layout->c = p;
-  if (dir == MOVE_RIGHT && n)
-    layout->c = n;
+  Container *pp = NULL, *nn = NULL;
+  if (!TAILQ_EMPTY(&hcp->p) && hc != hcp) {
+    pp = TAILQ_PREV(hc, cont, ent);
+    nn = TAILQ_NEXT(hc, ent);
+  }
+  dir = MOVE_DIR_TYPE(dir, c->dir);
+
+  switch(dir) {
+    case MOVE_LEFT:
+      if (!p) return;
+      if (p->sub) p = TAILQ_FIRST(&p->p);
+      layout->c = p;
+      break;
+    case MOVE_RIGHT:
+      if (!n) return;
+      if (n->sub) n = TAILQ_FIRST(&n->p);
+      layout->c = n;
+      break;
+    case MOVE_UP:
+      if (pp) layout->c = pp;
+      break;
+    case MOVE_DOWN:
+      if (nn) layout->c = nn;
+      break;
+    default:
+      return;
+  }
 }
 
 Buffer* layout_buf(Layout *layout)

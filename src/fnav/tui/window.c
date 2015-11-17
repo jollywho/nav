@@ -75,12 +75,12 @@ void window_input(int key)
     }
     if (key == 'H')
       layout_movement(&win.layout, MOVE_LEFT);
-    if (key == 'L')
-      layout_movement(&win.layout, MOVE_RIGHT);
     if (key == 'J')
       layout_movement(&win.layout, MOVE_DOWN);
     if (key == 'K')
       layout_movement(&win.layout, MOVE_UP);
+    if (key == 'L')
+      layout_movement(&win.layout, MOVE_RIGHT);
     if (window_get_focus())
       buf_input(layout_buf(&win.layout), key);
   }
