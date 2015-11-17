@@ -63,6 +63,7 @@ void window_init(void)
     cmd = memcpy(cmd, &cmdtable[i], sizeof(Cmd_T));
     cmd_add(cmd);
   }
+  sig_resize(0);
 }
 
 void window_input(int key)

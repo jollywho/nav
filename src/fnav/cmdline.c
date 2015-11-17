@@ -31,6 +31,7 @@ void cmdline_init(Cmdline *cmdline, int size)
 void cmdline_cleanup(Cmdline *cmdline)
 {
   cmdline_reset(cmdline);
+  free(cmdline->line);
   // other freeing
 }
 
@@ -105,7 +106,7 @@ static void cmdline_create_token(Cmdline *cmdline, char *str, int st, int ed)
 {
   int len = ed - st;
   if (len < 1) return;
-  char *vstr = malloc(len);
+  char *vstr = malloc(sizeof(char*)*len);
   strncpy(vstr, &str[st], len);
   vstr[len] = '\0';
   Token token = {

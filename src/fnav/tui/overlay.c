@@ -43,11 +43,11 @@ void overlay_set(Overlay *ov, Buffer *buf)
   ov->ov_size = size;
   ov->ov_ofs = (pos_T){ ofs.lnum + size.lnum , ofs.col };
 
-  delwin(ov->nc_win_st);
-  ov->nc_win_st = newwin(1, ov->ov_ofs.col, ov->ov_ofs.lnum, ov->ov_ofs.col);
+  wresize(ov->nc_win_st, 1, ov->ov_size.col);
+  mvwin(ov->nc_win_st, ov->ov_ofs.lnum, ov->ov_ofs.col);
 
-  delwin(ov->nc_win_sep);
-  ov->nc_win_sep = newwin(size.lnum + 1, 1, ofs.lnum, ofs.col - 1);
+  wresize(ov->nc_win_sep, size.lnum + 1, 1);
+  mvwin(ov->nc_win_sep, ofs.lnum, ofs.col - 1);
 
   window_req_draw(ov, overlay_draw);
 }
