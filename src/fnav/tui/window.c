@@ -80,13 +80,13 @@ void window_input(int key)
       window_ex_cmd_start(EX_REG_STATE);
     }
     if (key == 'H')
-      layout_movement(&win.layout, MOVE_LEFT);
+      layout_movement(&win.layout, &win.root, MOVE_LEFT);
     if (key == 'J')
-      layout_movement(&win.layout, MOVE_DOWN);
+      layout_movement(&win.layout, &win.root, MOVE_DOWN);
     if (key == 'K')
-      layout_movement(&win.layout, MOVE_UP);
+      layout_movement(&win.layout, &win.root, MOVE_UP);
     if (key == 'L')
-      layout_movement(&win.layout, MOVE_RIGHT);
+      layout_movement(&win.layout, &win.root, MOVE_RIGHT);
     if (window_get_focus())
       buf_input(layout_buf(&win.layout), key);
   }

@@ -34,11 +34,8 @@ enum move_dir {
   MOVE_DOWN,
   MOVE_LEFT,
   MOVE_RIGHT,
-  NUM_MOVE_DIR
 };
-enum dir_type { L_HORIZ = 2, L_VERT = 0 };
-
-#define MOVE_DIR_TYPE(x,t) (((x) + t) % NUM_MOVE_DIR )
+enum dir_type { L_HORIZ, L_VERT };
 
 Buffer* buf_init();
 void buf_cleanup(Buffer *buf);
@@ -62,6 +59,7 @@ void buf_move(Buffer *buf, int y, int x);
 
 int buf_line(Buffer *buf);
 int buf_top(Buffer *buf);
+pos_T buf_abs_pos(Buffer *buf);
 pos_T buf_size(Buffer *buf);
 pos_T buf_ofs(Buffer *buf);
 

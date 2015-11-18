@@ -268,6 +268,8 @@ pos_T buf_ofs(Buffer *buf)
 {return buf->b_ofs;}
 Cntlr *buf_cntlr(Buffer *buf)
 {return buf->cntlr;}
+pos_T buf_abs_pos(Buffer *buf)
+{return (pos_T){buf->top+buf->lnum+1,buf->b_ofs.col};}
 
 static void buf_mv_page(Buffer *buf, Cmdarg *arg)
 {

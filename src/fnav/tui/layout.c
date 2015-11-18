@@ -68,7 +68,6 @@ static void resize_container(Container *c)
   while (++i, it != NULL) {
     if (it->dir == L_HORIZ) { s_y = c->count ; os_y = 1; }
     if (it->dir == L_VERT ) { s_x = c->count ; os_x = 1; }
-  log_msg("LAYOUT", "_*_***TYPD %d***_*_", it->dir);
 
     int new_lnum = c->size.lnum / s_y;
     int new_col  = c->size.col  / s_x;
@@ -122,7 +121,6 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
 
   if (c->dir != layout->c->dir) {
     Container *clone = malloc(sizeof(Container));
-    log_msg("LAYOUT", "##############");
     create_container(clone, dir);
     clone->buf = hc->buf;
     clone->ov = hc->ov;
@@ -153,7 +151,7 @@ void layout_remove_buffer(Layout *layout)
   Container *hcp = holding_container(hc, hc->parent);
 
   /* add all children to container's parent. */
-  Container *it = TAILQ_FIRST(&c->p);
+  //Container *it = TAILQ_FIRST(&c->p);
   //while (it != NULL) {
   //  it->parent = hcp;
   //  TAILQ_CONCAT(&hcp->p, &it->p, ent);
@@ -176,63 +174,63 @@ void layout_remove_buffer(Layout *layout)
   layout->c = next;
 }
 
-static Container *inner_comp(Container *t, Container *c)
+static pos_T cur_line(Container *c)
+{return c->buf ? buf_abs_pos(c->buf) : c->ofs;}
+
+static pos_T pos_shift(Container *c, enum move_dir dir)
 {
-  // item = first of c
-  // if target.ofs + height > item.pos
-  //  if sub
-  //    inner_comp(t, tailq_first(item.p))
-  //  else
-  //    if t.dir == L_VERT
-  //      if dir == MOVE_UP
-  //        inner_comp(t, tailq_first(tailq_last(c.p).p)
-  //      else
-  //        inner_comp(t, tailq_first(item.p)
-  //    else
-  //      return item
-  // else
-  //  next item
-  return 0;
+  pos_T pos = cur_line(c);
+
+  if (dir == MOVE_LEFT)
+    pos = (pos_T){c->ofs.lnum + pos.lnum, c->ofs.col - 1};
+  if (dir == MOVE_RIGHT)
+    pos = (pos_T){c->ofs.lnum + pos.lnum, c->ofs.col+c->size.col+1};
+  if (dir == MOVE_UP)
+    pos = (pos_T){c->ofs.lnum-1, c->ofs.col+1};
+  if (dir == MOVE_DOWN)
+    pos = (pos_T){c->ofs.lnum+c->size.lnum+1, c->ofs.col+1};
+
+  return pos;
 }
 
-void layout_movement(Layout *layout, enum move_dir dir)
+static int intersects(pos_T a, pos_T b, pos_T bsize)
+{
+  return !(b.col > a.col || 
+           bsize.col < a.col || 
+           b.lnum > a.lnum ||
+           bsize.lnum < a.lnum);
+}
+
+Container *find_intersect(Container *c, Container *pp, pos_T pos)
+{
+  log_msg("LAYOUT", "find_intersect");
+  Container *it = pp;
+  while (it) {
+
+    pos_T it_pos = (pos_T) {
+      it->ofs.lnum + it->size.lnum,
+      it->ofs.col  + it->size.col };
+
+    int isint = intersects(pos, it->ofs, it_pos);
+    if (isint && it != c) {
+      if (!it->sub) return it;
+      return find_intersect(c, TAILQ_FIRST(&it->p), pos);
+    }
+    it = TAILQ_NEXT(it, ent);
+  }
+  return NULL;
+}
+
+void layout_movement(Layout *layout, Layout *root, enum move_dir dir)
 {
   log_msg("LAYOUT", "layout_movement");
   Container *c = layout->c;
-  Container *p = TAILQ_PREV(c, cont, ent);
-  Container *n = TAILQ_NEXT(c, ent);
-  Container *hc = holding_container(c, c->parent);
-  Container *hcp = holding_container(hc, hc->parent);
-
-  dir = MOVE_DIR_TYPE(dir, c->dir);
+  pos_T pos = pos_shift(c, dir);
 
   Container *pp = NULL;
-  if (!TAILQ_EMPTY(&hcp->p) && hc != hcp) {
-    if (dir == MOVE_UP)   pp = TAILQ_PREV(hc, cont, ent);
-    if (dir == MOVE_DOWN) pp = TAILQ_NEXT(hc, ent);
-    pp = inner_comp(c, pp);
-  }
-
-  switch(dir) {
-    case MOVE_LEFT:
-      if (!p) return;
-      if (p->sub) p = TAILQ_FIRST(&p->p);
-      layout->c = p;
-      break;
-    case MOVE_RIGHT:
-      if (!n) return;
-      if (n->sub) n = TAILQ_FIRST(&n->p);
-      layout->c = n;
-      break;
-    case MOVE_UP:
-      if (pp) layout->c = pp;
-      break;
-    case MOVE_DOWN:
-      //if (nn) layout->c = nn;
-      break;
-    default:
-      return;
-  }
+  pp = find_intersect(c, root->c, pos);
+  if (pp)
+    layout->c = pp;
 }
 
 Buffer* layout_buf(Layout *layout)
