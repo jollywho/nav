@@ -175,7 +175,7 @@ void layout_remove_buffer(Layout *layout)
 }
 
 static pos_T cur_line(Container *c)
-{return c->buf ? buf_abs_pos(c->buf) : c->ofs;}
+{return c->buf ? buf_pos(c->buf) : c->ofs;}
 
 static pos_T pos_shift(Container *c, enum move_dir dir)
 {

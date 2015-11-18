@@ -35,8 +35,8 @@ Shell* shell_init(Cntlr *c, fn_handle *h)
   sh->proc->argv = rv;
   sh->hndl = h;
   sh->out.model = h->model;
-  sh->ptyproc.width = 76;
-  sh->ptyproc.height = 27;
+  sh->ptyproc.height = 24;
+  sh->ptyproc.width = 90;
   return sh;
 }
 

@@ -59,7 +59,7 @@ void buf_move(Buffer *buf, int y, int x);
 
 int buf_line(Buffer *buf);
 int buf_top(Buffer *buf);
-pos_T buf_abs_pos(Buffer *buf);
+pos_T buf_pos(Buffer *buf);
 pos_T buf_size(Buffer *buf);
 pos_T buf_ofs(Buffer *buf);
 

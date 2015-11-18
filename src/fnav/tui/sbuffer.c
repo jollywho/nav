@@ -21,10 +21,15 @@ void on_input_cb(Buffer *buf, int key)
 void sbuf_write(Buffer *buf, char *str, size_t nbyte)
 {
   log_msg("SBUFFER", "sbuf_write");
-  write(STDOUT_FILENO, str, nbyte);
-  log_msg("___", "%s", tigetstr("clear"));
+  //TODO: how to implement shell
+  //  tigetstr from pipe
+  //  strip acs name
+  //  match in acs table
+  //  call cb for that acs: clear, color, move, etc
+  //  maintain buffer structure with colors etc per line
   if (strstr(str, "[2J")) { // test
-    refresh();
-    doupdate();
+    //window_draw_all();
   }
+  else
+    write(STDOUT_FILENO, str, nbyte);
 }
