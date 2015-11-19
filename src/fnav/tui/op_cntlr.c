@@ -150,4 +150,7 @@ Cntlr* op_init()
   return &op->base;
 }
 
-void op_cleanup(Cntlr *cntlr);
+void op_cleanup(Cntlr *cntlr)
+{
+  log_msg("OP", "op_cleanup");
+}

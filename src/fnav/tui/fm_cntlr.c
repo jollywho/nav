@@ -78,6 +78,7 @@ int fm_opendir(Cntlr *cntlr, String path, short arg)
     h->key = cur_dir;
     model_open(h);
     buf_set_cntlr(h->buf, cntlr);
+    fs_close(self->fs);
     fs_open(self->fs, cur_dir);
     self->cur_dir = cur_dir;
     return 1;
@@ -238,7 +239,7 @@ Cntlr* fm_init(Buffer *buf)
   fm->base.fmt_name = "   FM    ";
   fm->op_count = 1;
   fm->mo_count = 1;
-  char init_dir[]="/home/chi/casper/Pictures";
+  char init_dir[]="/home/chi/casper/YFS";
   fm->cur_dir = malloc(strlen(init_dir)+1);
   strcpy(fm->cur_dir, init_dir);
 

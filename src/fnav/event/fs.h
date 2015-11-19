@@ -26,6 +26,7 @@ typedef struct {
 FS_handle* fs_init(fn_handle *h);
 void fs_cleanup(FS_handle *fsh);
 void fs_open(FS_handle *h, const String dir);
+void fs_close(FS_handle *h);
 bool isdir(String path);
 String fs_parent_dir(const String path);
 

@@ -42,7 +42,6 @@ static void cmdline_draw()
   mvwprintw(nc_win, 0, 1, cmd.line);
   wmove(nc_win, 0, curpos + 2);
   wnoutrefresh(nc_win);
-  doupdate();
 }
 
 void cmdline_refresh()
@@ -143,7 +142,6 @@ void stop_ex_cmd()
   cmdline_cleanup(&cmd);
   wclear(nc_win);
   wnoutrefresh(nc_win);
-  doupdate();
   delwin(nc_win);
   curs_set(0);
   window_ex_cmd_end();

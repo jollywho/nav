@@ -143,7 +143,6 @@ void buf_draw_blanks(Buffer *buf)
     mvwhline(buf->nc_win, i, 0, ' ', buf->b_size.col);
   }
   wnoutrefresh(buf->nc_win);
-  doupdate();
 }
 
 void buf_draw(void **argv)

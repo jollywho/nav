@@ -15,7 +15,7 @@
 #include "fnav/table.h"
 #include "fnav/tui/buffer.h"
 
-#define RFRESH_RATE 500
+#define RFRESH_RATE 5000
 
 static void fs_close_req(FS_req *fq);
 static void stat_cb(uv_fs_t* req);
@@ -99,6 +99,12 @@ void fs_open(FS_handle *fsh, const String dir)
   uv_fs_event_stop(&fsh->watcher);
   uv_fs_event_start(&fsh->watcher, watch_cb, dir, 1);
   uv_unref((uv_handle_t*)&fsh->watcher);
+}
+
+void fs_close(FS_handle *h)
+{
+  uv_timer_stop(&h->watcher_timer);
+  uv_fs_event_stop(&h->watcher);
 }
 
 void fs_loop(Loop *loop, int ms)

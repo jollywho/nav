@@ -35,7 +35,6 @@ void sig_resize(int sig)
   clear();
   layout_refresh(&win.root);
   refresh();
-  doupdate();
 }
 
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
@@ -153,7 +152,6 @@ static void window_loop(Loop *loop, int ms)
 {
   if (!queue_empty(&win.loop.events)) {
     process_loop(&win.loop, ms);
-    doupdate();
     if (win.ex)
       cmdline_refresh();
   }

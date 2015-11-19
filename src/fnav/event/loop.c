@@ -59,11 +59,11 @@ void doloops(int ms)
   uint64_t before = (remaining > 0) ? os_hrtime() : 0;
   Loop *it;
   SLIST_FOREACH(it, &loop_pool.p, ent) {
-    it->cb(it, ms);
     if (remaining == 0) {
       break;
     }
     else if (remaining > 0) {
+      it->cb(it, ms);
       uint64_t now = os_hrtime();
       remaining -= (int) ((now - before) / 1000000);
       before = now;
@@ -118,14 +118,14 @@ void queue_process_events(Queue *queue, int ms)
   int remaining = ms;
   while (!queue_empty(queue)) {
     uint64_t before = (remaining > 0) ? os_hrtime() : 0;
-    Event e = queue_pop(queue);
-    if (e.handler) {
-      e.handler(e.argv);
-    }
     if (remaining == 0) {
       break;
     }
     else if (remaining > 0) {
+      Event e = queue_pop(queue);
+      if (e.handler) {
+        e.handler(e.argv);
+      }
       uint64_t now = os_hrtime();
       remaining -= (int) ((now - before) / 1000000);
       before = now;
@@ -142,6 +142,7 @@ void loop_process_events(Loop *loop, int ms)
 
   if (ms > 0) {
     uv_timer_start(&loop->delay, timeout_cb, (uint64_t)ms, (uint64_t)ms);
+    uv_unref((uv_handle_t*)&loop->delay);
   }
   else if (ms == 0)
     mode = UV_RUN_NOWAIT;
@@ -151,7 +152,7 @@ void loop_process_events(Loop *loop, int ms)
 
   if (ms > 0) {
   }
-    uv_timer_stop(&loop->delay);
+  uv_timer_stop(&loop->delay);
   queue_process_events(&loop->events, ms);
 }
 

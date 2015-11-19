@@ -16,6 +16,7 @@ void main_event_loop(uv_timer_t *handle)
   uv_timer_stop(&event_timer);
   before = os_hrtime();
   doloops(TIMESTEP);
+  doupdate();
   after = os_hrtime();
   int took = (int) ((after - before) / 1000000);
   int ms = TIMESTEP - took;

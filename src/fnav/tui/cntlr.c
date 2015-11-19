@@ -13,7 +13,7 @@ struct _cntlr_table {
   {"fm", fm_init, fm_cleanup},
   {"sh", sh_init},
   {"op", op_init},
-  {"img", img_init},
+  {"img", img_init, img_cleanup},
 };
 
 void cntlr_load(String name, cntlr_open_cb open_cb, cntlr_close_cb close_cb);

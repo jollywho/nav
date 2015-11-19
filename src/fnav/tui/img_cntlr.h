@@ -11,6 +11,7 @@ struct Img_cntlr {
   Buffer *buf;
   uv_process_t proc;
   uv_process_options_t opts;
+  bool disabled;
 };
 
 Cntlr* img_init(Buffer *buf);
