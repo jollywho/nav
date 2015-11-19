@@ -2,6 +2,7 @@
 
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/window.h"
+#include "fnav/event/hook.h"
 #include "fnav/ascii.h"
 #include "fnav/log.h"
 #include "fnav/table.h"
@@ -107,7 +108,7 @@ void buf_set_ofs(Buffer *buf, pos_T pos)
 void buf_set_pass(Buffer *buf)
 {
   buf->closed = true;
-  delwin(buf->nc_win);
+  //delwin(buf->nc_win);
 }
 
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
@@ -115,6 +116,7 @@ void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
   buf->cntlr = cntlr;
   buf->hndl = cntlr->hndl;
   buf->attached = true;
+  window_set_status(cntlr->fmt_name,  "");
 }
 
 void buf_set_linematch(Buffer *buf, LineMatch *match)
@@ -133,13 +135,27 @@ void buf_refresh(Buffer *buf)
   window_req_draw(buf, buf_draw);
 }
 
+void buf_draw_blanks(Buffer *buf)
+{
+  wclear(buf->nc_win);
+  wrefresh(buf->nc_win);
+  for (int i = 0; i < buf->b_size.lnum; i++) {
+    mvwhline(buf->nc_win, i, 0, ' ', buf->b_size.col);
+  }
+  wnoutrefresh(buf->nc_win);
+  doupdate();
+}
+
 void buf_draw(void **argv)
 {
   log_msg("BUFFER", "draw");
   Buffer *buf = (Buffer*)argv[0];
-  if (buf->closed)
-    return;
   wclear(buf->nc_win);
+  if (buf->closed) {
+    wrefresh(buf->nc_win);
+    wnoutrefresh(buf->nc_win);
+    return;
+  }
   if (buf->attached) {
     Model *m = buf->hndl->model;
     wattron(buf->nc_win, COLOR_PAIR(2));
@@ -255,6 +271,7 @@ static void buf_mv(Buffer *buf, Cmdarg *arg)
     buf->lnum = count - 1;
   }
   model_set_curs(m, buf->top + buf->lnum);
+  send_hook_msg("cursor_change", buf->cntlr, NULL);
   buf_refresh(buf);
 }
 

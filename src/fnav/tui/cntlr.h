@@ -23,6 +23,7 @@ struct fn_handle {
 
 struct Cntlr {
   String name;
+  String fmt_name;
   fn_handle *hndl;
   void *top;
   void (*_cancel)(Cntlr *cntlr);

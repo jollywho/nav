@@ -235,9 +235,10 @@ Cntlr* fm_init(Buffer *buf)
   init_cmds(); //TODO: cleanup loose parts
   FM_cntlr *fm = malloc(sizeof(FM_cntlr));
   fm->base.name = "fm";
+  fm->base.fmt_name = "   FM    ";
   fm->op_count = 1;
   fm->mo_count = 1;
-  char init_dir[]="/home/chi/casper/YFS";
+  char init_dir[]="/home/chi/casper/Pictures";
   fm->cur_dir = malloc(strlen(init_dir)+1);
   strcpy(fm->cur_dir, init_dir);
 
@@ -260,6 +261,7 @@ Cntlr* fm_init(Buffer *buf)
 
   fm->fs = fs_init(fm->base.hndl);
   fs_open(fm->fs, fm->cur_dir);
+  fm_test = &fm->base;
   return &fm->base;
 }
 

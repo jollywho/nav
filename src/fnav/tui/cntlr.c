@@ -2,6 +2,7 @@
 #include "fnav/tui/fm_cntlr.h"
 #include "fnav/tui/sh_cntlr.h"
 #include "fnav/tui/op_cntlr.h"
+#include "fnav/tui/img_cntlr.h"
 
 #define TABLE_SIZE ARRAY_SIZE(cntlr_table)
 struct _cntlr_table {
@@ -12,6 +13,7 @@ struct _cntlr_table {
   {"fm", fm_init, fm_cleanup},
   {"sh", sh_init},
   {"op", op_init},
+  {"img", img_init},
 };
 
 void cntlr_load(String name, cntlr_open_cb open_cb, cntlr_close_cb close_cb);

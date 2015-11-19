@@ -1,11 +1,19 @@
 #include <sys/wait.h>
 #include <errno.h>
-#include <malloc.h>
 #include "fnav/log.h"
 #include "fnav/table.h"
 #include "fnav/model.h"
 #include "fnav/event/hook.h"
 #include "fnav/tui/op_cntlr.h"
+
+//TODO: we want a single mpv process shared across all cntlr instances
+//so basically, create an op_cntlr once on the first init call. return
+//a pointer to this after. reference count on cleanup and do actual
+//cleanup on count of 0. this mess can be properly managed when the real
+//cntlr is made.
+
+Op_cntlr *op;
+int refs;
 
 void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal) {
   log_msg("OP", "exit_cb");
@@ -120,24 +128,26 @@ static void pipe_attach_cb(Cntlr *host, Cntlr *caller)
 Cntlr* op_init()
 {
   log_msg("OP", "INIT");
-  Op_cntlr *op = malloc(sizeof(Op_cntlr));
-  op->base.top = op;
-  op->ready = true;
-  loop_add(&op->loop, op_loop);
-  uv_timer_init(&op->loop.uv, &op->loop.delay);
-  if (tbl_mk("op_procs")) {
-    tbl_mk_fld("op_procs", "ext", typSTRING);
-    tbl_mk_fld("op_procs", "file", typSTRING);
-    tbl_mk_fld("op_procs", "single", typSTRING);
-    tbl_mk_fld("op_procs", "ensure", typSTRING);
-    tbl_mk_fld("op_procs", "args", typSTRING);
-    tbl_mk_fld("op_procs", "uv_proc", typVOID);
-    tbl_mk_fld("op_procs", "uv_opts", typVOID);
+  if (!refs) {
+    op = malloc(sizeof(Op_cntlr));
+    op->base.top = op;
+    op->ready = true;
+    loop_add(&op->loop, op_loop);
+    uv_timer_init(&op->loop.uv, &op->loop.delay);
+    if (tbl_mk("op_procs")) {
+      tbl_mk_fld("op_procs", "ext", typSTRING);
+      tbl_mk_fld("op_procs", "file", typSTRING);
+      tbl_mk_fld("op_procs", "single", typSTRING);
+      tbl_mk_fld("op_procs", "ensure", typSTRING);
+      tbl_mk_fld("op_procs", "args", typSTRING);
+      tbl_mk_fld("op_procs", "uv_proc", typVOID);
+      tbl_mk_fld("op_procs", "uv_opts", typVOID);
+    }
+    hook_init(&op->base);
   }
-
-  hook_init(&op->base);
+  refs++;
   hook_add(&op->base, &op->base, pipe_attach_cb, "pipe_attach");
   return &op->base;
 }
 
-void op_cleanup(Op_cntlr *cntlr);
+void op_cleanup(Cntlr *cntlr);

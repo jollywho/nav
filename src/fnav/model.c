@@ -48,7 +48,6 @@ void model_cleanup(fn_handle *hndl)
 void model_open(fn_handle *hndl)
 {
   tbl_add_lis(hndl->tn, hndl->key_fld, hndl->key);
-  window_set_status(hndl->key);
 }
 
 void model_close(fn_handle *hndl)

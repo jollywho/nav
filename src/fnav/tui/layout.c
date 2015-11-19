@@ -229,6 +229,10 @@ void layout_movement(Layout *layout, Layout *root, enum move_dir dir)
 
   Container *pp = NULL;
   pp = find_intersect(c, root->c, pos);
+  //TODO:
+  //  send enter msg
+  //  disable previous focus overlay
+  //  enable new focus overlay
   if (pp)
     layout->c = pp;
 }
@@ -236,9 +240,9 @@ void layout_movement(Layout *layout, Layout *root, enum move_dir dir)
 Buffer* layout_buf(Layout *layout)
 {return layout->c->buf;}
 
-void layout_set_status(Layout *layout, String label)
+void layout_set_status(Layout *layout, String name, String label)
 {
-  overlay_edit_name(layout->c->ov, label);
+  overlay_edit(layout->c->ov, name, label);
 }
 
 void layout_refresh(Layout *rootc)

@@ -8,7 +8,8 @@ Overlay* overlay_new()
   Overlay *ov = malloc(sizeof(Overlay));
   ov->nc_win_st = newwin(1,1,0,0);
   ov->nc_win_sep = newwin(1,1,0,0);
-  ov->cmd_args = "";
+  ov->cntlr_name = strdup("         ");
+  ov->cmd_args = strdup("         ");
   return ov;
 }
 
@@ -52,10 +53,13 @@ void overlay_set(Overlay *ov, Buffer *buf)
   window_req_draw(ov, overlay_draw);
 }
 
-void overlay_edit_name(Overlay *ov, String name)
+void overlay_edit(Overlay *ov, String name, String label)
 {
   log_msg("OVERLAY", "****OV ARGS %s", ov->cmd_args);
-  ov->cmd_args = name;
+  free(ov->cntlr_name);
+  free(ov->cmd_args);
+  ov->cntlr_name = strdup(name);
+  ov->cmd_args = strdup(label);
   window_req_draw(ov, overlay_draw);
 }
 
@@ -65,7 +69,7 @@ void overlay_draw(void **argv)
   Overlay *ov = argv[0];
 
   wattron(ov->nc_win_st, COLOR_PAIR(4));
-  mvwaddstr(ov->nc_win_st, 0, 0, "   FM    ");
+  mvwaddstr(ov->nc_win_st, 0, 0, ov->cntlr_name);
   wattroff(ov->nc_win_st, COLOR_PAIR(4));
 
   wattron(ov->nc_win_st, COLOR_PAIR(3));

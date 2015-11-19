@@ -15,6 +15,6 @@ struct Op_cntlr {
 };
 
 Cntlr* op_init();
-void op_cleanup(Op_cntlr *cntlr);
+void op_cleanup(Cntlr *cntlr);
 
 #endif

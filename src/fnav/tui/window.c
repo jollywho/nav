@@ -9,8 +9,10 @@
 #include "fnav/tui/ex_cmd.h"
 #include "fnav/tui/fm_cntlr.h"
 #include "fnav/tui/sh_cntlr.h"
+#include "fnav/tui/img_cntlr.h"
 #include "fnav/cmd.h"
 #include "fnav/log.h"
+#include "fnav/event/hook.h"
 
 struct Window {
   Loop loop;
@@ -25,6 +27,7 @@ Window win;
 static void window_loop();
 static void* win_new();
 static void* win_close();
+static void* win_pipe();
 
 void sig_resize(int sig)
 {
@@ -44,6 +47,7 @@ static const Cmd_T cmdtable[] = {
   {"new",    win_new,     MOVE_UP},
   {"vnew",   win_new,     MOVE_LEFT},
   {"vne",    win_new,     MOVE_LEFT},
+  {"pipe",   win_pipe,    0 },
 };
 
 void window_init(void)
@@ -95,6 +99,15 @@ void window_input(int key)
 Buffer* window_get_focus()
 {
   return layout_buf(&win.layout);
+}
+
+static void* win_pipe(List *args, enum move_dir flags)
+{
+  Buffer *buf = layout_buf(&win.layout);
+  if (buf) {
+    send_hook_msg("pipe_attach", buf_cntlr(buf), fm_test );
+  }
+  return 0;
 }
 
 static void* win_new(List *args, enum move_dir flags)
@@ -152,9 +165,9 @@ void window_req_draw(void *obj, argv_callback cb)
   CREATE_EVENT(&win.loop.events, cb, 1, obj);
 }
 
-void window_set_status(String label)
+void window_set_status(String name, String label)
 {
-  layout_set_status(&win.layout, label);
+  layout_set_status(&win.layout, name, label);
 }
 
 void window_draw_all()
