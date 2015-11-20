@@ -36,7 +36,6 @@ struct stream {
   uv_stream_t *uvstream;
   uv_buf_t uvbuf;
   RBuffer *buffer;
-  Model *model;
   uv_file fd;
   stream_read_cb read_cb;
   stream_write_cb write_cb;

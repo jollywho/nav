@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <stdlib.h>
 
 #include <uv.h>
@@ -231,7 +230,6 @@ static void decref(Process *proc)
       break;
     }
   }
-  assert(node);
   SLIST_REMOVE(&loop->children, node, process, ent);
   CREATE_EVENT(proc->events, process_close_event, 1, proc);
 }
@@ -239,7 +237,6 @@ static void decref(Process *proc)
 static void process_close(Process *proc)
 {
   log_msg("PROCESS", "process_close");
-  assert(!proc->closed);
   proc->closed = true;
   switch (proc->type) {
     case kProcessTypeUv:

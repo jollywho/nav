@@ -6,6 +6,8 @@
 
 static void on_input_cb(Buffer *buf, int key);
 
+int fdd;
+
 void sbuffer_init(Buffer *buf)
 {
   log_msg("SBUFFER", "init");
@@ -13,9 +15,17 @@ void sbuffer_init(Buffer *buf)
   buf_set_pass(buf);
 }
 
+void sbuffer_readtest(int fd)
+{
+  fdd = fd;
+}
+
+#include <unistd.h>
 void on_input_cb(Buffer *buf, int key)
 {
   log_msg("SBUFFER", "on_input_cb");
+  char ch = key;
+  write(fdd, &ch, 1);
 }
 
 void sbuf_write(Buffer *buf, char *str, size_t nbyte)

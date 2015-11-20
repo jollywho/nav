@@ -7,6 +7,8 @@ void sbuffer_init(Buffer *buf);
 void sbuffer_start(Buffer *buf);
 void sbuffer_stop(Buffer *buf);
 
+void sbuffer_readtest(int fd);
+
 void sbuf_write(Buffer *buf, char *str, size_t nbyte);
 
 #endif

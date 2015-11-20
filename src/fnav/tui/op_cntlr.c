@@ -15,7 +15,7 @@
 Op_cntlr *op;
 int refs;
 
-void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal) {
+static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal) {
   log_msg("OP", "exit_cb");
   uv_close((uv_handle_t*) req, NULL);
   Op_cntlr *op = (Op_cntlr*)req->data;

@@ -5,8 +5,13 @@
 #include "fnav/tui/img_cntlr.h"
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/layout.h"
+#include "fnav/event/shell.h"
 
 String img_exts[] = {"png","jpeg","jpg","gif","bmp"};
+
+static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal)
+{
+}
 
 static void cursor_change_cb(Cntlr *host, Cntlr *caller)
 {
@@ -15,24 +20,26 @@ static void cursor_change_cb(Cntlr *host, Cntlr *caller)
 
   if (img->disabled) return;
 
-  pos_T pos = buf_ofs(img->buf);
-  pos_T size = buf_size(img->buf);
-  String path = model_curs_value(host->hndl->model, "fullpath");
+  char *args[3] =  {"/usr/lib/w3m/w3mimgdisplay", "-test", NULL};
+  shell_start(img->sh, args);
 
-  // TODO: replace with libuv procs to avoid reopening. write args to stdin
-  // need to queue draw
-  char *argscl;
-  asprintf(&argscl, "%s %d %d %d %d",
-      "/home/chi/wimgCL.sh", (int)(pos.col*1.66) , pos.lnum + 1, size.col*2, (int)(size.lnum*1.2));
-  system(argscl);
-  free(argscl);
+  //pos_T pos = buf_ofs(img->buf);
+  //pos_T size = buf_size(img->buf);
+  //String path = model_curs_value(host->hndl->model, "fullpath");
 
-  char *args;
-  asprintf(&args, "%s %d %d %d %d \"%s\"",
-      "/home/chi/wimage.sh", (int)(pos.col*1.66), (pos.lnum) + 1, (int)(size.col*1.4)+1, (size.lnum)+1, path);
-  log_msg("IMG", "%s", args);
-  system(args);
-  free(args);
+  //char *argscl;
+  //asprintf(&argscl, "%s %d %d %d %d",
+  //    "/home/chi/wimgCL.sh", (int)(pos.col*1.66) , pos.lnum + 1, size.col*2, (int)(size.lnum*1.2));
+
+  //system(argscl);
+  //free(argscl);
+
+  //char *args;
+  //asprintf(&args, "%s %d %d %d %d \"%s\"",
+  //    "/home/chi/wimage.sh", (int)(pos.col*1.66), (pos.lnum) + 1, (int)(size.col*1.4)+1, (size.lnum)+1, path);
+  //log_msg("IMG", "%s", args);
+  //system(args);
+  //free(args);
 }
 
 static void pipe_attach_cb(Cntlr *host, Cntlr *caller)
@@ -63,8 +70,11 @@ Cntlr* img_init(Buffer *buf)
   buf_set_cntlr(buf, &img->base);
   buf->attached = false; // override
 
-  loop_add(&img->loop, img_loop);
-  uv_timer_init(&img->loop.uv, &img->loop.delay);
+  char *args[3] =  {"/usr/lib/w3m/w3mimgdisplay", "-test", NULL};
+
+  img->sh = shell_init(&img->base);
+  shell_start(img->sh, args);
+
   hook_init(&img->base);
   hook_add(&img->base, &img->base, pipe_attach_cb, "pipe_attach");
 

@@ -15,10 +15,11 @@ Cntlr* sh_init(Buffer *buf)
   sh->hndl->buf = buf;
 
   sbuffer_init(buf);
-  sh->sh = shell_init(&sh->base, sh->hndl);
+  //sh->sh = shell_init(&sh->base, sh->hndl);
   int width = buf_size(buf).col;
   int height = buf_size(buf).lnum;
-  shell_start(sh->sh);
+  //shell_start(sh->sh);
+  //sbuffer_readtest(sh->sh->proc->in->fd);
 //  pty_process_resize(&sh->sh->ptyproc, width, height);
   return &sh->base;
 }

@@ -1,7 +1,7 @@
 #ifndef FN_EVENT_SHELL_H
 #define FN_EVENT_SHELL_H
 
-#include "fnav/event/pty_process.h"
+#include "fnav/event/uv_process.h"
 #include "fnav/event/rstream.h"
 #include "fnav/log.h"
 
@@ -15,14 +15,14 @@ typedef struct {
   Stream in, out, err;
   DynamicBuffer buf;
   stream_read_cb data_cb;
-  PtyProcess ptyproc;
+  UvProcess ptyproc;
   Process *proc;
-  fn_handle *hndl;
 } Shell;
 
-Shell* shell_init(Cntlr *c, fn_handle *h);
+Shell* shell_init(Cntlr *c);
 void shell_free(Shell *sh);
-void shell_start(Shell *sh);
+void shell_start(Shell *sh, String *args);
 void shell_stop(Shell *sh);
+void shell_write(Shell *sh, String msg);
 
 #endif
