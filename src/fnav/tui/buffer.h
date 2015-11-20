@@ -54,7 +54,6 @@ void buf_full_invalidate(Buffer *buf, int index, int lnum);
 int buf_input(Buffer *bn, int key);
 
 void buf_refresh(Buffer *buf);
-void buf_draw_blanks(Buffer *buf);
 
 void buf_move(Buffer *buf, int y, int x);
 

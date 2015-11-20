@@ -9,26 +9,22 @@ uv_timer_t event_timer;
 uint64_t before;
 uint64_t after;
 
-const uint64_t TIMESTEP = 1;
+const uint64_t TIMESTEP = 10;
 
 void main_event_loop(uv_timer_t *handle)
 {
   uv_timer_stop(&event_timer);
   before = os_hrtime();
   doloops(TIMESTEP);
-  doupdate();
   after = os_hrtime();
-  int took = (int) ((after - before) / 1000000);
-  int ms = TIMESTEP - took;
-  if (ms < 0) ms = 0;
-  uv_timer_start(&event_timer, main_event_loop, (uint64_t)ms, (uint64_t)ms);
+  doupdate();
+  uv_timer_start(&event_timer, main_event_loop, (uint64_t)1, (uint64_t)1);
 }
 
 void event_init(void)
 {
   log_msg("INIT", "event");
   uv_loop_init(&loop);
-
   uv_timer_init(&loop, &event_timer);
 }
 

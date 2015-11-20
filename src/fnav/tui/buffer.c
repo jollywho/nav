@@ -135,23 +135,12 @@ void buf_refresh(Buffer *buf)
   window_req_draw(buf, buf_draw);
 }
 
-void buf_draw_blanks(Buffer *buf)
-{
-  wclear(buf->nc_win);
-  wrefresh(buf->nc_win);
-  for (int i = 0; i < buf->b_size.lnum; i++) {
-    mvwhline(buf->nc_win, i, 0, ' ', buf->b_size.col);
-  }
-  wnoutrefresh(buf->nc_win);
-}
-
 void buf_draw(void **argv)
 {
   log_msg("BUFFER", "draw");
   Buffer *buf = (Buffer*)argv[0];
-  wclear(buf->nc_win);
+  werase(buf->nc_win);
   if (buf->closed) {
-    wrefresh(buf->nc_win);
     wnoutrefresh(buf->nc_win);
     return;
   }
