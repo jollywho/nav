@@ -10,6 +10,8 @@ typedef struct {
   size_t cap, len;
 } DynamicBuffer;
 
+typedef void (*shell_stdout_cb)(Cntlr *c, String out);
+
 typedef struct {
   Loop loop;
   Stream in, out, err;
@@ -17,9 +19,12 @@ typedef struct {
   stream_read_cb data_cb;
   UvProcess ptyproc;
   Process *proc;
+  shell_stdout_cb readout;
+  Cntlr *caller;
+  bool blocking;
 } Shell;
 
-Shell* shell_init(Cntlr *c);
+Shell* shell_init(Cntlr *cntlr, shell_stdout_cb readout);
 void shell_free(Shell *sh);
 void shell_start(Shell *sh, String *args);
 void shell_stop(Shell *sh);

@@ -105,6 +105,7 @@ void process_teardown(Loop *loop)
   log_msg("PROCESS", "teardown");
   Process *it;
   SLIST_FOREACH(it, &loop->children, ent) {
+    log_msg("PROCESS", "*********");
     Process *proc = it;
     uv_kill(proc->pid, SIGTERM);
     proc->term_sent = true;
@@ -133,6 +134,7 @@ void process_close_in(Process *proc)
 
 void process_close_out(Process *proc) 
 {
+  log_msg("PROCESS", "process_close_out");
   CLOSE_PROC_STREAM(proc, out);
 }
 
@@ -211,6 +213,9 @@ static void process_close_event(void **argv)
   }
   if (proc->cb) {
     proc->cb(proc, proc->status, proc->data);
+  }
+  if (proc->fin_cb) {
+    proc->fin_cb(proc, proc->data);
   }
 }
 

@@ -239,7 +239,7 @@ Cntlr* fm_init(Buffer *buf)
   fm->base.fmt_name = "   FM    ";
   fm->op_count = 1;
   fm->mo_count = 1;
-  char init_dir[]="/home/chi/casper/YFS";
+  char init_dir[]="/home/chi/casper/Pictures/reactions";
   fm->cur_dir = malloc(strlen(init_dir)+1);
   strcpy(fm->cur_dir, init_dir);
 

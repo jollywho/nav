@@ -7,9 +7,11 @@ typedef struct Img_cntlr Img_cntlr;
 
 struct Img_cntlr {
   Cntlr base;
-  Shell *sh;
+  Shell *sh_draw;
+  Shell *sh_size;
   Buffer *buf;
   bool disabled;
+  int fontw; int fonth;
 };
 
 Cntlr* img_init(Buffer *buf);

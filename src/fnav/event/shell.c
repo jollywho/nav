@@ -9,11 +9,18 @@
 char* p_sh = "/bin/sh";
 
 static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
-    bool eof);
+  bool eof);
 static void shell_loop(Loop *loop, int ms);
 static void shell_write_cb(Stream *stream, void *data, int status);
 
-Shell* shell_init(Cntlr *c)
+void shell_fin_cb(Process *proc, void *data)
+{
+  log_msg("SHELL", "fin");
+  Shell *sh = (Shell*)data;
+  sh->blocking = false;
+}
+
+Shell* shell_init(Cntlr *cntlr, shell_stdout_cb readout)
 {
   log_msg("SHELL", "init");
   Shell *sh = malloc(sizeof(Shell));
@@ -21,41 +28,53 @@ Shell* shell_init(Cntlr *c)
   sh->buf.cap = 0;
   sh->buf.len = 0;
   sh->data_cb = out_data_cb;
+  sh->caller = cntlr;
+  sh->readout = readout;
 
   loop_add(&sh->loop, shell_loop);
   uv_timer_init(&sh->loop.uv, &sh->loop.delay);
 
-  sh->ptyproc = uv_process_init(&sh->loop, NULL);
+  sh->ptyproc = uv_process_init(&sh->loop, sh);
   sh->proc = &sh->ptyproc.process;
   sh->proc->events = &sh->loop.events;
   sh->proc->in = &sh->in;
   sh->proc->out = &sh->out;
-
+  sh->proc->fin_cb = shell_fin_cb;
   return sh;
 }
 
 void shell_free(Shell *sh)
 {
+  process_teardown(&sh->loop);
+  loop_remove(&sh->loop);
+  free(sh);
 }
 
 void shell_start(Shell *sh, String *args)
 {
   log_msg("SHELL", "start");
   sh->proc->argv = args;
+  if (sh->blocking) {
+    shell_stop(sh);
+    return;
+  }
   if (!process_spawn(sh->proc)) {
     log_msg("PROC", "cannot execute");
     return;
   }
   sh->proc->in->events = NULL;
+  sh->blocking = true;
   wstream_init(sh->proc->in, 0);
-  rstream_init(sh->proc->out, &sh->loop.events, 0);
-  rstream_start(sh->proc->out, sh->data_cb);
+  if (sh->readout) {
+    rstream_init(sh->proc->out, &sh->loop.events, 0);
+    rstream_start(sh->proc->out, sh->data_cb);
+  }
 }
 
 void shell_stop(Shell *sh)
 {
   log_msg("SHELL", "stop");
-  rstream_stop(sh->proc->out);
+  process_stop(sh->proc);
 }
 
 void shell_write(Shell *sh, String msg)
@@ -74,8 +93,9 @@ void shell_write(Shell *sh, String msg)
 }
 
 static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
-    bool eof)
+  bool eof)
 {
+  log_msg("SHELL", "out_data_cb");
   size_t cnt;
   char *ptr = rbuffer_read_ptr(buf, &cnt);
 
@@ -83,9 +103,9 @@ static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
     return;
   }
 
-  log_msg("SHELL", "out_data_cb");
-  log_msg("SHELL", "%s", ptr);
-  //size_t written = model_read_stream(stream->model, ptr, cnt, false, eof);
+  Shell *sh = (Shell*)data;
+  sh->readout(sh->caller, ptr);
+
   size_t written = count;
   // No output written, force emptying the Rbuffer if it is full.
   if (!written && rbuffer_size(buf) == rbuffer_capacity(buf)) {

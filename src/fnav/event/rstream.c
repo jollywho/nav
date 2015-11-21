@@ -187,6 +187,6 @@ static void read_event(void **argv)
 static void invoke_read_cb(Stream *stream, size_t count, bool eof)
 {
   log_msg("RSTREAM", "invoke_read_cb");
-  CREATE_EVENT(stream->events, read_event, 3, stream,
-      (void *)(uintptr_t *)count, (void *)(uintptr_t)eof);
+  CREATE_EVENT(stream->events, read_event, 4, stream,
+      (void *)(uintptr_t *)count, (void *)stream->data, (void *)(uintptr_t)eof);
 }
