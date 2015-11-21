@@ -82,6 +82,8 @@ void window_input(int key)
     if (key == '/') {
       window_ex_cmd_start(EX_REG_STATE);
     }
+    if (window_get_focus())
+      buf_input(layout_buf(&win.layout), key);
     if (key == 'H')
       layout_movement(&win.layout, &win.root, MOVE_LEFT);
     if (key == 'J')
@@ -90,8 +92,6 @@ void window_input(int key)
       layout_movement(&win.layout, &win.root, MOVE_UP);
     if (key == 'L')
       layout_movement(&win.layout, &win.root, MOVE_RIGHT);
-    if (window_get_focus())
-      buf_input(layout_buf(&win.layout), key);
   }
 }
 

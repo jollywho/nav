@@ -12,15 +12,21 @@ static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
   bool eof);
 static void shell_loop(Loop *loop, int ms);
 static void shell_write_cb(Stream *stream, void *data, int status);
+static void shell_write(Shell *sh, String msg);
 
 void shell_fin_cb(Process *proc, void *data)
 {
   log_msg("SHELL", "fin");
   Shell *sh = (Shell*)data;
   sh->blocking = false;
+  if (sh->again) {
+    log_msg("SHELL", "again");
+    sh->again = false;
+    shell_start(sh);
+  }
 }
 
-Shell* shell_init(Cntlr *cntlr, shell_stdout_cb readout)
+Shell* shell_init(Cntlr *cntlr)
 {
   log_msg("SHELL", "init");
   Shell *sh = malloc(sizeof(Shell));
@@ -29,7 +35,9 @@ Shell* shell_init(Cntlr *cntlr, shell_stdout_cb readout)
   sh->buf.len = 0;
   sh->data_cb = out_data_cb;
   sh->caller = cntlr;
-  sh->readout = readout;
+  sh->blocking = false;
+  sh->again = false;
+  sh->msg = NULL;
 
   loop_add(&sh->loop, shell_loop);
   uv_timer_init(&sh->loop.uv, &sh->loop.delay);
@@ -43,19 +51,26 @@ Shell* shell_init(Cntlr *cntlr, shell_stdout_cb readout)
   return sh;
 }
 
+void shell_args(Shell *sh, String *args, shell_stdout_cb readout)
+{
+  sh->proc->argv = args;
+  sh->readout = readout;
+}
+
 void shell_free(Shell *sh)
 {
+  if (sh->msg) free(sh->msg);
   process_teardown(&sh->loop);
   loop_remove(&sh->loop);
   free(sh);
 }
 
-void shell_start(Shell *sh, String *args)
+void shell_start(Shell *sh)
 {
   log_msg("SHELL", "start");
-  sh->proc->argv = args;
   if (sh->blocking) {
-    shell_stop(sh);
+    log_msg("SHELL", "|***BLOCKED**|");
+    sh->again = true;
     return;
   }
   if (!process_spawn(sh->proc)) {
@@ -69,6 +84,8 @@ void shell_start(Shell *sh, String *args)
     rstream_init(sh->proc->out, &sh->loop.events, 0);
     rstream_start(sh->proc->out, sh->data_cb);
   }
+  if (sh->msg)
+    shell_write(sh, sh->msg);
 }
 
 void shell_stop(Shell *sh)
@@ -77,14 +94,21 @@ void shell_stop(Shell *sh)
   process_stop(sh->proc);
 }
 
-void shell_write(Shell *sh, String msg)
+void shell_set_in_buffer(Shell *sh, String msg)
 {
-  log_msg("IMG", "shell_write");
+  log_msg("SHELL", "shell_write");
+  if (sh->msg) free(sh->msg);
+  sh->msg = strdup(msg);
+}
+
+static void shell_write(Shell *sh, String msg)
+{
+  log_msg("SHELL", "write_to_stream");
   WBuffer *input_buffer = wstream_new_buffer(msg, strlen(msg), 1, NULL);
 
   if (!wstream_write(&sh->in, input_buffer)) {
     // couldn't write, stop the process and tell the user about it
-    log_msg("IMG", "couldn't write");
+    log_msg("SHELL", "couldn't write");
     process_stop(sh->proc);
     return;
   }
@@ -103,6 +127,7 @@ static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
     return;
   }
 
+  ptr[count] = '\0';
   Shell *sh = (Shell*)data;
   sh->readout(sh->caller, ptr);
 

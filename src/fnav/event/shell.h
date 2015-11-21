@@ -22,12 +22,15 @@ typedef struct {
   shell_stdout_cb readout;
   Cntlr *caller;
   bool blocking;
+  bool again;
+  String msg;
 } Shell;
 
-Shell* shell_init(Cntlr *cntlr, shell_stdout_cb readout);
+Shell* shell_init(Cntlr *cntlr);
+void shell_args(Shell *sh, String *args, shell_stdout_cb readout);
 void shell_free(Shell *sh);
-void shell_start(Shell *sh, String *args);
+void shell_start(Shell *sh);
 void shell_stop(Shell *sh);
-void shell_write(Shell *sh, String msg);
+void shell_set_in_buffer(Shell *sh, String msg);
 
 #endif

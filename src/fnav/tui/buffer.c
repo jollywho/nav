@@ -78,6 +78,7 @@ Buffer* buf_init()
   buf->closed = false;
   buf->input_cb = NULL;
   buf->matches = NULL;
+  buf->lnum = buf->top = 0;
   init_cmds();
   return buf;
 }

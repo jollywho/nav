@@ -12,6 +12,9 @@ struct Img_cntlr {
   Buffer *buf;
   bool disabled;
   int fontw; int fonth;
+  int maxw; int maxh;
+  String path;
+  int width; int height;
 };
 
 Cntlr* img_init(Buffer *buf);
