@@ -9,6 +9,7 @@
 #include "fnav/event/shell.h"
 
 String img_exts[] = {"png","jpeg","jpg","gif","bmp"};
+#define EXT_ARR_SIZE ARRAY_SIZE(img_exts)
 //FORMAT:             0;1;{x};{y};{w};{h};;;;;{filename}\n4;\n3;\n
 static const char *DR_ARG = "0;1;%d;%d;%d;%d;;;;;%s\n4;\n3;\n";
 //FORMAT:             6;{x};{y};{w};{h}\n4;\n3;\n
@@ -29,7 +30,6 @@ static void shell_stdout_size_cb(Cntlr *cntlr, String out)
   char *h = strtok(NULL, " ");
   sscanf(w, "%d", &img->width);
   sscanf(h, "%d", &img->height);
-  log_msg("IMG", "img  %d %d", img->width, img->height);
 
   pos_T pos = buf_ofs(img->buf);
   pos_T size = buf_size(img->buf);
@@ -45,9 +45,6 @@ static void shell_stdout_size_cb(Cntlr *cntlr, String out)
     img->width = (img->width * max_height_pixels) / img->height;
     img->height = max_height_pixels;
   }
-  log_msg("IMG", "font %d %d", img->fontw, img->fonth);
-  log_msg("IMG", "img  %d %d", img->width, img->height);
-  log_msg("IMG", "max  %d %d", max_width_pixels, max_height_pixels);
   char *msg;
   asprintf(&msg, DR_ARG,
       (pos.col + 1)  * img->fontw,
@@ -76,11 +73,21 @@ static void shell_stdout_font_cb(Cntlr *cntlr, String out)
   shell_args(img->sh_size, (String*)args, shell_stdout_size_cb);
 }
 
-static const char *getExt (const char *fspec) {
+static const char *get_path_ext (const char *fspec)
+{
   char *e = strrchr (fspec, '.');
   if (e == NULL)
     e = "";
-  return e;
+  return ++e;
+}
+
+static int valid_ext(const char *path)
+{
+  for (int i = 0; i < EXT_ARR_SIZE; i++) {
+    if (strcmp(get_path_ext(path), img_exts[i]) == 0)
+      return 1;
+  }
+  return 0;
 }
 
 static void cursor_change_cb(Cntlr *host, Cntlr *caller)
@@ -91,7 +98,7 @@ static void cursor_change_cb(Cntlr *host, Cntlr *caller)
   if (img->disabled) return;
 
   String path = model_curs_value(host->hndl->model, "fullpath");
-  if (strcmp(getExt(path), ".webm") == 0) return;
+  if (!valid_ext(path)) return;
   img->path = path;
   char *msg;
   asprintf(&msg, SZ_ARG, img->path);
