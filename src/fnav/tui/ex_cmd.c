@@ -56,7 +56,7 @@ void cmdline_refresh()
 void reset_line()
 {
   memset(cmd.line, '\0', maxpos);
-  wclear(nc_win);
+  werase(nc_win);
   curpos = -1;
 }
 
@@ -83,9 +83,11 @@ static void ex_onkey()
     cmdline_build(&cmd);
   }
   else {
-    regex_build(cmd.line);
-    regex_pivot();
-    regex_hover();
+    if (window_focus_attached()) {
+      regex_build(cmd.line);
+      regex_pivot();
+      regex_hover();
+    }
   }
   cmdline_draw();
 }
@@ -110,7 +112,7 @@ void ex_input(int key)
     return;
   }
   if (key == BS) {
-    wclear(nc_win);
+    werase(nc_win);
     //FIXME: this will split line when cursor movement added
     cmd.line[curpos] = '\0';
     curpos--;
@@ -140,7 +142,7 @@ void stop_ex_cmd()
 {
   log_msg("EXCMD", "stop_ex_cmd");
   cmdline_cleanup(&cmd);
-  wclear(nc_win);
+  werase(nc_win);
   wnoutrefresh(nc_win);
   delwin(nc_win);
   curs_set(0);

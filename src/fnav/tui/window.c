@@ -100,6 +100,11 @@ Buffer* window_get_focus()
   return layout_buf(&win.layout);
 }
 
+int window_focus_attached()
+{
+  return buf_attached(layout_buf(&win.layout));
+}
+
 static void* win_pipe(List *args, enum move_dir flags)
 {
   Buffer *buf = layout_buf(&win.layout);

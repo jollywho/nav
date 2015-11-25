@@ -169,7 +169,7 @@ void buf_full_invalidate(Buffer *buf, int index, int lnum)
   // buffer reset and reentrance
   log_msg("BUFFER", "buf_full_invalidate");
   Model *m = buf->hndl->model;
-  wclear(buf->nc_win);
+  werase(buf->nc_win);
   buf->top = index;
   buf->lnum = lnum;
   model_set_curs(m, buf->top + buf->lnum);
@@ -276,6 +276,8 @@ Cntlr *buf_cntlr(Buffer *buf)
 {return buf->cntlr;}
 pos_T buf_pos(Buffer *buf)
 {return (pos_T){buf->lnum+1,0};}
+int buf_attached(Buffer *buf)
+{return buf->attached;}
 
 static void buf_mv_page(Buffer *buf, Cmdarg *arg)
 {

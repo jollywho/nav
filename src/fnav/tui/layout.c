@@ -133,6 +133,7 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
   Container *hcp = holding_container(hc, hc->parent);
   resize_container(hcp);
   layout->c = c;
+  log_msg("LAYOUT", "@@ %x", layout->c);
 }
 
 static Container* next_or_prev(Container *it)
@@ -151,14 +152,14 @@ void layout_remove_buffer(Layout *layout)
   Container *hcp = holding_container(hc, hc->parent);
 
   /* add all children to container's parent. */
-  //Container *it = TAILQ_FIRST(&c->p);
-  //while (it != NULL) {
-  //  it->parent = hcp;
-  //  TAILQ_CONCAT(&hcp->p, &it->p, ent);
-  //  c->count--;
-  //  hcp->count++;
-  //  it = TAILQ_NEXT(it, ent);
-  //}
+  Container *it = TAILQ_FIRST(&c->p);
+  while (it != NULL) {
+    it->parent = hcp;
+    TAILQ_CONCAT(&hcp->p, &it->p, ent);
+    c->count--;
+    hcp->count++;
+    it = TAILQ_NEXT(it, ent);
+  }
   Container *next = next_or_prev(c);
   TAILQ_REMOVE(&hc->p, c, ent);
   hc->count--;
@@ -172,6 +173,7 @@ void layout_remove_buffer(Layout *layout)
   }
   resize_container(hcp);
   layout->c = next;
+  log_msg("LAYOUT", "@@ %x", layout->c);
 }
 
 static pos_T cur_line(Container *c)
@@ -235,6 +237,7 @@ void layout_movement(Layout *layout, Layout *root, enum move_dir dir)
   //  enable new focus overlay
   if (pp)
     layout->c = pp;
+  log_msg("LAYOUT", "@@ %x", layout->c);
 }
 
 Buffer* layout_buf(Layout *layout)

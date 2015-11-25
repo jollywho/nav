@@ -15,7 +15,7 @@
 #include "fnav/table.h"
 #include "fnav/tui/buffer.h"
 
-#define RFRESH_RATE 5000
+#define RFRESH_RATE 10000
 
 static void fs_close_req(FS_req *fq);
 static void stat_cb(uv_fs_t* req);

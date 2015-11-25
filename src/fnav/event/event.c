@@ -18,7 +18,8 @@ void main_event_loop(uv_timer_t *handle)
   doloops(TIMESTEP);
   after = os_hrtime();
   doupdate();
-  uv_timer_start(&event_timer, main_event_loop, (uint64_t)1, (uint64_t)1);
+  uv_timer_start(&event_timer, main_event_loop,
+      (uint64_t)TIMESTEP, (uint64_t)TIMESTEP);
 }
 
 void event_init(void)

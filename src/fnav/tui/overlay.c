@@ -16,10 +16,10 @@ Overlay* overlay_new()
 void overlay_clear(Overlay *ov)
 {
   if (ov->separator) {
-    wclear(ov->nc_win_sep);
+    werase(ov->nc_win_sep);
     wnoutrefresh(ov->nc_win_sep);
   }
-  wclear(ov->nc_win_st);
+  werase(ov->nc_win_st);
   wnoutrefresh(ov->nc_win_st);
 }
 

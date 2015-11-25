@@ -17,7 +17,7 @@ typedef struct {
   Stream in, out, err;
   DynamicBuffer buf;
   stream_read_cb data_cb;
-  UvProcess ptyproc;
+  UvProcess uvproc;
   Process *proc;
   shell_stdout_cb readout;
   Cntlr *caller;

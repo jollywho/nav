@@ -63,4 +63,6 @@ pos_T buf_pos(Buffer *buf);
 pos_T buf_size(Buffer *buf);
 pos_T buf_ofs(Buffer *buf);
 
+int buf_attached(Buffer *buf);
+
 #endif

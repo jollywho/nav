@@ -13,6 +13,7 @@ void window_ex_cmd_start(int state);
 void window_ex_cmd_end();
 void window_draw_all();
 Buffer* window_get_focus();
+int window_focus_attached();
 void window_set_status(String name, String label);
 
 #endif

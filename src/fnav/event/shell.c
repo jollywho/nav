@@ -42,8 +42,8 @@ Shell* shell_init(Cntlr *cntlr)
   loop_add(&sh->loop, shell_loop);
   uv_timer_init(&sh->loop.uv, &sh->loop.delay);
 
-  sh->ptyproc = uv_process_init(&sh->loop, sh);
-  sh->proc = &sh->ptyproc.process;
+  sh->uvproc = uv_process_init(&sh->loop, sh);
+  sh->proc = &sh->uvproc.process;
   sh->proc->events = &sh->loop.events;
   sh->proc->in = &sh->in;
   sh->proc->out = &sh->out;
