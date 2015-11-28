@@ -1,5 +1,3 @@
-#include <limits.h>
-
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/window.h"
 #include "fnav/event/hook.h"
@@ -109,7 +107,6 @@ void buf_set_ofs(Buffer *buf, pos_T pos)
 void buf_set_pass(Buffer *buf)
 {
   buf->closed = true;
-  //delwin(buf->nc_win);
 }
 
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)

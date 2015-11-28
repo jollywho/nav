@@ -9,12 +9,17 @@ typedef void (*hook_cb)(Cntlr *host, Cntlr *caller);
 struct Hook {
   hook_cb fn;
   Cntlr *caller;
+  Cntlr *host;
   String msg;
 };
 
 void send_hook_msg(String msg, Cntlr *host, Cntlr *caller);
 void hook_init(Cntlr *host);
+void hook_cleanup(Cntlr *host);
+
 void hook_add(Cntlr *host, Cntlr *caller, hook_cb fn, String msg);
-void hook_remove();
+void hook_remove(Cntlr *host, Cntlr *caller, String msg);
+void hook_clear_msg(Cntlr *host, String msg);
+void hook_clear(Cntlr *host);
 
 #endif

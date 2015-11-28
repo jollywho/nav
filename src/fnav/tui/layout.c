@@ -1,8 +1,8 @@
 // layout
 // buffer tiling management
-#include <sys/queue.h>
 #include <sys/ioctl.h>
 
+#include "fnav/lib/sys_queue.h"
 #include "fnav/tui/layout.h"
 #include "fnav/tui/overlay.h"
 #include "fnav/log.h"
@@ -14,7 +14,6 @@ struct Container {
   pos_T ofs;
   enum dir_type dir;
   Container *parent;
-  int sub;
   int count;
   TAILQ_HEAD(cont, Container) p;
   TAILQ_ENTRY(Container) ent;
@@ -24,7 +23,7 @@ pos_T layout_size()
 {
   struct winsize w;
   ioctl(0, TIOCGWINSZ, &w);
-  return (pos_T){w.ws_row,w.ws_col};
+  return (pos_T){w.ws_row, w.ws_col};
 }
 
 static void create_container(Container *c, enum move_dir dir)
@@ -32,7 +31,6 @@ static void create_container(Container *c, enum move_dir dir)
   if (dir == MOVE_UP   || dir == MOVE_DOWN ) c->dir = L_HORIZ;
   if (dir == MOVE_LEFT || dir == MOVE_RIGHT) c->dir = L_VERT;
   c->count = 0;
-  c->sub = 0;
   TAILQ_INIT(&c->p);
   c->ov = overlay_new();
 }
@@ -42,20 +40,13 @@ void layout_init(Layout *layout)
   log_msg("LAYOUT", "layout_init");
   Container *root = malloc(sizeof(Container));
   root->buf = NULL;
-  root->parent = NULL;
+  root->parent = root;
   root->size = layout_size();
   root->size.lnum--;  //cmdline, status
   root->ofs = (pos_T){0,0};
   create_container(root, MOVE_UP);
-  root->sub = 5;
-  layout->c = root;
-}
-
-static Container* holding_container(Container *c, Container *p)
-{
-  if (p == NULL) return c;
-  if (c->dir != p->dir || p->parent == NULL) {return p;}
-  else {return p->parent; }
+  layout->root = root;
+  layout->focus = root;
 }
 
 static void resize_container(Container *c)
@@ -66,6 +57,7 @@ static void resize_container(Container *c)
   int i = 0;
   Container *it = TAILQ_FIRST(&c->p);
   while (++i, it != NULL) {
+    log_msg("LAYOUT", "*container*");
     if (it->dir == L_HORIZ) { s_y = c->count ; os_y = 1; }
     if (it->dir == L_VERT ) { s_x = c->count ; os_x = 1; }
 
@@ -107,73 +99,73 @@ static void resize_container(Container *c)
 void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
 {
   log_msg("LAYOUT", "layout_add_buffer");
+  Container *focus = layout->focus;
+  Container *hc = focus->parent;
+
   Container *c = malloc(sizeof(Container));
-  c->buf = next;
   create_container(c, dir);
-  Container *hc = holding_container(c, layout->c);
-  c->parent = hc;
+  c->buf = next;
 
-  if (!TAILQ_EMPTY(&hc->p))
-    TAILQ_INSERT_BEFORE(layout->c, c, ent);
-  else
-    TAILQ_INSERT_TAIL(&hc->p, c, ent);
-  hc->count++;
+  /* copy container and leave the old inplace as the 
+   * parent container for subitems */
+  if (c->dir != focus->dir) {
+    log_msg("LAYOUT", "/|/split/|/");
+    Container *sub = malloc(sizeof(Container));
+    create_container(sub, dir);
+    sub->buf = focus->buf;
+    sub->parent = focus;
+    focus->count++;
 
-  if (c->dir != layout->c->dir) {
-    Container *clone = malloc(sizeof(Container));
-    create_container(clone, dir);
-    clone->buf = hc->buf;
-    clone->ov = hc->ov;
-    clone->parent = hc;
-    hc->sub = 1;
-    hc->count++;
-    TAILQ_INSERT_BEFORE(c, clone, ent);
+    TAILQ_INSERT_TAIL(&focus->p, sub, ent);
+    hc = focus;
+    focus = sub;
   }
 
-  Container *hcp = holding_container(hc, hc->parent);
-  resize_container(hcp);
-  layout->c = c;
-  log_msg("LAYOUT", "@@ %x", layout->c);
+  c->parent = hc;
+  hc->count++;
+  if (!TAILQ_EMPTY(&hc->p))
+    TAILQ_INSERT_BEFORE(focus, c, ent);
+  else
+    TAILQ_INSERT_TAIL(&hc->p, c, ent);
+
+  resize_container(layout->root);
+  layout->focus = c;
 }
 
 static Container* next_or_prev(Container *it)
 {
   return
     TAILQ_NEXT(it, ent) ?
-    TAILQ_NEXT(it,ent) :
+    TAILQ_NEXT(it, ent) :
     TAILQ_PREV(it, cont, ent);
 }
 
 void layout_remove_buffer(Layout *layout)
 {
   log_msg("LAYOUT", "layout_remove_buffer");
-  Container *c = (Container*)layout->c;
-  Container *hc = holding_container(c, c->parent);
-  Container *hcp = holding_container(hc, hc->parent);
+  Container *c = layout->focus;
+  Container *hc = c->parent;
 
-  /* add all children to container's parent. */
-  Container *it = TAILQ_FIRST(&c->p);
-  while (it != NULL) {
-    it->parent = hcp;
-    TAILQ_CONCAT(&hcp->p, &it->p, ent);
-    c->count--;
-    hcp->count++;
-    it = TAILQ_NEXT(it, ent);
-  }
   Container *next = next_or_prev(c);
   TAILQ_REMOVE(&hc->p, c, ent);
+  free(c);
   hc->count--;
-  if (hc->count == 1 && hc->dir != next->dir) {
+
+  if (hc->count == 1 && hc->parent != hc->parent->parent) {
+    log_msg("LAYOUT", "swap");
     hc->buf = next->buf;
     hc->ov = next->ov;
-    hc->sub = 0;
-    hc->count--;
+    hc->count = next->count;
     TAILQ_REMOVE(&hc->p, next, ent);
-    next = hc;
+    TAILQ_SWAP(&hc->p, &next->p, Container, ent);
+    free(next);
+    if (TAILQ_EMPTY(&hc->p))
+      next = hc;
+    else
+      next = TAILQ_FIRST(&hc->p);
   }
-  resize_container(hcp);
-  layout->c = next;
-  log_msg("LAYOUT", "@@ %x", layout->c);
+  resize_container(layout->root);
+  layout->focus = next;
 }
 
 static pos_T cur_line(Container *c)
@@ -184,9 +176,9 @@ static pos_T pos_shift(Container *c, enum move_dir dir)
   pos_T pos = cur_line(c);
 
   if (dir == MOVE_LEFT)
-    pos = (pos_T){c->ofs.lnum + pos.lnum, c->ofs.col - 1};
+    pos = (pos_T){c->ofs.lnum+pos.lnum, c->ofs.col-1};
   if (dir == MOVE_RIGHT)
-    pos = (pos_T){c->ofs.lnum + pos.lnum, c->ofs.col+c->size.col+1};
+    pos = (pos_T){c->ofs.lnum+pos.lnum, c->ofs.col+c->size.col+1};
   if (dir == MOVE_UP)
     pos = (pos_T){c->ofs.lnum-1, c->ofs.col+1};
   if (dir == MOVE_DOWN)
@@ -197,9 +189,9 @@ static pos_T pos_shift(Container *c, enum move_dir dir)
 
 static int intersects(pos_T a, pos_T b, pos_T bsize)
 {
-  return !(b.col > a.col || 
-           bsize.col < a.col || 
-           b.lnum > a.lnum ||
+  return !(b.col      > a.col  ||
+           bsize.col  < a.col  ||
+           b.lnum     > a.lnum ||
            bsize.lnum < a.lnum);
 }
 
@@ -215,7 +207,7 @@ Container *find_intersect(Container *c, Container *pp, pos_T pos)
 
     int isint = intersects(pos, it->ofs, it_pos);
     if (isint && it != c) {
-      if (!it->sub) return it;
+      if (TAILQ_EMPTY(&it->p)) return it;
       return find_intersect(c, TAILQ_FIRST(&it->p), pos);
     }
     it = TAILQ_NEXT(it, ent);
@@ -223,36 +215,35 @@ Container *find_intersect(Container *c, Container *pp, pos_T pos)
   return NULL;
 }
 
-void layout_movement(Layout *layout, Layout *root, enum move_dir dir)
+void layout_movement(Layout *layout, enum move_dir dir)
 {
   log_msg("LAYOUT", "layout_movement");
-  Container *c = layout->c;
+  Container *c = layout->focus;
   pos_T pos = pos_shift(c, dir);
 
   Container *pp = NULL;
-  pp = find_intersect(c, root->c, pos);
+  pp = find_intersect(c, layout->root, pos);
   //TODO:
   //  send enter msg
   //  disable previous focus overlay
   //  enable new focus overlay
   if (pp)
-    layout->c = pp;
-  log_msg("LAYOUT", "@@ %x", layout->c);
+    layout->focus = pp;
 }
 
 Buffer* layout_buf(Layout *layout)
-{return layout->c->buf;}
+{return layout->focus->buf;}
 
 void layout_set_status(Layout *layout, String name, String label)
 {
-  overlay_edit(layout->c->ov, name, label);
+  overlay_edit(layout->focus->ov, name, label);
 }
 
-void layout_refresh(Layout *rootc)
+void layout_refresh(Layout *layout)
 {
-  Container *root = rootc->c;
-  root->size = layout_size();
-  root->size.lnum--;  //cmdline, status
-  root->ofs = (pos_T){0,0};
-  resize_container(root);
+  Container *c = layout->root;
+  c->size = layout_size();
+  c->size.lnum--;  //cmdline, status
+  c->ofs = (pos_T){0,0};
+  resize_container(c);
 }

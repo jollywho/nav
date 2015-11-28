@@ -273,7 +273,8 @@ void fm_cleanup(Cntlr *cntlr)
   fn_handle *h = cntlr->hndl;
   model_close(h);
   model_cleanup(h);
-  //hook remove
+  //hook remove_caller
+  //hook clear
   //hook cleanup
   fs_cleanup(fm->fs);
   free(h);

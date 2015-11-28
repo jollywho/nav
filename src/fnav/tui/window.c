@@ -17,7 +17,6 @@
 struct Window {
   Loop loop;
   Layout layout;
-  Layout root;
   uv_timer_t draw_timer;
   bool ex;
 };
@@ -29,16 +28,7 @@ static void* win_new();
 static void* win_close();
 static void* win_pipe();
 
-void sig_resize(int sig)
-{
-  log_msg("WINDOW", "Signal received: **term resize**");
-  clear();
-  layout_refresh(&win.root);
-  refresh();
-}
-
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
-
 static const Cmd_T cmdtable[] = {
   {"q",      win_close,   0 },
   {"clo",    win_close,   0 },
@@ -48,6 +38,14 @@ static const Cmd_T cmdtable[] = {
   {"vne",    win_new,     MOVE_LEFT},
   {"pipe",   win_pipe,    0 },
 };
+
+void sig_resize(int sig)
+{
+  log_msg("WINDOW", "Signal received: **term resize**");
+  clear();
+  layout_refresh(&win.layout);
+  refresh();
+}
 
 void window_init(void)
 {
@@ -59,7 +57,6 @@ void window_init(void)
 
   signal(SIGWINCH, sig_resize);
   layout_init(&win.layout);
-  win.root = win.layout;
 
   for (int i = 0; i < CMDS_SIZE; i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
@@ -85,13 +82,13 @@ void window_input(int key)
     if (window_get_focus())
       buf_input(layout_buf(&win.layout), key);
     if (key == 'H')
-      layout_movement(&win.layout, &win.root, MOVE_LEFT);
+      layout_movement(&win.layout, MOVE_LEFT);
     if (key == 'J')
-      layout_movement(&win.layout, &win.root, MOVE_DOWN);
+      layout_movement(&win.layout, MOVE_DOWN);
     if (key == 'K')
-      layout_movement(&win.layout, &win.root, MOVE_UP);
+      layout_movement(&win.layout, MOVE_UP);
     if (key == 'L')
-      layout_movement(&win.layout, &win.root, MOVE_RIGHT);
+      layout_movement(&win.layout, MOVE_RIGHT);
   }
 }
 
@@ -181,8 +178,10 @@ void window_draw_all()
 void window_remove_buffer()
 {
   log_msg("WINDOW", "BUFFER +CLOSE+");
-  //buf_cleanup(bn->buf);
-  //free(bn);
+  Buffer *buf = window_get_focus();
+  if (buf) {
+    buf_cleanup(buf);
+  }
   layout_remove_buffer(&win.layout);
   window_draw_all();
 }

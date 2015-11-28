@@ -16,7 +16,7 @@ Cmdline cmd;
 char state_symbol[] = {':', '/'};
 int ex_state;
 
-#define CURMIN -1
+#define CURS_MIN -1
 
 static void cmdline_draw();
 
@@ -26,7 +26,7 @@ void start_ex_cmd(int state)
   ex_state = state;
   pos_T max = layout_size();
   nc_win = newwin(1, 0, max.lnum - 1, 0);
-  curpos = CURMIN;
+  curpos = CURS_MIN;
   maxpos = max.col;
   if (window_get_focus() && state == EX_REG_STATE)
     regex_mk_pivot();
@@ -116,8 +116,8 @@ void ex_input(int key)
     //FIXME: this will split line when cursor movement added
     cmd.line[curpos] = '\0';
     curpos--;
-    if (curpos < CURMIN)
-      curpos = CURMIN;
+    if (curpos < CURS_MIN)
+      curpos = CURS_MIN;
   }
   else if (key == Ctrl_U) {
     reset_line();

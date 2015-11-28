@@ -39,6 +39,7 @@ void overlay_set(Overlay *ov, Buffer *buf)
   }
 
   overlay_clear(ov);
+  log_msg("OVERLAY", "adjust buffer");
   buf_set_size(buf, size);
   buf_set_ofs(buf, ofs);
   ov->ov_size = size;

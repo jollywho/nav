@@ -5,7 +5,8 @@
 #include "fnav/event/hook.h"
 
 struct HookHandler {
-  UT_array *lists;
+  UT_array *hosted;
+  UT_array *owner;
 };
 typedef struct HookList HookList;
 struct HookList {
@@ -13,26 +14,19 @@ struct HookList {
   String msg;
 };
 
-void intchar_copy(void *_dst, const void *_src) {
+static void intchar_copy(void *_dst, const void *_src) {
   Hook *dst = (Hook*)_dst, *src = (Hook*)_src;
   dst->caller = src->caller;
   dst->fn = src->fn;
   dst->msg = src->msg ? strdup(src->msg) : NULL;
 }
 
-void intchar_dtor(void *_elt) {
+static void intchar_dtor(void *_elt) {
   Hook *elt = (Hook*)_elt;
   if (elt->msg) free(elt->msg);
 }
 static UT_icd hook_icd = { sizeof(Hook),NULL,intchar_copy,intchar_dtor };
 static UT_icd list_icd =  { sizeof(HookList),NULL,NULL,NULL };
-
-void hook_init(Cntlr *host)
-{
-  log_msg("HOOK", "INIT");
-  host->event_hooks = malloc(sizeof(HookHandler));
-  utarray_new(host->event_hooks->lists, &list_icd);
-}
 
 static int hook_cmp(const void *_a, const void *_b)
 {
@@ -40,28 +34,74 @@ static int hook_cmp(const void *_a, const void *_b)
   return strcmp(a->msg, b->msg);
 }
 
+void hook_init(Cntlr *host)
+{
+  log_msg("HOOK", "INIT");
+  host->event_hooks = malloc(sizeof(HookHandler));
+  utarray_new(host->event_hooks->hosted, &list_icd);
+  utarray_new(host->event_hooks->owner, &hook_icd);
+}
+
+void hook_cleanup(Cntlr *host)
+{
+  log_msg("HOOK", "CLEANUP");
+  utarray_free(host->event_hooks->hosted);
+  utarray_free(host->event_hooks->owner);
+}
+
 void hook_add(Cntlr *host, Cntlr *caller, hook_cb fn, String msg)
 {
   log_msg("HOOK", "ADD");
+  HookHandler *host_handle = host->event_hooks;
   HookList find = {.msg = msg};
-  HookList *hl = (HookList*)utarray_find(host->event_hooks->lists,
-      &find, hook_cmp);
+
+  HookList *hl = (HookList*)utarray_find(host_handle->hosted, &find, hook_cmp);
   if (!hl) {
     utarray_new(find.hooks, &hook_icd);
-    utarray_push_back(host->event_hooks->lists, &find);
+    utarray_push_back(host->event_hooks->hosted, &find);
     hl = &find;
   }
-  Hook hook = {fn,caller,msg};
+  //TODO add hook to caller's owner list
+  Hook hook = {fn,caller,host,msg};
   utarray_push_back(hl->hooks, &hook);
   utarray_sort(hl->hooks, hook_cmp);
+}
+
+void hook_remove(Cntlr *host, Cntlr *caller, String msg)
+{
+  log_msg("HOOK", "remove");
+  // TODO
+  // find hook in caller's owner list by msg
+  // remove hook from host's hosted list
+  // remove the hosted list if empty
+  // remove hook from owner's list
+}
+
+void hook_clear_msg(Cntlr *host, String msg)
+{
+  // TODO
+  // find hooklist in host by msg
+  // iterate hooklist
+  //  remove from hooklist
+  //  remove from it->caller->owner
+  // remove hooklist from host
+}
+
+void hook_clear(Cntlr *host)
+{
+  log_msg("HOOK", "clear");
+  // TODO
+  // iterate host hooklist
+  //  hook_clear_msg it
 }
 
 void send_hook_msg(String msg, Cntlr *host, Cntlr *caller)
 {
   log_msg("HOOK", "(<%s>) msg sent", msg);
+  HookHandler *host_handle = host->event_hooks;
   HookList find = { .msg = msg };
-  HookList *hl = (HookList*)utarray_find(host->event_hooks->lists,
-      &find, hook_cmp);
+
+  HookList *hl = (HookList*)utarray_find(host_handle->hosted, &find, hook_cmp);
   if (!hl) return;
 
   Hook *it = (Hook*)utarray_front(hl->hooks);
