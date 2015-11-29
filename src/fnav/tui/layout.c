@@ -1,5 +1,5 @@
 // layout
-// buffer tiling management
+// containers for window tiling
 #include <sys/ioctl.h>
 
 #include "fnav/lib/sys_queue.h"
@@ -120,15 +120,15 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
   create_container(c, dir);
   c->buf = next;
 
-    log_msg("LAYOUT", "%d %d", c->dir, focus->dir);
-  /* copy container and leave the old inplace as the 
-   * parent container for subitems */
+  /* copy container and leave the old inplace as the parent of subitems */
   if (c->dir != focus->dir) {
     log_msg("LAYOUT", "/|/split/|/");
     Container *sub = malloc(sizeof(Container));
     create_container(sub, dir);
+    overlay_delete(sub->ov);
     sub->buf = focus->buf;
     sub->parent = focus;
+    sub->ov = focus->ov;
     focus->count++;
 
     TAILQ_INSERT_TAIL(&focus->p, sub, ent);
@@ -163,11 +163,13 @@ void layout_remove_buffer(Layout *layout)
 
   Container *next = next_or_prev(c);
   TAILQ_REMOVE(&hc->p, c, ent);
+  overlay_delete(c->ov);
   free(c);
   hc->count--;
 
   if (hc->count == 1 && !hc->root) {
     log_msg("LAYOUT", "swap");
+    //FIXME: determine lifetime of overlay on splits
     hc->buf = next->buf;
     hc->ov = next->ov;
     hc->count = next->count;

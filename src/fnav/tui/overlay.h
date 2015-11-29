@@ -17,6 +17,7 @@ struct Overlay {
 };
 
 Overlay* overlay_new();
+void overlay_delete(Overlay *ov);
 void overlay_set(Overlay *ov, Buffer *buf);
 void overlay_edit(Overlay *ov, String name, String label);
 void overlay_draw(void **argv);

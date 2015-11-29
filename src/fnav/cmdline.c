@@ -30,7 +30,9 @@ void cmdline_init(Cmdline *cmdline, int size)
 
 void cmdline_cleanup(Cmdline *cmdline)
 {
-  cmdline_reset(cmdline);
+  //TODO: map $ free [cmds, tokens]
+  utarray_free(cmdline->cmds);
+  utarray_free(cmdline->tokens);
   free(cmdline->line);
   // other freeing
 }
@@ -168,10 +170,6 @@ static void pop(QUEUE *stack)
   if (parent.var.v_type == VAR_DICT) {
     utarray_push_back(parent.var.vval.v_dict->items, &token);
   }
-  //  case: pair
-  //    parent->value = token
-  //  default:
-  //    error, out of possible options
 }
 
 static void push(Token token, QUEUE *stack)

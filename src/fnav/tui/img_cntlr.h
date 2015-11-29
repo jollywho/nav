@@ -9,6 +9,7 @@ struct Img_cntlr {
   Cntlr base;
   Shell *sh_draw;
   Shell *sh_size;
+  Shell *sh_clear;
   Buffer *buf;
   bool disabled;
   int fontw; int fonth;

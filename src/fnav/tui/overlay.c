@@ -13,6 +13,15 @@ Overlay* overlay_new()
   return ov;
 }
 
+void overlay_delete(Overlay *ov)
+{
+  free(ov->cntlr_name);
+  free(ov->cmd_args);
+  delwin(ov->nc_win_sep);
+  delwin(ov->nc_win_st);
+  free(ov);
+}
+
 void overlay_clear(Overlay *ov)
 {
   if (ov->separator) {

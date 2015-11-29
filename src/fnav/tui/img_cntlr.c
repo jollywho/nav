@@ -46,13 +46,18 @@ static void shell_stdout_size_cb(Cntlr *cntlr, String out)
     img->height = max_height_pixels;
   }
   char *msg;
+  char *cl_msg;
   asprintf(&msg, DR_ARG,
-      (pos.col + 1)  * img->fontw,
-      pos.lnum * img->fonth,
-      img->width,
-      img->height,
-      img->path);
+      pos.col * img->fontw, pos.lnum * img->fonth,
+      img->width, img->height, img->path);
+  asprintf(&cl_msg, CL_ARG,
+      pos.col * img->fontw, pos.lnum * img->fonth,
+      size.col * img->fontw + 1, size.lnum * img->fonth);
   log_msg("SHELL", "%s", msg);
+  shell_set_in_buffer(img->sh_clear, cl_msg);
+  shell_start(img->sh_clear);
+  free(cl_msg);
+
   shell_set_in_buffer(img->sh_draw, msg);
   shell_start(img->sh_draw);
   free(msg);
@@ -136,6 +141,9 @@ Cntlr* img_init(Buffer *buf)
 
   img->sh_draw = shell_init(&img->base);
   shell_args(img->sh_draw, (String*)args, NULL);
+
+  img->sh_clear = shell_init(&img->base);
+  shell_args(img->sh_clear, (String*)args, NULL);
 
   hook_init(&img->base);
   hook_add(&img->base, &img->base, pipe_attach_cb, "pipe_attach");
