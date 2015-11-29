@@ -15,6 +15,7 @@ struct Container {
   enum dir_type dir;
   Container *parent;
   int count;
+  int root;
   TAILQ_HEAD(cont, Container) p;
   TAILQ_ENTRY(Container) ent;
 };
@@ -45,6 +46,7 @@ void layout_init(Layout *layout)
   root->size.lnum--;  //cmdline, status
   root->ofs = (pos_T){0,0};
   create_container(root, MOVE_UP);
+  root->root = 1;
   layout->root = root;
   layout->focus = root;
 }
@@ -56,8 +58,8 @@ static void resize_container(Container *c)
 
   int i = 0;
   Container *it = TAILQ_FIRST(&c->p);
-  while (++i, it != NULL) {
-    log_msg("LAYOUT", "*container*");
+  while (++i, it) {
+    log_msg("LAYOUT", "********container*********");
     if (it->dir == L_HORIZ) { s_y = c->count ; os_y = 1; }
     if (it->dir == L_VERT ) { s_x = c->count ; os_x = 1; }
 
@@ -96,6 +98,18 @@ static void resize_container(Container *c)
   }
 }
 
+static void update_sub_items(Container *c)
+{
+  Container *it = TAILQ_FIRST(&c->p);
+  while (it) {
+    it->parent = c;
+    if (!TAILQ_EMPTY(&it->p)) {
+      update_sub_items(it);
+    }
+    it = TAILQ_NEXT(it, ent);
+  }
+}
+
 void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
 {
   log_msg("LAYOUT", "layout_add_buffer");
@@ -106,6 +120,7 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
   create_container(c, dir);
   c->buf = next;
 
+    log_msg("LAYOUT", "%d %d", c->dir, focus->dir);
   /* copy container and leave the old inplace as the 
    * parent container for subitems */
   if (c->dir != focus->dir) {
@@ -151,19 +166,21 @@ void layout_remove_buffer(Layout *layout)
   free(c);
   hc->count--;
 
-  if (hc->count == 1 && hc->parent != hc->parent->parent) {
+  if (hc->count == 1 && !hc->root) {
     log_msg("LAYOUT", "swap");
     hc->buf = next->buf;
     hc->ov = next->ov;
     hc->count = next->count;
     TAILQ_REMOVE(&hc->p, next, ent);
-    TAILQ_SWAP(&hc->p, &next->p, Container, ent);
+    TAILQ_SWAP(&next->p, &hc->p, Container, ent);
     free(next);
-    if (TAILQ_EMPTY(&hc->p))
-      next = hc;
-    else
-      next = TAILQ_FIRST(&hc->p);
+    next = hc;
+    update_sub_items(hc);
   }
+  while (TAILQ_FIRST(&next->p)) {
+    next = TAILQ_FIRST(&next->p);
+  }
+
   resize_container(layout->root);
   layout->focus = next;
 }
