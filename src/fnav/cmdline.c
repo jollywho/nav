@@ -263,9 +263,6 @@ void cmdline_build(Cmdline *cmdline)
 #define NEXT_CMD(cl,c) \
   (c = (Cmdstr*)utarray_next(cl->cmds, c))
 
-#define PREV_CMD(cl,c) \
-  (c = (Cmdstr*)utarray_prev(cl->cmds, c))
-
 void cmdline_req_run(Cmdline *cmdline)
 {
   log_msg("CMDLINE", "cmdline_req_run");
@@ -282,23 +279,21 @@ void cmdline_req_run(Cmdline *cmdline)
       //  break if no arg0. error if arg0 not cntlr
       Cmdstr *tmp = cmd;
       NEXT_CMD(cmdline, tmp);
+
       List *args = TOKEN_LIST(tmp);
       Token *word = (Token*)utarray_front(args->items);
       String arg = TOKEN_STR(word->var);
 
-      if (!cntlr_isloaded(arg)) {
+      if (!cntlr_isloaded(arg))
         log_msg("ERROR", "cntlr %s not valid", arg);
-      }
+
       rhs = cntlr_open(arg, NULL);
 
-      // search for lhs backwards in cmds.
-      //  error if arg0 not cntlr
-      //tmp = cmd;
-      //PREV_CMD(cmdline, tmp);
-      // TODO: handle ":|> op" with lhs as window's focused cntlr.
-      if (cmd->ret_t == CNTLR) {
+      if (cmd->ret_t == CNTLR)
         lhs = cmd->ret;
-      }
+      if (!lhs)
+        lhs = focus_cntlr();
+
       if (lhs && rhs) {
         send_hook_msg("pipe_attach", rhs, lhs);
         cmd = tmp;

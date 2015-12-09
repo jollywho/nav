@@ -82,7 +82,7 @@ void regex_build(String line)
         0,                // Start looking at this point
         0,                // OPTIONS
         substr,
-        NSUBEXP);         // Length of subStrVec
+        NSUBEXP);         // Length of substr
 
     if (ret == 0)
       ret = NSUBEXP / 3;

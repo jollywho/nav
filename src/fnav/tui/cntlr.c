@@ -1,4 +1,5 @@
 #include "fnav/tui/cntlr.h"
+#include "fnav/tui/window.h"
 #include "fnav/tui/fm_cntlr.h"
 #include "fnav/tui/sh_cntlr.h"
 #include "fnav/tui/op_cntlr.h"
@@ -52,4 +53,10 @@ int cntlr_isloaded(String name)
     return 1;
   }
   return 0;
+}
+
+Cntlr *focus_cntlr()
+{
+  Buffer *buf = window_get_focus();
+  return buf->cntlr;
 }

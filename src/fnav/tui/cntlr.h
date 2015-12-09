@@ -42,5 +42,6 @@ void cntlr_load(String name, cntlr_open_cb open_cb, cntlr_close_cb close_cb);
 Cntlr* cntlr_open(String name, Buffer *buf);
 void cntlr_close(Cntlr *cntlr);
 int cntlr_isloaded(String name);
+Cntlr *focus_cntlr();
 
 #endif
