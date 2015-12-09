@@ -78,7 +78,7 @@ static void shell_stdout_font_cb(Cntlr *cntlr, String out)
   shell_args(img->sh_size, (String*)args, shell_stdout_size_cb);
 }
 
-static const char *get_path_ext (const char *fspec)
+static const char *get_path_ext(const char *fspec)
 {
   char *e = strrchr (fspec, '.');
   if (e == NULL)

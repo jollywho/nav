@@ -169,7 +169,6 @@ void layout_remove_buffer(Layout *layout)
 
   if (hc->count == 1 && !hc->root) {
     log_msg("LAYOUT", "swap");
-    //FIXME: determine lifetime of overlay on splits
     hc->buf = next->buf;
     hc->ov = next->ov;
     hc->count = next->count;

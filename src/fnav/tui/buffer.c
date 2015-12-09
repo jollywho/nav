@@ -169,6 +169,7 @@ void buf_full_invalidate(Buffer *buf, int index, int lnum)
   werase(buf->nc_win);
   buf->top = index;
   buf->lnum = lnum;
+  regex_destroy(buf);
   model_set_curs(m, buf->top + buf->lnum);
   buf_refresh(buf);
 }
@@ -184,7 +185,8 @@ int buf_input(Buffer *buf, int key)
   }
   if (!buf->attached)
     return 0;
-  if (model_blocking(buf->hndl)) return 0;
+  if (model_blocking(buf->hndl))
+    return 0;
   if (buf->cntlr) {
     buf->cntlr->_input(buf->cntlr, key);
   }
@@ -198,13 +200,13 @@ int buf_input(Buffer *buf, int key)
   return 0;
 }
 
-void buf_scroll(Buffer *buf, int y, int m_max)
+void buf_scroll(Buffer *buf, int y, int max)
 {
   log_msg("BUFFER", "scroll %d %d", buf->cur.lnum, y);
   int prev = buf->top;
   buf->top += y;
-  if (buf->top + buf->b_size.lnum > m_max) {
-    buf->top = m_max - buf->b_size.lnum;
+  if (buf->top + buf->b_size.lnum > max) {
+    buf->top = max - buf->b_size.lnum;
   }
   if (buf->top < 0) {
     buf->top = 0;

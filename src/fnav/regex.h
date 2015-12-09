@@ -9,7 +9,7 @@ void regex_build(String line);
 void regex_destroy(Buffer *buf);
 
 void regex_mk_pivot();
-void regex_keep_pivot();
+void regex_swap_pivot();
 void regex_pivot();
 
 void regex_hover();

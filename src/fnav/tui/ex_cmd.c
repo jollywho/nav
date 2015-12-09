@@ -72,7 +72,7 @@ static void ex_enter()
     cmdline_req_run(&cmd);
   }
   else {
-    regex_keep_pivot();
+    regex_swap_pivot();
   }
   stop_ex_cmd();
 }
