@@ -3,6 +3,9 @@
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/window.h"
 
+#define COL_ACTIVE 4
+#define COL_INACTIVE 6
+
 Overlay* overlay_new()
 {
   Overlay *ov = malloc(sizeof(Overlay));
@@ -30,6 +33,18 @@ void overlay_clear(Overlay *ov)
   }
   werase(ov->nc_win_st);
   wnoutrefresh(ov->nc_win_st);
+}
+
+void overlay_focus(Overlay *ov)
+{
+  ov->color = COL_ACTIVE;
+  window_req_draw(ov, overlay_draw);
+}
+
+void overlay_unfocus(Overlay *ov)
+{
+  ov->color = COL_INACTIVE;
+  window_req_draw(ov, overlay_draw);
 }
 
 void overlay_set(Overlay *ov, Buffer *buf)
@@ -78,9 +93,10 @@ void overlay_draw(void **argv)
   log_msg("OVERLAY", "draw");
   Overlay *ov = argv[0];
 
-  wattron(ov->nc_win_st, COLOR_PAIR(4));
+  log_msg("OVERLAY", "draw %d", ov->color);
+  wattron(ov->nc_win_st, COLOR_PAIR(ov->color));
   mvwaddstr(ov->nc_win_st, 0, 0, ov->cntlr_name);
-  wattroff(ov->nc_win_st, COLOR_PAIR(4));
+  wattroff(ov->nc_win_st, COLOR_PAIR(ov->color));
 
   wattron(ov->nc_win_st, COLOR_PAIR(3));
 

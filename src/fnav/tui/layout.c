@@ -110,6 +110,15 @@ static void update_sub_items(Container *c)
   }
 }
 
+static void swap_focus(Layout *layout, Container *c)
+{
+  if (layout->focus)
+    overlay_unfocus(layout->focus->ov);
+  overlay_focus(c->ov);
+
+  layout->focus = c;
+}
+
 void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
 {
   log_msg("LAYOUT", "layout_add_buffer");
@@ -143,8 +152,8 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
   else
     TAILQ_INSERT_TAIL(&hc->p, c, ent);
 
+  swap_focus(layout, c);
   resize_container(layout->root);
-  layout->focus = c;
 }
 
 static Container* next_or_prev(Container *it)
@@ -182,8 +191,8 @@ void layout_remove_buffer(Layout *layout)
     next = TAILQ_FIRST(&next->p);
   }
 
+  swap_focus(layout, next);
   resize_container(layout->root);
-  layout->focus = next;
 }
 
 static pos_T cur_line(Container *c)
@@ -246,7 +255,7 @@ void layout_movement(Layout *layout, enum move_dir dir)
   //  disable previous focus overlay
   //  enable new focus overlay
   if (pp)
-    layout->focus = pp;
+    swap_focus(layout, pp);
 }
 
 Buffer* layout_buf(Layout *layout)

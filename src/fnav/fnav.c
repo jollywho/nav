@@ -25,8 +25,9 @@ void init(void)
   init_pair(1, 7, 1);
   init_pair(2, 6, -1);
   init_pair(3, 7, 0);
-  init_pair(4, 0, 4);
+  init_pair(4, 16, 4);
   init_pair(5, 0, -1);
+  init_pair(6, 245, 235);
   curs_set(0);
 #endif
   loop_init();

@@ -276,7 +276,6 @@ void cmdline_req_run(Cmdline *cmdline)
       lhs = rhs = NULL;
 
       // search for rhs in next cmd.
-      //  break if no arg0. error if arg0 not cntlr
       Cmdstr *tmp = cmd;
       NEXT_CMD(cmdline, tmp);
 

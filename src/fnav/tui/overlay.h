@@ -14,6 +14,7 @@ struct Overlay {
   int lines;
   String cntlr_name;
   String cmd_args;
+  int color;
 };
 
 Overlay* overlay_new();
@@ -22,5 +23,7 @@ void overlay_set(Overlay *ov, Buffer *buf);
 void overlay_edit(Overlay *ov, String name, String label);
 void overlay_draw(void **argv);
 void overlay_clear(Overlay *ov);
+void overlay_focus(Overlay *ov);
+void overlay_unfocus(Overlay *ov);
 
 #endif
