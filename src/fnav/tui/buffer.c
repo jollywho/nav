@@ -76,7 +76,7 @@ Buffer* buf_init()
   buf->input_cb = NULL;
   buf->matches = NULL;
   buf->lnum = buf->top = 0;
-  buf->prev_pos = 0;
+  buf->ldif = 0;
   init_cmds();
   return buf;
 }
@@ -92,7 +92,7 @@ void buf_set_size(Buffer *buf, pos_T size)
 {
   log_msg("BUFFER", "SET SIZE %d %d", size.lnum, size.col);
   if (buf->b_size.lnum > 0)
-    buf->prev_pos = buf->b_size.lnum - size.lnum;
+    buf->ldif = buf->b_size.lnum - size.lnum;
 
   buf->b_size = size;
   delwin(buf->nc_win);
@@ -104,12 +104,15 @@ void buf_set_ofs(Buffer *buf, pos_T pos)
   log_msg("BUFFER", "SET OFS %d %d", pos.lnum, pos.col);
   buf->b_ofs = pos;
   mvwin(buf->nc_win, buf->b_ofs.lnum, buf->b_ofs.col);
-  int diff = buf->prev_pos ;
 
-  if (buf->lnum >= buf->b_size.lnum)
-    buf_move(buf, diff, 0);
-  else
-    buf_refresh(buf);
+  if (buf->ldif != 0) {
+    int diff = buf->top + buf->ldif ;
+    int line = (buf->top - diff) + buf->lnum;
+    buf->top = diff;
+    buf->lnum = line;
+  }
+  buf_refresh(buf);
+  buf->ldif = 0;
 }
 
 void buf_set_pass(Buffer *buf)

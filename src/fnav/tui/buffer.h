@@ -21,7 +21,7 @@ struct Buffer {
   int lnum; // cursor
   int top;  // index
 
-  int prev_pos;
+  int ldif;
 
   fn_handle *hndl;
   bool dirty;
