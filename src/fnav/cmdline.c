@@ -79,6 +79,15 @@ static Token stack_head(QUEUE *stack)
   return token;
 }
 
+static Token pair_init()
+{
+  Token token;
+  Pair *p = malloc(sizeof(Pair));
+  token.var.v_type = VAR_PAIR;
+  token.var.vval.v_pair = p;
+  return token;
+}
+
 static Token list_init()
 {
   Token token;
@@ -170,6 +179,12 @@ static void pop(QUEUE *stack)
   if (parent.var.v_type == VAR_DICT) {
     utarray_push_back(parent.var.vval.v_dict->items, &token);
   }
+  if (parent.var.v_type == VAR_PAIR) {
+    stack_pop(stack);
+    Token key = stack_pop(stack);
+    parent.var.vval.v_pair->key = &key;
+    parent.var.vval.v_pair->value = &token;
+  }
 }
 
 static void push(Token token, QUEUE *stack)
@@ -220,12 +235,12 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
       case '}':
       case ']':
         /*FALLTHROUGH*/
+        push(*word, stack);
         pop(stack);
         break;
         //
       case ':':
-        //pair_init(&block->var);
-        //push(block, &stack);
+        push(pair_init(), stack);
         break;
       case '{':
         push(dict_init(), stack);

@@ -250,10 +250,6 @@ void layout_movement(Layout *layout, enum move_dir dir)
 
   Container *pp = NULL;
   pp = find_intersect(c, layout->root, pos);
-  //TODO:
-  //  send enter msg
-  //  disable previous focus overlay
-  //  enable new focus overlay
   if (pp)
     swap_focus(layout, pp);
 }
