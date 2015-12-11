@@ -93,7 +93,6 @@ void overlay_draw(void **argv)
   log_msg("OVERLAY", "draw");
   Overlay *ov = argv[0];
 
-  log_msg("OVERLAY", "draw %d", ov->color);
   wattron(ov->nc_win_st, COLOR_PAIR(ov->color));
   mvwaddstr(ov->nc_win_st, 0, 0, ov->cntlr_name);
   wattroff(ov->nc_win_st, COLOR_PAIR(ov->color));

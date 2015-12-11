@@ -174,6 +174,7 @@ void layout_remove_buffer(Layout *layout)
   TAILQ_REMOVE(&hc->p, c, ent);
   overlay_delete(c->ov);
   free(c);
+  layout->focus = NULL;
   hc->count--;
 
   if (hc->count == 1 && !hc->root) {

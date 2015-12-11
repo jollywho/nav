@@ -17,10 +17,11 @@ struct Buffer {
 
   pos_T b_size;
   pos_T b_ofs;
-  pos_T cur;
 
   int lnum; // cursor
   int top;  // index
+
+  int prev_pos;
 
   fn_handle *hndl;
   bool dirty;
@@ -56,6 +57,7 @@ int buf_input(Buffer *bn, int key);
 void buf_refresh(Buffer *buf);
 
 void buf_move(Buffer *buf, int y, int x);
+void buf_scroll(Buffer *buf, int y, int max);
 
 int buf_line(Buffer *buf);
 int buf_top(Buffer *buf);

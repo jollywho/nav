@@ -68,7 +68,6 @@ Buffer* buf_init()
   Buffer *buf = malloc(sizeof(Buffer));
   SET_POS(buf->b_size, 0, 0);
   SET_POS(buf->b_ofs, 0, 0);
-  SET_POS(buf->cur, 0, 0);
   buf->nc_win = newwin(1,1,0,0);
   buf->dirty = false;
   buf->queued = false;
@@ -77,6 +76,7 @@ Buffer* buf_init()
   buf->input_cb = NULL;
   buf->matches = NULL;
   buf->lnum = buf->top = 0;
+  buf->prev_pos = 0;
   init_cmds();
   return buf;
 }
@@ -91,6 +91,9 @@ void buf_cleanup(Buffer *buf)
 void buf_set_size(Buffer *buf, pos_T size)
 {
   log_msg("BUFFER", "SET SIZE %d %d", size.lnum, size.col);
+  if (buf->b_size.lnum > 0)
+    buf->prev_pos = buf->b_size.lnum - size.lnum;
+
   buf->b_size = size;
   delwin(buf->nc_win);
   buf->nc_win = newwin(size.lnum, size.col, 0, 0);
@@ -101,7 +104,12 @@ void buf_set_ofs(Buffer *buf, pos_T pos)
   log_msg("BUFFER", "SET OFS %d %d", pos.lnum, pos.col);
   buf->b_ofs = pos;
   mvwin(buf->nc_win, buf->b_ofs.lnum, buf->b_ofs.col);
-  buf_refresh(buf);
+  int diff = buf->prev_pos ;
+
+  if (buf->lnum >= buf->b_size.lnum)
+    buf_move(buf, diff, 0);
+  else
+    buf_refresh(buf);
 }
 
 void buf_set_pass(Buffer *buf)
@@ -202,7 +210,7 @@ int buf_input(Buffer *buf, int key)
 
 void buf_scroll(Buffer *buf, int y, int max)
 {
-  log_msg("BUFFER", "scroll %d %d", buf->cur.lnum, y);
+  log_msg("BUFFER", "scroll %d %d", buf->lnum, y);
   int prev = buf->top;
   buf->top += y;
   if (buf->top + buf->b_size.lnum > max) {
