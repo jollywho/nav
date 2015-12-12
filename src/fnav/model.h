@@ -15,6 +15,7 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head);
 size_t model_read_stream(Model *m, char *output, size_t remaining,
     bool to_buffer, bool eof);
 String model_str_line(Model *m, int index);
+void* model_fld_line(Model *m, String field, int index);
 void* model_curs_value(Model *m, String field);
 void model_set_curs(Model *m, int index);
 int model_count(Model *m);

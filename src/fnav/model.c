@@ -105,6 +105,9 @@ static void generate_lines(Model *m)
 
 String model_str_line(Model *m, int index)
 {
+  log_msg("BUFFER", "model_str_line");
+  if (!m->lines) return NULL;
+  if (index > utarray_len(m->lines)) return NULL;
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
   return res ? rec_fld(res->rec, m->hndl->fname) : NULL;
 }
@@ -117,6 +120,12 @@ int model_count(Model *m)
 void* model_curs_value(Model *m, String field)
 {
   return rec_fld(m->cur, field);
+}
+
+void* model_fld_line(Model *m, String field, int index)
+{
+  fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
+  return rec_fld(res->rec, field);
 }
 
 void model_set_curs(Model *m, int index)

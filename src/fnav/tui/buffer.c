@@ -7,6 +7,7 @@
 #include "fnav/model.h"
 #include "fnav/regex.h"
 #include "fnav/option.h"
+#include "fnav/event/fs.h"
 
 enum Type { OPERATOR, MOTION };
 
@@ -74,12 +75,14 @@ Buffer* buf_init()
   buf->queued = false;
   buf->attached = false;
   buf->closed = false;
+  buf->focused = false;
   buf->input_cb = NULL;
   buf->matches = NULL;
   buf->lnum = buf->top = 0;
   buf->ldif = 0;
   buf->col_select = attr_color("BufSelected");
   buf->col_text = attr_color("BufText");
+  buf->col_dir = attr_color("BufDir");
   init_cmds();
   return buf;
 }
@@ -125,6 +128,7 @@ void buf_set_pass(Buffer *buf)
 
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
 {
+  log_msg("BUFFER", "buf_set_cntlr");
   buf->cntlr = cntlr;
   buf->hndl = cntlr->hndl;
   buf->attached = true;
@@ -136,6 +140,14 @@ void buf_set_linematch(Buffer *buf, LineMatch *match)
   log_msg("BUFFER", "buf_set_linematch");
   regex_destroy(buf);
   buf->matches = match;
+}
+
+void buf_toggle_focus(Buffer *buf, int focus)
+{
+  log_msg("BUFFER", "buf_toggle_focus %d", focus);
+  if (!buf) return;
+  buf->focused = focus;
+  buf_refresh(buf);
 }
 
 void buf_refresh(Buffer *buf)
@@ -158,16 +170,27 @@ void buf_draw(void **argv)
   }
   if (buf->attached) {
     Model *m = buf->hndl->model;
-    wattron(buf->nc_win, COLOR_PAIR(buf->col_text));
     for (int i = 0; i < buf->b_size.lnum; ++i) {
       String it = model_str_line(m, buf->top + i);
-      if (!it) continue;
-      DRAW_LINE(buf, i, it);
+      if (!it) break;
+      String path = model_fld_line(m, "fullpath", buf->top + i);
+      if (isdir(path)) {
+        wattron(buf->nc_win, COLOR_PAIR(buf->col_dir));
+        DRAW_LINE(buf, i, it);
+        wattroff(buf->nc_win, COLOR_PAIR(buf->col_dir));
+      }
+      else {
+        wattron(buf->nc_win, COLOR_PAIR(buf->col_text));
+        DRAW_LINE(buf, i, it);
+        wattroff(buf->nc_win, COLOR_PAIR(buf->col_text));
+      }
     }
-    wattroff(buf->nc_win, COLOR_PAIR(buf->col_text));
-    wattron(buf->nc_win, COLOR_PAIR(buf->col_select));
     String it = model_str_line(m, buf->top + buf->lnum);
+
+    wattron(buf->nc_win, COLOR_PAIR(buf->col_select));
+    if (!buf->focused) wattron(buf->nc_win, A_REVERSE);
     DRAW_LINE(buf, buf->lnum, it);
+    wattroff(buf->nc_win, A_REVERSE);
     wattroff(buf->nc_win, COLOR_PAIR(buf->col_select));
   }
   wnoutrefresh(buf->nc_win);

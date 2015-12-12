@@ -28,9 +28,11 @@ struct Buffer {
   bool queued;
   bool attached;
   bool closed;
+  bool focused;
 
   int col_select;
   int col_text;
+  int col_dir;
 };
 
 enum move_dir {
@@ -58,6 +60,7 @@ void buf_full_invalidate(Buffer *buf, int index, int lnum);
 int buf_input(Buffer *bn, int key);
 
 void buf_refresh(Buffer *buf);
+void buf_toggle_focus(Buffer *buf, int focus);
 
 void buf_move(Buffer *buf, int y, int x);
 void buf_scroll(Buffer *buf, int y, int max);

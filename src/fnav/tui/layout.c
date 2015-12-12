@@ -112,8 +112,11 @@ static void update_sub_items(Container *c)
 
 static void swap_focus(Layout *layout, Container *c)
 {
-  if (layout->focus)
+  if (layout->focus) {
+    buf_toggle_focus(layout->focus->buf, 0);
     overlay_unfocus(layout->focus->ov);
+  }
+  buf_toggle_focus(c->buf, 1);
   overlay_focus(c->ov);
 
   layout->focus = c;
