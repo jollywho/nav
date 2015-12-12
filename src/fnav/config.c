@@ -11,13 +11,16 @@ static void* edit_setting();
 static void* edit_color();
 static void* edit_variable();
 static void* edit_mapping();
+static void* add_source();
 
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
 static const Cmd_T cmdtable[] = {
-  {"set",  edit_setting,   0 },
-  {"hi",   edit_color,     0 },
-  {"let",  edit_variable,  0 },
-  {"map",  edit_mapping,   0 },
+  {"set",    edit_setting,   0 },
+  {"hi",     edit_color,     0 },
+  {"let",    edit_variable,  0 },
+  {"map",    edit_mapping,   0 },
+  {"so",     add_source,     0 },
+  {"source", add_source,     0 },
 };
 
 void config_init()
@@ -193,5 +196,23 @@ static void* edit_variable(List *args)
 
 static void* edit_mapping(List *args)
 {
+  return 0;
+}
+
+static void* add_source(List *args)
+{
+  if (utarray_len(args->items) < 1) return 0;
+  Token *word = (Token*)utarray_eltptr(args->items, 1);
+  String file = TOKEN_STR(word->var);
+
+  wordexp_t p;
+  char *path;
+
+  if (wordexp(file, &p, 0) == 0) {
+    path = p.we_wordv[0];
+    if (file_exists(path)) {
+      config_load(path);
+    }
+  }
   return 0;
 }
