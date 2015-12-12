@@ -11,6 +11,8 @@ typedef struct {
   Loop loop;
   bool cancel;
   bool running;
+  bool queued;
+  uint64_t last_ran;
   String path;
 } FS_handle;
 

@@ -1,7 +1,5 @@
 // filesystem
-
 #include <malloc.h>
-#include <stdio.h>
 #include <sys/time.h>
 #include <libgen.h>
 
@@ -22,6 +20,7 @@ static void stat_cb(uv_fs_t* req);
 void fs_loop(Loop *loop, int ms);
 static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,
     int status);
+static void watch_timer_cb(uv_timer_t *handle);
 
 FS_handle* fs_init(fn_handle *h)
 {
@@ -50,9 +49,8 @@ void fs_cleanup(FS_handle *fsh)
 char* conspath(const char* str1, const char* str2)
 {
   char* result;
-  if (strcmp(str1, "/") == 0) {
+  if (strcmp(str1, "/") == 0)
     asprintf(&result, "/%s", str2);
-  }
   else
     asprintf(&result, "%s/%s", str1, str2);
   return result;
@@ -93,12 +91,11 @@ void fs_open(FS_handle *fsh, const String dir)
   fq->uv_fs.data = fq;
   fsh->running = true;
   fsh->path = dir;
+  fsh->last_ran = os_hrtime();
+  fsh->queued = false;
 
   uv_fs_stat(&fq->fs_h->loop.uv, &fq->uv_fs, dir, stat_cb);
-
-  uv_fs_event_stop(&fsh->watcher);
-  uv_fs_event_start(&fsh->watcher, watch_cb, dir, 1);
-  uv_unref((uv_handle_t*)&fsh->watcher);
+  uv_fs_event_start(&fsh->watcher, watch_cb, fsh->path, 1);
 }
 
 void fs_close(FS_handle *h)
@@ -191,14 +188,20 @@ static void stat_cb(uv_fs_t* req)
   }
 }
 
+static void fs_reopen(FS_handle *fsh)
+{
+  uv_timer_stop(&fsh->watcher_timer);
+  uv_fs_event_stop(&fsh->watcher);
+  model_close(fsh->hndl);
+  fs_open(fsh, fsh->path);
+}
+
 static void watch_timer_cb(uv_timer_t *handle)
 {
   log_msg("FS", "--watch_timer--");
   FS_handle *fsh = handle->data;
-  if (!fsh->running) {
-    model_close(fsh->hndl);
-    fs_open(fsh, fsh->path);
-  }
+  if (!fsh->running)
+    fs_reopen(fsh);
 }
 
 static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,
@@ -206,13 +209,20 @@ static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,
 {
   log_msg("FS", "--watch--");
   FS_handle *fsh = handle->data;
-  uv_fs_event_stop(&fsh->watcher);
-  uv_timer_start(&fsh->watcher_timer, watch_timer_cb, RFRESH_RATE, RFRESH_RATE);
 
-  if (events & UV_RENAME)
-    log_msg("FS", "=%s= renamed", filename);
-  if (events & UV_CHANGE)
-    log_msg("FS", "=%s= changed", filename);
+  if (!fsh->queued) {
+    int took = (int)(os_hrtime() - fsh->last_ran)/1000000;
+    int delay = RFRESH_RATE - took;
+    log_msg("FS", "=%d= took", took);
+    log_msg("FS", "=%d= delay", delay);
+    fsh->queued = true;
+    if (took > 0) {
+      uv_fs_event_stop(&fsh->watcher);
+      uv_timer_start(&fsh->watcher_timer, watch_timer_cb, delay, delay);
+    }
+    else
+      fs_reopen(fsh);
+  }
 }
 
 static void fs_close_req(FS_req *fq)
