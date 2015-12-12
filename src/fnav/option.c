@@ -21,13 +21,21 @@ fn_options *options;
 void option_init()
 {
   options = malloc(sizeof(fn_options));
-  options->max_col_pairs = 0;
+  options->max_col_pairs = 1;
+  init_pair(0, 0, 0);
 }
 
 void set_color(fn_color *color)
 {
   log_msg("OPTION", "set_color");
-  // check if exists
+
+  fn_color *find;
+  HASH_FIND_STR(options->hi_colors, color->key, find);
+  if (find) {
+    HASH_DEL(options->hi_colors, find);
+    free(find);
+  }
+
   color->pair = ++options->max_col_pairs;
   init_pair(color->pair, color->fg, color->bg);
   HASH_ITEM(options->hi_colors, color);
@@ -37,8 +45,7 @@ int attr_color(const String name)
 {
   fn_color *color;
   HASH_FIND_STR(options->hi_colors, name, color);
-  log_msg("OPTION", "set_color %d", color->pair);
   if (!color)
-    return -1;
+    return 0;
   return color->pair;
 }

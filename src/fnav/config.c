@@ -165,27 +165,29 @@ bool config_read(FILE *file)
 
 static void* edit_setting(List *args)
 {
+  log_msg("CMD", "edit_setting");
   return 0;
 }
 
 static void* edit_color(List *args)
 {
-  log_msg("CMD", "hi--");
+  log_msg("CMD", "edit_color");
+  if (utarray_len(args->items) < 3) return 0;
   Token *word = (Token*)utarray_eltptr(args->items, 1);
   Token *arg1 = (Token*)utarray_eltptr(args->items, 2);
   Token *arg2 = (Token*)utarray_eltptr(args->items, 3);
-  if (word) {
-    fn_color *col = malloc(sizeof(fn_color));
-    col->key = TOKEN_STR(word->var),
-    col->fg = TOKEN_NUM(arg1->var),
-    col->bg = TOKEN_NUM(arg2->var);
-    set_color(col);
-  }
+
+  fn_color *col = malloc(sizeof(fn_color));
+  col->key = TOKEN_STR(word->var);
+  col->fg  = TOKEN_NUM(arg1->var);
+  col->bg  = TOKEN_NUM(arg2->var);
+  set_color(col);
   return 0;
 }
 
 static void* edit_variable(List *args)
 {
+  log_msg("CMD", "edit_variable");
   return 0;
 }
 
