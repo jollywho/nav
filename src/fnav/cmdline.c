@@ -20,6 +20,13 @@ typedef struct {
   QUEUE node;
 } queue_item;
 
+void cmdline_init_config(Cmdline *cmdline, char *line)
+{
+  cmdline->line = line;
+  utarray_new(cmdline->cmds, &list_icd);
+  utarray_new(cmdline->tokens, &list_icd);
+}
+
 void cmdline_init(Cmdline *cmdline, int size)
 {
   cmdline->line = malloc(size * sizeof(char*));
@@ -190,13 +197,14 @@ static void pop(QUEUE *stack)
 static void push(Token token, QUEUE *stack)
 {
   log_msg("CMDLINE", "push %d", token.var.v_type);
+  if (token.var.v_type == VAR_STRING) {
+    int temp;
+    if (sscanf(token.var.vval.v_string, "%d", &temp)) {
+      token.var.v_type = VAR_NUMBER;
+      token.var.vval.v_number = temp;
+    }
+  }
   stack_push(stack, token);
-  //if string
-  //  if this string is numeric
-  //    convert to int. adjust type
-  //if pair
-  //  it = queue_remove_head
-  //  token->key = it;
 }
 
 static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)

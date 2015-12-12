@@ -28,6 +28,9 @@ struct Buffer {
   bool queued;
   bool attached;
   bool closed;
+
+  int col_select;
+  int col_text;
 };
 
 enum move_dir {

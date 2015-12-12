@@ -3,6 +3,7 @@
 
 #include <ncurses.h>
 #include "fnav/tui/cntlr.h"
+#include "fnav/option.h"
 
 typedef struct Overlay Overlay;
 struct Overlay {
@@ -14,7 +15,10 @@ struct Overlay {
   int lines;
   String cntlr_name;
   String cmd_args;
-  int color;
+  int color_namebox;
+  int color_args;
+  int color_sep;
+  int color_line;
 };
 
 Overlay* overlay_new();

@@ -13,6 +13,9 @@ Overlay* overlay_new()
   ov->nc_win_sep = newwin(1,1,0,0);
   ov->cntlr_name = strdup("         ");
   ov->cmd_args = strdup("         ");
+  ov->color_sep = attr_color("OverlaySep");
+  ov->color_line = attr_color("OverlayLine");
+  ov->color_namebox = attr_color("OverlayActive");
   return ov;
 }
 
@@ -37,13 +40,13 @@ void overlay_clear(Overlay *ov)
 
 void overlay_focus(Overlay *ov)
 {
-  ov->color = COL_ACTIVE;
+  ov->color_namebox = attr_color("OverlayActive");
   window_req_draw(ov, overlay_draw);
 }
 
 void overlay_unfocus(Overlay *ov)
 {
-  ov->color = COL_INACTIVE;
+  ov->color_namebox = attr_color("OverlayInactive");
   window_req_draw(ov, overlay_draw);
 }
 
@@ -93,29 +96,29 @@ void overlay_draw(void **argv)
   log_msg("OVERLAY", "draw");
   Overlay *ov = argv[0];
 
-  wattron(ov->nc_win_st, COLOR_PAIR(ov->color));
+  wattron(ov->nc_win_st, COLOR_PAIR(ov->color_namebox));
   mvwaddstr(ov->nc_win_st, 0, 0, ov->cntlr_name);
-  wattroff(ov->nc_win_st, COLOR_PAIR(ov->color));
+  wattroff(ov->nc_win_st, COLOR_PAIR(ov->color_namebox));
 
-  wattron(ov->nc_win_st, COLOR_PAIR(3));
+  wattron(ov->nc_win_st, COLOR_PAIR(ov->color_line));
 
   mvwhline (ov->nc_win_st, 0, 9, ' ', ov->ov_size.col);
 
   if (ov->separator) {
-    wattron(ov->nc_win_sep, COLOR_PAIR(5));
+    wattron(ov->nc_win_sep, COLOR_PAIR(ov->color_sep));
     int i;
     for (i = 0; i < ov->ov_size.lnum; i++) {
       mvwaddstr(ov->nc_win_sep, i, 0, "╬");
     }
-    wattroff(ov->nc_win_sep, COLOR_PAIR(5));
-    wattron(ov->nc_win_sep, COLOR_PAIR(3));
+    wattroff(ov->nc_win_sep, COLOR_PAIR(ov->color_sep));
+    wattron(ov->nc_win_sep, COLOR_PAIR(ov->color_line));
     mvwaddch(ov->nc_win_sep, i, 0, ' ');
-    wattroff(ov->nc_win_sep, COLOR_PAIR(3));
+    wattroff(ov->nc_win_sep, COLOR_PAIR(ov->color_line));
   }
 
   mvwaddstr(ov->nc_win_st, 0, 11, ov->cmd_args);
 
-  wattroff(ov->nc_win_st, COLOR_PAIR(3));
+  wattroff(ov->nc_win_st, COLOR_PAIR(ov->color_line));
 
   wnoutrefresh(ov->nc_win_st);
   if (ov->separator)

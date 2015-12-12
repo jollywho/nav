@@ -4,6 +4,8 @@
 
 #include "fnav/log.h"
 #include "fnav/fnav.h"
+#include "fnav/option.h"
+#include "fnav/config.h"
 #include "fnav/tui/window.h"
 #include "fnav/tui/ex_cmd.h"
 #include "fnav/event/loop.h"
@@ -16,20 +18,18 @@ void init(void)
 //  log_set("IMG");
   log_init();
   log_msg("INIT", "__________INIT_START____________");
-#ifdef NCURSES_ENABLED
   setlocale(LC_CTYPE, "");
+
   log_msg("INIT", "initscr");
   initscr();
   start_color();
   use_default_colors();
-  init_pair(1, 7, 1);
-  init_pair(2, 6, -1);
-  init_pair(3, 7, 0);
-  init_pair(4, 16, 4);
-  init_pair(5, 0, -1);
-  init_pair(6, 245, 235);
+
+  option_init();
+  config_init();
+  config_load(NULL);
   curs_set(0);
-#endif
+
   loop_init();
   tables_init();
   event_init();

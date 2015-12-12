@@ -44,6 +44,9 @@ struct Token {
 #define TOKEN_STR(var) \
   var.vval.v_string
 
+#define TOKEN_NUM(var) \
+  var.vval.v_number
+
 struct Pair {
   Token *key;
   Token *value;
@@ -74,6 +77,7 @@ struct Cmdline {
   String line;
 };
 
+void cmdline_init_config(Cmdline *cmdline, char *line);
 void cmdline_init(Cmdline *cmdline, int size);
 void cmdline_cleanup(Cmdline *cmdline);
 void cmdline_build(Cmdline *cmdline);

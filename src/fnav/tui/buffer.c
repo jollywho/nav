@@ -6,6 +6,7 @@
 #include "fnav/table.h"
 #include "fnav/model.h"
 #include "fnav/regex.h"
+#include "fnav/option.h"
 
 enum Type { OPERATOR, MOTION };
 
@@ -77,6 +78,8 @@ Buffer* buf_init()
   buf->matches = NULL;
   buf->lnum = buf->top = 0;
   buf->ldif = 0;
+  buf->col_select = attr_color("BufSelected");
+  buf->col_text = attr_color("BufText");
   init_cmds();
   return buf;
 }
@@ -155,17 +158,17 @@ void buf_draw(void **argv)
   }
   if (buf->attached) {
     Model *m = buf->hndl->model;
-    wattron(buf->nc_win, COLOR_PAIR(2));
+    wattron(buf->nc_win, COLOR_PAIR(buf->col_text));
     for (int i = 0; i < buf->b_size.lnum; ++i) {
       String it = model_str_line(m, buf->top + i);
       if (!it) continue;
       DRAW_LINE(buf, i, it);
     }
-    wattroff(buf->nc_win, COLOR_PAIR(2));
-    wattron(buf->nc_win, COLOR_PAIR(1));
+    wattroff(buf->nc_win, COLOR_PAIR(buf->col_text));
+    wattron(buf->nc_win, COLOR_PAIR(buf->col_select));
     String it = model_str_line(m, buf->top + buf->lnum);
     DRAW_LINE(buf, buf->lnum, it);
-    wattroff(buf->nc_win, COLOR_PAIR(1));
+    wattroff(buf->nc_win, COLOR_PAIR(buf->col_select));
   }
   wnoutrefresh(buf->nc_win);
   buf->dirty = false;
