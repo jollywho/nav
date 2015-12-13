@@ -96,13 +96,10 @@ void overlay_draw(void **argv)
   log_msg("OVERLAY", "draw");
   Overlay *ov = argv[0];
 
-  wattron(ov->nc_win_st, COLOR_PAIR(ov->color_namebox));
-  mvwaddstr(ov->nc_win_st, 0, 0, ov->cntlr_name);
-  wattroff(ov->nc_win_st, COLOR_PAIR(ov->color_namebox));
+  DRAW_STR(ov, nc_win_st, 0, ov->cntlr_name, color_namebox);
 
   wattron(ov->nc_win_st, COLOR_PAIR(ov->color_line));
-
-  mvwhline (ov->nc_win_st, 0, 9, ' ', ov->ov_size.col);
+  mvwhline(ov->nc_win_st, 0, 9, ' ', ov->ov_size.col);
 
   if (ov->separator) {
     wattron(ov->nc_win_sep, COLOR_PAIR(ov->color_sep));
@@ -111,13 +108,10 @@ void overlay_draw(void **argv)
       mvwaddstr(ov->nc_win_sep, i, 0, "╬");
     }
     wattroff(ov->nc_win_sep, COLOR_PAIR(ov->color_sep));
-    wattron(ov->nc_win_sep, COLOR_PAIR(ov->color_line));
-    mvwaddch(ov->nc_win_sep, i, 0, ' ');
-    wattroff(ov->nc_win_sep, COLOR_PAIR(ov->color_line));
+    DRAW_CH(ov, nc_win_sep, i, 0, ' ', color_line);
   }
 
   mvwaddstr(ov->nc_win_st, 0, 11, ov->cmd_args);
-
   wattroff(ov->nc_win_st, COLOR_PAIR(ov->color_line));
 
   wnoutrefresh(ov->nc_win_st);

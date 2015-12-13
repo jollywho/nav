@@ -132,7 +132,7 @@ void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
   buf->cntlr = cntlr;
   buf->hndl = cntlr->hndl;
   buf->attached = true;
-  window_set_status(cntlr->fmt_name,  "");
+  window_set_status(cntlr->fmt_name,  cntlr->hndl->key);
 }
 
 void buf_set_linematch(Buffer *buf, LineMatch *match)
@@ -174,24 +174,16 @@ void buf_draw(void **argv)
       String it = model_str_line(m, buf->top + i);
       if (!it) break;
       String path = model_fld_line(m, "fullpath", buf->top + i);
-      if (isdir(path)) {
-        wattron(buf->nc_win, COLOR_PAIR(buf->col_dir));
-        DRAW_LINE(buf, i, it);
-        wattroff(buf->nc_win, COLOR_PAIR(buf->col_dir));
-      }
-      else {
-        wattron(buf->nc_win, COLOR_PAIR(buf->col_text));
-        DRAW_LINE(buf, i, it);
-        wattroff(buf->nc_win, COLOR_PAIR(buf->col_text));
-      }
+      if (isdir(path))
+        DRAW_STR(buf, nc_win, i, it, col_dir);
+      else
+        DRAW_STR(buf, nc_win, i, it, col_text);
     }
     String it = model_str_line(m, buf->top + buf->lnum);
 
-    wattron(buf->nc_win, COLOR_PAIR(buf->col_select));
-    if (!buf->focused) wattron(buf->nc_win, A_REVERSE);
-    DRAW_LINE(buf, buf->lnum, it);
+    TOGGLE_ATTR(!buf->focused, buf->nc_win, A_REVERSE);
+    DRAW_STR(buf, nc_win, buf->lnum, it, col_select);
     wattroff(buf->nc_win, A_REVERSE);
-    wattroff(buf->nc_win, COLOR_PAIR(buf->col_select));
   }
   wnoutrefresh(buf->nc_win);
   buf->dirty = false;

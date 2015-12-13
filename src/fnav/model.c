@@ -105,7 +105,6 @@ static void generate_lines(Model *m)
 
 String model_str_line(Model *m, int index)
 {
-  log_msg("BUFFER", "model_str_line");
   if (!m->lines) return NULL;
   if (index > utarray_len(m->lines)) return NULL;
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
