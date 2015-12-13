@@ -318,6 +318,7 @@ void cmdline_req_run(Cmdline *cmdline)
 
       if (lhs && rhs) {
         send_hook_msg("pipe_attach", rhs, lhs);
+        cntlr_pipe(lhs);
         cmd = tmp;
       }
     }

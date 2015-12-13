@@ -60,3 +60,8 @@ Cntlr *focus_cntlr()
   Buffer *buf = window_get_focus();
   return buf->cntlr;
 }
+
+void cntlr_pipe(Cntlr *cntlr)
+{
+  window_set_status(0, 0, "", "|> op");
+}

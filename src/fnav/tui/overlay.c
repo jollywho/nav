@@ -123,7 +123,7 @@ void overlay_draw(void **argv)
   }
 
   DRAW_STR(ov, nc_win_st, 0, 11, ov->usr_arg, color_line);
-  DRAW_STR(ov, nc_win_st, 0, ov->ov_size.col - 2, ov->pipe_out, color_line);
+  DRAW_STR(ov, nc_win_st, 0, ov->ov_size.col - 5, ov->pipe_out, color_line);
 
   wnoutrefresh(ov->nc_win_st);
   if (ov->separator)
