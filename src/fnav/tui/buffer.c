@@ -1,5 +1,6 @@
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/window.h"
+#include "fnav/tui/overlay.h"
 #include "fnav/event/hook.h"
 #include "fnav/ascii.h"
 #include "fnav/log.h"
@@ -132,7 +133,12 @@ void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
   buf->cntlr = cntlr;
   buf->hndl = cntlr->hndl;
   buf->attached = true;
-  window_set_status(cntlr->fmt_name, cntlr->hndl->key, 0, 0);
+  overlay_edit(buf->ov, cntlr->fmt_name, 0, 0, 0);
+}
+
+void buf_set_status(Buffer *buf, String name, String usr, String in, String out)
+{
+  overlay_edit(buf->ov, name, usr, in, out);
 }
 
 void buf_set_linematch(Buffer *buf, LineMatch *match)
@@ -306,6 +312,8 @@ pos_T buf_pos(Buffer *buf)
 {return (pos_T){buf->lnum+1,0};}
 int buf_attached(Buffer *buf)
 {return buf->attached;}
+void buf_set_overlay(Buffer *buf, Overlay *ov)
+{buf->ov = ov;}
 
 static void buf_mv_page(Buffer *buf, Cmdarg *arg)
 {

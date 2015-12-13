@@ -3,8 +3,24 @@
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/window.h"
 
-#define COL_ACTIVE 4
-#define COL_INACTIVE 6
+struct Overlay {
+  WINDOW *nc_win_sep;
+  WINDOW *nc_win_st;
+  pos_T ov_size;
+  pos_T ov_ofs;
+  int separator;
+  int lines;
+
+  String name;
+  String usr_arg;
+  String pipe_in;
+  String pipe_out;
+
+  int color_namebox;
+  int color_args;
+  int color_sep;
+  int color_line;
+};
 
 Overlay* overlay_new()
 {

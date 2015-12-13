@@ -77,7 +77,7 @@ int fm_opendir(Cntlr *cntlr, String path, short arg)
       cur_dir = fs_parent_dir(cur_dir);
     h->key = cur_dir;
     model_open(h);
-    buf_set_cntlr(h->buf, cntlr);
+    buf_set_status(h->buf, 0, h->key, 0, 0);
     fs_close(self->fs);
     fs_open(self->fs, cur_dir);
     self->cur_dir = cur_dir;
@@ -262,7 +262,6 @@ Cntlr* fm_init(Buffer *buf)
 
   fm->fs = fs_init(fm->base.hndl);
   fs_open(fm->fs, fm->cur_dir);
-  fm_test = &fm->base;
   return &fm->base;
 }
 

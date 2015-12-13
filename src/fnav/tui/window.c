@@ -104,9 +104,17 @@ int window_focus_attached()
 
 static void* win_pipe(List *args, enum move_dir flags)
 {
+  log_msg("WINDOW", "win_pipe");
+  if (utarray_len(args->items) < 2) return 0;
   Buffer *buf = layout_buf(&win.layout);
+
+  Token *word = (Token*)utarray_eltptr(args->items, 1);
+  if (word->var.v_type != VAR_NUMBER) return 0;
+
   if (buf) {
-    send_hook_msg("pipe_attach", buf_cntlr(buf), fm_test );
+    int id = TOKEN_NUM(word->var);
+    Cntlr *rhs = cntlr_from_id(id);
+    send_hook_msg("pipe_attach", buf_cntlr(buf), rhs );
   }
   return 0;
 }
@@ -163,11 +171,6 @@ void window_req_draw(void *obj, argv_callback cb)
 {
   log_msg("WINDOW", "req draw");
   CREATE_EVENT(&win.loop.events, cb, 1, obj);
-}
-
-void window_set_status(String name, String usr, String in, String out)
-{
-  layout_set_status(&win.layout, name, usr, in, out);
 }
 
 void window_draw_all()

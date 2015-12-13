@@ -99,12 +99,19 @@ static void cursor_change_cb(Cntlr *host, Cntlr *caller)
 {
   log_msg("IMG", "cursor_change_cb");
   Img_cntlr *img = (Img_cntlr*)caller->top;
+  fn_handle *h = caller->hndl;
 
   if (img->disabled) return;
 
   String path = model_curs_value(host->hndl->model, "fullpath");
+  String name = model_curs_value(host->hndl->model, "name");
   if (!valid_ext(path)) return;
+
   img->path = path;
+  h->key = name;
+  buf_set_status(h->buf, 0, h->key, 0, 0);
+  h->buf->attached = false; // override
+
   char *msg;
   asprintf(&msg, SZ_ARG, img->path);
   shell_set_in_buffer(img->sh_size, msg);
@@ -127,6 +134,11 @@ Cntlr* img_init(Buffer *buf)
 {
   log_msg("IMG", "INIT");
   Img_cntlr *img = malloc(sizeof(Img_cntlr));
+  fn_handle *hndl = malloc(sizeof(fn_handle));
+  hndl->buf = buf;
+  hndl->key = " ";
+  img->base.hndl = hndl;
+
   img->base.name = "img";
   img->base.fmt_name = "   IMG   ";
   img->base.top = img;

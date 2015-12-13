@@ -11,6 +11,7 @@ typedef void (*buffer_input_cb)(Buffer *buf, int key);
 struct Buffer {
   WINDOW *nc_win;
   Cntlr *cntlr;
+  Overlay *ov;
 
   buffer_input_cb input_cb;
   LineMatch *matches;
@@ -48,6 +49,7 @@ void buf_cleanup(Buffer *buf);
 
 Cntlr *buf_cntlr(Buffer *buf);
 
+void buf_set_overlay(Buffer *buf, Overlay *ov);
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr);
 void buf_set_size(Buffer *buf, pos_T size);
 void buf_set_ofs(Buffer *buf, pos_T pos);
@@ -55,6 +57,7 @@ void buf_set_ofs(Buffer *buf, pos_T pos);
 void buf_set_pass(Buffer *buf);
 
 void buf_set_linematch(Buffer *buf, LineMatch *match);
+void buf_set_status(Buffer *buf, String name, String usr, String in, String out);
 
 void buf_full_invalidate(Buffer *buf, int index, int lnum);
 int buf_input(Buffer *bn, int key);

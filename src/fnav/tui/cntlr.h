@@ -11,6 +11,10 @@ typedef struct Buffer Buffer;
 typedef struct fn_handle fn_handle;
 typedef struct Model Model;
 typedef struct HookHandler HookHandler;
+typedef struct Overlay Overlay;
+
+typedef Cntlr* (*cntlr_open_cb)(Buffer *b);
+typedef void (*cntlr_close_cb)(Cntlr *cntlr);
 
 struct fn_handle {
   Buffer *buf;
@@ -22,6 +26,7 @@ struct fn_handle {
 };
 
 struct Cntlr {
+  int id;
   String name;
   String fmt_name;
   fn_handle *hndl;
@@ -36,13 +41,14 @@ typedef struct {
   int col;     /* column number */
 } pos_T;
 
-typedef Cntlr* (*cntlr_open_cb)(Buffer *b);
-typedef void (*cntlr_close_cb)(Cntlr *cntlr);
 void cntlr_load(String name, cntlr_open_cb open_cb, cntlr_close_cb close_cb);
+int cntlr_isloaded(String name);
+
 Cntlr* cntlr_open(String name, Buffer *buf);
 void cntlr_close(Cntlr *cntlr);
-int cntlr_isloaded(String name);
+
 Cntlr *focus_cntlr();
+Cntlr *cntlr_from_id(int id);
 void cntlr_pipe(Cntlr *cntlr);
 
 #endif
