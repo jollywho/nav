@@ -11,18 +11,21 @@ Overlay* overlay_new()
   Overlay *ov = malloc(sizeof(Overlay));
   ov->nc_win_st = newwin(1,1,0,0);
   ov->nc_win_sep = newwin(1,1,0,0);
-  ov->cntlr_name = strdup("         ");
-  ov->cmd_args = strdup("         ");
   ov->color_sep = attr_color("OverlaySep");
   ov->color_line = attr_color("OverlayLine");
   ov->color_namebox = attr_color("OverlayActive");
+  ov->name = strdup("         ");
+  ov->usr_arg = strdup("         ");
+  ov->pipe_in = ov->pipe_out = NULL;
   return ov;
 }
 
 void overlay_delete(Overlay *ov)
 {
-  free(ov->cntlr_name);
-  free(ov->cmd_args);
+  if (ov->name) free(ov->name);
+  if (ov->usr_arg) free(ov->usr_arg);
+  if (ov->pipe_in) free(ov->pipe_in);
+  if (ov->pipe_out) free(ov->pipe_out);
   delwin(ov->nc_win_sep);
   delwin(ov->nc_win_st);
   free(ov);
@@ -81,13 +84,20 @@ void overlay_set(Overlay *ov, Buffer *buf)
   window_req_draw(ov, overlay_draw);
 }
 
-void overlay_edit(Overlay *ov, String name, String label)
+static void set_string(String *from, String to)
 {
-  log_msg("OVERLAY", "****OV ARGS %s", ov->cmd_args);
-  free(ov->cntlr_name);
-  free(ov->cmd_args);
-  ov->cntlr_name = strdup(name);
-  ov->cmd_args = strdup(label);
+  if (!to) return;
+  if (*from) free(*from);
+  *from = strdup(to);
+}
+
+void overlay_edit(Overlay *ov, String name, String usr, String in, String out)
+{
+  log_msg("OVERLAY", "****OV ARGS %s %s", name, usr);
+  set_string(&ov->name, name);
+  set_string(&ov->usr_arg, usr);
+  set_string(&ov->pipe_in, in);
+  set_string(&ov->pipe_out, out);
   window_req_draw(ov, overlay_draw);
 }
 
@@ -96,10 +106,11 @@ void overlay_draw(void **argv)
   log_msg("OVERLAY", "draw");
   Overlay *ov = argv[0];
 
-  DRAW_STR(ov, nc_win_st, 0, ov->cntlr_name, color_namebox);
+  DRAW_STR(ov, nc_win_st, 0, 0, ov->name, color_namebox);
 
   wattron(ov->nc_win_st, COLOR_PAIR(ov->color_line));
   mvwhline(ov->nc_win_st, 0, 9, ' ', ov->ov_size.col);
+  wattroff(ov->nc_win_st, COLOR_PAIR(ov->color_line));
 
   if (ov->separator) {
     wattron(ov->nc_win_sep, COLOR_PAIR(ov->color_sep));
@@ -111,8 +122,8 @@ void overlay_draw(void **argv)
     DRAW_CH(ov, nc_win_sep, i, 0, ' ', color_line);
   }
 
-  mvwaddstr(ov->nc_win_st, 0, 11, ov->cmd_args);
-  wattroff(ov->nc_win_st, COLOR_PAIR(ov->color_line));
+  DRAW_STR(ov, nc_win_st, 0, 11, ov->usr_arg, color_line);
+  DRAW_STR(ov, nc_win_st, 0, ov->ov_size.col - 2, ov->pipe_out, color_line);
 
   wnoutrefresh(ov->nc_win_st);
   if (ov->separator)

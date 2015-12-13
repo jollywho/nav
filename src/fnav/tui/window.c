@@ -165,9 +165,9 @@ void window_req_draw(void *obj, argv_callback cb)
   CREATE_EVENT(&win.loop.events, cb, 1, obj);
 }
 
-void window_set_status(String name, String label)
+void window_set_status(String name, String usr, String in, String out)
 {
-  layout_set_status(&win.layout, name, label);
+  layout_set_status(&win.layout, name, usr, in, out);
 }
 
 void window_draw_all()

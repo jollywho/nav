@@ -261,9 +261,10 @@ void layout_movement(Layout *layout, enum move_dir dir)
 Buffer* layout_buf(Layout *layout)
 {return layout->focus->buf;}
 
-void layout_set_status(Layout *layout, String name, String label)
+void layout_set_status(Layout *layout, String name, String usr,
+    String in, String out)
 {
-  overlay_edit(layout->focus->ov, name, label);
+  overlay_edit(layout->focus->ov, name, usr, in, out);
 }
 
 void layout_refresh(Layout *layout)

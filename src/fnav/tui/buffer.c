@@ -132,7 +132,7 @@ void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
   buf->cntlr = cntlr;
   buf->hndl = cntlr->hndl;
   buf->attached = true;
-  window_set_status(cntlr->fmt_name,  cntlr->hndl->key);
+  window_set_status(cntlr->fmt_name, cntlr->hndl->key, 0, 0);
 }
 
 void buf_set_linematch(Buffer *buf, LineMatch *match)
@@ -175,14 +175,14 @@ void buf_draw(void **argv)
       if (!it) break;
       String path = model_fld_line(m, "fullpath", buf->top + i);
       if (isdir(path))
-        DRAW_STR(buf, nc_win, i, it, col_dir);
+        DRAW_STR(buf, nc_win, i, 0, it, col_dir);
       else
-        DRAW_STR(buf, nc_win, i, it, col_text);
+        DRAW_STR(buf, nc_win, i, 0, it, col_text);
     }
     String it = model_str_line(m, buf->top + buf->lnum);
 
     TOGGLE_ATTR(!buf->focused, buf->nc_win, A_REVERSE);
-    DRAW_STR(buf, nc_win, buf->lnum, it, col_select);
+    DRAW_STR(buf, nc_win, buf->lnum, 0, it, col_select);
     wattroff(buf->nc_win, A_REVERSE);
   }
   wnoutrefresh(buf->nc_win);

@@ -13,8 +13,12 @@ struct Overlay {
   pos_T ov_ofs;
   int separator;
   int lines;
-  String cntlr_name;
-  String cmd_args;
+
+  String name;
+  String usr_arg;
+  String pipe_in;
+  String pipe_out;
+
   int color_namebox;
   int color_args;
   int color_sep;
@@ -24,7 +28,7 @@ struct Overlay {
 Overlay* overlay_new();
 void overlay_delete(Overlay *ov);
 void overlay_set(Overlay *ov, Buffer *buf);
-void overlay_edit(Overlay *ov, String name, String label);
+void overlay_edit(Overlay *ov, String name, String usr, String in, String out);
 void overlay_draw(void **argv);
 void overlay_clear(Overlay *ov);
 void overlay_focus(Overlay *ov);

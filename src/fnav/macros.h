@@ -26,10 +26,10 @@
     wattroff((obj)->win, COLOR_PAIR((obj)->color)); \
   } while (0)
 
-#define DRAW_STR(obj,win,ln,str,color)              \
+#define DRAW_STR(obj,win,ln,col,str,color)          \
   do {                                              \
     wattron((obj)->win, COLOR_PAIR((obj)->color));  \
-    mvwaddstr((obj)->win, ln, 0, str);              \
+    mvwaddstr((obj)->win, ln, col, str);            \
     wattroff((obj)->win, COLOR_PAIR((obj)->color)); \
   } while (0)
 

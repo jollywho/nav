@@ -14,6 +14,6 @@ void window_ex_cmd_end();
 void window_draw_all();
 Buffer* window_get_focus();
 int window_focus_attached();
-void window_set_status(String name, String label);
+void window_set_status(String name, String usr, String in, String out);
 
 #endif
