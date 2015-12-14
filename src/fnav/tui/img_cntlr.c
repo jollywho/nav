@@ -34,8 +34,8 @@ static void shell_stdout_size_cb(Cntlr *cntlr, String out)
   pos_T pos = buf_ofs(img->buf);
   pos_T size = buf_size(img->buf);
 
-  int max_width_pixels  = size.col  * img->fontw;
-  int max_height_pixels = size.lnum * img->fonth - 2;
+  int max_width_pixels  = size.col-2  * img->fontw;
+  int max_height_pixels = size.lnum-1 * img->fonth;
 
   if (img->width > max_width_pixels) {
     img->height = (img->height * max_width_pixels) / img->width;
@@ -45,6 +45,7 @@ static void shell_stdout_size_cb(Cntlr *cntlr, String out)
     img->width = (img->width * max_height_pixels) / img->height;
     img->height = max_height_pixels;
   }
+
   char *msg;
   char *cl_msg;
   asprintf(&msg, DR_ARG,
@@ -52,8 +53,10 @@ static void shell_stdout_size_cb(Cntlr *cntlr, String out)
       img->width, img->height, img->path);
   asprintf(&cl_msg, CL_ARG,
       pos.col * img->fontw, pos.lnum * img->fonth,
-      size.col * img->fontw + 1, size.lnum * img->fonth);
+      (size.col * img->fontw), (size.lnum * img->fonth));
+
   log_msg("SHELL", "%s", msg);
+
   shell_set_in_buffer(img->sh_clear, cl_msg);
   shell_start(img->sh_clear);
   free(cl_msg);
@@ -68,13 +71,16 @@ static void shell_stdout_font_cb(Cntlr *cntlr, String out)
   log_msg("IMG", "shell_stdout_font_cb");
   log_msg("IMG", "%s", out);
   Img_cntlr *img = (Img_cntlr*)cntlr->top;
+
   char *w = strtok(out, " ");
   char *h = strtok(NULL, " ");
   sscanf(w, "%d", &img->fontw);
   sscanf(h, "%d", &img->fonth);
+
   pos_T lo = layout_size();
   img->fontw = (img->fontw + 2) / lo.col;
   img->fonth = (img->fonth + 2) / lo.lnum;
+
   shell_args(img->sh_size, (String*)args, shell_stdout_size_cb);
 }
 
@@ -105,6 +111,7 @@ static void cursor_change_cb(Cntlr *host, Cntlr *caller)
 
   String path = model_curs_value(host->hndl->model, "fullpath");
   String name = model_curs_value(host->hndl->model, "name");
+
   if (!valid_ext(path)) return;
 
   img->path = path;
@@ -114,8 +121,10 @@ static void cursor_change_cb(Cntlr *host, Cntlr *caller)
 
   char *msg;
   asprintf(&msg, SZ_ARG, img->path);
+
   shell_set_in_buffer(img->sh_size, msg);
   shell_start(img->sh_size);
+
   free(msg);
 }
 

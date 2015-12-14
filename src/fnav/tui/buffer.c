@@ -98,12 +98,22 @@ void buf_cleanup(Buffer *buf)
 void buf_set_size(Buffer *buf, pos_T size)
 {
   log_msg("BUFFER", "SET SIZE %d %d", size.lnum, size.col);
-  if (buf->b_size.lnum > 0)
+  if (buf->b_size.lnum > 0) {
     buf->ldif = buf->b_size.lnum - size.lnum;
+  }
 
   buf->b_size = size;
   delwin(buf->nc_win);
   buf->nc_win = newwin(size.lnum, size.col, 0, 0);
+}
+
+static void resize_adjustment(Buffer *buf)
+{
+  int diff = buf->top + buf->ldif;
+  if (diff < 0) diff = 0;
+  int line = (buf->top + buf->lnum) - diff;
+  buf->top = diff;
+  buf->lnum = line;
 }
 
 void buf_set_ofs(Buffer *buf, pos_T pos)
@@ -112,14 +122,10 @@ void buf_set_ofs(Buffer *buf, pos_T pos)
   buf->b_ofs = pos;
   mvwin(buf->nc_win, buf->b_ofs.lnum, buf->b_ofs.col);
 
-  if (buf->ldif != 0) {
-    int diff = buf->top + buf->ldif ;
-    int line = (buf->top - diff) + buf->lnum;
-    buf->top = diff;
-    buf->lnum = line;
+  if ((buf->ldif > 0 && buf->lnum >= buf->b_size.lnum) || (buf->ldif < 0)) {
+    resize_adjustment(buf);
   }
   buf_refresh(buf);
-  buf->ldif = 0;
 }
 
 void buf_set_pass(Buffer *buf)

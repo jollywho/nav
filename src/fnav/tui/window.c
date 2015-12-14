@@ -114,6 +114,7 @@ static void* win_pipe(List *args, enum move_dir flags)
   if (buf) {
     int id = TOKEN_NUM(word->var);
     Cntlr *rhs = cntlr_from_id(id);
+    //TODO: replace pipe if already set
     send_hook_msg("pipe_attach", buf_cntlr(buf), rhs );
   }
   return 0;
@@ -123,13 +124,10 @@ static void* win_new(List *args, enum move_dir flags)
 {
   log_msg("WINDOW", "win_new");
   window_add_buffer(flags);
-  // TODO: replace with cntlr name lookup.
-  //       load. init here. add to cntlr list etc.
-  //       open. create instance.
-  //       close. close instance.
-  //       unload. cleanup here. remove from cntlr list.
+
   Cntlr *ret = NULL;
   Token *word = (Token*)utarray_eltptr(args->items, 1);
+
   if (word) {
     ret = cntlr_open(TOKEN_STR(word->var), layout_buf(&win.layout));
   }
