@@ -69,27 +69,14 @@ void overlay_unfocus(Overlay *ov)
   window_req_draw(ov, overlay_draw);
 }
 
-void overlay_set(Overlay *ov, Buffer *buf)
+void overlay_set(Overlay *ov, pos_T size, pos_T ofs, int sep)
 {
   log_msg("OVERLAY", "overlay_set");
-  pos_T size = buf_size(buf);
-  pos_T ofs  = buf_ofs(buf);
-  size.lnum--;
-  if (ofs.col == 0) {
-    ov->separator = 0;
-  }
-  else {
-    ov->separator = 1;
-    ofs.col++;
-    size.col--;
-  }
+  ov->separator = sep;
 
   overlay_clear(ov);
-  log_msg("OVERLAY", "adjust buffer");
-  buf_set_size(buf, size);
-  buf_set_ofs(buf, ofs);
-  ov->ov_size = size;
-  ov->ov_ofs = (pos_T){ ofs.lnum + size.lnum , ofs.col };
+  ov->ov_size = (pos_T){size.lnum, size.col};
+  ov->ov_ofs  = (pos_T){ofs.lnum + size.lnum, ofs.col };
 
   wresize(ov->nc_win_st, 1, ov->ov_size.col);
   mvwin(ov->nc_win_st, ov->ov_ofs.lnum, ov->ov_ofs.col);

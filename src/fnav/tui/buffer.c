@@ -95,20 +95,10 @@ void buf_cleanup(Buffer *buf)
   free(buf);
 }
 
-void buf_set_size(Buffer *buf, pos_T size)
-{
-  log_msg("BUFFER", "SET SIZE %d %d", size.lnum, size.col);
-  if (buf->b_size.lnum > 0) {
-    buf->ldif = buf->b_size.lnum - size.lnum;
-  }
-
-  buf->b_size = size;
-  delwin(buf->nc_win);
-  buf->nc_win = newwin(size.lnum, size.col, 0, 0);
-}
-
 static void resize_adjustment(Buffer *buf)
 {
+  log_msg("BUFFER", "resize_adjustment");
+  log_msg("BUFFER", "%d %d", buf->top, buf->ldif);
   int diff = buf->top + buf->ldif;
   if (diff < 0) diff = 0;
   int line = (buf->top + buf->lnum) - diff;
@@ -116,11 +106,31 @@ static void resize_adjustment(Buffer *buf)
   buf->lnum = line;
 }
 
-void buf_set_ofs(Buffer *buf, pos_T pos)
+void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs)
 {
-  log_msg("BUFFER", "SET OFS %d %d", pos.lnum, pos.col);
-  buf->b_ofs = pos;
-  mvwin(buf->nc_win, buf->b_ofs.lnum, buf->b_ofs.col);
+  log_msg("BUFFER", "SET SIZE %d %d", size.lnum, size.col);
+  size.lnum--;
+  if (buf->b_size.lnum > 0) {
+    buf->ldif = buf->b_size.lnum - size.lnum;
+  }
+
+  int sep;
+  if (ofs.col == 0) {
+    sep = 0;
+  }
+  else {
+    sep = 1;
+    ofs.col++;
+    size.col--;
+  }
+  buf->b_size = size;
+  buf->b_ofs = ofs;
+
+  delwin(buf->nc_win);
+  buf->nc_win = newwin(buf->b_size.lnum, buf->b_size.col,
+                       buf->b_ofs.lnum,  buf->b_ofs.col);
+
+  overlay_set(buf->ov, buf->b_size, buf->b_ofs, sep);
 
   if ((buf->ldif > 0 && buf->lnum >= buf->b_size.lnum) || (buf->ldif < 0)) {
     resize_adjustment(buf);
@@ -200,6 +210,7 @@ void buf_draw(void **argv)
   wnoutrefresh(buf->nc_win);
   buf->dirty = false;
   buf->queued = false;
+  buf->ldif = 0;
 }
 
 void buf_full_invalidate(Buffer *buf, int index, int lnum)

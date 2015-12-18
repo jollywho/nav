@@ -86,10 +86,8 @@ static void resize_container(Container *c)
       prev->ofs.col  + (prev->size.col  * os_x * c_w)};
 
     if (TAILQ_EMPTY(&it->p)) {
-      buf_set_size(it->buf, it->size);
-      buf_set_ofs(it->buf,  it->ofs);
       buf_set_overlay(it->buf, it->ov);
-      overlay_set(it->ov, it->buf);
+      buf_set_size_ofs(it->buf, it->size, it->ofs);
     }
     else {
       overlay_clear(it->ov);

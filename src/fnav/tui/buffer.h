@@ -51,8 +51,7 @@ Cntlr *buf_cntlr(Buffer *buf);
 
 void buf_set_overlay(Buffer *buf, Overlay *ov);
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr);
-void buf_set_size(Buffer *buf, pos_T size);
-void buf_set_ofs(Buffer *buf, pos_T pos);
+void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs);
 
 void buf_set_pass(Buffer *buf);
 
