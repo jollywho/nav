@@ -24,14 +24,16 @@ Cmd_T* cmd_find(String name)
 void cmd_run(Cmdstr *cmdstr)
 {
   log_msg("CMD", "cmd_run");
-  Token *word, *func = NULL;
+  Token *word = NULL;
+
   List *args = TOKEN_LIST(cmdstr);
-
   if (utarray_len(args->items) < 1) return;
-  word = func = (Token*)utarray_front(args->items);
-  Cmd_T *fun = cmd_find(TOKEN_STR(word->var));
 
+  word = (Token*)utarray_front(args->items);
+
+  Cmd_T *fun = cmd_find(TOKEN_STR(word->var));
   if (!fun) return; // :'(
+
   cmdstr->ret_t = CNTLR;
   cmdstr->ret = fun->cmd_func(args, fun->flags);
 }

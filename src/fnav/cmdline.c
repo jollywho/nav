@@ -5,6 +5,7 @@
 #include "fnav/lib/queue.h"
 #include "fnav/tui/cntlr.h"
 #include "fnav/event/hook.h"
+#include "fnav/event/shell.h"
 #include "fnav/cmdline.h"
 #include "fnav/cmd.h"
 #include "fnav/ascii.h"
@@ -148,9 +149,9 @@ static void cmdline_tokenize(Cmdline *cmdline)
   for(;;) {
     ch = str[pos++];
     if (ch == '"') {
-      char *ret = strchr(&str[pos], '"');
-      if (ret) {
-        int end = (ret - &str[pos]) + pos;
+      char *closech = strchr(&str[pos], '"');
+      if (closech) {
+        int end = (closech - &str[pos]) + pos;
         cmdline_create_token(cmdline, str, pos, end);
         end++;
         pos = end;
@@ -273,7 +274,8 @@ void cmdline_build(Cmdline *cmdline)
   log_msg("CMDSTR", "tokenize_line");
 
   cmdline_reset(cmdline);
-  cmdline_tokenize(cmdline);
+  if (cmdline->line[0] == '!')
+    return;
 
   /* parse until empty */
   Token *word = NULL;
@@ -291,6 +293,9 @@ void cmdline_req_run(Cmdline *cmdline)
   log_msg("CMDLINE", "cmdline_req_run");
   Cmdstr *cmd;
   cmd = NULL;
+
+  if (cmdline->line[0] == '!')
+    shell_exec(cmdline->line);
 
   while (NEXT_CMD(cmdline, cmd)) {
     cmd_run(cmd);

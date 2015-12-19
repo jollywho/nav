@@ -6,8 +6,6 @@
 #include "fnav/event/wstream.h"
 #include "fnav/model.h"
 
-char* p_sh = "/bin/sh";
-
 static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
   bool eof);
 static void shell_loop(Loop *loop, int ms);
@@ -24,6 +22,8 @@ void shell_fin_cb(Process *proc, void *data)
     sh->again = false;
     shell_start(sh);
   }
+  if (sh->disposable)
+    shell_free(sh);
 }
 
 Shell* shell_init(Cntlr *cntlr)
@@ -129,7 +129,8 @@ static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
 
   ptr[count] = '\0';
   Shell *sh = (Shell*)data;
-  sh->readout(sh->caller, ptr);
+  if (sh->caller)
+    sh->readout(sh->caller, ptr);
 
   size_t written = count;
   // No output written, force emptying the Rbuffer if it is full.
@@ -149,4 +150,22 @@ static void shell_loop(Loop *loop, int ms)
 static void shell_write_cb(Stream *stream, void *data, int status)
 {
   stream_close(stream, NULL);
+}
+
+void shell_exec(String arg)
+{
+  log_msg("SHELL", "shell_exec");
+  log_msg("SHELL", "%s", arg);
+  if (strlen(arg) < 2) return;
+  arg = &arg[1]; // skip '!'
+
+  String delim = " ";
+  String name = strtok(arg, delim);
+  String args = strtok(NULL, delim);
+
+  Shell *sh = shell_init(NULL);
+  sh->disposable = true;
+  char *rv[] = {name, args, NULL};
+  sh->proc->argv = rv;
+  shell_start(sh);
 }

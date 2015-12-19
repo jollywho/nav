@@ -23,6 +23,7 @@ typedef struct {
   Cntlr *caller;
   bool blocking;
   bool again;
+  bool disposable;
   String msg;
 } Shell;
 
@@ -32,5 +33,6 @@ void shell_free(Shell *sh);
 void shell_start(Shell *sh);
 void shell_stop(Shell *sh);
 void shell_set_in_buffer(Shell *sh, String msg);
+void shell_exec(String arg);
 
 #endif

@@ -64,15 +64,6 @@ static void create_proc(Op_cntlr *op, String path)
   op->opts.args = rv;
   op->proc.data = op;
 
-  //trans_rec *r = mk_trans_rec(tbl_fld_count("op_procs"));
-  //edit_trans(r, "ext",     (void*)"mkv",  NULL);
-  //edit_trans(r, "file",    (void*)"mpv",  NULL);
-  //edit_trans(r, "single",  NULL,          (void*)"0");
-  //edit_trans(r, "ensure",  NULL,          (void*)"0");
-  //edit_trans(r, "args",    "--fs",        NULL);
-  //edit_trans(r, "uv_proc", NULL,          (void*)proc);
-  //edit_trans(r, "uv_opts", NULL,          (void*)opts);
-  //CREATE_EVENT(&op->loop.events, commit, 2, "op_procs", r);
   if (!op->ready) {
     log_msg("OP", "kill");
     uv_kill(op->proc.pid, SIGKILL);
@@ -105,13 +96,6 @@ static void fileopen_cb(Cntlr *host, Cntlr *caller)
 
   create_proc(op, path);
   system("mpv_i");
-
-  //if (head) {
-  //  String file = rec_fld(head->rec, "file");
-  //  String args = rec_fld(head->rec, "args");
-  //  uv_process_t *proc = rec_fld(head->rec, "uv_proc");
-  //  uv_process_options_t *opts = rec_fld(head->rec, "uv_opts");
-  //}
 }
 
 void op_loop(Loop *loop, int ms)
