@@ -271,11 +271,13 @@ breakout:
 
 void cmdline_build(Cmdline *cmdline)
 {
-  log_msg("CMDSTR", "tokenize_line");
+  log_msg("CMDSTR", "cmdline_build");
 
   cmdline_reset(cmdline);
   if (cmdline->line[0] == '!')
     return;
+
+  cmdline_tokenize(cmdline);
 
   /* parse until empty */
   Token *word = NULL;

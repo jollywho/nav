@@ -152,6 +152,7 @@ static void shell_write_cb(Stream *stream, void *data, int status)
   stream_close(stream, NULL);
 }
 
+//TODO: use expanded variable/ insert selection path in arg
 void shell_exec(String arg)
 {
   log_msg("SHELL", "shell_exec");

@@ -12,6 +12,7 @@ WINDOW *nc_win;
 int curpos;
 int maxpos;
 Cmdline cmd;
+String fmt_out;
 
 char state_symbol[] = {':', '/'};
 int ex_state;
@@ -28,10 +29,33 @@ void start_ex_cmd(int state)
   nc_win = newwin(1, 0, max.lnum - 1, 0);
   curpos = CURS_MIN;
   maxpos = max.col;
+  //fmt_out = malloc(1);
   if (window_get_focus() && state == EX_REG_STATE)
     regex_mk_pivot();
   cmdline_init(&cmd, max.col);
   cmdline_draw();
+}
+
+static void gen_output_str()
+{
+  char ch;
+  int i, j;
+
+  free(fmt_out);
+  fmt_out = calloc(maxpos, maxpos * 2 * sizeof(char*));
+  log_msg("EXCMD", "cmdline_draw %d", maxpos);
+
+  i = j = 0;
+  while ((ch = cmd.line[i])) {
+    fmt_out[j] = ch;
+
+    if (ch == '%') {
+      j++;
+      fmt_out[j] = ch;
+    }
+    i++; j++;
+  }
+  fmt_out[maxpos*2] = '\0';
 }
 
 static void cmdline_draw()
@@ -39,7 +63,8 @@ static void cmdline_draw()
   log_msg("EXCMD", "cmdline_draw");
   curs_set(1);
   mvwaddch(nc_win, 0, 0, state_symbol[ex_state]);
-  mvwprintw(nc_win, 0, 1, cmd.line);
+  gen_output_str();
+  mvwprintw(nc_win, 0, 1, fmt_out);
   wmove(nc_win, 0, curpos + 2);
   wnoutrefresh(nc_win);
 }
