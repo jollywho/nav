@@ -65,6 +65,7 @@ struct Cmdstr {
   QUEUE stack;
   Token *args;
   int ret_t;
+  int exec;
   void *ret;
 };
 

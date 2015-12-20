@@ -3,7 +3,6 @@
 
 #include "fnav/event/uv_process.h"
 #include "fnav/event/rstream.h"
-#include "fnav/log.h"
 
 typedef struct {
   char *data;
@@ -33,6 +32,6 @@ void shell_free(Shell *sh);
 void shell_start(Shell *sh);
 void shell_stop(Shell *sh);
 void shell_set_in_buffer(Shell *sh, String msg);
-void shell_exec(String arg);
+void shell_exec(String line);
 
 #endif

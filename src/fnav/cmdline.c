@@ -183,7 +183,6 @@ static void cmdline_tokenize(Cmdline *cmdline)
   }
 }
 
-// P K V
 static void pop(QUEUE *stack)
 {
   Token *token = stack_pop(stack);
@@ -261,6 +260,9 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
 
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
     char *str = TOKEN_STR(word->var);
+    if (str[0] == '!')
+      cmd.exec = 1;
+
     switch(ch = str[0]) {
       case '|':
         word = pipe_type(cmdline, word, &cmd);
@@ -302,8 +304,6 @@ void cmdline_build(Cmdline *cmdline)
   log_msg("CMDSTR", "cmdline_build");
 
   cmdline_reset(cmdline);
-  if (cmdline->line[0] == '!')
-    return;
 
   cmdline_tokenize(cmdline);
 
@@ -315,39 +315,36 @@ void cmdline_build(Cmdline *cmdline)
   }
 }
 
-static void swap_token_pair_str(Token *tok, String val)
+static String do_expansion(String line)
 {
-  log_msg("CMDLINE", "swap_token_pair_str");
-  // TODO
-  // delete pair and inner tokens
-  tok->var.v_type = VAR_STRING;
-  tok->var.vval.v_string = strdup(val);
+  log_msg("CMDLINE", "do_expansion");
+  String head = strtok(line, "%:");
+  String name = strtok(NULL, "%:");
+
+  char *quote = "\"";
+  char *delim = strchr(name, '"');
+  if (!delim) {
+    delim = " ";
+    quote = "";
+  }
+
+  name = strtok(name, delim);
+  String tail = strtok(NULL, delim);
+  log_msg("_", "%s", head);
+  log_msg("_", "%s", name);
+
+  String body = model_str_expansion(name);
+  if (!body) { return NULL; }
+
+  if (!tail) { tail = "";   }
+
+  String out;
+  asprintf(&out, "%s%s%s%s", head, body, quote, tail);
+  return out;
 }
 
 #define NEXT_CMD(cl,c) \
   (c = (Cmdstr*)utarray_next(cl->cmds, c))
-
-static void find_expandable(Cmdline *cmdline)
-{
-  log_msg("CMDLINE", "find_expandable");
-  Cmdstr *cmd = NULL;
-
-  while (NEXT_CMD(cmdline, cmd)) {
-    List *args = TOKEN_LIST(cmd);
-    Token *word = (Token*)utarray_front(args->items);
-
-    if (word->var.v_type == VAR_PAIR) {
-      Pair *p = word->var.vval.v_pair;
-      String key = TOKEN_STR(p->key->var);
-      if (strcmp(key, "%") == 0) {
-        String val = p->value->var.vval.v_string;
-        String ret = model_str_expansion(val);
-        if (ret)
-          swap_token_pair_str(word, ret);
-      }
-    }
-  }
-}
 
 void cmdline_req_run(Cmdline *cmdline)
 {
@@ -355,13 +352,24 @@ void cmdline_req_run(Cmdline *cmdline)
   Cmdstr *cmd;
   cmd = NULL;
 
-  find_expandable(cmdline);
-
-  if (cmdline->line[0] == '!')
-    shell_exec(cmdline->line);
-
   while (NEXT_CMD(cmdline, cmd)) {
+
+    if (cmd->exec) {
+      String ret = strstr(cmdline->line, "%:");
+      if (ret) {
+        ret = do_expansion(cmdline->line);
+        if (ret)
+          shell_exec(ret);
+        else
+          shell_exec(cmdline->line);
+      }
+      else
+        shell_exec(cmdline->line);
+      continue;
+    }
+
     cmd_run(cmd);
+
     if (cmd->pipet == PIPE_CNTLR) {
       Cntlr *lhs, *rhs;
       lhs = rhs = NULL;

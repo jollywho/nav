@@ -36,7 +36,7 @@ static bool file_exists(const char *path) {
 	return access(path, R_OK) != -1;
 }
 
-static char *strip_whitespace(char *_str)
+char* strip_whitespace(char *_str)
 {
 	if (*_str == '\0')
 		return _str;

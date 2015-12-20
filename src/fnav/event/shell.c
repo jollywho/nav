@@ -5,6 +5,8 @@
 #include "fnav/event/shell.h"
 #include "fnav/event/wstream.h"
 #include "fnav/model.h"
+#include "fnav/log.h"
+#include "fnav/config.h"
 
 static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
   bool eof);
@@ -152,17 +154,17 @@ static void shell_write_cb(Stream *stream, void *data, int status)
   stream_close(stream, NULL);
 }
 
-//TODO: use expanded variable/ insert selection path in arg
-void shell_exec(String arg)
+void shell_exec(String line)
 {
   log_msg("SHELL", "shell_exec");
-  log_msg("SHELL", "%s", arg);
-  if (strlen(arg) < 2) return;
-  arg = &arg[1]; // skip '!'
+  log_msg("SHELL", "%s", line);
+  if (strlen(line) < 2) return;
+  line = strip_whitespace(line);
+  line = &line[1]; // skip '!'
 
-  String delim = " ";
-  String name = strtok(arg, delim);
-  String args = strtok(NULL, delim);
+  String cmds = strtok(line, "|");
+  String name = strtok(cmds, " ");
+  String args = strtok(NULL, " ");
 
   Shell *sh = shell_init(NULL);
   sh->disposable = true;
