@@ -43,7 +43,6 @@ static void gen_output_str()
 
   free(fmt_out);
   fmt_out = calloc(maxpos, maxpos * 2 * sizeof(char*));
-  log_msg("EXCMD", "cmdline_draw %d", maxpos);
 
   i = j = 0;
   while ((ch = cmd.line[i])) {

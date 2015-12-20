@@ -20,4 +20,6 @@ void* model_curs_value(Model *m, String field);
 void model_set_curs(Model *m, int index);
 int model_count(Model *m);
 
+String model_str_expansion(String val);
+
 #endif

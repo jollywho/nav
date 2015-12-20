@@ -39,7 +39,7 @@ struct Token {
 };
 
 #define TOKEN_LIST(token) \
-  token->args.var.vval.v_list
+  token->args->var.vval.v_list
 
 #define TOKEN_STR(var) \
   var.vval.v_string
@@ -63,7 +63,7 @@ struct Dict {
 struct Cmdstr {
   int pipet;               /* pipe flag types */
   QUEUE stack;
-  Token args;
+  Token *args;
   int ret_t;
   void *ret;
 };

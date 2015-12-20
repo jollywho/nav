@@ -144,3 +144,12 @@ static void refind_line(fn_lis *lis)
   }
   lis->lnum = count;
 }
+
+String model_str_expansion(String val)
+{
+  Buffer *buf = window_get_focus();
+  if (!buf) return NULL;
+  if (!buf_attached(buf)) return NULL;
+  Model *m = buf->hndl->model;
+  return rec_fld(m->cur, val);
+}
