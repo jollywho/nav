@@ -13,6 +13,7 @@
 #include "fnav/cmd.h"
 #include "fnav/log.h"
 #include "fnav/event/hook.h"
+#include "fnav/event/input.h"
 
 struct Window {
   Loop loop;
@@ -27,6 +28,8 @@ static void window_loop();
 static void* win_new();
 static void* win_close();
 static void* win_pipe();
+static void win_layout();
+static void window_ex_cmd();
 
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
 static const Cmd_T cmdtable[] = {
@@ -39,6 +42,18 @@ static const Cmd_T cmdtable[] = {
   {"pipe",   win_pipe,    0 },
 };
 
+#define KEYS_SIZE ARRAY_SIZE(key_defaults)
+static fn_key key_defaults[] = {
+  {';',     window_ex_cmd,   0,           EX_CMD_STATE},
+  {'/',     window_ex_cmd,   0,           EX_REG_STATE},
+  {'H',     win_layout,      0,           MOVE_LEFT},
+  {'J',     win_layout,      0,           MOVE_DOWN},
+  {'K',     win_layout,      0,           MOVE_UP},
+  {'L',     win_layout,      0,           MOVE_RIGHT},
+};
+static fn_keytbl key_tbl;
+static short cmd_idx[KEYS_SIZE];
+
 void sig_resize(int sig)
 {
   log_msg("WINDOW", "Signal received: **term resize**");
@@ -50,6 +65,11 @@ void sig_resize(int sig)
 void window_init(void)
 {
   log_msg("INIT", "window");
+  key_tbl.tbl = key_defaults;
+  key_tbl.cmd_idx = cmd_idx;
+  key_tbl.maxsize = KEYS_SIZE;
+  input_init_tbl(&key_tbl);
+
   loop_add(&win.loop, window_loop);
   uv_timer_init(&win.loop.uv, &win.loop.delay);
   uv_timer_init(eventloop(), &win.draw_timer);
@@ -66,6 +86,12 @@ void window_init(void)
   sig_resize(0);
 }
 
+static void win_layout(Window *_w, Cmdarg *arg)
+{
+  enum move_dir dir = arg->arg;
+  layout_movement(&win.layout, dir);
+}
+
 void window_input(int key)
 {
   log_msg("WINDOW", "input");
@@ -73,22 +99,14 @@ void window_input(int key)
     ex_input(key);
   }
   else {
-    if (key == ';') {
-      window_ex_cmd_start(EX_CMD_STATE);
-    }
-    if (key == '/') {
-      window_ex_cmd_start(EX_REG_STATE);
-    }
     if (window_get_focus())
       buf_input(layout_buf(&win.layout), key);
-    if (key == 'H')
-      layout_movement(&win.layout, MOVE_LEFT);
-    if (key == 'J')
-      layout_movement(&win.layout, MOVE_DOWN);
-    if (key == 'K')
-      layout_movement(&win.layout, MOVE_UP);
-    if (key == 'L')
-      layout_movement(&win.layout, MOVE_RIGHT);
+    Cmdarg ca;
+    int idx = find_command(&key_tbl, key);
+    ca.arg = key_defaults[idx].cmd_arg;
+    if (idx >= 0) {
+      key_defaults[idx].cmd_func(NULL, &ca);
+    }
   }
 }
 
@@ -145,10 +163,10 @@ static void* win_close(List *args, int cmd_flags)
   return NULL;
 }
 
-void window_ex_cmd_start(int state)
+static void window_ex_cmd(Window *_w, Cmdarg *arg)
 {
   win.ex = true;
-  start_ex_cmd(state);
+  start_ex_cmd(arg->arg);
 }
 
 void window_ex_cmd_end()
@@ -181,7 +199,7 @@ void window_remove_buffer()
   log_msg("WINDOW", "BUFFER +CLOSE+");
   Buffer *buf = window_get_focus();
   if (buf) {
-    buf_cleanup(buf);
+    buf_delete(buf);
   }
   layout_remove_buffer(&win.layout);
   window_draw_all();
@@ -190,6 +208,6 @@ void window_remove_buffer()
 void window_add_buffer(enum move_dir dir)
 {
   log_msg("WINDOW", "BUFFER +ADD+");
-  Buffer *buf = buf_init();
+  Buffer *buf = buf_new();
   layout_add_buffer(&win.layout, buf, dir);
 }

@@ -330,8 +330,6 @@ static String do_expansion(String line)
 
   name = strtok(name, delim);
   String tail = strtok(NULL, delim);
-  log_msg("_", "%s", head);
-  log_msg("_", "%s", name);
 
   String body = model_str_expansion(name);
   if (!body) { return NULL; }
@@ -354,12 +352,15 @@ void cmdline_req_run(Cmdline *cmdline)
 
   while (NEXT_CMD(cmdline, cmd)) {
 
+    //TODO cleanup this area
     if (cmd->exec) {
       String ret = strstr(cmdline->line, "%:");
       if (ret) {
         ret = do_expansion(cmdline->line);
-        if (ret)
+        if (ret) {
           shell_exec(ret);
+          free(ret);
+        }
         else
           shell_exec(cmdline->line);
       }

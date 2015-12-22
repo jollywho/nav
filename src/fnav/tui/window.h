@@ -9,7 +9,6 @@ void window_input(int key);
 
 void window_add_buffer(enum move_dir dir);
 void window_remove_buffer();
-void window_ex_cmd_start(int state);
 void window_ex_cmd_end();
 void window_draw_all();
 Buffer* window_get_focus();
