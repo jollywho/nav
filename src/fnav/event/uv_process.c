@@ -16,7 +16,7 @@ bool uv_process_spawn(UvProcess *uvproc)
   Process *proc = (Process *)uvproc;
   uvproc->uvopts.file = proc->argv[0];
   uvproc->uvopts.args = proc->argv;
-  uvproc->uvopts.flags = UV_PROCESS_WINDOWS_HIDE;
+  uvproc->uvopts.flags = UV_PROCESS_DETACHED;
   uvproc->uvopts.exit_cb = exit_cb;
   uvproc->uvopts.cwd = NULL;
   uvproc->uvopts.env = NULL;

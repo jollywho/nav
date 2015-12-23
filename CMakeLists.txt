@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.3.1)
 project(fnav)
 set(CMAKE_C_FLAGS "-g")
-add_definitions("-Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
+add_definitions("-Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wno-sign-compare")
 add_definitions(-D_GNU_SOURCE)
 
 set( CMAKE_EXPORT_COMPILE_COMMANDS 1 )

@@ -18,6 +18,7 @@ void shell_fin_cb(Process *proc, void *data)
 {
   log_msg("SHELL", "fin");
   Shell *sh = (Shell*)data;
+  if (!sh) return;
   sh->blocking = false;
   if (sh->again) {
     log_msg("SHELL", "again");
@@ -39,6 +40,7 @@ Shell* shell_init(Cntlr *cntlr)
   sh->caller = cntlr;
   sh->blocking = false;
   sh->again = false;
+  sh->readout = NULL;
   sh->msg = NULL;
 
   loop_add(&sh->loop, shell_loop);
@@ -61,9 +63,11 @@ void shell_args(Shell *sh, String *args, shell_stdout_cb readout)
 
 void shell_free(Shell *sh)
 {
-  if (sh->msg) free(sh->msg);
-  process_teardown(&sh->loop);
+  log_msg("SHELL", "shell_free");
   loop_remove(&sh->loop);
+  if (sh->msg)  free(sh->msg);
+  //if (sh->name) free(sh->name);
+  //if (sh->argv) free(sh->argv);
   free(sh);
 }
 
@@ -162,15 +166,24 @@ void shell_exec(String line)
   line = strip_whitespace(line);
   line = &line[1]; // skip '!'
 
+  Shell *sh = shell_init(NULL);
+
   String cmds = strtok(line, "|");
   String name = strtok(cmds, " ");
-  String args = strtok(NULL, " ");
+  String argv = strtok(NULL, "");
 
-  Shell *sh = shell_init(NULL);
+  if (!name || !argv) {
+    return;
+  }
+  asprintf(&name, "%s", name);
+  asprintf(&argv, "%s", argv);
+
+  log_msg("SHELL", "%s %s", name, argv);
+
   sh->disposable = true;
-  sh->args[0] = name;
-  sh->args[1] = args;
-  sh->args[2] = NULL;
-  sh->proc->argv = sh->args;
+  char* args[3] = {name, argv, NULL};
+  shell_args(sh, (String*)args, NULL);
   shell_start(sh);
+  free(name);
+  free(argv);
 }

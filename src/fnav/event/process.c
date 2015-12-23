@@ -20,6 +20,8 @@
     }                                                               \
   } while (0)
 
+
+
 int got_int = 0;
 
 static void on_process_stream_close(Stream *stream, void *data);
@@ -100,7 +102,7 @@ bool process_spawn(Process *proc)
   return true;
 }
 
-void process_teardown(Loop *loop) 
+void process_teardown(Loop *loop)
 {
   log_msg("PROCESS", "teardown");
   Process *it;
@@ -113,7 +115,7 @@ void process_teardown(Loop *loop)
   }
 
   // Wait until all children exit
-  //LOOP_PROCESS_EVENTS_UNTIL(loop, loop->events, -1, kl_empty(loop->children));
+  //PROCESS_EVENTS_UNTIL(loop, loop->events, -1, SLIST_EMPTY(&loop->children));
   pty_process_teardown(loop);
 }
 

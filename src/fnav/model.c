@@ -28,7 +28,7 @@ struct Model {
   UT_array *lines;
 };
 
-UT_icd icd = {sizeof(fn_line), NULL };
+static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
 
 void model_init(fn_handle *hndl)
 {
@@ -106,7 +106,7 @@ static void generate_lines(Model *m)
 String model_str_line(Model *m, int index)
 {
   if (!m->lines) return NULL;
-  if (index > (int)utarray_len(m->lines)) return NULL;
+  if (index > utarray_len(m->lines)) return NULL;
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
   return res ? rec_fld(res->rec, m->hndl->fname) : NULL;
 }

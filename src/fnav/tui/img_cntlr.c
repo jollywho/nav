@@ -34,8 +34,8 @@ static void shell_stdout_size_cb(Cntlr *cntlr, String out)
   pos_T pos = buf_ofs(img->buf);
   pos_T size = buf_size(img->buf);
 
-  int max_width_pixels  = size.col-2  * img->fontw;
-  int max_height_pixels = size.lnum-1 * img->fonth;
+  int max_width_pixels  = size.col  * img->fontw;
+  int max_height_pixels = size.lnum * img->fonth;
 
   if (img->width > max_width_pixels) {
     img->height = (img->height * max_width_pixels) / img->width;
@@ -52,7 +52,7 @@ static void shell_stdout_size_cb(Cntlr *cntlr, String out)
       pos.col * img->fontw, pos.lnum * img->fonth,
       img->width, img->height, img->path);
   asprintf(&cl_msg, CL_ARG,
-      pos.col * img->fontw, pos.lnum * img->fonth,
+      pos.col * img->fontw + 1, pos.lnum * img->fonth,
       (size.col * img->fontw), (size.lnum * img->fonth));
 
   log_msg("SHELL", "%s", msg);

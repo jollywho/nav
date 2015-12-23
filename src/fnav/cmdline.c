@@ -60,7 +60,6 @@ static void pair_delete(Token *token)
   Token *key = pair->key;
   Token *value = pair->value;
   free(TOKEN_STR(key->var));
-  free(key);
   if (value->var.v_type == VAR_LIST)
     list_delete(value);
   else if (value->var.v_type == VAR_DICT)
@@ -69,7 +68,6 @@ static void pair_delete(Token *token)
     pair_delete(value);
   else {
     free(TOKEN_STR(value->var));
-    free(value);
   }
 }
 
@@ -405,7 +403,6 @@ void cmdline_req_run(Cmdline *cmdline)
         ret = do_expansion(cmdline->line);
         if (ret) {
           shell_exec(ret);
-          free(ret);
         }
         else
           shell_exec(cmdline->line);
