@@ -29,7 +29,7 @@ void start_ex_cmd(int state)
   nc_win = newwin(1, 0, max.lnum - 1, 0);
   curpos = CURS_MIN;
   maxpos = max.col;
-  //fmt_out = malloc(1);
+  fmt_out = malloc(1);
   if (window_get_focus() && state == EX_REG_STATE)
     regex_mk_pivot();
   cmdline_init(&cmd, max.col);
@@ -165,6 +165,8 @@ void ex_input(int key)
 void stop_ex_cmd()
 {
   log_msg("EXCMD", "stop_ex_cmd");
+  free(cmd.line);
+  free(fmt_out);
   cmdline_cleanup(&cmd);
   werase(nc_win);
   wnoutrefresh(nc_win);

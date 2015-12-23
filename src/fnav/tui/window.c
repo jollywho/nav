@@ -78,7 +78,7 @@ void window_init(void)
   signal(SIGWINCH, sig_resize);
   layout_init(&win.layout);
 
-  for (int i = 0; i < CMDS_SIZE; i++) {
+  for (int i = 0; i < (int)CMDS_SIZE; i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
     cmd = memcpy(cmd, &cmdtable[i], sizeof(Cmd_T));
     cmd_add(cmd);

@@ -72,13 +72,11 @@ static void resize_container(Container *c)
       new_col  += rem_col;
     }
     // use prev item in entry to set sizes. otherwise use the parent
-    int c_w = 1; int sep = 0;
+    int c_w = 1;
     Container *prev = TAILQ_PREV(it, cont, ent);
     if (!prev) {
       prev = c; c_w = 0;
     }
-    if (it->dir == L_VERT && i == c->count)
-      sep = 1;
     it->size = (pos_T){ new_lnum , new_col  };
 
     it->ofs  = (pos_T){

@@ -37,7 +37,7 @@ void cntlr_load(String name, cntlr_open_cb open_cb, cntlr_close_cb close_cb);
 
 static int find_cntlr(String name)
 {
-  for (int i = 0; i < TABLE_SIZE; i++) {
+  for (int i = 0; i < (int)TABLE_SIZE; i++) {
     if (strcmp(cntlr_table[i].name, name) == 0) {
       return i;
     }

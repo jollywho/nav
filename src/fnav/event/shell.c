@@ -168,7 +168,9 @@ void shell_exec(String line)
 
   Shell *sh = shell_init(NULL);
   sh->disposable = true;
-  char *rv[] = {name, args, NULL};
-  sh->proc->argv = rv;
+  sh->args[0] = name;
+  sh->args[1] = args;
+  sh->args[2] = NULL;
+  sh->proc->argv = sh->args;
   shell_start(sh);
 }

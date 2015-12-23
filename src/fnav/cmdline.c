@@ -12,7 +12,6 @@
 #include "fnav/ascii.h"
 #include "fnav/log.h"
 
-static void cmdline_reset(Cmdline *cmdline);
 static UT_icd dict_icd = { sizeof(Pair),   NULL };
 static UT_icd list_icd = { sizeof(Token),  NULL };
 static UT_icd cmd_icd  = { sizeof(Cmdstr), NULL };
@@ -22,36 +21,83 @@ typedef struct {
   QUEUE node;
 } queue_item;
 
+#define NEXT_CMD(cl,c) \
+  (c = (Cmdstr*)utarray_next(cl->cmds, c))
+static void pair_delete(Token *token);
+
+static void list_delete(Token *token)
+{
+  log_msg("CMDLINE", "list_delete");
+  List *list = token->var.vval.v_list;
+  UT_array *arr = list->items;
+  Token *word = NULL;
+
+  while ((word = (Token*)utarray_next(arr, word))) {
+    switch(word->var.v_type) {
+      case VAR_LIST:
+        list_delete(word);
+        break;
+      case VAR_DICT:
+        //list_delete(word);
+        break;
+      case VAR_PAIR:
+        pair_delete(word);
+        break;
+      case VAR_STRING:
+        free(TOKEN_STR(word->var));
+      default:
+        break;
+    }
+  }
+  utarray_free(arr);
+  free(list);
+  free(token);
+}
+
+static void pair_delete(Token *token)
+{
+  Pair *pair = token->var.vval.v_pair;
+  Token *key = pair->key;
+  Token *value = pair->value;
+  free(TOKEN_STR(key->var));
+  free(key);
+  if (value->var.v_type == VAR_LIST)
+    list_delete(value);
+  else if (value->var.v_type == VAR_DICT)
+    list_delete(value);
+  else if (value->var.v_type == VAR_PAIR)
+    pair_delete(value);
+  else {
+    free(TOKEN_STR(value->var));
+    free(value);
+  }
+}
+
 void cmdline_init_config(Cmdline *cmdline, char *line)
 {
   cmdline->line = line;
-  utarray_new(cmdline->cmds, &list_icd);
-  utarray_new(cmdline->tokens, &list_icd);
+  cmdline->cmds = NULL;
+  cmdline->tokens = NULL;
 }
 
 void cmdline_init(Cmdline *cmdline, int size)
 {
   cmdline->line = malloc(size * sizeof(char*));
   memset(cmdline->line, '\0', size);
-  utarray_new(cmdline->cmds, &list_icd);
-  utarray_new(cmdline->tokens, &list_icd);
+  cmdline->cmds = NULL;
+  cmdline->tokens = NULL;
 }
 
 void cmdline_cleanup(Cmdline *cmdline)
 {
-  //TODO: map $ free [cmds, tokens]
+  log_msg("CMDLINE", "cmdline_cleanup");
+  if (!cmdline->cmds) return;
+  Cmdstr *cmd = NULL;
+  while (NEXT_CMD(cmdline, cmd)) {
+    list_delete(cmd->args);
+  }
   utarray_free(cmdline->cmds);
   utarray_free(cmdline->tokens);
-  free(cmdline->line);
-  // other freeing
-}
-
-static void cmdline_reset(Cmdline *cmdline)
-{
-  utarray_free(cmdline->cmds);
-  utarray_free(cmdline->tokens);
-  utarray_new(cmdline->cmds, &cmd_icd);
-  utarray_new(cmdline->tokens, &list_icd);
 }
 
 static void stack_push(QUEUE *queue, Token *token)
@@ -95,7 +141,7 @@ static Token* stack_head(QUEUE *stack)
   return token;
 }
 
-static Token* pair_init()
+static Token* pair_new()
 {
   Token* token = malloc(sizeof(Token));
   Pair *p = malloc(sizeof(Pair));
@@ -104,7 +150,7 @@ static Token* pair_init()
   return token;
 }
 
-static Token* list_init()
+static Token* list_new()
 {
   Token* token = malloc(sizeof(Token));
   List *l = malloc(sizeof(List));
@@ -114,7 +160,7 @@ static Token* list_init()
   return token;
 }
 
-static Token* dict_init()
+static Token* dict_new()
 {
   Token* token = malloc(sizeof(Token));
   Dict *d = malloc(sizeof(Dict));
@@ -214,6 +260,7 @@ static void push(Token *token, QUEUE *stack)
   if (token->var.v_type == VAR_STRING) {
     int temp;
     if (sscanf(token->var.vval.v_string, "%d", &temp)) {
+      free(TOKEN_STR(token->var));
       token->var.v_type = VAR_NUMBER;
       token->var.vval.v_number = temp;
     }
@@ -238,7 +285,7 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
   Token *next = (Token*)utarray_next(cmdline->tokens, token);
   if (next) {
     if (TOKEN_STR(next->var)[0] == ':') {
-      push(pair_init(), stack);
+      push(pair_new(), stack);
       return true;
     }
   }
@@ -255,7 +302,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
   QUEUE *stack = &cmd.stack;
   QUEUE_INIT(stack);
 
-  cmd.args = list_init();
+  cmd.args = list_new();
   stack_push(stack, cmd.args);
 
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
@@ -280,10 +327,10 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
         break;
         //
       case '{':
-        push(dict_init(), stack);
+        push(dict_new(), stack);
         break;
       case '[':
-        push(list_init(), stack);
+        push(list_new(), stack);
         break;
       default:
         seek = seek_ahead(cmdline, stack, word);
@@ -303,7 +350,9 @@ void cmdline_build(Cmdline *cmdline)
 {
   log_msg("CMDSTR", "cmdline_build");
 
-  cmdline_reset(cmdline);
+  cmdline_cleanup(cmdline);
+  utarray_new(cmdline->cmds, &cmd_icd);
+  utarray_new(cmdline->tokens, &list_icd);
 
   cmdline_tokenize(cmdline);
 
@@ -340,9 +389,6 @@ static String do_expansion(String line)
   asprintf(&out, "%s%s%s%s", head, body, quote, tail);
   return out;
 }
-
-#define NEXT_CMD(cl,c) \
-  (c = (Cmdstr*)utarray_next(cl->cmds, c))
 
 void cmdline_req_run(Cmdline *cmdline)
 {

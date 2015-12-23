@@ -94,7 +94,7 @@ static const char *get_path_ext(const char *fspec)
 
 static int valid_ext(const char *path)
 {
-  for (int i = 0; i < EXT_ARR_SIZE; i++) {
+  for (int i = 0; i < (int)EXT_ARR_SIZE; i++) {
     if (strcmp(get_path_ext(path), img_exts[i]) == 0)
       return 1;
   }
@@ -132,11 +132,6 @@ static void pipe_attach_cb(Cntlr *host, Cntlr *caller)
 {
   log_msg("IMG", "pipe_attach_cb");
   hook_add(caller, host, cursor_change_cb, "cursor_change");
-}
-
-static void img_loop(Loop *loop, int ms)
-{
-  process_loop(loop, ms);
 }
 
 Cntlr* img_init(Buffer *buf)

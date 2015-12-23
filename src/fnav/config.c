@@ -15,17 +15,17 @@ static void* add_source();
 
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
 static const Cmd_T cmdtable[] = {
-  {"set",    edit_setting,   0 },
-  {"hi",     edit_color,     0 },
-  {"let",    edit_variable,  0 },
-  {"map",    edit_mapping,   0 },
-  {"so",     add_source,     0 },
-  {"source", add_source,     0 },
+  {"set",    edit_setting,   0},
+  {"hi",     edit_color,     0},
+  {"let",    edit_variable,  0},
+  {"map",    edit_mapping,   0},
+  {"so",     add_source,     0},
+  {"source", add_source,     0},
 };
 
 void config_init()
 {
-  for (int i = 0; i < CMDS_SIZE; i++) {
+  for (int i = 0; i < (int)CMDS_SIZE; i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
     cmd = memcpy(cmd, &cmdtable[i], sizeof(Cmd_T));
     cmd_add(cmd);
@@ -38,21 +38,21 @@ static bool file_exists(const char *path) {
 
 char* strip_whitespace(char *_str)
 {
-	if (*_str == '\0')
-		return _str;
-	char *strold = _str;
-	while (*_str == ' ' || *_str == '\t') {
-		_str++;
-	}
-	char *str = strdup(_str);
-	free(strold);
-	int i;
-	for (i = 0; str[i] != '\0'; ++i);
-	do {
-		i--;
-	} while (i >= 0 && (str[i] == ' ' || str[i] == '\t'));
-	str[i + 1] = '\0';
-	return str;
+  if (*_str == '\0')
+    return _str;
+  char *strold = _str;
+  while (*_str == ' ' || *_str == '\t') {
+    _str++;
+  }
+  char *str = strdup(_str);
+  free(strold);
+  int i;
+  for (i = 0; str[i] != '\0'; ++i);
+  do {
+    i--;
+  } while (i >= 0 && (str[i] == ' ' || str[i] == '\t'));
+  str[i + 1] = '\0';
+  return str;
 }
 
 static char *get_config_path(void)
@@ -130,12 +130,11 @@ bool config_load(const char* file)
 	}
 
 	FILE *f = fopen(path, "r");
+	free(path);
 	if (!f) {
 		fprintf(stderr, "Unable to open %s for reading", path);
-		free(path);
 		return false;
 	}
-	free(path);
 
 	bool config_load_success;
 	config_load_success = config_read(f);
@@ -162,6 +161,7 @@ bool config_read(FILE *file)
     cmdline_build(&cmd);
     cmdline_req_run(&cmd);
     cmdline_cleanup(&cmd);
+    free(line);
   }
   return 1;
 }
@@ -181,7 +181,7 @@ static void* edit_color(List *args)
   Token *arg2 = (Token*)utarray_eltptr(args->items, 3);
 
   fn_color *col = malloc(sizeof(fn_color));
-  col->key = TOKEN_STR(word->var);
+  col->key = strdup(TOKEN_STR(word->var));
   col->fg  = TOKEN_NUM(arg1->var);
   col->bg  = TOKEN_NUM(arg2->var);
   set_color(col);

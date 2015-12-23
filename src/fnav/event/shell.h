@@ -23,6 +23,7 @@ typedef struct {
   bool blocking;
   bool again;
   bool disposable;
+  char *args[3];
   String msg;
 } Shell;
 
