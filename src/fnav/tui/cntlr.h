@@ -32,6 +32,7 @@ struct Cntlr {
   fn_handle *hndl;
   void *top;
   void (*_cancel)(Cntlr *cntlr);
+  void (*_focus)(Cntlr *cntlr);
   int  (*_input)(Cntlr *cntlr, int key);
   HookHandler *event_hooks;
 };

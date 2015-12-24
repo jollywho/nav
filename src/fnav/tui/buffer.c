@@ -164,6 +164,8 @@ void buf_toggle_focus(Buffer *buf, int focus)
   log_msg("BUFFER", "buf_toggle_focus %d", focus);
   if (!buf) return;
   buf->focused = focus;
+  if (buf->attached)
+    buf->cntlr->_focus(buf->cntlr);
   buf_refresh(buf);
 }
 

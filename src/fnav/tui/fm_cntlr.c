@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <unistd.h>
 
 #include "fnav/ascii.h"
 #include "fnav/table.h"
@@ -22,6 +23,7 @@ static fn_key key_defaults[] = {
 };
 static fn_keytbl key_tbl;
 static short cmd_idx[KEYS_SIZE];
+static String active_dir;
 
 void cntlr_cancel(Cntlr *cntlr)
 {
@@ -44,7 +46,9 @@ void fm_after_scan()
 
 void cntlr_focus(Cntlr *cntlr)
 {
-  log_msg("FM", "update dir");
+  log_msg("FM", "cntlr_focus");
+  FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  active_dir = self->cur_dir;
   buf_refresh(cntlr->hndl->buf);
 }
 
@@ -118,6 +122,7 @@ static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
   c->hndl = hndl;
   c->_cancel = cntlr_cancel;
   c->_input = cntlr_input;
+  c->_focus = cntlr_focus;
   c->top = fm;
 }
 
@@ -133,9 +138,11 @@ Cntlr* fm_init(Buffer *buf)
   fm->base.fmt_name = "   FM    ";
   fm->op_count = 1;
   fm->mo_count = 1;
-  char *init_dir = "/home/chi/casper/YFS";
-  fm->cur_dir = malloc(strlen(init_dir)+1);
-  strcpy(fm->cur_dir, init_dir);
+
+  if (!active_dir) {
+    active_dir = get_current_dir_name();
+  }
+  fm->cur_dir = strdup(active_dir);
 
   if (tbl_mk("fm_files")) {
     tbl_mk_fld("fm_files", "name", typSTRING);
