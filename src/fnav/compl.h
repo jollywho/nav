@@ -1,7 +1,7 @@
 #ifndef FN_COMPL_H
 #define FN_COMPL_H
 
-#include "fnav.h"
+#include "fnav/cmd.h"
 #include "fnav/lib/uthash.h"
 
 typedef struct {
@@ -22,6 +22,7 @@ typedef struct {
 } compl_entry;
 
 void compl_init();
+void compl_add_context(String fmt_compl);
 compl_list* compl_of(String name);
 
 #endif

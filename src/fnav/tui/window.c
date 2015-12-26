@@ -11,6 +11,7 @@
 #include "fnav/log.h"
 #include "fnav/event/hook.h"
 #include "fnav/event/input.h"
+#include "fnav/compl.h"
 
 struct Window {
   Loop loop;
@@ -30,13 +31,22 @@ static void window_ex_cmd();
 
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
 static const Cmd_T cmdtable[] = {
-  {"q",      win_close,   0 },
-  {"clo",    win_close,   0 },
-  {"close",  win_close,   0 },
+  {"q",      win_close,   0},
+  {"close",  win_close,   0},
   {"new",    win_new,     MOVE_UP},
   {"vnew",   win_new,     MOVE_LEFT},
-  {"vne",    win_new,     MOVE_LEFT},
   {"pipe",   win_pipe,    0 },
+};
+
+//"map::lhs:string, _c:keymaps::rhs:string, _c:keymaps",
+
+#define COMPL_SIZE ARRAY_SIZE(cmdtable)
+static String compl_win[] = {
+  "q;window:string:wins",
+  "close;window:string:wins",
+  "vnew;cntlr:string:cntlrs",
+  "new;cntlr:string:cntlrs",
+  "pipe;window:number:wins",
 };
 
 #define KEYS_SIZE ARRAY_SIZE(key_defaults)
@@ -79,6 +89,9 @@ void window_init(void)
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
     cmd = memcpy(cmd, &cmdtable[i], sizeof(Cmd_T));
     cmd_add(cmd);
+  }
+  for (int i = 0; i < (int)COMPL_SIZE; i++) {
+    compl_add_context(compl_win[i]);
   }
   sig_resize(0);
 }

@@ -18,7 +18,7 @@ typedef struct Cmd_Param_T Cmd_Param_T;
 typedef void* (*Cmd_Func_T)(List *args, int flags);
 
 struct Cmd_T {
-  char *name;
+  String name;
   Cmd_Func_T cmd_func;
   int flags;
   UT_hash_handle hh;

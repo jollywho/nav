@@ -13,7 +13,11 @@ void menu_start()
   size = layout_size();
   nc_win = newwin(1, 0, size.lnum, size.col);
   // attempt to validate cmdstr in cmd
-  // create context from valid results
+  //
+  // if !valid return
+  // find token1->str in context_table
+  // if !find return
+
 }
 
 void menu_stop()
