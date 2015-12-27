@@ -272,3 +272,10 @@ void layout_refresh(Layout *layout)
   c->ofs = (pos_T){0,0};
   resize_container(c);
 }
+
+void layout_shift(Layout *layout, int lines)
+{
+  Container *c = layout->root;
+  c->size.lnum += lines;
+  resize_container(c);
+}

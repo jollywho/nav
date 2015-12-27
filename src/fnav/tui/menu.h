@@ -46,7 +46,10 @@
 // |:_                                          |
 // *--------------------------------------------*
 
-void menu_start();
-void menu_stop();
+typedef struct Menu Menu;
+
+Menu* menu_start();
+void menu_stop(Menu *mnu);
+void menu_draw(Menu *mnu);
 
 #endif

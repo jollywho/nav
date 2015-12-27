@@ -7,15 +7,19 @@
 #include "fnav/log.h"
 #include "fnav/tui/layout.h"
 #include "fnav/tui/window.h"
+#include "fnav/tui/menu.h"
+#include "fnav/option.h"
 
-WINDOW *nc_win;
-int curpos;
-int maxpos;
-Cmdline cmd;
-String fmt_out;
+static WINDOW *nc_win;
+static int curpos;
+static int maxpos;
+static Cmdline cmd;
+static String fmt_out;
+static Menu *menu;
 
 char state_symbol[] = {':', '/'};
-int ex_state;
+static int ex_state;
+static int col_text;
 
 #define CURS_MIN -1
 
@@ -30,8 +34,11 @@ void start_ex_cmd(int state)
   curpos = CURS_MIN;
   maxpos = max.col;
   fmt_out = malloc(1);
+  col_text = attr_color("ComplText");
   if (window_get_focus() && state == EX_REG_STATE)
     regex_mk_pivot();
+  else
+    menu = menu_start();
   cmdline_init(&cmd, max.col);
   cmdline_draw();
 }
@@ -61,9 +68,16 @@ static void cmdline_draw()
 {
   log_msg("EXCMD", "cmdline_draw");
   curs_set(1);
+
+  if (menu)
+    menu_draw(menu);
+
+  wattron(nc_win, COLOR_PAIR(col_text));
   mvwaddch(nc_win, 0, 0, state_symbol[ex_state]);
   gen_output_str();
   mvwprintw(nc_win, 0, 1, fmt_out);
+  wattroff(nc_win, COLOR_PAIR(col_text));
+
   wmove(nc_win, 0, curpos + 2);
   wnoutrefresh(nc_win);
 }
@@ -165,6 +179,8 @@ void ex_input(int key)
 void stop_ex_cmd()
 {
   log_msg("EXCMD", "stop_ex_cmd");
+  if (menu)
+    menu_stop(menu);
   free(cmd.line);
   free(fmt_out);
   cmdline_cleanup(&cmd);

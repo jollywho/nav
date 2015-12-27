@@ -19,6 +19,7 @@ Buffer* layout_buf(Layout *layout);
 void layout_set_status(Layout *layout, String name, String usr,
     String in, String out);
 void layout_refresh(Layout *layout);
+void layout_shift(Layout *layout, int lines);
 
 pos_T layout_size();
 

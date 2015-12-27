@@ -221,3 +221,8 @@ void window_add_buffer(enum move_dir dir)
   Buffer *buf = buf_new();
   layout_add_buffer(&win.layout, buf, dir);
 }
+
+void window_shift(int lines)
+{
+  layout_shift(&win.layout, lines);
+}

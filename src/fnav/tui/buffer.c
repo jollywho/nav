@@ -46,9 +46,6 @@ static short cmd_idx[KEYS_SIZE];
   (pos.col) += (x);            \
   (pos.lnum) += (y);           \
 
-#define DRAW_LINE(buf,ln,str)   \
-  mvwaddstr(buf->nc_win, ln, 0, str);
-
 void buf_listen(fn_handle *hndl);
 void buf_draw(void **argv);
 
