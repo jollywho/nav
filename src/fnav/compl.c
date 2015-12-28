@@ -1,32 +1,29 @@
 #include "fnav/compl.h"
+#include "fnav/tui/cntlr.h"
 #include "fnav/log.h"
 
 #define HASH_INS(t,obj) \
   HASH_ADD_KEYPTR(hh, t, obj.key, strlen(obj.key), &obj);
 
-typedef struct {
-  String name;
-  char v_type;
-  String comp;
-  int flag;
-} fn_context_arg;
-
-typedef struct {
+struct fn_context {
   String key;
   int argc;
-  fn_context_arg **argv;
+  String comp;
+  fn_context **params;
   UT_hash_handle hh;
-} fn_context;
+};
 
-static compl_list* compl_win();
+static fn_compl* compl_win();
+static fn_compl* compl_cntlr();
 
 #define DEFAULT_SIZE ARRAY_SIZE(compl_defaults)
 static compl_entry compl_defaults[] = {
-  { "win",     compl_win     },
+  { "win",     compl_win       },
+  { "cntlrs",  compl_cntlr     },
 };
 
-compl_entry *compl_table;
-fn_context *context_root;
+static compl_entry *compl_table;
+static fn_context *context_root;
 
 void compl_init()
 {
@@ -35,12 +32,17 @@ void compl_init()
   }
 }
 
-compl_list* compl_of(String name)
+fn_compl* compl_create(String name, String line)
 {
   compl_entry *find;
   HASH_FIND_STR(compl_table, name, find);
   if (!find) return NULL;
-  return find->gen();
+  return find->gen(line);
+}
+
+fn_context* context_start()
+{
+  return context_root;
 }
 
 static int count_subgrps(String str, String fnd)
@@ -55,15 +57,9 @@ static int count_subgrps(String str, String fnd)
   return count;
 }
 
-static int compl_param(fn_context_arg **arg, String param)
+static int compl_param(fn_context **arg, String param)
 {
   log_msg("COMPL", "compl_param %s", param);
-
-  if (param[0] == '*') {
-    (*arg) = malloc(sizeof(fn_context_arg));
-    (*arg)->flag = 1;
-    return 1;
-  }
 
   int grpc = count_subgrps(param, ":");
   if (grpc > 2) {
@@ -82,8 +78,8 @@ static int compl_param(fn_context_arg **arg, String param)
   if (grpc == 2)
     comp = strtok(NULL, ":");
 
-  (*arg) = malloc(sizeof(fn_context_arg));
-  (*arg)->name = name;
+  (*arg) = malloc(sizeof(fn_context));
+  (*arg)->key = name;
   //arg->type = type;
   (*arg)->comp = comp;
   return 1;
@@ -97,7 +93,7 @@ void compl_add_context(String fmt_compl)
   int grpc = count_subgrps(fmt_compl, ";");
 
   String line = strdup(fmt_compl);
-  fn_context_arg **args = malloc(grpc*sizeof(fn_context_arg));
+  fn_context **args = malloc(grpc*sizeof(fn_context));
 
   String key;
   if (grpc > 0) {
@@ -117,7 +113,7 @@ void compl_add_context(String fmt_compl)
   fn_context *find;
   cx->key = key;
   cx->argc = grpc;
-  cx->argv = args;
+  cx->params = args;
   HASH_FIND_STR(context_root, cx->key, find);
   if (find) {
     log_msg("COMPL", "ERROR: context already defined");
@@ -137,7 +133,27 @@ breakout:
   return;
 }
 
-static compl_list* compl_win()
+static fn_compl* compl_win()
 {
   return 0;
+}
+
+static fn_compl* compl_cntlr(String line)
+{
+  log_msg("COMPL", "compl_cntlr");
+  fn_compl *cmplst = malloc(sizeof(fn_compl));
+  String *lst = cntlr_list(line);
+
+  int count;
+  for (count = 0; lst[count] != NULL; count++) {}
+
+  cmplst->rows = malloc(count*sizeof(compl_item));
+
+  String it = lst[0];
+  for (int i = 0; i < count; i++) {
+    cmplst->rows[i] = malloc(sizeof(compl_item));
+    i++;
+    it++;
+  }
+  return cmplst;
 }

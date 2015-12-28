@@ -12,6 +12,8 @@ static const int ROW_MAX = 5;
 struct Menu {
   WINDOW *nc_win;
 
+  fn_context *cx;
+
   pos_T size;
   pos_T ofs;
   int row_max;
@@ -38,16 +40,14 @@ Menu* menu_start()
       mnu->ofs.lnum,
       mnu->ofs.col);
   mnu->col_select = attr_color("BufSelected");
-  mnu->col_text = attr_color("ComplText");
-  mnu->col_div = attr_color("OverlaySep");
-  mnu->col_box = attr_color("OverlayActive");
-  mnu->col_line = attr_color("OverlayLine");
+  mnu->col_text   = attr_color("ComplText");
+  mnu->col_div    = attr_color("OverlaySep");
+  mnu->col_box    = attr_color("OverlayActive");
+  mnu->col_line   = attr_color("OverlayLine");
 
-  // attempt to validate cmdstr in cmd
-  //
-  // if !valid return
-  // find token1->str in context_table
-  // if !find return
+  mnu->cx = context_start();
+  compl_create("cntlrs", "");
+
   return mnu;
 }
 

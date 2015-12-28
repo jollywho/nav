@@ -38,8 +38,6 @@ static const Cmd_T cmdtable[] = {
   {"pipe",   win_pipe,    0 },
 };
 
-//"map::lhs:string, _c:keymaps::rhs:string, _c:keymaps",
-
 #define COMPL_SIZE ARRAY_SIZE(cmdtable)
 static String compl_win[] = {
   "q;window:string:wins",

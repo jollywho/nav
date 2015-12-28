@@ -4,6 +4,7 @@
 #include "fnav/tui/sh_cntlr.h"
 #include "fnav/tui/op_cntlr.h"
 #include "fnav/tui/img_cntlr.h"
+#include "fnav/compl.h"
 
 #define TABLE_SIZE ARRAY_SIZE(cntlr_table)
 struct _cntlr_table {
@@ -128,4 +129,14 @@ Cntlr *cntlr_from_id(int id)
   if (cid)
     return cid->cntlr;
   return NULL;
+}
+
+String* cntlr_list()
+{
+  String *lst = malloc(TABLE_SIZE*sizeof(String));
+  for (int i = 0; i < (int)TABLE_SIZE; i++) {
+    lst[i] = cntlr_table[i].name;
+  }
+  lst[TABLE_SIZE] = NULL;
+  return lst;
 }
