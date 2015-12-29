@@ -1,5 +1,3 @@
-// ex_cmd
-// command line
 #include "fnav/tui/ex_cmd.h"
 #include "fnav/cmdline.h"
 #include "fnav/regex.h"

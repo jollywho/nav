@@ -2,7 +2,7 @@
 #define FN_TABLE_H
 
 #include "fnav/lib/uthash.h"
-#include "fnav/rpc.h"
+#include "fnav/tui/cntlr.h"
 
 typedef struct fn_rec fn_rec;
 typedef struct fn_val fn_val;
@@ -60,5 +60,17 @@ void tbl_del_val(String tn, String fname, String val);
 
 int tbl_fld_count(String tn);
 int tbl_ent_count(ventry *e);
+
+typedef struct {
+  int count;
+  int max;
+  String *flds;
+  bool *type;
+  void **data;
+} trans_rec;
+
+trans_rec* mk_trans_rec(int fld_count);
+void edit_trans(trans_rec *r, String fname, String val, void *data);
+void clear_trans(trans_rec *r);
 
 #endif

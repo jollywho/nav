@@ -1,5 +1,3 @@
-// window module to manage draw loop.
-// all ncurses drawing should be done here.
 #include <ncurses.h>
 
 #include "fnav/tui/window.h"

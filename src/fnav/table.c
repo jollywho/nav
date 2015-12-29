@@ -285,7 +285,7 @@ static fn_val* new_entry(fn_rec *rec, fn_fld *fld, void *data, int typ, int indx
     ent->prev = ent;
 
     val->rlist = ent;
-    val->key = data;
+    val->key = strdup(data);
 
     ent->rec = rec;
     ent->val = val;
@@ -348,7 +348,7 @@ static void tbl_insert(fn_tbl *t, trans_rec *trec)
       continue;
     }
 
-    fn_val *v; //= { .key = data };
+    fn_val *v;
     HASH_FIND_STR(f->vals, data, v);
 
     /* create header entry. */
@@ -400,4 +400,42 @@ static void tbl_del_rec(fn_rec *rec)
   free(rec->vals);
   free(rec->vlist);
   free(rec);
+}
+
+trans_rec* mk_trans_rec(int fld_count)
+{
+  trans_rec *r = malloc(sizeof(trans_rec));
+  r->max = fld_count;
+  r->flds = malloc(sizeof(String)*r->max);
+  r->data = malloc(sizeof(void)*r->max);
+  r->type = malloc(sizeof(bool)*r->max);
+  r->count = 0;
+  return r;
+}
+
+void edit_trans(trans_rec *r, String fname, String val, void *data)
+{
+  r->flds[r->count] = fname;
+  if (!data) {
+    r->data[r->count] = strdup(val);
+    r->type[r->count] = 1;
+  }
+  else {
+    r->data[r->count] = data;
+    r->type[r->count] = 0;
+  }
+  r->count++;
+}
+
+void clear_trans(trans_rec *r)
+{
+  for (int i = 0; i < r->count; i++) {
+    if (r->type[i] == 1) {
+      free(r->data[i]);
+    }
+  }
+  free(r->type);
+  free(r->flds);
+  free(r->data);
+  free(r);
 }
