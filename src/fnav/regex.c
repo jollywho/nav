@@ -11,12 +11,12 @@ struct LineMatch {
   UT_array *linenum;
 };
 
-LineMatch *pivot_matches;
-String regex;
-pcre *comp;
-pcre_extra *extra;
-int pivot_top = 0;
-int pivot_lnum = 0;
+static LineMatch *pivot_matches;
+static String regex;
+static pcre *comp;
+static pcre_extra *extra;
+static int pivot_top = 0;
+static int pivot_lnum = 0;
 static int* nearest_next_match(UT_array *matches, int line);
 
 #define NEXT_OR_WRAP(match,l) \

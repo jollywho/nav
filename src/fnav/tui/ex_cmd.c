@@ -180,8 +180,10 @@ void ex_input(int key)
 void stop_ex_cmd()
 {
   log_msg("EXCMD", "stop_ex_cmd");
-  if (menu)
+  if (menu) {
     menu_stop(menu);
+    menu = NULL;
+  }
   free(cmd.line);
   free(fmt_out);
   cmdline_cleanup(&cmd);

@@ -49,10 +49,8 @@ static int count_subgrps(String str, String fnd)
 {
   int count = 0;
   const char *tmp = str;
-  while((tmp = strstr(tmp, fnd)))
-  {
-    count++;
-    tmp++;
+  while((tmp = strstr(tmp, fnd))) {
+    count++; tmp++;
   }
   return count;
 }
