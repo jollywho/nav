@@ -35,9 +35,9 @@ void init(void)
   tables_init();
   event_init();
   input_init();
+  compl_init();
   window_init();
   buf_init();
-  compl_init();
   log_msg("INIT", "__________INIT_END______________");
 }
 

@@ -6,11 +6,13 @@
 
 typedef struct {
   String key;
+  int colcount;
   String *columns;
 } compl_item;
 
 typedef struct {
   String name;
+  int rowcount;
   compl_item **rows;
 } fn_compl;
 
@@ -22,10 +24,17 @@ typedef struct {
 } compl_entry;
 
 typedef struct fn_context fn_context;
+struct fn_context {
+  String key;
+  int argc;
+  String comp;
+  fn_context **params;
+  UT_hash_handle hh;
+};
 
 void compl_init();
 void compl_add_context(String fmt_compl);
-fn_compl* compl_create(String name, String line);
+fn_compl* compl_create(fn_context *cx, String line);
 fn_context* context_start();
 
 #endif

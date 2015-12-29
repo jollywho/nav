@@ -137,6 +137,5 @@ String* cntlr_list()
   for (int i = 0; i < (int)TABLE_SIZE; i++) {
     lst[i] = cntlr_table[i].name;
   }
-  lst[TABLE_SIZE] = NULL;
   return lst;
 }

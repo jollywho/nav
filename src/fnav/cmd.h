@@ -28,5 +28,6 @@ void cmd_add(Cmd_T *cmd);
 void cmd_remove(String name);
 void cmd_run(Cmdstr *cmdstr);
 Cmd_T* cmd_find(String name);
+String* cmd_list();
 
 #endif

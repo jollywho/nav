@@ -5,19 +5,13 @@
 #define HASH_INS(t,obj) \
   HASH_ADD_KEYPTR(hh, t, obj.key, strlen(obj.key), &obj);
 
-struct fn_context {
-  String key;
-  int argc;
-  String comp;
-  fn_context **params;
-  UT_hash_handle hh;
-};
-
+static fn_compl* compl_cmds();
 static fn_compl* compl_win();
 static fn_compl* compl_cntlr();
 
 #define DEFAULT_SIZE ARRAY_SIZE(compl_defaults)
 static compl_entry compl_defaults[] = {
+  { "cmds",    compl_cmds      },
   { "win",     compl_win       },
   { "cntlrs",  compl_cntlr     },
 };
@@ -27,15 +21,21 @@ static fn_context *context_root;
 
 void compl_init()
 {
+  compl_add_context("_;cmd:string:cmds");
+  fn_context *find;
+  HASH_FIND_STR(context_root, "_", find);
+  context_root = find;
+
   for (int i = 0; i < (int)DEFAULT_SIZE; i++) {
     HASH_INS(compl_table, compl_defaults[i]);
   }
 }
 
-fn_compl* compl_create(String name, String line)
+fn_compl* compl_create(fn_context *cx, String line)
 {
+  String key = cx->params[0]->comp;
   compl_entry *find;
-  HASH_FIND_STR(compl_table, name, find);
+  HASH_FIND_STR(compl_table, key, find);
   if (!find) return NULL;
   return find->gen(line);
 }
@@ -133,6 +133,29 @@ breakout:
   return;
 }
 
+static fn_compl* compl_cmds(String line)
+{
+  log_msg("COMPL", "compl_cntlr");
+  fn_compl *cmplst = malloc(sizeof(fn_compl));
+  cmplst->name = "cmd";
+  String *lst = cmd_list(line);
+
+  int count;
+  for (count = 0; lst[count] != NULL; count++) {}
+  cmplst->rowcount = count;
+
+  cmplst->rows = malloc(count*sizeof(compl_item));
+
+  String it = lst[0];
+  for (int i = 0; i < count; i++) {
+    cmplst->rows[i] = malloc(sizeof(compl_item));
+    cmplst->rows[i]->key = lst[i];
+    cmplst->rows[i]->colcount = 0;
+    it++;
+  }
+  return cmplst;
+}
+
 static fn_compl* compl_win()
 {
   return 0;
@@ -146,13 +169,15 @@ static fn_compl* compl_cntlr(String line)
 
   int count;
   for (count = 0; lst[count] != NULL; count++) {}
+  cmplst->rowcount = count;
 
   cmplst->rows = malloc(count*sizeof(compl_item));
 
   String it = lst[0];
   for (int i = 0; i < count; i++) {
     cmplst->rows[i] = malloc(sizeof(compl_item));
-    i++;
+    cmplst->rows[i]->key = lst[i];
+    cmplst->rows[i]->colcount = 0;
     it++;
   }
   return cmplst;

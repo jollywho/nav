@@ -119,6 +119,7 @@ static void ex_onkey()
 {
   if (ex_state == 0) {
     cmdline_build(&cmd);
+    menu_update(menu, &cmd);
   }
   else {
     if (window_focus_attached()) {

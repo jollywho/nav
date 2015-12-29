@@ -4,9 +4,15 @@
 
 Cmd_T *cmd_table;
 
+int name_sort(Cmd_T *a, Cmd_T *b)
+{
+  return strcmp(a->name, b->name);
+}
+
 void cmd_add(Cmd_T *cmd)
 {
   HASH_ADD_KEYPTR(hh, cmd_table, cmd->name, strlen(cmd->name), cmd);
+  HASH_SORT(cmd_table, name_sort);
 }
 
 void cmd_remove(String name)
@@ -35,4 +41,17 @@ void cmd_run(Cmdstr *cmdstr)
 
   cmdstr->ret_t = CNTLR;
   cmdstr->ret = fun->cmd_func(args, fun->flags);
+}
+
+String* cmd_list()
+{
+  unsigned int count = HASH_COUNT(cmd_table);
+  String *lst = malloc((int)count*sizeof(String));
+  Cmd_T *it;
+  int i = 0;
+  for (it = cmd_table; it != NULL; it = it->hh.next) {
+    lst[i] = it->name;
+    i++;
+  }
+  return lst;
 }
