@@ -22,12 +22,12 @@ void log_init()
   free(path);
 }
 
-void log_set(const char* obj)
+void log_set(const char *obj)
 {
   listen_obj = obj;
 }
 
-void log_msg(const char* obj, const char* fmt, ...)
+void log_msg(const char *obj, const char *fmt, ...)
 {
   if (listen_obj && strcmp(listen_obj, obj) != 0)
     return;

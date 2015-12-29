@@ -98,7 +98,7 @@ err:
 /// @param cb Pointer to function that will be responsible for freeing
 ///        the buffer data(passing 'free' will work as expected).
 /// @return The allocated WBuffer instance
-WBuffer *wstream_new_buffer(char *data, size_t size, size_t refcount,
+WBuffer* wstream_new_buffer(char *data, size_t size, size_t refcount,
   wbuffer_data_finalizer cb)
 {
   WBuffer *rv = malloc(sizeof(WBuffer));

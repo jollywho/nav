@@ -48,7 +48,7 @@ void buf_init();
 Buffer* buf_new();
 void buf_delete(Buffer *buf);
 
-Cntlr *buf_cntlr(Buffer *buf);
+Cntlr* buf_cntlr(Buffer *buf);
 
 void buf_set_overlay(Buffer *buf, Overlay *ov);
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr);

@@ -55,7 +55,7 @@ char* strip_whitespace(char *_str)
   return str;
 }
 
-static char *get_config_path(void)
+static char* get_config_path(void)
 {
 	static const char *config_paths[] = {
 		"$HOME/.fnavrc",
@@ -77,7 +77,7 @@ static char *get_config_path(void)
   return NULL;
 }
 
-static char *read_line(FILE *file)
+static char* read_line(FILE *file)
 {
 	int length = 0, size = 128;
 	char *string = malloc(size);
@@ -114,7 +114,7 @@ static char *read_line(FILE *file)
 	return string;
 }
 
-bool config_load(const char* file)
+bool config_load(const char *file)
 {
 	log_msg("CONFIG", "config_load");
   char *path;

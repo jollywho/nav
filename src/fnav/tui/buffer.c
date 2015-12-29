@@ -318,7 +318,7 @@ pos_T buf_size(Buffer *buf)
 {return buf->b_size;}
 pos_T buf_ofs(Buffer *buf)
 {return buf->b_ofs;}
-Cntlr *buf_cntlr(Buffer *buf)
+Cntlr* buf_cntlr(Buffer *buf)
 {return buf->cntlr;}
 pos_T buf_pos(Buffer *buf)
 {return (pos_T){buf->lnum+1,0};}

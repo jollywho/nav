@@ -1,4 +1,3 @@
-// filesystem
 #include <malloc.h>
 #include <sys/time.h>
 #include <libgen.h>
@@ -15,7 +14,7 @@
 #define RFRESH_RATE 10000
 
 static void fs_close_req(FS_req *fq);
-static void stat_cb(uv_fs_t* req);
+static void stat_cb(uv_fs_t *req);
 void fs_loop(Loop *loop, int ms);
 static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,
     int status);
@@ -45,7 +44,7 @@ void fs_cleanup(FS_handle *fsh)
   free(fsh);
 }
 
-char* conspath(const char* str1, const char* str2)
+char* conspath(const char *str1, const char *str2)
 {
   char* result;
   if (strcmp(str1, "/") == 0)
@@ -108,7 +107,7 @@ void fs_loop(Loop *loop, int ms)
   process_loop(loop, ms);
 }
 
-static void send_stat(FS_req *fq, const char* dir, char* upd)
+static void send_stat(FS_req *fq, const char *dir, char *upd)
 {
   FS_handle *fh = fq->fs_h;
   struct stat *s = malloc(sizeof(struct stat));
@@ -121,7 +120,7 @@ static void send_stat(FS_req *fq, const char* dir, char* upd)
   CREATE_EVENT(&fh->loop.events, commit, 2, "fm_stat", r);
 }
 
-static void scan_cb(uv_fs_t* req)
+static void scan_cb(uv_fs_t *req)
 {
   log_msg("FS", "--scan--");
   log_msg("FS", "path: %s", req->path);
@@ -155,7 +154,7 @@ static void scan_cb(uv_fs_t* req)
   fs_close_req(fq);
 }
 
-static void stat_cb(uv_fs_t* req)
+static void stat_cb(uv_fs_t *req)
 {
   log_msg("FS", "stat cb");
   FS_req *fq = req->data;
@@ -164,17 +163,13 @@ static void stat_cb(uv_fs_t* req)
   ventry *ent = fnd_val("fm_files", "dir", fq->req_name);
 
   if (ent) {
-    log_msg("FS", "HAS FM_FILE");
     ent = fnd_val("fm_stat", "fullpath", fq->req_name);
     if (ent) {
-      log_msg("FS", "HAS STAT");
       char *upd = (char*)rec_fld(ent->rec, "update");
-      log_msg("FS", "HAS UPD of %d", *upd);
       if (*upd) {
-        log_msg("FS", "HAS UPD");
         struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
         if (fq->uv_stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
-          log_msg("FS", "NOP");
+          log_msg("FS", "STAT:NOP");
           CREATE_EVENT(&fq->fs_h->loop.events, fs_signal_handle, 1, fq->fs_h);
           return;
         }

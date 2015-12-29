@@ -7,7 +7,7 @@
 #include "fnav/log.h"
 
 /// Creates a new `RBuffer` instance.
-RBuffer *rbuffer_new(size_t capacity)
+RBuffer* rbuffer_new(size_t capacity)
 {
   log_msg("RBUFFER", "new");
   if (!capacity) {
@@ -50,7 +50,7 @@ size_t rbuffer_space(RBuffer *buf)
 ///
 /// It is necessary to call this function twice to ensure all empty space was
 /// used. See RBUFFER_UNTIL_FULL for a macro that simplifies this task.
-char *rbuffer_write_ptr(RBuffer *buf, size_t *write_count)
+char* rbuffer_write_ptr(RBuffer *buf, size_t *write_count)
 {
   log_msg("RBUFFER", "write_ptr");
   if (buf->size == rbuffer_capacity(buf)) {
@@ -101,7 +101,7 @@ void rbuffer_produced(RBuffer *buf, size_t count)
 ///
 /// It is necessary to call this function twice to ensure all available bytes
 /// were read. See RBUFFER_UNTIL_EMPTY for a macro that simplifies this task.
-char *rbuffer_read_ptr(RBuffer *buf, size_t *read_count)
+char* rbuffer_read_ptr(RBuffer *buf, size_t *read_count)
 {
   log_msg("RBUFFER", "read_ptr");
   if (!buf->size) {
@@ -179,7 +179,7 @@ size_t rbuffer_read(RBuffer *buf, char *dst, size_t dst_size)
   return size - dst_size;
 }
 
-char *rbuffer_get(RBuffer *buf, size_t index)
+char* rbuffer_get(RBuffer *buf, size_t index)
 {
   log_msg("RBUFFER", "rbuffer_get");
   char *rptr = buf->read_ptr + index;

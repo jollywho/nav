@@ -48,8 +48,8 @@ int cntlr_isloaded(String name);
 Cntlr* cntlr_open(String name, Buffer *buf);
 void cntlr_close(Cntlr *cntlr);
 
-Cntlr *focus_cntlr();
-Cntlr *cntlr_from_id(int id);
+Cntlr* focus_cntlr();
+Cntlr* cntlr_from_id(int id);
 void cntlr_pipe(Cntlr *cntlr);
 
 String* cntlr_list();

@@ -223,7 +223,7 @@ static int intersects(pos_T a, pos_T b, pos_T bsize)
            bsize.lnum < a.lnum);
 }
 
-Container *find_intersect(Container *c, Container *pp, pos_T pos)
+Container* find_intersect(Container *c, Container *pp, pos_T pos)
 {
   log_msg("LAYOUT", "find_intersect");
   Container *it = pp;

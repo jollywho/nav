@@ -110,7 +110,7 @@ int cntlr_isloaded(String name)
   return 0;
 }
 
-Cntlr *focus_cntlr()
+Cntlr* focus_cntlr()
 {
   Buffer *buf = window_get_focus();
   return buf->cntlr;
@@ -122,7 +122,7 @@ void cntlr_pipe(Cntlr *cntlr)
   buf_set_status(buf, 0, 0, 0, "|> op");
 }
 
-Cntlr *cntlr_from_id(int id)
+Cntlr* cntlr_from_id(int id)
 {
   Cid *cid;
   HASH_FIND_INT(id_table, &id, cid);

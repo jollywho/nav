@@ -19,7 +19,7 @@ void wstream_init_stream(Stream *stream, uv_stream_t *uvstream, size_t maxmem,
 void wstream_init(Stream *stream, size_t maxmem);
 void wstream_set_write_cb(Stream *stream, stream_write_cb cb);
 bool wstream_write(Stream *stream, WBuffer *buffer);
-WBuffer *wstream_new_buffer(char *data, size_t size, size_t refcount,
+WBuffer* wstream_new_buffer(char *data, size_t size, size_t refcount,
   wbuffer_data_finalizer cb);
 void wstream_release_wbuffer(WBuffer *buffer);
 

@@ -4,8 +4,8 @@
 #define NCURSES_ENABLED
 
 void log_init();
-void log_set(const char* obj);
-void log_msg(const char* obj, const char* msg, ...) \
+void log_set(const char *obj);
+void log_msg(const char *obj, const char *msg, ...) \
   __attribute__((format (printf, 2, 3)));
 
 #endif
