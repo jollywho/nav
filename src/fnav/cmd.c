@@ -1,6 +1,7 @@
 #include "fnav/cmdline.h"
 #include "fnav/cmd.h"
 #include "fnav/log.h"
+#include "fnav/compl.h"
 
 Cmd_T *cmd_table;
 
@@ -43,15 +44,15 @@ void cmd_run(Cmdstr *cmdstr)
   cmdstr->ret = fun->cmd_func(args, fun->flags);
 }
 
-String* cmd_list()
+void cmd_list(String line)
 {
+  log_msg("CMD", "compl cmd_list");
   unsigned int count = HASH_COUNT(cmd_table);
-  String *lst = malloc((int)count*sizeof(String));
+  compl_new(count);
   Cmd_T *it;
   int i = 0;
   for (it = cmd_table; it != NULL; it = it->hh.next) {
-    lst[i] = it->name;
+    compl_set_index(i, it->name, 0, NULL);
     i++;
   }
-  return lst;
 }

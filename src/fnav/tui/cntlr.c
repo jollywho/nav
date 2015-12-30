@@ -131,11 +131,22 @@ Cntlr* cntlr_from_id(int id)
   return NULL;
 }
 
-String* cntlr_list()
+void cntlr_list(String line)
 {
-  String *lst = malloc(TABLE_SIZE*sizeof(String));
+  compl_new(TABLE_SIZE);
   for (int i = 0; i < (int)TABLE_SIZE; i++) {
-    lst[i] = cntlr_table[i].name;
+    compl_set_index(i, cntlr_table[i].name, 0, NULL);
   }
-  return lst;
 }
+
+
+// two types of compl:
+//  A) dynamic; rebuild for every keystroke
+//  B) static; build at start
+//
+// search:
+//  foreach row in compl
+//    int pos = regex_check(cmdline, row->key)
+//    if (pos != -1) {
+//      add row to compl_matches
+//    }

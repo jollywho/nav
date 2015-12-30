@@ -13,7 +13,6 @@ struct Menu {
   WINDOW *nc_win;
 
   fn_context *cx;
-  fn_compl *cmpl;
 
   pos_T size;
   pos_T ofs;
@@ -49,7 +48,7 @@ Menu* menu_start()
   mnu->col_line   = attr_color("OverlayLine");
 
   mnu->cx = context_start();
-  mnu->cmpl = compl_create(mnu->cx, "");
+  compl_build(mnu->cx, "");
 
   return mnu;
 }
@@ -82,7 +81,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 void menu_draw(Menu *mnu)
 {
   log_msg("MENU", "menu_draw");
-  fn_compl *cmpl = mnu->cmpl;
+  fn_compl *cmpl = mnu->cx->cmpl;
 
   wattron(mnu->nc_win, COLOR_PAIR(mnu->col_line));
   mvwhline(mnu->nc_win, ROW_MAX, 0, ' ', mnu->size.col);
@@ -100,7 +99,8 @@ void menu_draw(Menu *mnu)
         DRAW_STR(mnu, nc_win, i, 2, col, col_text);
       }
     }
-    DRAW_STR(mnu, nc_win, ROW_MAX, 0, cmpl->name, col_box);
+    String key = mnu->cx->params[0]->comp;
+    DRAW_STR(mnu, nc_win, ROW_MAX, 0, key, col_box);
   }
 
   wnoutrefresh(mnu->nc_win);

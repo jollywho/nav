@@ -2,25 +2,25 @@
 #include "fnav/tui/cntlr.h"
 #include "fnav/log.h"
 
+#include "fnav/cmd.h"
+#include "fnav/tui/cntlr.h"
+
 #define HASH_INS(t,obj) \
   HASH_ADD_KEYPTR(hh, t, obj.key, strlen(obj.key), &obj);
 
-static fn_compl* compl_cmds();
-static fn_compl* compl_win();
-static fn_compl* compl_cntlr();
-
 #define DEFAULT_SIZE ARRAY_SIZE(compl_defaults)
 static compl_entry compl_defaults[] = {
-  { "cmds",    compl_cmds      },
-  { "win",     compl_win       },
-  { "cntlrs",  compl_cntlr     },
+  { "cmds",    cmd_list      },
+  { "cntlrs",  cntlr_list    },
 };
 
 static compl_entry *compl_table;
 static fn_context *context_root;
+static fn_compl *cur_cmpl;
 
 void compl_init()
 {
+  cur_cmpl = NULL;
   compl_add_context("_;cmd:string:cmds");
   fn_context *find;
   HASH_FIND_STR(context_root, "_", find);
@@ -31,18 +31,37 @@ void compl_init()
   }
 }
 
-fn_compl* compl_create(fn_context *cx, String line)
+void compl_build(fn_context *cx, String line)
 {
   String key = cx->params[0]->comp;
   compl_entry *find;
   HASH_FIND_STR(compl_table, key, find);
-  if (!find) return NULL;
-  return find->gen(line);
+  if (!find) return;
+  find->gen(line);
+  if (cur_cmpl) {
+    cx->cmpl = cur_cmpl;
+    cur_cmpl = NULL;
+  }
 }
 
 fn_context* context_start()
 {
   return context_root;
+}
+
+void compl_new(int size)
+{
+  cur_cmpl = malloc(sizeof(fn_compl));
+  cur_cmpl->rows = malloc(size*sizeof(compl_item));
+  cur_cmpl->rowcount = size;
+}
+
+void compl_set_index(int idx, String key, int colcount, String *cols)
+{
+  cur_cmpl->rows[idx] = malloc(sizeof(compl_item));
+  cur_cmpl->rows[idx]->key = key;
+  cur_cmpl->rows[idx]->colcount = colcount;
+  cur_cmpl->rows[idx]->columns = cols;
 }
 
 static int count_subgrps(String str, String fnd)
@@ -129,54 +148,4 @@ breakout:
   free(args);
   free(line);
   return;
-}
-
-static fn_compl* compl_cmds(String line)
-{
-  log_msg("COMPL", "compl_cntlr");
-  fn_compl *cmplst = malloc(sizeof(fn_compl));
-  cmplst->name = "cmd";
-  String *lst = cmd_list(line);
-
-  int count;
-  for (count = 0; lst[count] != NULL; count++) {}
-  cmplst->rowcount = count;
-
-  cmplst->rows = malloc(count*sizeof(compl_item));
-
-  String it = lst[0];
-  for (int i = 0; i < count; i++) {
-    cmplst->rows[i] = malloc(sizeof(compl_item));
-    cmplst->rows[i]->key = lst[i];
-    cmplst->rows[i]->colcount = 0;
-    it++;
-  }
-  return cmplst;
-}
-
-static fn_compl* compl_win()
-{
-  return 0;
-}
-
-static fn_compl* compl_cntlr(String line)
-{
-  log_msg("COMPL", "compl_cntlr");
-  fn_compl *cmplst = malloc(sizeof(fn_compl));
-  String *lst = cntlr_list(line);
-
-  int count;
-  for (count = 0; lst[count] != NULL; count++) {}
-  cmplst->rowcount = count;
-
-  cmplst->rows = malloc(count*sizeof(compl_item));
-
-  String it = lst[0];
-  for (int i = 0; i < count; i++) {
-    cmplst->rows[i] = malloc(sizeof(compl_item));
-    cmplst->rows[i]->key = lst[i];
-    cmplst->rows[i]->colcount = 0;
-    it++;
-  }
-  return cmplst;
 }
