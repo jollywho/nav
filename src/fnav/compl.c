@@ -37,11 +37,18 @@ void compl_build(fn_context *cx, String line)
   compl_entry *find;
   HASH_FIND_STR(compl_table, key, find);
   if (!find) return;
+
   find->gen(line);
+
   if (cur_cmpl) {
     cx->cmpl = cur_cmpl;
-    cur_cmpl = NULL;
   }
+}
+
+void compl_destroy(fn_context *cx)
+{
+  compl_delete(cx->cmpl);
+  cur_cmpl = NULL;
 }
 
 fn_context* context_start()
@@ -49,11 +56,41 @@ fn_context* context_start()
   return context_root;
 }
 
-void compl_new(int size)
+void compl_update(fn_context *cx, String line)
+{
+  fn_compl *cmpl = cx->cmpl;
+  cmpl->matchcount = 0;
+  for (int i = 0; i < cmpl->rowcount; i++) {
+    String key = cmpl->rows[i]->key;
+    if (strstr(key, line)) {
+      cmpl->matches[i] = cmpl->rows[i];
+      cmpl->matchcount++;
+    }
+    else
+      cmpl->matches[i] = NULL;
+  }
+}
+
+void compl_new(int size, int dynamic)
 {
   cur_cmpl = malloc(sizeof(fn_compl));
-  cur_cmpl->rows = malloc(size*sizeof(compl_item));
+  cur_cmpl->rows    = malloc(size*sizeof(compl_item));
+  cur_cmpl->matches = malloc(size*sizeof(compl_item));
   cur_cmpl->rowcount = size;
+  cur_cmpl->matchcount = 0;
+  cur_cmpl->comp_type = dynamic;
+}
+
+void compl_delete(fn_compl *cmpl)
+{
+  if (cmpl) {
+    for (int i = 0; i < cmpl->rowcount; i++) {
+      free(cmpl->rows[i]);
+    }
+    free(cmpl->rows);
+    free(cmpl->matches);
+    free(cmpl);
+  }
 }
 
 void compl_set_index(int idx, String key, int colcount, String *cols)

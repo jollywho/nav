@@ -48,7 +48,7 @@ void cmd_list(String line)
 {
   log_msg("CMD", "compl cmd_list");
   unsigned int count = HASH_COUNT(cmd_table);
-  compl_new(count);
+  compl_new(count, COMPL_STATIC);
   Cmd_T *it;
   int i = 0;
   for (it = cmd_table; it != NULL; it = it->hh.next) {

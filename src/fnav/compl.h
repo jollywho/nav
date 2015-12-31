@@ -12,15 +12,20 @@ typedef struct {
 
 typedef struct {
   int rowcount;
+  int matchcount;
+  char comp_type;       /* COMPL_STATIC, COMPL_DYNAMIC */
   compl_item **rows;
+  compl_item **matches;
 } fn_compl;
+
+#define COMPL_STATIC  0
+#define COMPL_DYNAMIC 1
 
 typedef struct fn_context fn_context;
 struct fn_context {
   String key;
   String comp;
   fn_compl *cmpl;
-  fn_compl *matches;
   int argc;
   fn_context **params;
   UT_hash_handle hh;
@@ -37,9 +42,12 @@ void compl_init();
 void compl_add_context(String fmt_compl);
 
 fn_context* context_start();
+void compl_update(fn_context *cx, String line);
 void compl_build(fn_context *cx, String line);
+void compl_destroy(fn_context *cx);
 
-void compl_new(int size);
+void compl_new(int size, int dynamic);
+void compl_delete(fn_compl *cmpl);
 void compl_set_index(int idx, String key, int colcount, String *cols);
 
 fn_compl* compl_match_index(int idx);

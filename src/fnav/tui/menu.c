@@ -49,6 +49,7 @@ Menu* menu_start()
 
   mnu->cx = context_start();
   compl_build(mnu->cx, "");
+  compl_update(mnu->cx, "");
 
   return mnu;
 }
@@ -58,8 +59,8 @@ void menu_stop(Menu *mnu)
   log_msg("MENU", "menu_stop");
   werase(mnu->nc_win);
   wnoutrefresh(mnu->nc_win);
-  // delete context
-  // delete compl
+
+  compl_destroy(mnu->cx);
 
   delwin(mnu->nc_win);
   free(mnu);
@@ -68,6 +69,7 @@ void menu_stop(Menu *mnu)
 
 void menu_update(Menu *mnu, Cmdline *cmd)
 {
+  log_msg("MENU", "menu_update");
   // compare cmdline to context's cur_param
   // if first token in cmdline matches type of cur_param
   //  if cur_param has more params
@@ -75,7 +77,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   //  else if cur_param has next
   //    cur_param = next
   //
-  // cmpl = compl_create(mnu->cx, cmdline)
+  compl_update(mnu->cx, cmd->line);
 }
 
 void menu_draw(Menu *mnu)
@@ -83,25 +85,40 @@ void menu_draw(Menu *mnu)
   log_msg("MENU", "menu_draw");
   fn_compl *cmpl = mnu->cx->cmpl;
 
+  wclear(mnu->nc_win);
+
   wattron(mnu->nc_win, COLOR_PAIR(mnu->col_line));
   mvwhline(mnu->nc_win, ROW_MAX, 0, ' ', mnu->size.col);
   wattroff(mnu->nc_win, COLOR_PAIR(mnu->col_line));
 
-  if (cmpl) {
-    for (int i = 0; i < cmpl->rowcount && i < ROW_MAX; i++) {
-      compl_item *row = cmpl->rows[i];
-      if (!row) break;
-      DRAW_STR(mnu, nc_win, i, 0, ">", col_div);
-      DRAW_STR(mnu, nc_win, i, 2, row->key, col_text);
-
-      for (int i = 0; i < row->colcount; i++) {
-        String col = row->columns[i];
-        DRAW_STR(mnu, nc_win, i, 2, col, col_text);
-      }
-    }
-    String key = mnu->cx->params[0]->comp;
-    DRAW_STR(mnu, nc_win, ROW_MAX, 0, key, col_box);
+  if (!cmpl) {
+    wnoutrefresh(mnu->nc_win);
+    return;
   }
+
+  int i, pos;
+  i = pos = 0;
+
+  while (pos < ROW_MAX && i < cmpl->rowcount) {
+
+    compl_item *row = cmpl->matches[i];
+    i++;
+    if (!row) {
+      continue;
+    }
+
+    DRAW_STR(mnu, nc_win, pos, 0, ">", col_div);
+    DRAW_STR(mnu, nc_win, pos, 2, row->key, col_text);
+
+    for (int i = 0; i < row->colcount; i++) {
+      String col = row->columns[i];
+      DRAW_STR(mnu, nc_win, pos, 2, col, col_text);
+    }
+
+    pos++;
+  }
+  String key = mnu->cx->params[0]->comp;
+  DRAW_STR(mnu, nc_win, ROW_MAX, 0, key, col_box);
 
   wnoutrefresh(mnu->nc_win);
 }

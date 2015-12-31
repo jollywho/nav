@@ -133,20 +133,8 @@ Cntlr* cntlr_from_id(int id)
 
 void cntlr_list(String line)
 {
-  compl_new(TABLE_SIZE);
+  compl_new(TABLE_SIZE, COMPL_STATIC);
   for (int i = 0; i < (int)TABLE_SIZE; i++) {
     compl_set_index(i, cntlr_table[i].name, 0, NULL);
   }
 }
-
-
-// two types of compl:
-//  A) dynamic; rebuild for every keystroke
-//  B) static; build at start
-//
-// search:
-//  foreach row in compl
-//    int pos = regex_check(cmdline, row->key)
-//    if (pos != -1) {
-//      add row to compl_matches
-//    }
