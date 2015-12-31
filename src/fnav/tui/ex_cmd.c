@@ -191,3 +191,13 @@ void stop_ex_cmd()
   curs_set(0);
   window_ex_cmd_end();
 }
+
+char ex_cmd_curch()
+{
+  return cmd.line[curpos];
+}
+
+int ex_cmd_curpos()
+{
+  return curpos;
+}

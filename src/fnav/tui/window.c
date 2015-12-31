@@ -36,13 +36,16 @@ static const Cmd_T cmdtable[] = {
   {"pipe",   win_pipe,    0 },
 };
 
-#define COMPL_SIZE ARRAY_SIZE(cmdtable)
+//static String COMPL_ROOT = "_:_;cmd:string:cmds";
+
+#define COMPL_SIZE ARRAY_SIZE(compl_win)
 static String compl_win[] = {
-  "q;window:string:wins",
-  "close;window:string:wins",
-  "vnew;cntlr:string:cntlrs",
-  "new;cntlr:string:cntlrs",
-  "pipe;window:number:wins",
+  "cmd:q;window:string:wins",
+  "cmd:close;window:string:wins",
+  "cmd:vnew;cntlr:string:cntlrs",
+  "cmd:new;cntlr:string:cntlrs",
+  "cmd:pipe;window:number:wins",
+  "cntlr:fm;path:string:paths",
 };
 
 #define KEYS_SIZE ARRAY_SIZE(key_defaults)

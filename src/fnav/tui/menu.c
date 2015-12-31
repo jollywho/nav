@@ -16,6 +16,9 @@ struct Menu {
 
   pos_T size;
   pos_T ofs;
+
+  int tmp_part;
+
   int row_max;
 
   int col_text;
@@ -50,6 +53,7 @@ Menu* menu_start()
   mnu->cx = context_start();
   compl_build(mnu->cx, "");
   compl_update(mnu->cx, "");
+  mnu->tmp_part = 0;
 
   return mnu;
 }
@@ -70,14 +74,24 @@ void menu_stop(Menu *mnu)
 void menu_update(Menu *mnu, Cmdline *cmd)
 {
   log_msg("MENU", "menu_update");
-  // compare cmdline to context's cur_param
-  // if first token in cmdline matches type of cur_param
-  //  if cur_param has more params
-  //    context = cur_param
-  //  else if cur_param has next
-  //    cur_param = next
-  //
-  compl_update(mnu->cx, cmd->line);
+  fn_context *cx = mnu->cx;
+
+  if (ex_cmd_curch() == ' ') {
+    String key;
+    for (int i = 0; i < cx->cmpl->rowcount; i++) {
+      if (cx->cmpl->matches[i]) {
+        key = cx->cmpl->matches[i]->key;
+
+        compl_destroy(mnu->cx);
+        mnu->cx = find_context(cx, key);
+        mnu->tmp_part = 1 + strchr(cmd->line, ' ') - cmd->line;
+        compl_build(mnu->cx, cmd->line + mnu->tmp_part);
+
+        break;
+      }
+    }
+  }
+  compl_update(mnu->cx, cmd->line + mnu->tmp_part);
 }
 
 void menu_draw(Menu *mnu)
@@ -117,8 +131,8 @@ void menu_draw(Menu *mnu)
 
     pos++;
   }
-  String key = mnu->cx->params[0]->comp;
-  DRAW_STR(mnu, nc_win, ROW_MAX, 0, key, col_box);
+  String key = mnu->cx->key;
+  DRAW_STR(mnu, nc_win, ROW_MAX, 1, key, col_line);
 
   wnoutrefresh(mnu->nc_win);
 }

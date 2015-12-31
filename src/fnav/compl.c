@@ -14,17 +14,16 @@ static compl_entry compl_defaults[] = {
   { "cntlrs",  cntlr_list    },
 };
 
+//static fn_context* find_context(fn_context **cx, String name);
 static compl_entry *compl_table;
 static fn_context *context_root;
 static fn_compl *cur_cmpl;
+static String COMPL_ROOT = "_:_;cmd:string:cmds";
 
 void compl_init()
 {
   cur_cmpl = NULL;
-  compl_add_context("_;cmd:string:cmds");
-  fn_context *find;
-  HASH_FIND_STR(context_root, "_", find);
-  context_root = find;
+  compl_add_context(COMPL_ROOT);
 
   for (int i = 0; i < (int)DEFAULT_SIZE; i++) {
     HASH_INS(compl_table, compl_defaults[i]);
@@ -33,7 +32,9 @@ void compl_init()
 
 void compl_build(fn_context *cx, String line)
 {
-  String key = cx->params[0]->comp;
+  log_msg("COMPL", "compl_build");
+  String key = cx->comp;
+  log_msg("COMPL", "%s", key);
   compl_entry *find;
   HASH_FIND_STR(compl_table, key, find);
   if (!find) return;
@@ -47,17 +48,24 @@ void compl_build(fn_context *cx, String line)
 
 void compl_destroy(fn_context *cx)
 {
+  log_msg("COMPL", "compl_destroy");
   compl_delete(cx->cmpl);
   cur_cmpl = NULL;
 }
 
 fn_context* context_start()
 {
-  return context_root;
+  fn_context *cx = context_root->hh.next;
+  return cx->params[0];
 }
 
 void compl_update(fn_context *cx, String line)
 {
+  log_msg("COMPL", "compl_update");
+  if (!cx) return;
+  if (!cx->cmpl) return;
+  log_msg("COMPL", "%s", line);
+
   fn_compl *cmpl = cx->cmpl;
   cmpl->matchcount = 0;
   for (int i = 0; i < cmpl->rowcount; i++) {
@@ -133,9 +141,9 @@ static int compl_param(fn_context **arg, String param)
     comp = strtok(NULL, ":");
 
   (*arg) = malloc(sizeof(fn_context));
-  (*arg)->key = name;
-  //arg->type = type;
-  (*arg)->comp = comp;
+  (*arg)->key = strdup(name);
+  (*arg)->type = strdup(type);
+  (*arg)->comp = strdup(comp);
   return 1;
 }
 
@@ -147,12 +155,23 @@ void compl_add_context(String fmt_compl)
   int grpc = count_subgrps(fmt_compl, ";");
 
   String line = strdup(fmt_compl);
+  fn_context *cx = malloc(sizeof(fn_context));
   fn_context **args = malloc(grpc*sizeof(fn_context));
+  fn_context **parent = &context_root;
 
-  String key;
-  if (grpc > 0) {
+  String keyptr;
+  if (grpc < 1) {
+    log_msg("COMPL", "invalid format");
+    return;
+  }
+  else {
     String saveptr;
-    key = strtok_r(line, ";", &saveptr);
+    String lhs = strtok_r(line, ";", &saveptr);
+    String name = strtok(lhs, ":");
+
+    keyptr = strdup(strtok(NULL, ":"));
+    //*parent = find_context(&context_root, name);
+
     String param = strtok_r(NULL, ";", &saveptr);
     for (pidx = 0; pidx < grpc; pidx++) {
       if (compl_param(&args[pidx], param) == -1)
@@ -160,29 +179,61 @@ void compl_add_context(String fmt_compl)
       param = strtok_r(NULL, ";", &saveptr);
     }
   }
-  else
-    key = line;
 
-  fn_context *cx = malloc(sizeof(fn_context));
   fn_context *find;
-  cx->key = key;
+  cx->key = keyptr;
   cx->argc = grpc;
   cx->params = args;
-  HASH_FIND_STR(context_root, cx->key, find);
+  HASH_FIND_STR(context_root, keyptr, find);
   if (find) {
     log_msg("COMPL", "ERROR: context already defined");
-    free(cx);
     goto breakout;
   }
-  else
-    HASH_ADD_KEYPTR(hh, context_root, cx->key, strlen(cx->key), cx);
+  else {
+    log_msg("*|*", "%s %s %s", cx->key, args[0]->key, keyptr);
+    for (int i = 0; i < grpc; i++) {
+      HASH_ADD_STR(context_root, key, args[i]);
+    }
+    HASH_ADD_STR(context_root, key, cx);
+  }
+  free(line);
 
   return;
 breakout:
-  for (; pidx > 0; pidx--) {
+  log_msg("**", "CLEANUP");
+  for (pidx = pidx - 1; pidx > 0; pidx--) {
     free(args[pidx]);
   }
+  free(cx);
   free(args);
   free(line);
   return;
+}
+
+fn_context* find_context(fn_context *cx, String name)
+{
+  log_msg("COMPL", "find_context");
+  if (!(cx)) {
+    log_msg("COMPL", "not available.");
+    return NULL;
+  }
+
+  fn_context *find;
+  HASH_FIND_STR(cx, name, find);
+  if (find) {
+    log_msg("COMPL", "::found %s %s", name, find->key);
+    return find->params[0];
+  }
+  else {
+    log_msg("COMPL", "::");
+    fn_context *it;
+    for(it = (cx); it != NULL; it = it->hh.next) {
+      log_msg("COMPL", "::");
+      fn_context *ret = find_context(it, name);
+      if (ret)
+        return ret;
+    }
+    log_msg("COMPL", "not found.");
+    return cx;
+  }
 }

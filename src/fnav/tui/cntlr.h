@@ -29,6 +29,7 @@ struct Cntlr {
   int id;
   String name;
   String fmt_name;
+  String compl_key;
   fn_handle *hndl;
   void *top;
   void (*_cancel)(Cntlr *cntlr);
