@@ -17,8 +17,6 @@ struct Menu {
   pos_T size;
   pos_T ofs;
 
-  int tmp_part;
-
   int row_max;
 
   int col_text;
@@ -51,9 +49,9 @@ Menu* menu_start()
   mnu->col_line   = attr_color("OverlayLine");
 
   mnu->cx = context_start();
+  ex_cmd_push(mnu->cx);
   compl_build(mnu->cx, "");
   compl_update(mnu->cx, "");
-  mnu->tmp_part = 0;
 
   return mnu;
 }
@@ -64,8 +62,6 @@ void menu_stop(Menu *mnu)
   werase(mnu->nc_win);
   wnoutrefresh(mnu->nc_win);
 
-  compl_destroy(mnu->cx);
-
   delwin(mnu->nc_win);
   free(mnu);
   window_shift(ROW_MAX+1);
@@ -74,30 +70,24 @@ void menu_stop(Menu *mnu)
 void menu_update(Menu *mnu, Cmdline *cmd)
 {
   log_msg("MENU", "menu_update");
-  fn_context *cx = mnu->cx;
 
-  if (ex_cmd_curch() == ' ') {
-    String key;
-    for (int i = 0; i < cx->cmpl->rowcount; i++) {
-      if (cx->cmpl->matches[i]) {
-        key = cx->cmpl->matches[i]->key;
-
-        compl_destroy(mnu->cx);
-        mnu->cx = find_context(cx, key);
-        mnu->tmp_part = 1 + strchr(cmd->line, ' ') - cmd->line;
-        compl_build(mnu->cx, cmd->line + mnu->tmp_part);
-
-        break;
-      }
-    }
+  if (ex_cmd_curch() != ' ' && ex_cmd_state() == (EX_LEFT | EX_EMPTY)) {
+    mnu->cx = ex_cmd_pop()->cx;
   }
-  compl_update(mnu->cx, cmd->line + mnu->tmp_part);
+  else if (ex_cmd_curch() == ' ' && ex_cmd_state() == EX_RIGHT) {
+
+    String key = ex_cmd_curstr();
+    mnu->cx = find_context(mnu->cx, key);
+    ex_cmd_push(mnu->cx);
+  }
+  if (mnu->cx)
+    compl_build(mnu->cx, ex_cmd_curstr());
+  compl_update(mnu->cx, ex_cmd_curstr());
 }
 
 void menu_draw(Menu *mnu)
 {
   log_msg("MENU", "menu_draw");
-  fn_compl *cmpl = mnu->cx->cmpl;
 
   wclear(mnu->nc_win);
 
@@ -105,10 +95,11 @@ void menu_draw(Menu *mnu)
   mvwhline(mnu->nc_win, ROW_MAX, 0, ' ', mnu->size.col);
   wattroff(mnu->nc_win, COLOR_PAIR(mnu->col_line));
 
-  if (!cmpl) {
+  if (!mnu->cx || !mnu->cx->cmpl) {
     wnoutrefresh(mnu->nc_win);
     return;
   }
+  fn_compl *cmpl = mnu->cx->cmpl;
 
   int i, pos;
   i = pos = 0;

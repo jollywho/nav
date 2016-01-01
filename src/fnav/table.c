@@ -102,8 +102,8 @@ void tbl_mk_fld(String tn, String name, tFldType typ)
 fn_rec* mk_rec(fn_tbl *t)
 {
   fn_rec *rec = malloc(sizeof(fn_rec));
-  rec->vals = malloc(sizeof(fn_val)*t->count);
-  rec->vlist = malloc(sizeof(fn_val)*t->count);
+  rec->vals = malloc(sizeof(fn_val*)*t->count);
+  rec->vlist = malloc(sizeof(fn_val*)*t->count);
   rec->fld_count = t->count;
   return rec;
 }
@@ -406,9 +406,9 @@ trans_rec* mk_trans_rec(int fld_count)
 {
   trans_rec *r = malloc(sizeof(trans_rec));
   r->max = fld_count;
-  r->flds = malloc(sizeof(String)*r->max);
-  r->data = malloc(sizeof(void)*r->max);
-  r->type = malloc(sizeof(bool)*r->max);
+  r->flds = malloc(sizeof(String*)*r->max);
+  r->data = malloc(sizeof(void*)*r->max);
+  r->type = malloc(sizeof(bool*)*r->max);
   r->count = 0;
   return r;
 }
