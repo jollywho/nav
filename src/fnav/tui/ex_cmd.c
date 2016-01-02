@@ -1,4 +1,5 @@
 #include "fnav/tui/ex_cmd.h"
+#include "fnav/fnav.h"
 #include "fnav/cmdline.h"
 #include "fnav/regex.h"
 #include "fnav/ascii.h"
@@ -12,6 +13,7 @@
 #define STACK_MIN 10
 static cmd_part **cmd_stack;
 static int cur_part;
+static int max_part;
 
 static WINDOW *nc_win;
 static int curpos;
@@ -69,6 +71,7 @@ void start_ex_cmd(int state)
   else {
     cmd_stack = malloc(STACK_MIN * sizeof(cmd_part*));
     cur_part = -1;
+    max_part = STACK_MIN;
     menu = menu_start();
   }
   cmdline_init(&cmd, max.col);
@@ -174,8 +177,7 @@ static void ex_killline()
   werase(nc_win);
   curpos = -1;
 
-  while (cur_part > 0)
-    ex_cmd_pop();
+  ex_cmd_pop(cur_part);
   menu_restart(menu);
   mflag = 0;
 }
@@ -239,8 +241,7 @@ void stop_ex_cmd()
 {
   log_msg("EXCMD", "stop_ex_cmd");
   if (menu) {
-    while (cur_part > 0)
-      ex_cmd_pop();
+    ex_cmd_pop(-1);
     free(cmd_stack);
     menu_stop(menu);
     menu = NULL;
@@ -259,6 +260,12 @@ void ex_cmd_push(fn_context *cx)
 {
   log_msg("EXCMD", "ex_cmd_push");
   cur_part++;
+
+  if (cur_part >= max_part) {
+    max_part = 2 * max_part;
+    cmd_stack = realloc(cmd_stack, max_part * sizeof(cmd_part*));
+  }
+
   cmd_stack[cur_part] = malloc(sizeof(cmd_part));
   cmd_stack[cur_part]->cx = cx;
 
@@ -271,14 +278,22 @@ void ex_cmd_push(fn_context *cx)
   mflag |= EX_FRESH;
 }
 
-cmd_part* ex_cmd_pop()
+cmd_part* ex_cmd_pop(int count)
 {
   log_msg("EXCMD", "ex_cmd_pop");
-  //FIXME: the remaining blocked item has to be freed manually
-  if (cur_part == 0) return cmd_stack[cur_part];
-  compl_destroy(cmd_stack[cur_part]->cx);
-  free(cmd_stack[cur_part]);
-  cur_part--;
+  if (cur_part < 0) return NULL;
+
+  if (count == -1)
+    count = cur_part + 1;
+  else
+    count = MIN(cur_part, MAX(cur_part, cur_part - count));
+
+  while (count > 0) {
+    compl_destroy(cmd_stack[cur_part]->cx);
+    free(cmd_stack[cur_part]);
+    cur_part--;
+    count--;
+  }
   return cmd_stack[cur_part];
 }
 

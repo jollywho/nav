@@ -36,6 +36,6 @@ String ex_cmd_curstr();
 int ex_cmd_state();
 
 void ex_cmd_push(fn_context *cx);
-cmd_part* ex_cmd_pop();
+cmd_part* ex_cmd_pop(int count);
 
 #endif
