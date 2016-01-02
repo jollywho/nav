@@ -13,6 +13,7 @@
 #define EX_RIGHT  4
 #define EX_NEW    8
 #define EX_FRESH  16
+#define EX_QUIT   32
 #define EX_POP    (EX_LEFT|EX_EMPTY)
 #define EX_PUSH   (EX_RIGHT|EX_NEW)
 
@@ -21,6 +22,7 @@ typedef struct {
   int st;
 } cmd_part;
 
+void ex_cmd_init();
 void start_ex_cmd(int ex_state);
 void stop_ex_cmd();
 

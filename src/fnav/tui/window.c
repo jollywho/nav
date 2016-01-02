@@ -93,6 +93,8 @@ void window_init(void)
     compl_add_context(compl_win[i]);
   }
   sig_resize(0);
+  buf_init();
+  ex_cmd_init();
 }
 
 static void win_layout(Window *_w, Cmdarg *arg)

@@ -37,7 +37,6 @@ void init(void)
   input_init();
   compl_init();
   window_init();
-  buf_init();
   log_msg("INIT", "__________INIT_END______________");
 }
 

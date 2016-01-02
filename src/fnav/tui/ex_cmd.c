@@ -7,6 +7,7 @@
 #include "fnav/tui/window.h"
 #include "fnav/tui/menu.h"
 #include "fnav/option.h"
+#include "fnav/event/input.h"
 
 #define STACK_MIN 10
 static cmd_part **cmd_stack;
@@ -27,6 +28,30 @@ static int mflag;
 #define CURS_MIN -1
 
 static void cmdline_draw();
+static void ex_esc();
+static void ex_car();
+static void ex_bckspc();
+static void ex_killword();
+static void ex_killline();
+
+#define KEYS_SIZE ARRAY_SIZE(key_defaults)
+static fn_key key_defaults[] = {
+  {ESC,      ex_esc,           0,       0},
+  {CAR,      ex_car,           0,       0},
+  {BS,       ex_bckspc,        0,       0},
+  {Ctrl_W,   ex_killword,      0,       0},
+  {Ctrl_U,   ex_killline,      0,       0},
+};
+static fn_keytbl key_tbl;
+static short cmd_idx[KEYS_SIZE];
+
+void ex_cmd_init()
+{
+  key_tbl.tbl = key_defaults;
+  key_tbl.cmd_idx = cmd_idx;
+  key_tbl.maxsize = KEYS_SIZE;
+  input_init_tbl(&key_tbl);
+}
 
 void start_ex_cmd(int state)
 {
@@ -98,23 +123,27 @@ void cmdline_refresh()
   cmdline_draw();
 }
 
-void reset_line()
+static void ex_esc()
 {
-  memset(cmd.line, '\0', maxpos);
-  werase(nc_win);
-  curpos = -1;
-
-  while (cur_part > 0)
-    ex_cmd_pop();
-  menu_restart(menu);
-  mflag = 0;
+  if (ex_state == 1) {
+    regex_pivot();
+  }
+  mflag = EX_QUIT;
 }
 
-void del_word()
+static void ex_car()
 {
-  int st = cmdline_last(&cmd)->start;
-  curpos = st;
+  if (ex_state == 0) {
+    cmdline_req_run(&cmd);
+  }
+  else {
+    regex_swap_pivot();
+  }
+  mflag = EX_QUIT;
+}
 
+static void ex_bckspc()
+{
   werase(nc_win);
   //FIXME: this will split line when cursor movement added
   cmd.line[curpos] = '\0';
@@ -129,15 +158,26 @@ void del_word()
   mflag &= ~EX_FRESH;
 }
 
-static void ex_enter()
+static void ex_killword()
 {
-  if (ex_state == 0) {
-    cmdline_req_run(&cmd);
-  }
-  else {
-    regex_swap_pivot();
-  }
-  stop_ex_cmd();
+  int st = cmdline_last(&cmd)->start;
+  for (int i = st; i < curpos; i++)
+    cmd.line[i] = '\0';
+
+  curpos = st;
+  ex_bckspc();
+}
+
+static void ex_killline()
+{
+  memset(cmd.line, '\0', maxpos);
+  werase(nc_win);
+  curpos = -1;
+
+  while (cur_part > 0)
+    ex_cmd_pop();
+  menu_restart(menu);
+  mflag = 0;
 }
 
 static void ex_onkey()
@@ -165,44 +205,15 @@ static void ex_onkey()
   cmdline_draw();
 }
 
-static void ex_onesc()
-{
-  if (ex_state == 1) {
-    regex_pivot();
-  }
-  stop_ex_cmd();
-}
-
 void ex_input(int key)
 {
   log_msg("EXCMD", "input");
-  if (key == ESC) {
-    ex_onesc();
-    return;
-  }
-  if (key == CAR) {
-    ex_enter();
-    return;
-  }
-  if (key == BS) {
-    werase(nc_win);
-    //FIXME: this will split line when cursor movement added
-    cmd.line[curpos] = '\0';
-    curpos--;
-    mflag |= EX_LEFT;
-    if (curpos < CURS_MIN) {
-      curpos = CURS_MIN;
-    }
-    if (curpos < cmd_stack[cur_part]->st) {
-      mflag |= EX_EMPTY;
-    }
-    mflag &= ~EX_FRESH;
-  }
-  else if (key == Ctrl_U) {
-    reset_line();
-  }
-  else if (key == Ctrl_W) {
-    del_word();
+
+  Cmdarg ca;
+  int idx = find_command(&key_tbl, key);
+  ca.arg = key_defaults[idx].cmd_arg;
+  if (idx >= 0) {
+    key_defaults[idx].cmd_func(NULL, &ca);
   }
   else {
     curpos++;
@@ -218,7 +229,10 @@ void ex_input(int key)
     // FIXME: wide char support
     cmd.line[curpos] = key;
   }
-  ex_onkey();
+  if ((mflag & EX_QUIT) == EX_QUIT)
+    stop_ex_cmd();
+  else
+    ex_onkey();
 }
 
 void stop_ex_cmd()
@@ -260,6 +274,7 @@ void ex_cmd_push(fn_context *cx)
 cmd_part* ex_cmd_pop()
 {
   log_msg("EXCMD", "ex_cmd_pop");
+  //FIXME: the remaining blocked item has to be freed manually
   if (cur_part == 0) return cmd_stack[cur_part];
   compl_destroy(cmd_stack[cur_part]->cx);
   free(cmd_stack[cur_part]);
