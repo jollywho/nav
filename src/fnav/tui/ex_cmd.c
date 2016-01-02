@@ -103,7 +103,7 @@ void reset_line()
   memset(cmd.line, '\0', maxpos);
   werase(nc_win);
   curpos = -1;
-  mflag = EX_LEFT;
+  mflag = 0;
 }
 
 void del_word()
@@ -125,6 +125,7 @@ static void ex_enter()
 
 static void ex_onkey()
 {
+  log_msg("MENU", "##%d", ex_cmd_state());
   if (ex_state == 0) {
     cmdline_build(&cmd);
     if ((mflag & EX_FRESH) != EX_FRESH) {
@@ -140,7 +141,7 @@ static void ex_onkey()
       regex_hover();
     }
   }
-  mflag &= ~(EX_LEFT|EX_RIGHT);
+  mflag &= ~(EX_LEFT|EX_RIGHT|EX_EMPTY);
   cmdline_draw();
 }
 
@@ -172,8 +173,9 @@ void ex_input(int key)
     if (curpos < CURS_MIN) {
       curpos = CURS_MIN;
     }
-    if (curpos < cmd_stack[cur_part]->st)
+    if (curpos < cmd_stack[cur_part]->st) {
       mflag |= EX_EMPTY;
+    }
     mflag &= ~EX_FRESH;
   }
   else if (key == Ctrl_U) {
@@ -185,8 +187,9 @@ void ex_input(int key)
   else {
     curpos++;
     mflag |= EX_RIGHT;
-    if (key != ' ')
-      mflag &= ~EX_FRESH;
+    if (key != ' ') {
+      mflag &= ~(EX_FRESH|EX_NEW);
+    }
     if (curpos >= maxpos) {
       maxpos = 2 * curpos;
       cmd.line = realloc(cmd.line, maxpos * sizeof(char*));

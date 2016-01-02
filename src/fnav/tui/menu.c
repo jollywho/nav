@@ -72,12 +72,12 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   log_msg("MENU", "menu_update");
   log_msg("MENU", "##%d", ex_cmd_state());
 
-  if (ex_cmd_state() == (EX_LEFT | EX_EMPTY)) {
+  if ((ex_cmd_state() & EX_POP) == EX_POP) {
     mnu->cx = ex_cmd_pop()->cx;
     if (mnu->cx)
       compl_build(mnu->cx, ex_cmd_curstr());
   }
-  else if ((ex_cmd_state() & EX_NEW) == (EX_NEW)) {
+  else if ((ex_cmd_state() & EX_PUSH) == EX_PUSH) {
     String key = ex_cmd_curstr();
     mnu->cx = find_context(mnu->cx, key);
     ex_cmd_push(mnu->cx);

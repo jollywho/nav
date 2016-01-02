@@ -8,11 +8,13 @@
 #define EX_CMD_STATE 0
 #define EX_REG_STATE 1
 
-#define EX_EMPTY  0x01
-#define EX_LEFT   0x02
-#define EX_RIGHT  0x04
-#define EX_NEW    0x08
-#define EX_FRESH  0x10
+#define EX_EMPTY  1
+#define EX_LEFT   2
+#define EX_RIGHT  4
+#define EX_NEW    8
+#define EX_FRESH  16
+#define EX_POP    (EX_LEFT|EX_EMPTY)
+#define EX_PUSH   (EX_RIGHT|EX_NEW)
 
 typedef struct {
   fn_context *cx;
