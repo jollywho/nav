@@ -103,13 +103,30 @@ void reset_line()
   memset(cmd.line, '\0', maxpos);
   werase(nc_win);
   curpos = -1;
+
+  while (cur_part > 0)
+    ex_cmd_pop();
+  menu_restart(menu);
   mflag = 0;
 }
 
 void del_word()
 {
-  //int prev = cmdline_prev_word(&cmd, curpos);
-  // delete from curpos to found index
+  int st = cmdline_last(&cmd)->start;
+  curpos = st;
+
+  werase(nc_win);
+  //FIXME: this will split line when cursor movement added
+  cmd.line[curpos] = '\0';
+  curpos--;
+  mflag |= EX_LEFT;
+  if (curpos < CURS_MIN) {
+    curpos = CURS_MIN;
+  }
+  if (curpos < cmd_stack[cur_part]->st) {
+    mflag |= EX_EMPTY;
+  }
+  mflag &= ~EX_FRESH;
 }
 
 static void ex_enter()
@@ -129,8 +146,11 @@ static void ex_onkey()
   if (ex_state == 0) {
     cmdline_build(&cmd);
     if ((mflag & EX_FRESH) != EX_FRESH) {
-      if (curpos + 1 > cmdline_lastpos(&cmd) && curpos > 0)
-        mflag |= EX_NEW;
+      Token *tok = cmdline_last(&cmd);
+      if (tok) {
+        if (curpos + 1 > tok->end && curpos > 0)
+          mflag |= EX_NEW;
+      }
     }
     menu_update(menu, &cmd);
   }
@@ -240,7 +260,7 @@ void ex_cmd_push(fn_context *cx)
 cmd_part* ex_cmd_pop()
 {
   log_msg("EXCMD", "ex_cmd_pop");
-  if (cur_part < 1) return cmd_stack[cur_part];
+  if (cur_part == 0) return cmd_stack[cur_part];
   compl_destroy(cmd_stack[cur_part]->cx);
   free(cmd_stack[cur_part]);
   cur_part--;

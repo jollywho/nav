@@ -86,6 +86,6 @@ void cmdline_req_run(Cmdline *cmdline);
 
 int  cmdline_prev_word(Cmdline *cmdline, int pos);
 Token *cmdline_tokbtwn(Cmdline *cmdline, int st, int ed);
-int cmdline_lastpos(Cmdline *cmdline);
+Token* cmdline_last(Cmdline *cmdline);
 
 #endif

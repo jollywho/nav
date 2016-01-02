@@ -48,12 +48,17 @@ Menu* menu_start()
   mnu->col_box    = attr_color("OverlayActive");
   mnu->col_line   = attr_color("OverlayLine");
 
+  menu_restart(mnu);
+
+  return mnu;
+}
+
+void menu_restart(Menu *mnu)
+{
   mnu->cx = context_start();
   ex_cmd_push(mnu->cx);
   compl_build(mnu->cx, "");
   compl_update(mnu->cx, "");
-
-  return mnu;
 }
 
 void menu_stop(Menu *mnu)

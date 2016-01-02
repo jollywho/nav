@@ -9,5 +9,6 @@ Menu* menu_start();
 void menu_stop(Menu *mnu);
 void menu_update(Menu *mnu, Cmdline *cmd);
 void menu_draw(Menu *mnu);
+void menu_restart(Menu *mnu);
 
 #endif

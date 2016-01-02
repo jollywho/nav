@@ -311,11 +311,11 @@ Token *cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
   return NULL;
 }
 
-int cmdline_lastpos(Cmdline *cmdline)
+Token* cmdline_last(Cmdline *cmdline)
 {
-  if (utarray_len(cmdline->tokens) < 1) return -1;
+  if (utarray_len(cmdline->tokens) < 1) return NULL;
   Token *word = (Token*)utarray_back(cmdline->tokens);
-  return word->end;
+  return word;
 }
 
 static Token* cmdline_parse(Cmdline *cmdline, Token *word)
