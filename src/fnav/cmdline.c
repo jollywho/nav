@@ -295,9 +295,7 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
 
 Token *cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
 {
-  log_msg("CMDLINE", "cmdline_tokbtwn");
-  if (!cmdline->cmds)
-    return NULL;
+  if (!cmdline->cmds) return NULL;
 
   Cmdstr *cmd = NULL;
   NEXT_CMD(cmdline, cmd);
@@ -307,12 +305,17 @@ Token *cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
   Token *word = NULL;
 
   while ((word = (Token*)utarray_next(arr, word))) {
-    log_msg("CMDLINE", "## %d %d ##", word->start, word->end);
-    log_msg("CMDLINE", "## %d %d ##", st, ed);
     if (MAX(0, MIN(ed, word->end) - MAX(st, word->start)) > 0)
       return word;
   }
   return NULL;
+}
+
+int cmdline_lastpos(Cmdline *cmdline)
+{
+  if (utarray_len(cmdline->tokens) < 1) return -1;
+  Token *word = (Token*)utarray_back(cmdline->tokens);
+  return word->end;
 }
 
 static Token* cmdline_parse(Cmdline *cmdline, Token *word)

@@ -11,6 +11,8 @@
 #define EX_EMPTY  0x01
 #define EX_LEFT   0x02
 #define EX_RIGHT  0x04
+#define EX_NEW    0x08
+#define EX_FRESH  0x10
 
 typedef struct {
   fn_context *cx;

@@ -127,6 +127,10 @@ static void ex_onkey()
 {
   if (ex_state == 0) {
     cmdline_build(&cmd);
+    if ((mflag & EX_FRESH) != EX_FRESH) {
+      if (curpos + 1 > cmdline_lastpos(&cmd) && curpos > 0)
+        mflag |= EX_NEW;
+    }
     menu_update(menu, &cmd);
   }
   else {
@@ -136,7 +140,7 @@ static void ex_onkey()
       regex_hover();
     }
   }
-  mflag = 0;
+  mflag &= ~(EX_LEFT|EX_RIGHT);
   cmdline_draw();
 }
 
@@ -164,12 +168,13 @@ void ex_input(int key)
     //FIXME: this will split line when cursor movement added
     cmd.line[curpos] = '\0';
     curpos--;
-    mflag = EX_LEFT;
+    mflag |= EX_LEFT;
     if (curpos < CURS_MIN) {
       curpos = CURS_MIN;
     }
     if (curpos < cmd_stack[cur_part]->st)
       mflag |= EX_EMPTY;
+    mflag &= ~EX_FRESH;
   }
   else if (key == Ctrl_U) {
     reset_line();
@@ -179,7 +184,9 @@ void ex_input(int key)
   }
   else {
     curpos++;
-    mflag = EX_RIGHT;
+    mflag |= EX_RIGHT;
+    if (key != ' ')
+      mflag &= ~EX_FRESH;
     if (curpos >= maxpos) {
       maxpos = 2 * curpos;
       cmd.line = realloc(cmd.line, maxpos * sizeof(char*));
@@ -223,11 +230,14 @@ void ex_cmd_push(fn_context *cx)
     st = curpos;
   }
   cmd_stack[cur_part]->st = st;
+  mflag &= ~EX_NEW;
+  mflag |= EX_FRESH;
 }
 
 cmd_part* ex_cmd_pop()
 {
   log_msg("EXCMD", "ex_cmd_pop");
+  if (cur_part < 1) return cmd_stack[cur_part];
   compl_destroy(cmd_stack[cur_part]->cx);
   free(cmd_stack[cur_part]);
   cur_part--;
@@ -246,12 +256,9 @@ int ex_cmd_curpos()
 
 Token* ex_cmd_curtok()
 {
-  log_msg("**@@", "ex_pop");
   int st = cmd_stack[cur_part]->st;
-  int ed = curpos+1;
+  int ed = curpos + 1;
   Token *tok = cmdline_tokbtwn(&cmd, st, ed);
-  if (tok)
-    log_msg("**@@", "%d", tok->var.v_type);
   return tok;
 }
 

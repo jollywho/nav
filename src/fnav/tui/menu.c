@@ -70,18 +70,20 @@ void menu_stop(Menu *mnu)
 void menu_update(Menu *mnu, Cmdline *cmd)
 {
   log_msg("MENU", "menu_update");
+  log_msg("MENU", "##%d", ex_cmd_state());
 
-  if (ex_cmd_curch() != ' ' && ex_cmd_state() == (EX_LEFT | EX_EMPTY)) {
+  if (ex_cmd_state() == (EX_LEFT | EX_EMPTY)) {
     mnu->cx = ex_cmd_pop()->cx;
+    if (mnu->cx)
+      compl_build(mnu->cx, ex_cmd_curstr());
   }
-  else if (ex_cmd_curch() == ' ' && ex_cmd_state() == EX_RIGHT) {
-
+  else if ((ex_cmd_state() & EX_NEW) == (EX_NEW)) {
     String key = ex_cmd_curstr();
     mnu->cx = find_context(mnu->cx, key);
     ex_cmd_push(mnu->cx);
+    if (mnu->cx)
+      compl_build(mnu->cx, ex_cmd_curstr());
   }
-  if (mnu->cx)
-    compl_build(mnu->cx, ex_cmd_curstr());
   compl_update(mnu->cx, ex_cmd_curstr());
 }
 
