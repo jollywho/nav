@@ -14,7 +14,6 @@
 
 typedef struct {
   fn_context *cx;
-  String str;
   int st;
 } cmd_part;
 
@@ -26,6 +25,7 @@ void cmdline_refresh();
 
 char ex_cmd_curch();
 int ex_cmd_curpos();
+Token* ex_cmd_curtok();
 String ex_cmd_curstr();
 int ex_cmd_state();
 

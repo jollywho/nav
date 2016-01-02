@@ -11,6 +11,7 @@
 #include "fnav/cmd.h"
 #include "fnav/ascii.h"
 #include "fnav/log.h"
+#include "fnav/macros.h"
 
 static UT_icd dict_icd = { sizeof(Pair),   NULL };
 static UT_icd list_icd = { sizeof(Token),  NULL };
@@ -235,9 +236,11 @@ static void pop(QUEUE *stack)
 
   if (parent->var.v_type == VAR_LIST) {
     utarray_push_back(parent->var.vval.v_list->items, token);
+    parent->end = token->end;
   }
   else if (parent->var.v_type == VAR_DICT) {
     utarray_push_back(parent->var.vval.v_dict->items, token);
+    parent->end = token->end;
   }
   else if (stack_prevprev(stack)->var.v_type == VAR_PAIR) {
     Token *key = stack_pop(stack);
@@ -290,6 +293,28 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
   return false;
 }
 
+Token *cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
+{
+  log_msg("CMDLINE", "cmdline_tokbtwn");
+  if (!cmdline->cmds)
+    return NULL;
+
+  Cmdstr *cmd = NULL;
+  NEXT_CMD(cmdline, cmd);
+
+  List *list = cmd->args->var.vval.v_list;
+  UT_array *arr = list->items;
+  Token *word = NULL;
+
+  while ((word = (Token*)utarray_next(arr, word))) {
+    log_msg("CMDLINE", "## %d %d ##", word->start, word->end);
+    log_msg("CMDLINE", "## %d %d ##", st, ed);
+    if (MAX(0, MIN(ed, word->end) - MAX(st, word->start)) > 0)
+      return word;
+  }
+  return NULL;
+}
+
 static Token* cmdline_parse(Cmdline *cmdline, Token *word)
 {
   log_msg("CMDLINE", "cmdline_parse");
@@ -320,15 +345,16 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
       case '}':
       case ']':
         /*FALLTHROUGH*/
-        push(word, stack);
         pop(stack);
         break;
         //
       case '{':
         push(dict_new(), stack);
+        stack_head(stack)->start = word->start;
         break;
       case '[':
         push(list_new(), stack);
+        stack_head(stack)->start = word->start;
         break;
       default:
         seek = seek_ahead(cmdline, stack, word);

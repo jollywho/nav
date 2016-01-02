@@ -98,26 +98,6 @@ void cmdline_refresh()
   cmdline_draw();
 }
 
-static void copy_str_part()
-{
-  int st = cmd_stack[cur_part]->st;
-  if (st < 0)
-    st = 0;
-  int len = curpos - st;
-  free(cmd_stack[cur_part]->str);
-  if (len < 0) {
-    cmd_stack[cur_part]->str = strdup("");
-    return;
-  }
-  cmd_stack[cur_part]->str = malloc(strlen(cmd.line)*sizeof(String));
-  strncpy(cmd_stack[cur_part]->str, &cmd.line[st], len+1);
-
-  if (cmd_stack[cur_part]->str[len] == ' ')
-    cmd_stack[cur_part]->str[len] = '\0';
-  else
-    cmd_stack[cur_part]->str[len+1] = '\0';
-}
-
 void reset_line()
 {
   memset(cmd.line, '\0', maxpos);
@@ -147,7 +127,6 @@ static void ex_onkey()
 {
   if (ex_state == 0) {
     cmdline_build(&cmd);
-    copy_str_part();
     menu_update(menu, &cmd);
   }
   else {
@@ -241,17 +220,15 @@ void ex_cmd_push(fn_context *cx)
 
   int st = 0;
   if (cur_part > 0) {
-    st = curpos+1;
+    st = curpos;
   }
   cmd_stack[cur_part]->st = st;
-  cmd_stack[cur_part]->str = strdup("");
 }
 
 cmd_part* ex_cmd_pop()
 {
   log_msg("EXCMD", "ex_cmd_pop");
   compl_destroy(cmd_stack[cur_part]->cx);
-  free(cmd_stack[cur_part]->str);
   free(cmd_stack[cur_part]);
   cur_part--;
   return cmd_stack[cur_part];
@@ -267,10 +244,22 @@ int ex_cmd_curpos()
   return curpos;
 }
 
+Token* ex_cmd_curtok()
+{
+  log_msg("**@@", "ex_pop");
+  int st = cmd_stack[cur_part]->st;
+  int ed = curpos+1;
+  Token *tok = cmdline_tokbtwn(&cmd, st, ed);
+  if (tok)
+    log_msg("**@@", "%d", tok->var.v_type);
+  return tok;
+}
+
 String ex_cmd_curstr()
 {
-  if (cmd_stack[cur_part]->str)
-    return cmd_stack[cur_part]->str;
+  Token *tok = ex_cmd_curtok();
+  if (tok)
+    return TOKEN_STR(tok->var);
   else
     return "";
 }
