@@ -24,6 +24,7 @@ static void window_loop();
 static void* win_new();
 static void* win_close();
 static void* win_pipe();
+static void* win_sort();
 static void win_layout();
 static void window_ex_cmd();
 
@@ -34,9 +35,8 @@ static const Cmd_T cmdtable[] = {
   {"new",    win_new,     MOVE_UP},
   {"vnew",   win_new,     MOVE_LEFT},
   {"pipe",   win_pipe,    0 },
+  {"sort",   win_sort,    0 },
 };
-
-//static String COMPL_ROOT = "_:_;cmd:string:cmds";
 
 #define COMPL_SIZE ARRAY_SIZE(compl_win)
 static String compl_win[] = {
@@ -45,6 +45,7 @@ static String compl_win[] = {
   "cmd:vnew;cntlr:string:cntlrs",
   "cmd:new;cntlr:string:cntlrs",
   "cmd:pipe;window:number:wins",
+  "cmd:sort;field:string:fields",
   "cntlr:fm;path:string:paths",
 };
 
@@ -146,6 +147,20 @@ static void* win_pipe(List *args, enum move_dir flags)
     //TODO: replace pipe if already set
     send_hook_msg("pipe_attach", buf_cntlr(buf), rhs );
   }
+  return 0;
+}
+
+static void* win_sort(List *args, enum move_dir flags)
+{
+  log_msg("WINDOW", "win_sort");
+
+  String fld = "";
+  if (utarray_len(args->items) == 2) {
+    Token *word = (Token*)utarray_eltptr(args->items, 1);
+    if (word->var.v_type != VAR_STRING) return 0;
+    fld = TOKEN_STR(word->var);
+  }
+  buf_sort(layout_buf(&win.layout), fld);
   return 0;
 }
 

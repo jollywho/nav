@@ -341,3 +341,9 @@ static void buf_g(Buffer *buf, Cmdarg *arg)
   int y = model_count(buf->hndl->model) * dir;
   buf_move(buf, y, 0);
 }
+
+void buf_sort(Buffer *buf, String fld)
+{
+  if (!buf->hndl) return;
+  model_sort(buf->hndl->model, fld);
+}

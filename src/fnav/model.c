@@ -2,6 +2,8 @@
 // stream and table callbacks should be directed here for
 // managing data structures read by attached buffers.
 #include <malloc.h>
+#include <sys/time.h>
+#include <uv.h>
 
 #include "fnav/lib/utarray.h"
 
@@ -29,6 +31,28 @@ struct Model {
 };
 
 static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
+
+static int date_sort(const void *a, const void*b)
+{
+  fn_line l1 = *(fn_line*)a;
+  fn_line l2 = *(fn_line*)b;
+  String str1 = (String)rec_fld(l1.rec, "fullpath");
+  String str2 = (String)rec_fld(l2.rec, "fullpath");
+  ventry *ent1 = fnd_val("fm_stat", "fullpath", str1);
+  ventry *ent2 = fnd_val("fm_stat", "fullpath", str2);
+  struct stat *s1 = (struct stat*)rec_fld(ent1->rec, "stat");
+  struct stat *s2 = (struct stat*)rec_fld(ent2->rec, "stat");
+  return difftime(s2->st_mtim.tv_sec, s1->st_mtim.tv_sec);
+}
+
+static int str_sort(const void *a, const void*b)
+{
+  fn_line l1 = *(fn_line*)a;
+  fn_line l2 = *(fn_line*)b;
+  String s1 = rec_fld(l1.rec, "name");
+  String s2 = rec_fld(l2.rec, "name");
+  return strcmp(s2, s1);
+}
 
 void model_init(fn_handle *hndl)
 {
@@ -62,6 +86,17 @@ void model_close(fn_handle *hndl)
 
 int model_blocking(fn_handle *hndl)
 {return hndl->model->blocking;}
+
+void model_sort(Model *m, String fld)
+{
+  log_msg("MODEL", "model_sort");
+  fn_handle *h = m->hndl;
+  if (strcmp(fld, "date") == 0)
+    utarray_sort(m->lines, date_sort);
+  else
+    utarray_sort(m->lines, str_sort);
+  buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
+}
 
 void model_read_entry(Model *m, fn_lis *lis, ventry *head)
 {

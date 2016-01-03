@@ -4,6 +4,7 @@
 
 #include "fnav/table.h"
 #include "fnav/log.h"
+#include "fnav/compl.h"
 
 fn_tbl* get_tbl(String t);
 static void tbl_del_rec(fn_rec *rec);
@@ -438,4 +439,18 @@ void clear_trans(trans_rec *r)
   free(r->flds);
   free(r->data);
   free(r);
+}
+
+void field_list(String line)
+{
+  if (HASH_COUNT(FN_MASTER) < 1) return;
+  fn_tbl *t = get_tbl("fm_files");
+  unsigned int count = HASH_COUNT(t->fields);
+  compl_new(count, COMPL_STATIC);
+  fn_fld *it;
+  int i = 0;
+  for (it = t->fields; it != NULL; it = it->hh.next) {
+    compl_set_index(i, it->key, 0, NULL);
+    i++;
+  }
 }

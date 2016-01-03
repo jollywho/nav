@@ -147,6 +147,7 @@ static void ex_car()
 
 static void ex_bckspc()
 {
+  log_msg("MENU", "bkspc");
   werase(nc_win);
   //FIXME: this will split line when cursor movement added
   cmd.line[curpos] = '\0';
@@ -155,8 +156,9 @@ static void ex_bckspc()
   if (curpos < CURS_MIN) {
     curpos = CURS_MIN;
   }
-  if (curpos < cmd_stack[cur_part]->st) {
-    mflag |= EX_EMPTY;
+  if (ex_state == EX_CMD_STATE) {
+    if (curpos < cmd_stack[cur_part]->st)
+      mflag |= EX_EMPTY;
   }
   mflag &= ~EX_FRESH;
 }

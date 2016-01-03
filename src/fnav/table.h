@@ -73,4 +73,6 @@ trans_rec* mk_trans_rec(int fld_count);
 void edit_trans(trans_rec *r, String fname, String val, void *data);
 void clear_trans(trans_rec *r);
 
+void field_list(String line);
+
 #endif

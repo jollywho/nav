@@ -76,4 +76,6 @@ pos_T buf_ofs(Buffer *buf);
 
 int buf_attached(Buffer *buf);
 
+void buf_sort(Buffer *buf, String fld);
+
 #endif
