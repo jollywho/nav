@@ -35,9 +35,16 @@ struct fn_fld {
   UT_hash_handle hh;
 };
 
+typedef struct {
+  String key;
+  tbl_vt_cb cb;
+  UT_hash_handle hh;
+} fn_vt_fld;
+
 struct fn_tbl {
   String key;
   fn_fld *fields;
+  fn_vt_fld *vtfields;
   int count;
   int rec_count;
   UT_hash_handle hh;
@@ -97,6 +104,17 @@ void tbl_mk_fld(String tn, String name, tFldType typ)
   fld->type = typ;
   t->count++;
   HASH_ADD_KEYPTR(hh, t->fields, fld->key, strlen(fld->key), fld);
+  log_msg("TABLE", "made %s", fld->key);
+}
+
+void tbl_mk_vt_fld(String tn, String name, tbl_vt_cb cb)
+{
+  log_msg("TABLE", "making {%s} vt_field {%s} ...", tn, name);
+  fn_tbl *t = get_tbl(tn);
+  fn_vt_fld *fld = malloc(sizeof(fn_vt_fld));
+  fld->key = strdup(name);
+  fld->cb = cb;
+  HASH_ADD_KEYPTR(hh, t->vtfields, fld->key, strlen(fld->key), fld);
   log_msg("TABLE", "made %s", fld->key);
 }
 
@@ -193,6 +211,14 @@ void* rec_fld(fn_rec *rec, String fname)
     }
   }
   return NULL;
+}
+
+void* rec_vt_fld(String tn, fn_rec *rec, String fname)
+{
+  fn_tbl *t = get_tbl(tn);
+  fn_vt_fld *f;
+  HASH_FIND_STR(t->vtfields, fname, f);
+  return f->cb(rec, fname);
 }
 
 int tbl_fld_count(String tn)
@@ -441,16 +467,28 @@ void clear_trans(trans_rec *r)
   free(r);
 }
 
+//TODO: cntlr has list of tables it own
+// get current focus cntlr
+// get cntlr's table list
+// iterate list of tables
+// add field to compl
 void field_list(String line)
 {
   if (HASH_COUNT(FN_MASTER) < 1) return;
   fn_tbl *t = get_tbl("fm_files");
   unsigned int count = HASH_COUNT(t->fields);
+  count += HASH_COUNT(t->vtfields);
+
   compl_new(count, COMPL_STATIC);
   fn_fld *it;
   int i = 0;
   for (it = t->fields; it != NULL; it = it->hh.next) {
     compl_set_index(i, it->key, 0, NULL);
+    i++;
+  }
+  fn_vt_fld *vit;
+  for (vit = t->vtfields; vit != NULL; vit = vit->hh.next) {
+    compl_set_index(i, vit->key, 0, NULL);
     i++;
   }
 }

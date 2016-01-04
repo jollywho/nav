@@ -148,6 +148,7 @@ Cntlr* fm_init(Buffer *buf)
     tbl_mk_fld("fm_files", "name", typSTRING);
     tbl_mk_fld("fm_files", "dir", typSTRING);
     tbl_mk_fld("fm_files", "fullpath", typSTRING);
+    tbl_mk_vt_fld("fm_files", "mtime", fs_vt_stat_resolv);
   }
 
   if (tbl_mk("fm_stat")) {

@@ -16,7 +16,6 @@ static compl_entry compl_defaults[] = {
   { "fields",  field_list    },
 };
 
-//static fn_context* find_context(fn_context **cx, String name);
 static compl_entry *compl_table;
 static fn_context *context_root;
 static fn_compl *cur_cmpl;
@@ -164,7 +163,6 @@ void compl_add_context(String fmt_compl)
   String line = strdup(fmt_compl);
   fn_context *cx = malloc(sizeof(fn_context));
   fn_context **args = malloc(grpc*sizeof(fn_context));
-  fn_context **parent = &context_root;
 
   String keyptr;
   if (grpc < 1) {
@@ -174,10 +172,9 @@ void compl_add_context(String fmt_compl)
   else {
     String saveptr;
     String lhs = strtok_r(line, ";", &saveptr);
-    String name = strtok(lhs, ":");
+    strtok(lhs, ":");
 
     keyptr = strdup(strtok(NULL, ":"));
-    //*parent = find_context(&context_root, name);
 
     String param = strtok_r(NULL, ";", &saveptr);
     for (pidx = 0; pidx < grpc; pidx++) {
@@ -232,16 +229,6 @@ fn_context* find_context(fn_context *cx, String name)
     return find->params[0];
   }
   else {
-    log_msg("COMPL", "::");
-    //fn_context *it;
-    //for(it = (cx); it != NULL; it = it->hh.next) {
-    //  log_msg("COMPL", "::");
-    //  if (it == cx)
-    //    continue;
-    //  fn_context *ret = find_context(it, name);
-    //  if (ret)
-    //    return ret;
-    //}
     log_msg("COMPL", "not found.");
     return NULL;
   }

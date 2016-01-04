@@ -69,6 +69,10 @@ typedef struct {
   void **data;
 } trans_rec;
 
+typedef void* (*tbl_vt_cb)(fn_rec *rec, String key);
+void tbl_mk_vt_fld(String tn, String name, tbl_vt_cb cb);
+void* rec_vt_fld(String tn, fn_rec *rec, String fname);
+
 trans_rec* mk_trans_rec(int fld_count);
 void edit_trans(trans_rec *r, String fname, String val, void *data);
 void clear_trans(trans_rec *r);

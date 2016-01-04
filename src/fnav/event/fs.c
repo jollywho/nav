@@ -67,6 +67,14 @@ bool isdir(String path)
   return (S_ISDIR(st->st_mode));
 }
 
+void* fs_vt_stat_resolv(fn_rec *rec, String key)
+{
+  String str1 = (String)rec_fld(rec, "fullpath");
+  ventry *ent = fnd_val("fm_stat", "fullpath", str1);
+  struct stat *stat = (struct stat*)rec_fld(ent->rec, "stat");
+  return &stat->st_mtim.tv_sec;
+}
+
 void fs_signal_handle(void **data)
 {
   log_msg("FS", "fs_signal_handle");

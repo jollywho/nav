@@ -31,5 +31,6 @@ void fs_open(FS_handle *h, const String dir);
 void fs_close(FS_handle *h);
 bool isdir(String path);
 String fs_parent_dir(const String path);
+void* fs_vt_stat_resolv(fn_rec *rec, String key);
 
 #endif
