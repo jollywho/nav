@@ -10,6 +10,7 @@
 #include "fnav/model.h"
 #include "fnav/log.h"
 #include "fnav/table.h"
+#include "fnav/fnav.h"
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/sbuffer.h"
 #include "fnav/tui/window.h"
@@ -28,21 +29,23 @@ struct Model {
   fn_rec *cur;
   ventry *head;
   bool blocking;
+  String sort_type;
   UT_array *lines;
 };
 
 static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
 
-static int date_sort(const void *a, const void*b)
+static int date_sort(const void *a, const void *b)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
-  long *t1 = fs_vt_stat_resolv(l1.rec, "mtime");
-  long *t2 = fs_vt_stat_resolv(l2.rec, "mtime");
+
+  time_t *t1 = fs_vt_stat_resolv(l1.rec, "mtime");
+  time_t *t2 = fs_vt_stat_resolv(l2.rec, "mtime");
   return difftime(*t1, *t2);
 }
 
-static int str_sort(const void *a, const void*b)
+static int str_sort(const void *a, const void *b)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
@@ -56,6 +59,7 @@ void model_init(fn_handle *hndl)
   Model *model = malloc(sizeof(Model));
   model->hndl = hndl;
   hndl->model = model;
+  model->sort_type = "";
   utarray_new(model->lines, &icd);
 }
 
@@ -88,7 +92,9 @@ void model_sort(Model *m, String fld)
 {
   log_msg("MODEL", "model_sort");
   fn_handle *h = m->hndl;
-  if (strcmp(fld, "mtime") == 0)
+  if (!fld) fld = "";
+  m->sort_type = fld;
+  if (strcmp(m->sort_type, "mtime") == 0)
     utarray_sort(m->lines, date_sort);
   else
     utarray_sort(m->lines, str_sort);
@@ -109,6 +115,7 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   generate_lines(m);
   refind_line(m->lis);
   buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
+  model_sort(m, m->sort_type);
   m->blocking = false;
 }
 

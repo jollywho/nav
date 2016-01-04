@@ -220,7 +220,7 @@ static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,
     fsh->queued = true;
     if (took > 0) {
       uv_fs_event_stop(&fsh->watcher);
-      uv_timer_start(&fsh->watcher_timer, watch_timer_cb, delay, delay);
+      //uv_timer_start(&fsh->watcher_timer, watch_timer_cb, delay, delay);
     }
     else
       fs_reopen(fsh);
