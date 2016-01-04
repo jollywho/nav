@@ -11,7 +11,7 @@ void model_open(fn_handle *hndl);
 void model_close(fn_handle *hndl);
 int model_blocking(fn_handle *hndl);
 
-void model_sort(Model *m, String fld);
+void model_sort(Model *m, String fld, int flags);
 void model_read_entry(Model *m, fn_lis *lis, ventry *head);
 size_t model_read_stream(Model *m, char *output, size_t remaining,
     bool to_buffer, bool eof);

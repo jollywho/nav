@@ -34,8 +34,9 @@ static const Cmd_T cmdtable[] = {
   {"close",  win_close,   0},
   {"new",    win_new,     MOVE_UP},
   {"vnew",   win_new,     MOVE_LEFT},
-  {"pipe",   win_pipe,    0 },
-  {"sort",   win_sort,    0 },
+  {"pipe",   win_pipe,    0},
+  {"sort",   win_sort,    1},
+  {"sort!",  win_sort,    -1},
 };
 
 #define COMPL_SIZE ARRAY_SIZE(compl_win)
@@ -46,6 +47,7 @@ static String compl_win[] = {
   "cmd:new;cntlr:string:cntlrs",
   "cmd:pipe;window:number:wins",
   "cmd:sort;field:string:fields",
+  "cmd:sort!;field:string:fields",
   "cntlr:fm;path:string:paths",
 };
 
@@ -150,7 +152,7 @@ static void* win_pipe(List *args, enum move_dir flags)
   return 0;
 }
 
-static void* win_sort(List *args, enum move_dir flags)
+static void* win_sort(List *args, int flags)
 {
   log_msg("WINDOW", "win_sort");
 
@@ -160,7 +162,7 @@ static void* win_sort(List *args, enum move_dir flags)
     if (word->var.v_type != VAR_STRING) return 0;
     fld = TOKEN_STR(word->var);
   }
-  buf_sort(layout_buf(&win.layout), fld);
+  buf_sort(layout_buf(&win.layout), fld, flags);
   return 0;
 }
 

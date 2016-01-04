@@ -34,6 +34,12 @@ static int hook_cmp(const void *_a, const void *_b)
   return strcmp(a->msg, b->msg);
 }
 
+static int hook_cmp_arg(const void *_a, const void *_b, void *arg)
+{
+  HookList *a = (HookList*)_a, *b = (HookList*)_b;
+  return strcmp(a->msg, b->msg);
+}
+
 void hook_init(Cntlr *host)
 {
   log_msg("HOOK", "INIT");
@@ -64,7 +70,7 @@ void hook_add(Cntlr *host, Cntlr *caller, hook_cb fn, String msg)
   //TODO add hook to caller's owner list
   Hook hook = {fn,caller,host,msg};
   utarray_push_back(hl->hooks, &hook);
-  utarray_sort(hl->hooks, hook_cmp);
+  utarray_sort(hl->hooks, hook_cmp_arg, 0);
 }
 
 void hook_remove(Cntlr *host, Cntlr *caller, String msg)

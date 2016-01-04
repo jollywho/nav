@@ -203,8 +203,8 @@ typedef struct {
   }                                                                           \
 } while(0)
 
-#define utarray_sort(a,cmp) do {                                              \
-  qsort((a)->d, (a)->i, (a)->icd.sz, cmp);                                    \
+#define utarray_sort(a,cmp,arg) do {                                          \
+  qsort_r((a)->d, (a)->i, (a)->icd.sz, cmp, arg);                             \
 } while(0)
 
 #define utarray_find(a,v,cmp) bsearch((v),(a)->d,(a)->i,(a)->icd.sz,cmp)

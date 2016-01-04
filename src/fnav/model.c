@@ -30,28 +30,30 @@ struct Model {
   ventry *head;
   bool blocking;
   String sort_type;
+  int sort_rev;
   UT_array *lines;
 };
 
 static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
+#define REV_FN(cond,fn,a,b) ((cond) > 0 ? (fn((a),(b))) : (fn((b),(a))))
 
-static int date_sort(const void *a, const void *b)
+static int date_sort(const void *a, const void *b, void *arg)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
 
   time_t *t1 = fs_vt_stat_resolv(l1.rec, "mtime");
   time_t *t2 = fs_vt_stat_resolv(l2.rec, "mtime");
-  return difftime(*t1, *t2);
+  return REV_FN(*(int*)arg, difftime, *t1, *t2);
 }
 
-static int str_sort(const void *a, const void *b)
+static int str_sort(const void *a, const void *b, void *arg)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
   String s1 = rec_fld(l1.rec, "name");
   String s2 = rec_fld(l2.rec, "name");
-  return strcmp(s2, s1);
+  return REV_FN(*(int*)arg, strcmp, s1, s2);
 }
 
 void model_init(fn_handle *hndl)
@@ -60,6 +62,7 @@ void model_init(fn_handle *hndl)
   model->hndl = hndl;
   hndl->model = model;
   model->sort_type = "";
+  model->sort_rev = 1;
   utarray_new(model->lines, &icd);
 }
 
@@ -88,16 +91,17 @@ void model_close(fn_handle *hndl)
 int model_blocking(fn_handle *hndl)
 {return hndl->model->blocking;}
 
-void model_sort(Model *m, String fld)
+void model_sort(Model *m, String fld, int flags)
 {
   log_msg("MODEL", "model_sort");
   fn_handle *h = m->hndl;
   if (!fld) fld = "";
+  if (flags != 0) m->sort_rev = flags;
   m->sort_type = fld;
   if (strcmp(m->sort_type, "mtime") == 0)
-    utarray_sort(m->lines, date_sort);
+    utarray_sort(m->lines, date_sort, &m->sort_rev);
   else
-    utarray_sort(m->lines, str_sort);
+    utarray_sort(m->lines, str_sort, &m->sort_rev);
   buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
 }
 
@@ -115,7 +119,7 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   generate_lines(m);
   refind_line(m->lis);
   buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
-  model_sort(m, m->sort_type);
+  model_sort(m, m->sort_type, 0);
   m->blocking = false;
 }
 

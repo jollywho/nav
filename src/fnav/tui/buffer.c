@@ -342,8 +342,8 @@ static void buf_g(Buffer *buf, Cmdarg *arg)
   buf_move(buf, y, 0);
 }
 
-void buf_sort(Buffer *buf, String fld)
+void buf_sort(Buffer *buf, String fld, int flags)
 {
   if (!buf->hndl) return;
-  model_sort(buf->hndl->model, fld);
+  model_sort(buf->hndl->model, fld, flags);
 }
