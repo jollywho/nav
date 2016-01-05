@@ -366,9 +366,10 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
           pop(stack);
     }
   }
-  utarray_push_back(cmdline->cmds, &cmd);
-  return NULL;
 breakout:
+  while (!QUEUE_EMPTY(stack)) {
+    stack_pop(stack);
+  }
   utarray_push_back(cmdline->cmds, &cmd);
   return word;
 }

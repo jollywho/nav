@@ -68,7 +68,7 @@ Buffer* buf_new()
   buf->dirty = false;
   buf->queued = false;
   buf->attached = false;
-  buf->closed = false;
+  buf->nodraw = false;
   buf->focused = false;
   buf->input_cb = NULL;
   buf->matches = NULL;
@@ -132,7 +132,8 @@ void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs)
 
 void buf_set_pass(Buffer *buf)
 {
-  buf->closed = true;
+  buf->nodraw = true;
+  buf->attached = false;
 }
 
 void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
@@ -180,8 +181,14 @@ void buf_draw(void **argv)
   log_msg("BUFFER", "draw");
   Buffer *buf = (Buffer*)argv[0];
   werase(buf->nc_win);
-  if (buf->closed) {
+
+  buf->dirty = false;
+  buf->queued = false;
+  buf->ldif = 0;
+
+  if (buf->nodraw) {
     wnoutrefresh(buf->nc_win);
+    send_hook_msg("window_resize", buf->cntlr, NULL);
     return;
   }
   if (buf->attached) {
@@ -202,9 +209,6 @@ void buf_draw(void **argv)
     wattroff(buf->nc_win, A_REVERSE);
   }
   wnoutrefresh(buf->nc_win);
-  buf->dirty = false;
-  buf->queued = false;
-  buf->ldif = 0;
 }
 
 void buf_full_invalidate(Buffer *buf, int index, int lnum)

@@ -28,7 +28,7 @@ struct Buffer {
   bool dirty;
   bool queued;
   bool attached;
-  bool closed;
+  bool nodraw;
   bool focused;
 
   int col_select;

@@ -228,6 +228,7 @@ Container* find_intersect(Container *c, Container *pp, pos_T pos)
   log_msg("LAYOUT", "find_intersect");
   Container *it = pp;
   while (it) {
+    log_msg("LAYOUT", "?");
 
     pos_T it_pos = (pos_T) {
       it->ofs.lnum + it->size.lnum,
@@ -238,7 +239,9 @@ Container* find_intersect(Container *c, Container *pp, pos_T pos)
       if (TAILQ_EMPTY(&it->p)) return it;
       return find_intersect(c, TAILQ_FIRST(&it->p), pos);
     }
+  log_msg("LAYOUT", "ft");
     it = TAILQ_NEXT(it, ent);
+  log_msg("LAYOUT", "fntersect");
   }
   return NULL;
 }

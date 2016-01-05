@@ -70,8 +70,11 @@ static char* get_config_path(void)
 		if (wordexp(config_paths[i], &p, 0) == 0) {
 			path = p.we_wordv[0];
 			if (file_exists(path)) {
+        path = strdup(p.we_wordv[0]);
+        wordfree(&p);
 				return path;
 			}
+      wordfree(&p);
 		}
 	}
   return NULL;
@@ -155,7 +158,7 @@ bool config_read(FILE *file)
     if (line[0] == '#' || strlen(line) < 1) {
       continue;
     }
-    log_msg("CMD", "conf: %s", line);
+    log_msg("CONFIG", "conf: %s", line);
     Cmdline cmd;
     cmdline_init_config(&cmd, line);
     cmdline_build(&cmd);
@@ -168,13 +171,13 @@ bool config_read(FILE *file)
 
 static void* edit_setting(List *args)
 {
-  log_msg("CMD", "edit_setting");
+  log_msg("CONFIG", "edit_setting");
   return 0;
 }
 
 static void* edit_color(List *args)
 {
-  log_msg("CMD", "edit_color");
+  log_msg("CONFIG", "edit_color");
   if (utarray_len(args->items) < 3) return 0;
   Token *word = (Token*)utarray_eltptr(args->items, 1);
   Token *arg1 = (Token*)utarray_eltptr(args->items, 2);
@@ -190,7 +193,7 @@ static void* edit_color(List *args)
 
 static void* edit_variable(List *args)
 {
-  log_msg("CMD", "edit_variable");
+  log_msg("CONFIG", "edit_variable");
   return 0;
 }
 

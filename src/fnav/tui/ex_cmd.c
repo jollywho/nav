@@ -96,7 +96,6 @@ static void gen_output_str()
     }
     i++; j++;
   }
-  fmt_out[maxpos*2] = '\0';
 }
 
 static void cmdline_draw()
