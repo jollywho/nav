@@ -96,7 +96,7 @@ void menu_draw(Menu *mnu)
 {
   log_msg("MENU", "menu_draw");
 
-  wclear(mnu->nc_win);
+  werase(mnu->nc_win);
 
   wattron(mnu->nc_win, COLOR_PAIR(mnu->col_line));
   mvwhline(mnu->nc_win, ROW_MAX, 0, ' ', mnu->size.col);

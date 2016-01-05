@@ -67,15 +67,15 @@ static char* get_config_path(void)
 
 	int i;
 	for (i = 0; i < (int)(sizeof(config_paths) / sizeof(char *)); ++i) {
-		if (wordexp(config_paths[i], &p, 0) == 0) {
-			path = p.we_wordv[0];
-			if (file_exists(path)) {
-        path = strdup(p.we_wordv[0]);
+    if (wordexp(config_paths[i], &p, 0) == 0) {
+      path = p.we_wordv[0];
+      if (file_exists(path)) {
+        path = strdup(path);
         wordfree(&p);
-				return path;
-			}
+        return path;
+      }
       wordfree(&p);
-		}
+    }
 	}
   return NULL;
 }

@@ -27,7 +27,9 @@ void compl_init()
   compl_add_context(COMPL_ROOT);
 
   for (int i = 0; i < (int)DEFAULT_SIZE; i++) {
-    HASH_INS(compl_table, compl_defaults[i]);
+    compl_entry *it = malloc(sizeof(compl_entry));
+    it = memcpy(it, &compl_defaults[i], sizeof(compl_entry));
+    HASH_ADD_STR(compl_table, key, it);
   }
 }
 
