@@ -20,16 +20,10 @@ static const char *SZ_ARG = "5;%s\n";
 static const char * const args[]   = {WM_IMG, NULL};
 static const char * const t_args[] = {WM_IMG, "-test", NULL};
 
-static void shell_stdout_size_cb(Cntlr *cntlr, String out)
+static void img_draw(Cntlr *cntlr)
 {
-  log_msg("IMG", "shell_stdout_size_cb");
-  log_msg("IMG", "%s", out);
+  log_msg("IMG", "img_draw");
   Img_cntlr *img = (Img_cntlr*)cntlr->top;
-
-  char *w = strtok(out, " ");
-  char *h = strtok(NULL, " ");
-  sscanf(w, "%d", &img->width);
-  sscanf(h, "%d", &img->height);
 
   pos_T pos = buf_ofs(img->buf);
   pos_T size = buf_size(img->buf);
@@ -64,6 +58,20 @@ static void shell_stdout_size_cb(Cntlr *cntlr, String out)
   shell_set_in_buffer(img->sh_draw, msg);
   shell_start(img->sh_draw);
   free(msg);
+}
+
+static void shell_stdout_size_cb(Cntlr *cntlr, String out)
+{
+  log_msg("IMG", "shell_stdout_size_cb");
+  log_msg("IMG", "%s", out);
+  Img_cntlr *img = (Img_cntlr*)cntlr->top;
+
+  char *w = strtok(out, " ");
+  char *h = strtok(NULL, " ");
+  sscanf(w, "%d", &img->width);
+  sscanf(h, "%d", &img->height);
+  img->img_set = true;
+  img_draw(cntlr);
 }
 
 static void shell_stdout_font_cb(Cntlr *cntlr, String out)
@@ -101,31 +109,46 @@ static int valid_ext(const char *path)
   return 0;
 }
 
-static void cursor_change_cb(Cntlr *host, Cntlr *caller)
+static int create_msg(Cntlr *host, Cntlr *caller)
 {
-  log_msg("IMG", "cursor_change_cb");
   Img_cntlr *img = (Img_cntlr*)caller->top;
   fn_handle *h = caller->hndl;
-
-  if (img->disabled) return;
 
   String path = model_curs_value(host->hndl->model, "fullpath");
   String name = model_curs_value(host->hndl->model, "name");
 
-  if (!valid_ext(path)) return;
+  if (!valid_ext(path)) return 0;
 
   img->path = path;
   h->key = name;
   buf_set_status(h->buf, 0, h->key, 0, 0);
   h->buf->attached = false; // override
 
-  char *msg;
-  asprintf(&msg, SZ_ARG, img->path);
+  free(img->msg);
+  asprintf(&img->msg, SZ_ARG, img->path);
 
-  shell_set_in_buffer(img->sh_size, msg);
+  return 1;
+}
+
+static void cursor_change_cb(Cntlr *host, Cntlr *caller)
+{
+  log_msg("IMG", "cursor_change_cb");
+  Img_cntlr *img = (Img_cntlr*)caller->top;
+
+  if (img->disabled) return;
+
+  if (create_msg(host, caller)) {
+    shell_set_in_buffer(img->sh_size, img->msg);
+    shell_start(img->sh_size);
+  }
+}
+
+static void try_refresh(Cntlr *host, Cntlr *none)
+{
+  Img_cntlr *img = (Img_cntlr*)host->top;
+  if (!img->img_set) return;
+  shell_set_in_buffer(img->sh_size, img->msg);
   shell_start(img->sh_size);
-
-  free(msg);
 }
 
 static void pipe_attach_cb(Cntlr *host, Cntlr *caller)
@@ -148,8 +171,10 @@ Cntlr* img_init(Buffer *buf)
   img->base.top = img;
   img->buf = buf;
   img->disabled = false;
+  img->img_set = false;
+  img->msg = malloc(1);
   buf_set_cntlr(buf, &img->base);
-  buf->attached = false; // override
+  buf_set_pass(buf);
 
   img->sh_size = shell_init(&img->base);
   shell_args(img->sh_size, (String*)t_args, shell_stdout_font_cb);
@@ -163,6 +188,7 @@ Cntlr* img_init(Buffer *buf)
 
   hook_init(&img->base);
   hook_add(&img->base, &img->base, pipe_attach_cb, "pipe_attach");
+  hook_add(&img->base, &img->base, try_refresh, "window_resize");
 
   return &img->base;
 }
