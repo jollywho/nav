@@ -12,6 +12,7 @@
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/fm_cntlr.h"
 #include "fnav/log.h"
+#include "fnav/cmd.h"
 
 static void fm_left();
 static void fm_right();
@@ -34,16 +35,6 @@ void cntlr_cancel(Cntlr *cntlr)
   self->fs->cancel = true;
 }
 
-void fm_read_scan()
-{
-  log_msg("FM", "read");
-}
-
-void fm_after_scan()
-{
-  log_msg("FM", "async done");
-}
-
 void cntlr_focus(Cntlr *cntlr)
 {
   log_msg("FM", "cntlr_focus");
@@ -52,7 +43,7 @@ void cntlr_focus(Cntlr *cntlr)
   buf_refresh(cntlr->hndl->buf);
 }
 
-int fm_opendir(Cntlr *cntlr, String path, short arg)
+static int fm_opendir(Cntlr *cntlr, String path, short arg)
 {
   log_msg("FS", "fm_opendir %s", path);
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
@@ -96,6 +87,24 @@ static void fm_right(Cntlr *cntlr, Cmdarg *arg)
     send_hook_msg("fileopen", cntlr, NULL);
 }
 
+void fm_ch_dir(Cntlr *cntlr, String path)
+{
+  log_msg("FM_CNTLR", "fm_ch_dir");
+  fm_opendir(cntlr, path, FORWARD);
+}
+
+void fm_req_dir(Cntlr *cntlr, String path)
+{
+  log_msg("FM_CNTLR", "fm_req_dir");
+  if (strcmp(cntlr->name, "fm") != 0) return;
+
+  String newpath = fs_expand_path(path);
+  if (newpath) {
+    FM_cntlr *self = (FM_cntlr*)cntlr->top;
+    fs_async_open(self->fs, cntlr, newpath);
+    free(newpath);
+  }
+}
 
 int cntlr_input(Cntlr *cntlr, int key)
 {
@@ -126,7 +135,7 @@ static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
   c->top = fm;
 }
 
-Cntlr* fm_init(Buffer *buf)
+Cntlr* fm_new(Buffer *buf)
 {
   log_msg("FM_CNTLR", "init");
   key_tbl.tbl = key_defaults;
@@ -167,7 +176,7 @@ Cntlr* fm_init(Buffer *buf)
   return &fm->base;
 }
 
-void fm_cleanup(Cntlr *cntlr)
+void fm_delete(Cntlr *cntlr)
 {
   log_msg("FM_CNTLR", "cleanup");
   FM_cntlr *fm = cntlr->top;

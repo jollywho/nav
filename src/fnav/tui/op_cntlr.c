@@ -109,7 +109,7 @@ static void pipe_attach_cb(Cntlr *host, Cntlr *caller)
   hook_add(caller, host, fileopen_cb, "fileopen");
 }
 
-Cntlr* op_init()
+Cntlr* op_new()
 {
   log_msg("OP", "INIT");
   if (!refs) {
@@ -134,7 +134,7 @@ Cntlr* op_init()
   return &op->base;
 }
 
-void op_cleanup(Cntlr *cntlr)
+void op_delete(Cntlr *cntlr)
 {
   log_msg("OP", "op_cleanup");
 }

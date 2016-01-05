@@ -10,6 +10,7 @@
 #include "fnav/event/hook.h"
 #include "fnav/event/input.h"
 #include "fnav/compl.h"
+#include "fnav/tui/fm_cntlr.h"
 
 struct Window {
   Loop loop;
@@ -25,6 +26,7 @@ static void* win_new();
 static void* win_close();
 static void* win_pipe();
 static void* win_sort();
+static void* win_cd();
 static void win_layout();
 static void window_ex_cmd();
 
@@ -37,6 +39,7 @@ static const Cmd_T cmdtable[] = {
   {"pipe",   win_pipe,    0},
   {"sort",   win_sort,    1},
   {"sort!",  win_sort,    -1},
+  {"cd",     win_cd,      0},
 };
 
 #define COMPL_SIZE ARRAY_SIZE(compl_win)
@@ -49,6 +52,7 @@ static String compl_win[] = {
   "cmd:sort;field:string:fields",
   "cmd:sort!;field:string:fields",
   "cntlr:fm;path:string:paths",
+  "cmd:cd;path:string:paths",
 };
 
 #define KEYS_SIZE ARRAY_SIZE(key_defaults)
@@ -148,6 +152,23 @@ static void* win_pipe(List *args, enum move_dir flags)
     Cntlr *rhs = cntlr_from_id(id);
     //TODO: replace pipe if already set
     send_hook_msg("pipe_attach", buf_cntlr(buf), rhs );
+  }
+  return 0;
+}
+
+static void* win_cd(List *args, int flags)
+{
+  log_msg("WINDOW", "win_cd");
+
+  String path = "";
+  if (utarray_len(args->items) == 2) {
+    Token *word = (Token*)utarray_eltptr(args->items, 1);
+    if (word->var.v_type != VAR_STRING) return 0;
+    path = TOKEN_STR(word->var);
+  }
+  Cntlr *cntlr = buf_cntlr(layout_buf(&win.layout));
+  if (cntlr) {
+    fm_req_dir(cntlr, path);
   }
   return 0;
 }

@@ -12,10 +12,10 @@ struct _cntlr_table {
   cntlr_open_cb open_cb;
   cntlr_close_cb close_cb;
 } cntlr_table[] = {
-  {"fm", fm_init, fm_cleanup},
-  {"sh", sh_init},
-  {"op", op_init},
-  {"img", img_init, img_cleanup},
+  {"fm", fm_new, fm_delete},
+  {"sh", sh_new},
+  {"op", op_new},
+  {"img", img_new, img_delete},
 };
 
 typedef struct {

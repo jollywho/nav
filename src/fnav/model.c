@@ -61,7 +61,7 @@ void model_init(fn_handle *hndl)
   Model *model = malloc(sizeof(Model));
   model->hndl = hndl;
   hndl->model = model;
-  model->sort_type = "";
+  model->sort_type = strdup("");
   model->sort_rev = 1;
   utarray_new(model->lines, &icd);
 }
@@ -70,6 +70,7 @@ void model_cleanup(fn_handle *hndl)
 {
   Model *m = hndl->model;
   utarray_free(m->lines);
+  free(m->sort_type);
   free(m);
 }
 
@@ -95,9 +96,11 @@ void model_sort(Model *m, String fld, int flags)
 {
   log_msg("MODEL", "model_sort");
   fn_handle *h = m->hndl;
-  if (!fld) fld = "";
+  if (fld) {
+    free(m->sort_type);
+    m->sort_type = strdup(fld);
+  }
   if (flags != 0) m->sort_rev = flags;
-  m->sort_type = fld;
   if (strcmp(m->sort_type, "mtime") == 0)
     utarray_sort(m->lines, date_sort, &m->sort_rev);
   else
@@ -119,7 +122,7 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   generate_lines(m);
   refind_line(m->lis);
   buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
-  model_sort(m, m->sort_type, 0);
+  model_sort(m, NULL, 0);
   m->blocking = false;
 }
 

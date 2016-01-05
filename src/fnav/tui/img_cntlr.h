@@ -20,7 +20,7 @@ struct Img_cntlr {
   int width; int height;
 };
 
-Cntlr* img_init(Buffer *buf);
-void img_cleanup(Cntlr *cntlr);
+Cntlr* img_new(Buffer *buf);
+void img_delete(Cntlr *cntlr);
 
 #endif

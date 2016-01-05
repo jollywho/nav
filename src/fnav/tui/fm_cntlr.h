@@ -14,7 +14,10 @@ struct FM_cntlr {
   FS_handle *fs;
 };
 
-Cntlr* fm_init(Buffer *buf);
-void fm_cleanup(Cntlr *cntlr);
+Cntlr* fm_new(Buffer *buf);
+void fm_delete(Cntlr *cntlr);
+
+void fm_req_dir(Cntlr *cntlr, String path);
+void fm_ch_dir(Cntlr *cntlr, String path);
 
 #endif

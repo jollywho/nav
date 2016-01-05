@@ -14,7 +14,7 @@ struct Op_cntlr {
   bool ready;
 };
 
-Cntlr* op_init();
-void op_cleanup(Cntlr *cntlr);
+Cntlr* op_new();
+void op_delete(Cntlr *cntlr);
 
 #endif

@@ -1,8 +1,7 @@
 #include <malloc.h>
 #include <sys/time.h>
 #include <libgen.h>
-
-#include <ncurses.h>
+#include <wordexp.h>
 
 #include "fnav/event/fs.h"
 #include "fnav/model.h"
@@ -10,6 +9,7 @@
 #include "fnav/log.h"
 #include "fnav/table.h"
 #include "fnav/tui/buffer.h"
+#include "fnav/tui/fm_cntlr.h"
 
 #define RFRESH_RATE 10000
 
@@ -60,11 +60,45 @@ String fs_parent_dir(const String path)
   return dirname(path);
 }
 
+String fs_expand_path(String path)
+{
+  wordexp_t p;
+  String newpath = NULL;
+  if (wordexp(path, &p, 0) == 0) {
+    newpath = strdup(p.we_wordv[0]);
+  }
+  wordfree(&p);
+  return newpath;
+}
+
 bool isdir(String path)
 {
   ventry *ent = fnd_val("fm_stat", "fullpath", path);
   struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
   return (S_ISDIR(st->st_mode));
+}
+
+static void req_stat_cb(uv_fs_t *req)
+{
+  log_msg("FS", "req_stat_cb");
+  FS_req *fq = req->data;
+  if (S_ISDIR(req->statbuf.st_mode)) {
+    fm_ch_dir((Cntlr*)fq->data, (String)req->path);
+  }
+  free(fq->req_name);
+  free(fq);
+}
+
+void fs_async_open(FS_handle *fsh, Cntlr *cntlr, String path)
+{
+  log_msg("FS", "fs_async_open");
+  FS_req *fq = malloc(sizeof(FS_req));
+  fq->fs_h = fsh;
+  fq->req_name = strdup(path);
+  fq->uv_fs.data = fq;
+  fq->data = cntlr;
+
+  uv_fs_stat(&fsh->loop.uv, &fq->uv_fs, path, req_stat_cb);
 }
 
 void* fs_vt_stat_resolv(fn_rec *rec, String key)

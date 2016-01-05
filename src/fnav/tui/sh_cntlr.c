@@ -4,7 +4,7 @@
 #include "fnav/model.h"
 #include "fnav/log.h"
 
-Cntlr* sh_init(Buffer *buf)
+Cntlr* sh_new(Buffer *buf)
 {
   log_msg("SH_CNTLR", "init");
   Sh_cntlr *sh = malloc(sizeof(Sh_cntlr));
@@ -24,6 +24,6 @@ Cntlr* sh_init(Buffer *buf)
   return &sh->base;
 }
 
-void sh_cleanup(Sh_cntlr *cntlr)
+void sh_delete(Sh_cntlr *cntlr)
 {
 }

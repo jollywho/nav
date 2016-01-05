@@ -157,7 +157,7 @@ static void pipe_attach_cb(Cntlr *host, Cntlr *caller)
   hook_add(caller, host, cursor_change_cb, "cursor_change");
 }
 
-Cntlr* img_init(Buffer *buf)
+Cntlr* img_new(Buffer *buf)
 {
   log_msg("IMG", "INIT");
   Img_cntlr *img = malloc(sizeof(Img_cntlr));
@@ -193,7 +193,7 @@ Cntlr* img_init(Buffer *buf)
   return &img->base;
 }
 
-void img_cleanup(Cntlr *cntlr)
+void img_delete(Cntlr *cntlr)
 {
   log_msg("IMG", "img_cleanup");
   Img_cntlr *img = (Img_cntlr*)cntlr->top;

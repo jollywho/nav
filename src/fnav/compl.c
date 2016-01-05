@@ -6,9 +6,6 @@
 #include "fnav/tui/cntlr.h"
 #include "fnav/table.h"
 
-#define HASH_INS(t,obj) \
-  HASH_ADD_KEYPTR(hh, t, obj.key, strlen(obj.key), &obj);
-
 #define DEFAULT_SIZE ARRAY_SIZE(compl_defaults)
 static compl_entry compl_defaults[] = {
   { "cmds",    cmd_list      },
@@ -228,7 +225,10 @@ fn_context* find_context(fn_context *cx, String name)
   HASH_FIND_STR(cx, name, find);
   if (find) {
     log_msg("COMPL", "::found %s %s", name, find->key);
-    return find->params[0];
+    if (find->argc > 0)
+      return find->params[0];
+    else
+      return NULL;
   }
   else {
     log_msg("COMPL", "not found.");
