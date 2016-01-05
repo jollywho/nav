@@ -101,7 +101,7 @@ void fs_open(FS_handle *fsh, const String dir)
   fsh->queued = false;
 
   uv_fs_stat(&fq->fs_h->loop.uv, &fq->uv_fs, dir, stat_cb);
-  uv_fs_event_start(&fsh->watcher, watch_cb, fsh->path, 1);
+  //uv_fs_event_start(&fsh->watcher, watch_cb, fsh->path, 1);
 }
 
 void fs_close(FS_handle *h)

@@ -53,6 +53,7 @@ void hook_cleanup(Cntlr *host)
   log_msg("HOOK", "CLEANUP");
   utarray_free(host->event_hooks->hosted);
   utarray_free(host->event_hooks->owner);
+  free(host->event_hooks);
 }
 
 void hook_add(Cntlr *host, Cntlr *caller, hook_cb fn, String msg)

@@ -176,7 +176,7 @@ void fm_cleanup(Cntlr *cntlr)
   model_cleanup(h);
   //hook remove_caller
   //hook clear
-  //hook cleanup
+  hook_cleanup(&fm->base);
   fs_cleanup(fm->fs);
   free(h);
   free(fm->cur_dir);

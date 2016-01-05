@@ -126,6 +126,9 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
   Container *hc = focus->parent;
 
   Container *c = malloc(sizeof(Container));
+  if (layout->root == focus) {
+    dir = MOVE_UP;
+  }
   create_container(c, dir);
   c->buf = next;
 
