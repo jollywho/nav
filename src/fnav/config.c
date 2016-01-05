@@ -32,8 +32,9 @@ void config_init()
   }
 }
 
-static bool file_exists(const char *path) {
-	return access(path, R_OK) != -1;
+static bool file_exists(const char *path)
+{
+  return access(path, R_OK) != -1;
 }
 
 char* strip_whitespace(char *_str)
@@ -57,16 +58,16 @@ char* strip_whitespace(char *_str)
 
 static char* get_config_path(void)
 {
-	static const char *config_paths[] = {
-		"$HOME/.fnavrc",
-		"$HOME/.fnav/.fnavrc",
-		"/etc/fnav/.fnavrc",
-	};
-	wordexp_t p;
-	char *path;
+  static const char *config_paths[] = {
+    "$HOME/.fnavrc",
+    "$HOME/.fnav/.fnavrc",
+    "/etc/fnav/.fnavrc",
+  };
+  wordexp_t p;
+  char *path;
 
-	int i;
-	for (i = 0; i < (int)(sizeof(config_paths) / sizeof(char *)); ++i) {
+  int i;
+  for (i = 0; i < (int)(sizeof(config_paths) / sizeof(char *)); ++i) {
     if (wordexp(config_paths[i], &p, 0) == 0) {
       path = p.we_wordv[0];
       if (file_exists(path)) {
@@ -76,50 +77,50 @@ static char* get_config_path(void)
       }
       wordfree(&p);
     }
-	}
+  }
   return NULL;
 }
 
 static char* read_line(FILE *file)
 {
-	int length = 0, size = 128;
-	char *string = malloc(size);
-	if (!string) {
-		return NULL;
-	}
-	while (1) {
-		int c = getc(file);
-		if (c == EOF || c == '\n' || c == '\0') {
-			break;
-		}
-		if (c == '\r') {
-			continue;
-		}
-		if (length == size) {
-			char *new_string = realloc(string, size *= 2);
-			if (!new_string) {
-				free(string);
-				return NULL;
-			}
-			string = new_string;
-		}
-		string[length++] = c;
-	}
-	if (length + 1 == size) {
-		char *new_string = realloc(string, length + 1);
-		if (!new_string) {
-			free(string);
-			return NULL;
-		}
-		string = new_string;
-	}
-	string[length] = '\0';
-	return string;
+  int length = 0, size = 128;
+  char *string = malloc(size);
+  if (!string) {
+    return NULL;
+  }
+  while (1) {
+    int c = getc(file);
+    if (c == EOF || c == '\n' || c == '\0') {
+      break;
+    }
+    if (c == '\r') {
+      continue;
+    }
+    if (length == size) {
+      char *new_string = realloc(string, size *= 2);
+      if (!new_string) {
+        free(string);
+        return NULL;
+      }
+      string = new_string;
+    }
+    string[length++] = c;
+  }
+  if (length + 1 == size) {
+    char *new_string = realloc(string, length + 1);
+    if (!new_string) {
+      free(string);
+      return NULL;
+    }
+    string = new_string;
+  }
+  string[length] = '\0';
+  return string;
 }
 
 bool config_load(const char *file)
 {
-	log_msg("CONFIG", "config_load");
+  log_msg("CONFIG", "config_load");
   char *path;
   if (file != NULL) {
     path = strdup(file);
@@ -127,24 +128,24 @@ bool config_load(const char *file)
     path = get_config_path();
   }
 
-	if (path == NULL) {
-		log_msg("CONFIG", "Unable to find a config file!");
-		return false;
-	}
+  if (path == NULL) {
+    log_msg("CONFIG", "Unable to find a config file!");
+    return false;
+  }
 
-	FILE *f = fopen(path, "r");
-	free(path);
-	if (!f) {
-		fprintf(stderr, "Unable to open %s for reading", path);
-		return false;
-	}
+  FILE *f = fopen(path, "r");
+  free(path);
+  if (!f) {
+    fprintf(stderr, "Unable to open %s for reading", path);
+    return false;
+  }
 
-	bool config_load_success;
-	config_load_success = config_read(f);
+  bool config_load_success;
+  config_load_success = config_read(f);
 
-	fclose(f);
+  fclose(f);
 
-	return config_load_success;
+  return config_load_success;
 }
 
 bool config_read(FILE *file)
