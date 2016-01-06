@@ -18,6 +18,7 @@ struct Menu {
   pos_T ofs;
 
   int row_max;
+  int lnum;
 
   int col_text;
   int col_div;
@@ -48,6 +49,8 @@ Menu* menu_start()
   mnu->col_box    = attr_color("OverlayActive");
   mnu->col_line   = attr_color("OverlayLine");
 
+  mnu->lnum = 0;
+
   menu_restart(mnu);
 
   return mnu;
@@ -76,6 +79,11 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 {
   log_msg("MENU", "menu_update");
   log_msg("MENU", "##%d", ex_cmd_state());
+
+  if ((ex_cmd_state() & EX_CYCLE) == EX_CYCLE) {
+    return;
+  }
+  mnu->lnum = 0;
 
   if ((ex_cmd_state() & EX_POP) == EX_POP) {
     mnu->cx = ex_cmd_pop(1)->cx;
@@ -111,29 +119,39 @@ void menu_draw(Menu *mnu)
   }
   fn_compl *cmpl = mnu->cx->cmpl;
 
-  int i, pos;
-  i = pos = 0;
-
-  while (pos < ROW_MAX && i < cmpl->rowcount) {
+  for (int i = 0; i < ROW_MAX && i < cmpl->matchcount; i++) {
 
     compl_item *row = cmpl->matches[i];
-    i++;
-    if (!row) {
-      continue;
-    }
 
-    DRAW_STR(mnu, nc_win, pos, 0, ">", col_div);
-    DRAW_STR(mnu, nc_win, pos, 2, row->key, col_text);
+    DRAW_STR(mnu, nc_win, i, 0, ">", col_div);
+    DRAW_STR(mnu, nc_win, i, 2, row->key, col_text);
 
-    for (int i = 0; i < row->colcount; i++) {
+    for (int c = 0; c < row->colcount; c++) {
       String col = row->columns[i];
-      DRAW_STR(mnu, nc_win, pos, 2, col, col_text);
+      DRAW_STR(mnu, nc_win, i, 2, col, col_text);
     }
-
-    pos++;
   }
   String key = mnu->cx->key;
   DRAW_STR(mnu, nc_win, ROW_MAX, 1, key, col_line);
 
   wnoutrefresh(mnu->nc_win);
+}
+
+String menu_next(Menu *mnu)
+{
+  log_msg("MENU", "menu_curkey");
+  if (!mnu->cx || !mnu->cx->cmpl) {
+    return NULL;
+  }
+  fn_compl *cmpl = mnu->cx->cmpl;
+  log_msg("MENU", "%d %d", mnu->lnum, cmpl->matchcount);
+  if (cmpl->matchcount < 1) return NULL;
+
+  String before = cmpl->matches[mnu->lnum]->key;
+
+  mnu->lnum++;
+
+  if (mnu->lnum > cmpl->matchcount - 1)
+    mnu->lnum = 0;
+  return before;
 }

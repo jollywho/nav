@@ -313,6 +313,7 @@ Token *cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
 
 Token* cmdline_last(Cmdline *cmdline)
 {
+  if (!cmdline->tokens) return NULL;
   if (utarray_len(cmdline->tokens) < 1) return NULL;
   Token *word = (Token*)utarray_back(cmdline->tokens);
   return word;

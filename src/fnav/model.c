@@ -44,7 +44,7 @@ static int date_sort(const void *a, const void *b, void *arg)
 
   time_t *t1 = fs_vt_stat_resolv(l1.rec, "mtime");
   time_t *t2 = fs_vt_stat_resolv(l2.rec, "mtime");
-  return REV_FN(*(int*)arg, difftime, *t1, *t2);
+  return REV_FN(*(int*)arg, difftime, *t2, *t1);
 }
 
 static int str_sort(const void *a, const void *b, void *arg)

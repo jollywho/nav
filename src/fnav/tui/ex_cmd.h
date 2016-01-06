@@ -14,6 +14,7 @@
 #define EX_NEW    8
 #define EX_FRESH  16
 #define EX_QUIT   32
+#define EX_CYCLE  64
 #define EX_POP    (EX_LEFT|EX_EMPTY)
 #define EX_PUSH   (EX_RIGHT|EX_NEW)
 

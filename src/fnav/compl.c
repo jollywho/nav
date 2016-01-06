@@ -84,6 +84,7 @@ void compl_add_context(String fmt_compl)
     String name = strtok(lhs, ":");
 
     String wildch = strtok(NULL, ":");
+    //FIXME: wildch should attach context to all matches
     if (wildch[0] == '*') {
       name = strtok(NULL, ":");
       keyptr = strdup(strtok(NULL, ":"));
@@ -209,10 +210,11 @@ void compl_update(fn_context *cx, String line)
 
   fn_compl *cmpl = cx->cmpl;
   cmpl->matchcount = 0;
+
   for (int i = 0; i < cmpl->rowcount; i++) {
     String key = cmpl->rows[i]->key;
     if (strstr(key, line)) {
-      cmpl->matches[i] = cmpl->rows[i];
+      cmpl->matches[cmpl->matchcount] = cmpl->rows[i];
       cmpl->matchcount++;
     }
     else

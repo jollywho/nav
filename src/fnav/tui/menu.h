@@ -10,5 +10,6 @@ void menu_stop(Menu *mnu);
 void menu_update(Menu *mnu, Cmdline *cmd);
 void menu_draw(Menu *mnu);
 void menu_restart(Menu *mnu);
+String menu_next(Menu *mnu);
 
 #endif
