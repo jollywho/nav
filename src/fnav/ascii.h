@@ -84,12 +84,14 @@
 #define KEY2TERMCAP0(x)         ((-(x)) & 0xff)
 #define KEY2TERMCAP1(x)         (((unsigned)(-(x)) >> 8) & 0xff)
 #define TERMCAP2KEY(a, b)       (-((a) + ((int)(b) << 8)))
+#define IS_SPECIAL(c)           ((c) < 0)
 
 #define KS_EXTRA                253
 #define KS_ZERO                 255
 #define KE_FILLER               ('X')
 #define K_S_TAB         TERMCAP2KEY('k', 'B')
 #define K_ZERO          TERMCAP2KEY(KS_ZERO, KE_FILLER)
+#define HC_S_TAB            ("S-Tab")
 
 # define ASCII_ISLOWER(c) ((unsigned)(c) >= 'a' && (unsigned)(c) <= 'z')
 # define ASCII_ISUPPER(c) ((unsigned)(c) >= 'A' && (unsigned)(c) <= 'Z')

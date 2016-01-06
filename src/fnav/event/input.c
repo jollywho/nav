@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <uv.h>
 #include <termkey.h>
@@ -17,6 +16,21 @@ TermKey *tk;
 void event_input();
 
 typedef unsigned char char_u;
+
+static struct modmasktable {
+  short mod_mask;               /* Bit-mask for particular key modifier */
+  short mod_flag;               /* Bit(s) for particular key modifier */
+  char_u name;                  /* Single letter name of modifier */
+} mod_mask_table[] =
+{
+  {MOD_MASK_ALT,              MOD_MASK_ALT,           (char_u)'M'},
+  {MOD_MASK_META,             MOD_MASK_META,          (char_u)'T'},
+  {MOD_MASK_CTRL,             MOD_MASK_CTRL,          (char_u)'C'},
+  {MOD_MASK_SHIFT,            MOD_MASK_SHIFT,         (char_u)'S'},
+  /* 'A' must be the last one */
+  {MOD_MASK_ALT,              MOD_MASK_ALT,           (char_u)'A'},
+  {0, 0, NUL}
+};
 
 static struct key_name_entry {
   int key;              /* Special key code or ascii value */
@@ -40,21 +54,6 @@ static struct key_name_entry {
   {BS,                (char *)"Del"},
   {DEL,               (char *)"Delete"},      /* Alternative name */
   {0,                 NULL}
-};
-
-static struct modmasktable {
-  short mod_mask;               /* Bit-mask for particular key modifier */
-  short mod_flag;               /* Bit(s) for particular key modifier */
-  char_u name;                  /* Single letter name of modifier */
-} mod_mask_table[] =
-{
-  {MOD_MASK_ALT,              MOD_MASK_ALT,           (char_u)'M'},
-  {MOD_MASK_META,             MOD_MASK_META,          (char_u)'T'},
-  {MOD_MASK_CTRL,             MOD_MASK_CTRL,          (char_u)'C'},
-  {MOD_MASK_SHIFT,            MOD_MASK_SHIFT,         (char_u)'S'},
-  /* 'A' must be the last one */
-  {MOD_MASK_ALT,              MOD_MASK_ALT,           (char_u)'A'},
-  {0, 0, NUL}
 };
 
 int get_special_key_code(char *name)
@@ -139,7 +138,6 @@ void event_input()
     char *bp;
     len = termkey_strfkey(tk, buf, sizeof(buf), &key, TERMKEY_FORMAT_VIM);
 
-    /* temp workaround for special key codes */
     if (buf[0] == '<') {
       bp = buf;
       bp++;
@@ -148,10 +146,15 @@ void event_input()
       if (newkey) {
         key.code.number = newkey;
       }
+      else if (strcasecmp(HC_S_TAB, bp) == 0) {
+        key.code.number = K_S_TAB;
+      }
       if (key.modifiers) {
         int mask = 0x0;
         mask |= name_to_mod_mask(*bp);
-        key.code.number = extract_modifiers(key.code.number, &mask);
+        int keycode = key.code.number;
+        if (!IS_SPECIAL(keycode))
+          key.code.number  = extract_modifiers(keycode, &mask);
       }
     }
     window_input(key.code.number);

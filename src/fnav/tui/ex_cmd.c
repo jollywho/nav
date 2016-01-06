@@ -41,7 +41,8 @@ static void ex_killline();
 #define KEYS_SIZE ARRAY_SIZE(key_defaults)
 static fn_key key_defaults[] = {
   {ESC,      ex_esc,           0,       0},
-  {TAB,      ex_tab,           0,       0},
+  {TAB,      ex_tab,           0,       FORWARD},
+  {K_S_TAB,  ex_tab,           0,       BACKWARD},
   {' ',      ex_spc,           0,       0},
   {CAR,      ex_car,           0,       0},
   {BS,       ex_bckspc,        0,       0},
@@ -137,10 +138,10 @@ static void ex_esc()
   mflag = EX_QUIT;
 }
 
-static void ex_tab()
+static void ex_tab(void *none, Cmdarg *arg)
 {
   log_msg("MENU", "TAB");
-  String key = menu_next(menu);
+  String key = menu_next(menu, arg->arg);
   if (key) {
     int st = curpos + 1;
     int ed = strlen(ex_cmd_curstr());
