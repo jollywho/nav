@@ -284,10 +284,10 @@ cmd_part* ex_cmd_pop(int count)
   log_msg("EXCMD", "ex_cmd_pop");
   if (cur_part < 0) return NULL;
 
-  if (count == -1)
+  if (cur_part - count < 0)
+    count = cur_part;
+  else if (count == -1)
     count = cur_part + 1;
-  else
-    count = MIN(cur_part, MAX(cur_part, cur_part - count));
 
   while (count > 0) {
     compl_destroy(cmd_stack[cur_part]->cx);

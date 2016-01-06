@@ -79,15 +79,18 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 
   if ((ex_cmd_state() & EX_POP) == EX_POP) {
     mnu->cx = ex_cmd_pop(1)->cx;
-    if (mnu->cx)
-      compl_build(mnu->cx, ex_cmd_curstr());
+    compl_build(mnu->cx, ex_cmd_curstr());
   }
   else if ((ex_cmd_state() & EX_PUSH) == EX_PUSH) {
     String key = ex_cmd_curstr();
-    mnu->cx = find_context(mnu->cx, key);
+    fn_context *find = find_context(mnu->cx, key);
+    if (find)
+      mnu->cx = find->params[0];
+    else {
+      mnu->cx = NULL;
+    }
     ex_cmd_push(mnu->cx);
-    if (mnu->cx)
-      compl_build(mnu->cx, ex_cmd_curstr());
+    compl_build(mnu->cx, ex_cmd_curstr());
   }
   compl_update(mnu->cx, ex_cmd_curstr());
 }

@@ -82,8 +82,10 @@ static void req_stat_cb(uv_fs_t *req)
 {
   log_msg("FS", "req_stat_cb");
   FS_req *fq = req->data;
-  if (S_ISDIR(req->statbuf.st_mode)) {
-    fm_ch_dir((Cntlr*)fq->data, (String)req->path);
+  String path = realpath((String)req->path, NULL);
+  if (path) {
+    fm_ch_dir((Cntlr*)fq->data, path);
+    free(path);
   }
   free(fq->req_name);
   free(fq);

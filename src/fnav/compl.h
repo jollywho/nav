@@ -24,6 +24,7 @@ typedef struct {
 typedef struct fn_context fn_context;
 struct fn_context {
   String key;
+  fn_context *sub;
   String comp;
   String type;
   fn_compl *cmpl;

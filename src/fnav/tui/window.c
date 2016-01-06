@@ -51,7 +51,7 @@ static String compl_win[] = {
   "cmd:pipe;window:number:wins",
   "cmd:sort;field:string:fields",
   "cmd:sort!;field:string:fields",
-  "cntlr:fm;path:string:paths",
+  "cmd:*:cntlr:fm;path:string:paths",
   "cmd:cd;path:string:paths",
 };
 
