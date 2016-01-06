@@ -13,7 +13,9 @@ struct Img_cntlr {
   Buffer *buf;
   bool disabled;
   bool img_set;
-  String msg;
+  String sz_msg;
+  String cl_msg;
+  String img_msg;
   int fontw; int fonth;
   int maxw; int maxh;
   String path;

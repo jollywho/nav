@@ -40,24 +40,20 @@ static void img_draw(Cntlr *cntlr)
     img->height = max_height_pixels;
   }
 
-  char *msg;
-  char *cl_msg;
-  asprintf(&msg, DR_ARG,
-      pos.col * img->fontw, pos.lnum * img->fonth,
-      img->width, img->height, img->path);
-  asprintf(&cl_msg, CL_ARG,
+  free(img->cl_msg);
+  free(img->img_msg);
+  asprintf(&img->cl_msg, CL_ARG,
       pos.col * img->fontw + 1, pos.lnum * img->fonth,
       (size.col * img->fontw), (size.lnum * img->fonth));
+  asprintf(&img->img_msg, DR_ARG,
+      pos.col * img->fontw, pos.lnum * img->fonth,
+      img->width, img->height, img->path);
 
-  log_msg("SHELL", "%s", msg);
-
-  shell_set_in_buffer(img->sh_clear, cl_msg);
+  shell_set_in_buffer(img->sh_clear, img->cl_msg);
   shell_start(img->sh_clear);
-  free(cl_msg);
 
-  shell_set_in_buffer(img->sh_draw, msg);
+  shell_set_in_buffer(img->sh_draw, img->img_msg);
   shell_start(img->sh_draw);
-  free(msg);
 }
 
 static void shell_stdout_size_cb(Cntlr *cntlr, String out)
@@ -124,8 +120,8 @@ static int create_msg(Cntlr *host, Cntlr *caller)
   buf_set_status(h->buf, 0, h->key, 0, 0);
   h->buf->attached = false; // override
 
-  free(img->msg);
-  asprintf(&img->msg, SZ_ARG, img->path);
+  free(img->sz_msg);
+  asprintf(&img->sz_msg, SZ_ARG, img->path);
 
   return 1;
 }
@@ -138,16 +134,20 @@ static void cursor_change_cb(Cntlr *host, Cntlr *caller)
   if (img->disabled) return;
 
   if (create_msg(host, caller)) {
-    shell_set_in_buffer(img->sh_size, img->msg);
+    shell_set_in_buffer(img->sh_size, img->sz_msg);
     shell_start(img->sh_size);
   }
 }
 
+#include <unistd.h>
 static void try_refresh(Cntlr *host, Cntlr *none)
 {
   Img_cntlr *img = (Img_cntlr*)host->top;
   if (!img->img_set) return;
-  shell_set_in_buffer(img->sh_size, img->msg);
+  shell_set_in_buffer(img->sh_clear, img->cl_msg);
+  shell_start(img->sh_clear);
+
+  shell_set_in_buffer(img->sh_size, img->sz_msg);
   shell_start(img->sh_size);
 }
 
@@ -172,7 +172,9 @@ Cntlr* img_new(Buffer *buf)
   img->buf = buf;
   img->disabled = false;
   img->img_set = false;
-  img->msg = malloc(1);
+  img->sz_msg = malloc(1);
+  img->cl_msg = malloc(1);
+  img->img_msg = malloc(1);
   buf_set_cntlr(buf, &img->base);
   buf_set_pass(buf);
 
@@ -197,6 +199,8 @@ void img_delete(Cntlr *cntlr)
 {
   log_msg("IMG", "img_cleanup");
   Img_cntlr *img = (Img_cntlr*)cntlr->top;
+  shell_set_in_buffer(img->sh_clear, img->cl_msg);
+  shell_start(img->sh_clear);
   img->disabled = true;
   // hook remove
   // free(img);
