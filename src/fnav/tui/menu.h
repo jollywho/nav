@@ -6,10 +6,13 @@
 typedef struct Menu Menu;
 
 Menu* menu_start();
-void menu_stop(Menu *mnu);
-void menu_update(Menu *mnu, Cmdline *cmd);
-void menu_draw(Menu *mnu);
 void menu_restart(Menu *mnu);
+void menu_stop(Menu *mnu);
+
+void menu_rebuild(Menu *mnu);
+void menu_update(Menu *mnu, Cmdline *cmd);
+
+void menu_draw(Menu *mnu);
 String menu_next(Menu *mnu, int dir);
 
 #endif

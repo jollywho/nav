@@ -18,6 +18,7 @@
 #define EX_HIST   128
 #define EX_POP    (EX_LEFT|EX_EMPTY)
 #define EX_PUSH   (EX_RIGHT|EX_NEW)
+#define EX_CLEAR  (EX_LEFT|EX_RIGHT|EX_EMPTY|EX_CYCLE|EX_HIST)
 
 typedef struct {
   fn_context *cx;
@@ -39,5 +40,6 @@ int ex_cmd_state();
 
 void ex_cmd_push(fn_context *cx);
 cmd_part* ex_cmd_pop(int count);
+void ex_cmd_set(int pos);
 
 #endif

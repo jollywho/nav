@@ -58,6 +58,7 @@ static int compl_param(fn_context **arg, String param)
   (*arg)->type = strdup(type);
   (*arg)->comp = strdup(comp);
   (*arg)->sub = NULL;
+  (*arg)->cmpl = NULL;
   return 1;
 }
 
@@ -107,6 +108,7 @@ void compl_add_context(String fmt_compl)
   cx->argc = grpc;
   cx->params = args;
   cx->sub = NULL;
+  cx->cmpl = NULL;
 
   HASH_FIND_STR((parent)->sub, keyptr, find);
   if (find) {

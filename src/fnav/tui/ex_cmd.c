@@ -89,7 +89,7 @@ void start_ex_cmd(int state)
     menu = menu_start();
   }
   cmdline_init(&cmd, max.col);
-  hist_push(EXCMD_HIST(), cmd.line);
+  hist_push(EXCMD_HIST(), &cmd);
   cmdline_draw();
 }
 
@@ -145,7 +145,7 @@ static void ex_esc()
 {
   if (ex_state == EX_REG_STATE) {
     regex_pivot();
-    hist_save(EXCMD_HIST(), cmd.line);
+    hist_save(EXCMD_HIST());
   }
   else {
     hist_pop(EXCMD_HIST());
@@ -192,8 +192,17 @@ static void ex_hist(void *none, Cmdarg *arg)
   if (arg->arg == FORWARD)
     ret = hist_next(EXCMD_HIST());
   if (ret) {
+    ex_cmd_pop(-1);
+    menu_rebuild(menu);
     free(cmd.line);
-    cmd.line = strdup(ret);
+
+    if (strlen(ret) < 1) {
+      cmd.line = malloc(maxpos * sizeof(char*));
+      memset(cmd.line, 0, strlen(cmd.line));
+    }
+    else
+      cmd.line = strdup(ret);
+
     curpos = strlen(cmd.line) - 1;
     mflag = EX_HIST;
   }
@@ -207,7 +216,7 @@ static void ex_car()
   else {
     regex_swap_pivot();
   }
-  hist_save(EXCMD_HIST(), cmd.line);
+  hist_save(EXCMD_HIST());
   mflag = EX_QUIT;
 }
 
@@ -227,7 +236,6 @@ static void ex_spc()
 static void ex_bckspc()
 {
   log_msg("EXCMD", "bkspc");
-  werase(nc_win);
   //FIXME: this will split line when cursor movement added
   cmd.line[curpos] = '\0';
   curpos--;
@@ -257,8 +265,7 @@ static void ex_killword()
 
 static void ex_killline()
 {
-  memset(cmd.line, '\0', maxpos);
-  werase(nc_win);
+  memset(cmd.line, 0, strlen(cmd.line));
   curpos = -1;
 
   ex_cmd_pop(-1);
@@ -271,7 +278,7 @@ static void ex_onkey()
   log_msg("EXCMD", "##%d", ex_cmd_state());
   if (ex_state == EX_CMD_STATE) {
     cmdline_build(&cmd);
-    if (!(mflag & EX_FRESH)) {
+    if (!(mflag & (EX_FRESH|EX_HIST))) {
       Token *tok = cmdline_last(&cmd);
       if (tok) {
         if (curpos + 1 > tok->end && curpos > 0)
@@ -287,7 +294,7 @@ static void ex_onkey()
       regex_hover();
     }
   }
-  mflag &= ~(EX_LEFT|EX_RIGHT|EX_EMPTY|EX_CYCLE);
+  mflag &= ~EX_CLEAR;
   cmdline_draw();
 }
 
@@ -376,6 +383,7 @@ cmd_part* ex_cmd_pop(int count)
     cur_part--;
     count--;
   }
+  if (cur_part < 0) return NULL;
   return cmd_stack[cur_part];
 }
 
@@ -409,4 +417,9 @@ String ex_cmd_curstr()
 int ex_cmd_state()
 {
   return mflag;
+}
+
+void ex_cmd_set(int pos)
+{
+  curpos = pos;
 }

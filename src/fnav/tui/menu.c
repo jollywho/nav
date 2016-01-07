@@ -13,6 +13,8 @@ struct Menu {
   WINDOW *nc_win;
 
   fn_context *cx;
+  bool docmpl;
+  bool rebuild;
 
   pos_T size;
   pos_T ofs;
@@ -50,6 +52,7 @@ Menu* menu_start()
   mnu->col_line   = attr_color("OverlayLine");
 
   mnu->lnum = 0;
+  mnu->rebuild = false;
 
   menu_restart(mnu);
 
@@ -60,9 +63,42 @@ void menu_restart(Menu *mnu)
 {
   if (!mnu) return;
   mnu->cx = context_start();
+  mnu->docmpl = false;
   ex_cmd_push(mnu->cx);
   compl_build(mnu->cx, "");
   compl_update(mnu->cx, "");
+}
+
+static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
+{
+  log_msg("MENU", "rebuild_contexts");
+  Token *word;
+  int i = 0;
+  int pos = 0;
+  while ((word = cmdline_tokindex(cmd, i))) {
+    String key = TOKEN_STR(word->var);
+    fn_context *find = find_context(mnu->cx, key);
+    if (find) {
+      mnu->cx = find->params[0];
+    }
+    pos = word->end;
+    ex_cmd_set(pos);
+    ex_cmd_push(mnu->cx);
+    i++;
+  }
+  if (i > 0) {
+    mnu->cx = ex_cmd_pop(1)->cx;
+    ex_cmd_set(pos - 1);
+    compl_build(mnu->cx, ex_cmd_curstr());
+    compl_update(mnu->cx, ex_cmd_curstr());
+  }
+  mnu->rebuild = false;
+}
+
+void menu_rebuild(Menu *mnu)
+{
+  menu_restart(mnu);
+  mnu->rebuild = true;
 }
 
 void menu_stop(Menu *mnu)
@@ -81,6 +117,8 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   log_msg("MENU", "menu_update");
   log_msg("MENU", "##%d", ex_cmd_state());
 
+  if (mnu->rebuild)
+    return rebuild_contexts(mnu, cmd);
   if (ex_cmd_state() & EX_CYCLE) {
     return;
   }
@@ -88,20 +126,24 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 
   if ((ex_cmd_state() & EX_POP) == EX_POP) {
     mnu->cx = ex_cmd_pop(1)->cx;
-    compl_build(mnu->cx, ex_cmd_curstr());
+    mnu->docmpl = true;
   }
   else if ((ex_cmd_state() & EX_PUSH) == EX_PUSH) {
     String key = ex_cmd_curstr();
     fn_context *find = find_context(mnu->cx, key);
-    if (find)
+    if (find) {
       mnu->cx = find->params[0];
+      mnu->docmpl = true;
+    }
     else {
       mnu->cx = NULL;
     }
     ex_cmd_push(mnu->cx);
-    compl_build(mnu->cx, ex_cmd_curstr());
   }
+  if (mnu->docmpl)
+    compl_build(mnu->cx, ex_cmd_curstr());
   compl_update(mnu->cx, ex_cmd_curstr());
+  mnu->docmpl = false;
 }
 
 void menu_draw(Menu *mnu)

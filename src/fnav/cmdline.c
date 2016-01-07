@@ -57,6 +57,7 @@ static void list_delete(Token *token)
 
 static void pair_delete(Token *token)
 {
+  log_msg("CMDLINE", "pair_delete");
   Pair *pair = token->var.vval.v_pair;
   Token *key = pair->key;
   Token *value = pair->value;
@@ -293,7 +294,7 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
   return false;
 }
 
-Token *cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
+Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
 {
   if (!cmdline->cmds) return NULL;
 
@@ -309,6 +310,22 @@ Token *cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
       return word;
   }
   return NULL;
+}
+
+Token* cmdline_tokindex(Cmdline *cmdline, int idx)
+{
+  if (!cmdline->cmds) return NULL;
+  Cmdstr *cmd = NULL;
+  NEXT_CMD(cmdline, cmd);
+
+  List *list = cmd->args->var.vval.v_list;
+  UT_array *arr = list->items;
+  Token *word = NULL;
+
+  word = (Token*)utarray_eltptr(arr, idx);
+  if (!word) return NULL;
+
+  return word;
 }
 
 Token* cmdline_last(Cmdline *cmdline)
