@@ -151,7 +151,7 @@ static void* win_pipe(List *args, enum move_dir flags)
     int id = TOKEN_NUM(word->var);
     Cntlr *rhs = cntlr_from_id(id);
     //TODO: replace pipe if already set
-    send_hook_msg("pipe_attach", buf_cntlr(buf), rhs );
+    send_hook_msg("pipe_attach", buf_cntlr(buf), rhs);
   }
   return 0;
 }

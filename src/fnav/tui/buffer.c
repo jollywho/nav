@@ -215,6 +215,7 @@ void buf_full_invalidate(Buffer *buf, int index, int lnum)
 {
   // buffer reset and reentrance
   log_msg("BUFFER", "buf_full_invalidate");
+  if (!buf->attached) return;
   Model *m = buf->hndl->model;
   werase(buf->nc_win);
   buf->top = index;

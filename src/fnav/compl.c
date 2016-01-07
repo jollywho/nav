@@ -138,11 +138,11 @@ breakout:
 fn_context* find_context(fn_context *cx, String name)
 {
   log_msg("COMPL", "find_context");
-  log_msg("COMPL", "find_context %s %s", cx->key, name);
   if (!(cx)) {
     log_msg("COMPL", "not available.");
     return NULL;
   }
+  log_msg("COMPL", "find_context %s %s", cx->key, name);
   if (strcmp(name, "cmd") == 0) {
     log_msg("COMPL", "::found root");
     return cx;

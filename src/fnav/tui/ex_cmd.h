@@ -5,8 +5,8 @@
 #include "fnav/compl.h"
 
 // these need to align with state_symbol array
-#define EX_CMD_STATE 0
-#define EX_REG_STATE 1
+#define EX_CMD_STATE 1
+#define EX_REG_STATE 0
 
 #define EX_EMPTY  1
 #define EX_LEFT   2
@@ -15,6 +15,7 @@
 #define EX_FRESH  16
 #define EX_QUIT   32
 #define EX_CYCLE  64
+#define EX_HIST   128
 #define EX_POP    (EX_LEFT|EX_EMPTY)
 #define EX_PUSH   (EX_RIGHT|EX_NEW)
 

@@ -58,6 +58,7 @@ Menu* menu_start()
 
 void menu_restart(Menu *mnu)
 {
+  if (!mnu) return;
   mnu->cx = context_start();
   ex_cmd_push(mnu->cx);
   compl_build(mnu->cx, "");
@@ -80,7 +81,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   log_msg("MENU", "menu_update");
   log_msg("MENU", "##%d", ex_cmd_state());
 
-  if ((ex_cmd_state() & EX_CYCLE) == EX_CYCLE) {
+  if (ex_cmd_state() & EX_CYCLE) {
     return;
   }
   mnu->lnum = 0;

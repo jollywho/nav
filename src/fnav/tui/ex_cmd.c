@@ -6,6 +6,7 @@
 #include "fnav/log.h"
 #include "fnav/tui/layout.h"
 #include "fnav/tui/window.h"
+#include "fnav/tui/history.h"
 #include "fnav/tui/menu.h"
 #include "fnav/option.h"
 #include "fnav/event/input.h"
@@ -21,13 +22,16 @@ static int maxpos;
 static Cmdline cmd;
 static String fmt_out;
 static Menu *menu;
+static fn_hist *hist_cmds;
+static fn_hist *hist_regs;
 
-char state_symbol[] = {':', '/'};
+char state_symbol[] = {'/',':'};
 static int ex_state;
 static int col_text;
 static int mflag;
 
 #define CURS_MIN -1
+#define EXCMD_HIST() ((ex_state) ? (hist_cmds) : (hist_regs))
 
 static void cmdline_draw();
 static void ex_esc();
@@ -37,6 +41,7 @@ static void ex_spc();
 static void ex_bckspc();
 static void ex_killword();
 static void ex_killline();
+static void ex_hist();
 
 #define KEYS_SIZE ARRAY_SIZE(key_defaults)
 static fn_key key_defaults[] = {
@@ -46,6 +51,8 @@ static fn_key key_defaults[] = {
   {' ',      ex_spc,           0,       0},
   {CAR,      ex_car,           0,       0},
   {BS,       ex_bckspc,        0,       0},
+  {Ctrl_P,   ex_hist,          0,       BACKWARD},
+  {Ctrl_N,   ex_hist,          0,       FORWARD},
   {Ctrl_W,   ex_killword,      0,       0},
   {Ctrl_U,   ex_killline,      0,       0},
 };
@@ -58,6 +65,8 @@ void ex_cmd_init()
   key_tbl.cmd_idx = cmd_idx;
   key_tbl.maxsize = KEYS_SIZE;
   input_init_tbl(&key_tbl);
+  hist_cmds = hist_new();
+  hist_regs = hist_new();
 }
 
 void start_ex_cmd(int state)
@@ -80,6 +89,7 @@ void start_ex_cmd(int state)
     menu = menu_start();
   }
   cmdline_init(&cmd, max.col);
+  hist_push(EXCMD_HIST(), cmd.line);
   cmdline_draw();
 }
 
@@ -106,6 +116,7 @@ static void gen_output_str()
 static void cmdline_draw()
 {
   log_msg("EXCMD", "cmdline_draw");
+  werase(nc_win);
   curs_set(1);
 
   if (menu)
@@ -132,15 +143,19 @@ void cmdline_refresh()
 
 static void ex_esc()
 {
-  if (ex_state == 1) {
+  if (ex_state == EX_REG_STATE) {
     regex_pivot();
+    hist_save(EXCMD_HIST(), cmd.line);
+  }
+  else {
+    hist_pop(EXCMD_HIST());
   }
   mflag = EX_QUIT;
 }
 
 static void ex_tab(void *none, Cmdarg *arg)
 {
-  log_msg("MENU", "TAB");
+  log_msg("EXCMD", "TAB");
   String key = menu_next(menu, arg->arg);
   if (key) {
     int st = curpos + 1;
@@ -168,20 +183,37 @@ static void ex_tab(void *none, Cmdarg *arg)
   }
 }
 
+static void ex_hist(void *none, Cmdarg *arg)
+{
+  String ret = NULL;
+
+  if (arg->arg == BACKWARD)
+    ret = hist_prev(EXCMD_HIST());
+  if (arg->arg == FORWARD)
+    ret = hist_next(EXCMD_HIST());
+  if (ret) {
+    free(cmd.line);
+    cmd.line = strdup(ret);
+    curpos = strlen(cmd.line) - 1;
+    mflag = EX_HIST;
+  }
+}
+
 static void ex_car()
 {
-  if (ex_state == 0) {
+  if (ex_state == EX_CMD_STATE) {
     cmdline_req_run(&cmd);
   }
   else {
     regex_swap_pivot();
   }
+  hist_save(EXCMD_HIST(), cmd.line);
   mflag = EX_QUIT;
 }
 
 static void ex_spc()
 {
-  log_msg("MENU", "ex_spc");
+  log_msg("EXCMD", "ex_spc");
   curpos++;
   mflag |= EX_RIGHT;
   mflag &= ~(EX_FRESH|EX_NEW);
@@ -194,10 +226,10 @@ static void ex_spc()
 
 static void ex_bckspc()
 {
-  log_msg("MENU", "bkspc");
+  log_msg("EXCMD", "bkspc");
   werase(nc_win);
   //FIXME: this will split line when cursor movement added
-  cmd.line[curpos] = ' ';
+  cmd.line[curpos] = '\0';
   curpos--;
   mflag |= EX_LEFT;
   if (curpos < CURS_MIN) {
@@ -225,21 +257,21 @@ static void ex_killword()
 
 static void ex_killline()
 {
-  memset(cmd.line, ' ', maxpos);
+  memset(cmd.line, '\0', maxpos);
   werase(nc_win);
   curpos = -1;
 
-  ex_cmd_pop(cur_part);
+  ex_cmd_pop(-1);
   menu_restart(menu);
   mflag = 0;
 }
 
 static void ex_onkey()
 {
-  log_msg("MENU", "##%d", ex_cmd_state());
-  if (ex_state == 0) {
+  log_msg("EXCMD", "##%d", ex_cmd_state());
+  if (ex_state == EX_CMD_STATE) {
     cmdline_build(&cmd);
-    if ((mflag & EX_FRESH) != EX_FRESH) {
+    if (!(mflag & EX_FRESH)) {
       Token *tok = cmdline_last(&cmd);
       if (tok) {
         if (curpos + 1 > tok->end && curpos > 0)
@@ -249,7 +281,7 @@ static void ex_onkey()
     menu_update(menu, &cmd);
   }
   else {
-    if (window_focus_attached()) {
+    if (window_focus_attached() && curpos > CURS_MIN) {
       regex_build(cmd.line);
       regex_pivot();
       regex_hover();
@@ -281,7 +313,7 @@ void ex_input(int key)
     cmd.line[curpos] = key;
   }
 
-  if ((mflag & EX_QUIT) == EX_QUIT)
+  if (mflag & EX_QUIT)
     stop_ex_cmd();
   else
     ex_onkey();
