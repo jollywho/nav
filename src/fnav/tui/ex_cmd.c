@@ -192,8 +192,10 @@ static void ex_hist(void *none, Cmdarg *arg)
   if (arg->arg == FORWARD)
     ret = hist_next(EXCMD_HIST());
   if (ret) {
-    ex_cmd_pop(-1);
-    menu_rebuild(menu);
+    if (ex_state == EX_CMD_STATE) {
+      ex_cmd_pop(-1);
+      menu_rebuild(menu);
+    }
     free(cmd.line);
 
     if (strlen(ret) < 1) {

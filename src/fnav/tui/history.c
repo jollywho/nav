@@ -41,7 +41,7 @@ void hist_push(fn_hist *hst, Cmdline *cmd)
   hst->cmd = cmd;
   hist_item *item = malloc(sizeof(hist_item));
   hst->count++;
-  item->line = cmd->line;
+  item->line = "";
   hst->cur = item;
   TAILQ_INSERT_TAIL(&hst->p, item, ent);
   //if (count > SETTING_MAX)
@@ -50,12 +50,16 @@ void hist_push(fn_hist *hst, Cmdline *cmd)
 
 void hist_save(fn_hist *hst)
 {
+  log_msg("HIST", "hist_save");
   hist_item *last = TAILQ_LAST(&hst->p, cont);
-  if (utarray_len(hst->cmd->tokens) > 0) {
-    last->line = strdup(hst->cmd->line);
-  }
-  else
-    hist_pop(hst);
+
+  //TODO:
+  // discard if line matches the one above it
+  if (hst->cmd->tokens)
+    if (utarray_len(hst->cmd->tokens) < 1)
+      return hist_pop(hst);
+
+  last->line = strdup(hst->cmd->line);
 }
 
 String hist_prev(fn_hist *hst)
