@@ -27,9 +27,22 @@ void compl_init()
 
   for (int i = 0; i < (int)DEFAULT_SIZE; i++) {
     compl_entry *it = malloc(sizeof(compl_entry));
-    it = memcpy(it, &compl_defaults[i], sizeof(compl_entry));
+    it = memmove(it, &compl_defaults[i], sizeof(compl_entry));
     HASH_ADD_STR(compl_table, key, it);
   }
+}
+
+void compl_cleanup()
+{
+  // each context in cxroot should be also linked to a flat array
+  // iterate array
+  // free it strings
+  // compl_destroy(it->cmpl)
+  // clear it->sub
+  // free it->params
+  // free it
+  //
+  // clear entries in compl_table
 }
 
 static int compl_param(fn_context **arg, String param)

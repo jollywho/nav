@@ -26,6 +26,7 @@ typedef struct {
 } cmd_part;
 
 void ex_cmd_init();
+void ex_cmd_cleanup();
 void start_ex_cmd(int ex_state);
 void stop_ex_cmd();
 

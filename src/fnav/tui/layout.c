@@ -51,6 +51,14 @@ void layout_init(Layout *layout)
   layout->focus = root;
 }
 
+void layout_cleanup(Layout *layout)
+{
+  // traverse tree, ignore restructuring
+  // remove it from tailq
+  // overlay_delete it
+  // free it
+}
+
 static void resize_container(Container *c)
 {
   log_msg("LAYOUT", "_*_***resize_container***_*_");

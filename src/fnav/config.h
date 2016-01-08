@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-void config_init();
+void config_setup();
 bool config_load(const char* file);
 bool config_read(FILE *file);
 char* strip_whitespace(char *str);

@@ -27,6 +27,17 @@ fn_hist* hist_new()
   return hst;
 }
 
+void hist_delete(fn_hist* hst)
+{
+  log_msg("HIST", "hist_delete");
+  while (!TAILQ_EMPTY(&hst->p)) {
+    hist_item *it = TAILQ_FIRST(&hst->p);
+    TAILQ_REMOVE(&hst->p, it, ent);
+    free(it);
+  }
+  free(hst);
+}
+
 void hist_pop(fn_hist *hst)
 {
   hist_item *last = TAILQ_LAST(&hst->p, cont);

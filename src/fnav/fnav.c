@@ -27,7 +27,7 @@ void init(void)
   use_default_colors();
 
   option_init();
-  config_init();
+  config_setup();
   config_load(NULL);
   curs_set(0);
 
@@ -38,6 +38,20 @@ void init(void)
   compl_init();
   window_init();
   log_msg("INIT", "__________INIT_END______________");
+}
+
+void cleanup(void)
+{
+  log_msg("CLEANUP", "_______CLEANUP_START____________");
+  window_cleanup();
+  compl_cleanup();
+  input_cleanup();
+  event_cleanup();
+  tables_cleanup();
+  //loop?
+  option_cleanup();
+  endwin();
+  //logger
 }
 
 void sig_handler(int sig)
@@ -54,6 +68,6 @@ int main(int argc, char **argv)
 
   init();
   start_event_loop();
-  endwin();
-  log_msg("INIT", "__________END____________");
+  cleanup();
+  log_msg("INIT", "_______END_OF_EXECUTION_________");
 }

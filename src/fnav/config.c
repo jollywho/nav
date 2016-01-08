@@ -23,11 +23,11 @@ static const Cmd_T cmdtable[] = {
   {"source", add_source,     0},
 };
 
-void config_init()
+void config_setup()
 {
   for (int i = 0; i < (int)CMDS_SIZE; i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
-    cmd = memcpy(cmd, &cmdtable[i], sizeof(Cmd_T));
+    cmd = memmove(cmd, &cmdtable[i], sizeof(Cmd_T));
     cmd_add(cmd);
   }
 }
@@ -184,11 +184,12 @@ static void* edit_color(List *args)
   Token *arg1 = (Token*)utarray_eltptr(args->items, 2);
   Token *arg2 = (Token*)utarray_eltptr(args->items, 3);
 
-  fn_color *col = malloc(sizeof(fn_color));
-  col->key = strdup(TOKEN_STR(word->var));
-  col->fg  = TOKEN_NUM(arg1->var);
-  col->bg  = TOKEN_NUM(arg2->var);
-  set_color(col);
+  fn_color col = {
+    .key = strdup(TOKEN_STR(word->var)),
+    .fg = TOKEN_NUM(arg1->var),
+    .bg = TOKEN_NUM(arg2->var),
+  };
+  set_color(&col);
   return 0;
 }
 

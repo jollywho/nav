@@ -41,6 +41,7 @@ typedef struct {
 } compl_entry;
 
 void compl_init();
+void compl_cleanup();
 void compl_add_context(String fmt_compl);
 
 fn_context* context_start();

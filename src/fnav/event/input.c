@@ -99,6 +99,11 @@ void input_init(void)
   uv_poll_start(&poll_handle, UV_READABLE, input_check);
 }
 
+void input_cleanup(void)
+{
+  termkey_destroy(tk);
+}
+
 int extract_modifiers(int key, int *modp)
 {
   int modifiers = *modp;
@@ -183,7 +188,7 @@ static int nv_compare(const void *s1, const void *s2, void *arg)
 /*
  * Initialize the nv_cmd_idx[] table.
  */
-void input_init_tbl(fn_keytbl *kt)
+void input_setup_tbl(fn_keytbl *kt)
 {
   /* Fill the index table with a one to one relation. */
   for (short int i = 0; i < (short int)kt->maxsize; ++i) {

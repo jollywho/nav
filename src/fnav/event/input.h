@@ -27,7 +27,8 @@ typedef struct {
 } fn_keytbl;
 
 void input_init(void);
-void input_init_tbl(fn_keytbl *kt);
+void input_cleanup(void);
+void input_setup_tbl(fn_keytbl *kt);
 int find_command(fn_keytbl *kt, int cmdchar);
 
 #endif

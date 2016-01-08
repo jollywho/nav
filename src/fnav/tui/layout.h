@@ -10,6 +10,8 @@ typedef struct {
 } Layout;
 
 void layout_init(Layout *layout);
+void layout_cleanup(Layout *layout);
+
 void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir);
 void layout_remove_buffer(Layout *layout);
 

@@ -6,6 +6,7 @@
 typedef struct fn_hist fn_hist;
 
 fn_hist* hist_new();
+void hist_delete(fn_hist* hst);
 
 void hist_push(fn_hist *hst, Cmdline *cmd);
 void hist_pop(fn_hist *hst);

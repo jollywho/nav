@@ -13,6 +13,7 @@ typedef struct {
 } fn_color;
 
 void option_init();
+void option_cleanup();
 void set_color(fn_color *color);
 int attr_color(const String name);
 

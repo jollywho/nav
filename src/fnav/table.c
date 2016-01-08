@@ -54,7 +54,18 @@ fn_tbl *FN_MASTER;
 
 void tables_init()
 {
-  log_msg("INIT", "table");
+  log_msg("INIT", "tables_init");
+}
+
+void tables_cleanup()
+{
+  log_msg("CLEANUP", "tables_cleanup");
+  fn_tbl *it, *tmp;
+  HASH_ITER(hh, FN_MASTER, it, tmp) {
+    tbl_del(it->key);
+    free(it->key);
+    free(it);
+  }
 }
 
 bool tbl_mk(String name)
@@ -64,8 +75,8 @@ bool tbl_mk(String name)
     log_msg("TABLE", "making table {%s} ...", name);
     fn_tbl *t = malloc(sizeof(fn_tbl));
     *t = (fn_tbl){0};
-    t->key = name;
-    HASH_ADD_KEYPTR(hh, FN_MASTER, t->key, strlen(t->key), t);
+    t->key = strdup(name);
+    HASH_ADD_STR(FN_MASTER, key, t);
     return true;
   }
   return false;
@@ -73,7 +84,9 @@ bool tbl_mk(String name)
 
 void tbl_del(String name)
 {
+  log_msg("CLEANUP", "deleting table {%s} ...", name);
   fn_tbl *t = get_tbl(name);
+  if (!t) return;
   fn_fld *f, *ftmp;
   HASH_ITER(hh, t->fields, f, ftmp) {
     HASH_DEL(t->fields, f);
@@ -103,7 +116,7 @@ void tbl_mk_fld(String tn, String name, tFldType typ)
   fld->key = strdup(name);
   fld->type = typ;
   t->count++;
-  HASH_ADD_KEYPTR(hh, t->fields, fld->key, strlen(fld->key), fld);
+  HASH_ADD_STR(t->fields, key, fld);
   log_msg("TABLE", "made %s", fld->key);
 }
 
@@ -114,7 +127,7 @@ void tbl_mk_vt_fld(String tn, String name, tbl_vt_cb cb)
   fn_vt_fld *fld = malloc(sizeof(fn_vt_fld));
   fld->key = strdup(name);
   fld->cb = cb;
-  HASH_ADD_KEYPTR(hh, t->vtfields, fld->key, strlen(fld->key), fld);
+  HASH_ADD_STR(t->vtfields, key, fld);
   log_msg("TABLE", "made %s", fld->key);
 }
 
@@ -318,7 +331,7 @@ static fn_val* new_entry(fn_rec *rec, fn_fld *fld, void *data, int typ, int indx
     ent->val = val;
     rec->vlist[indx] = ent;
     rec->vals[indx] = val;
-    HASH_ADD_KEYPTR(hh, fld->vals, val->key, strlen(val->key), val);
+    HASH_ADD_STR(fld->vals, key, val);
   }
   return val;
 }

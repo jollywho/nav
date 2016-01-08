@@ -26,6 +26,7 @@ struct Cmd_T {
 
 void cmd_add(Cmd_T *cmd);
 void cmd_remove(String name);
+void cmd_clearall();
 void cmd_run(Cmdstr *cmdstr);
 Cmd_T* cmd_find(String name);
 void cmd_list(String line);

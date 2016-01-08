@@ -23,6 +23,7 @@ Window win;
 
 static void window_loop();
 static void* win_new();
+static void* win_shut();
 static void* win_close();
 static void* win_pipe();
 static void* win_sort();
@@ -32,6 +33,7 @@ static void window_ex_cmd();
 
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
 static const Cmd_T cmdtable[] = {
+  {"qa",     win_shut,   0},
   {"q",      win_close,   0},
   {"close",  win_close,   0},
   {"new",    win_new,     MOVE_UP},
@@ -81,7 +83,7 @@ void window_init(void)
   key_tbl.tbl = key_defaults;
   key_tbl.cmd_idx = cmd_idx;
   key_tbl.maxsize = KEYS_SIZE;
-  input_init_tbl(&key_tbl);
+  input_setup_tbl(&key_tbl);
 
   loop_add(&win.loop, window_loop);
   uv_timer_init(&win.loop.uv, &win.loop.delay);
@@ -93,15 +95,31 @@ void window_init(void)
 
   for (int i = 0; i < (int)CMDS_SIZE; i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
-    cmd = memcpy(cmd, &cmdtable[i], sizeof(Cmd_T));
+    memmove(cmd, &cmdtable[i], sizeof(Cmd_T));
     cmd_add(cmd);
   }
   for (int i = 0; i < (int)COMPL_SIZE; i++) {
     compl_add_context(compl_win[i]);
   }
   sig_resize(0);
-  buf_init();
+  buf_setup();
   ex_cmd_init();
+}
+
+void window_cleanup(void)
+{
+  log_msg("CLEANUP", "window_cleanup");
+  //buf -> cntlr
+  ex_cmd_cleanup();
+  cmd_clearall();
+  layout_cleanup(&win.layout);
+  loop_remove(&win.loop);
+}
+
+static void* win_shut()
+{
+  stop_event_loop();
+  return 0;
 }
 
 static void win_layout(Window *_w, Cmdarg *arg)

@@ -64,9 +64,16 @@ void ex_cmd_init()
   key_tbl.tbl = key_defaults;
   key_tbl.cmd_idx = cmd_idx;
   key_tbl.maxsize = KEYS_SIZE;
-  input_init_tbl(&key_tbl);
+  input_setup_tbl(&key_tbl);
   hist_cmds = hist_new();
   hist_regs = hist_new();
+}
+
+void ex_cmd_cleanup()
+{
+  log_msg("CLEANUP", "ex_cmd_cleanup");
+  hist_delete(hist_cmds);
+  hist_delete(hist_regs);
 }
 
 void start_ex_cmd(int state)
@@ -91,6 +98,25 @@ void start_ex_cmd(int state)
   cmdline_init(&cmd, max.col);
   hist_push(EXCMD_HIST(), &cmd);
   cmdline_draw();
+}
+
+void stop_ex_cmd()
+{
+  log_msg("EXCMD", "stop_ex_cmd");
+  if (menu) {
+    ex_cmd_pop(-1);
+    free(cmd_stack);
+    menu_stop(menu);
+    menu = NULL;
+  }
+  free(cmd.line);
+  free(fmt_out);
+  cmdline_cleanup(&cmd);
+  werase(nc_win);
+  wnoutrefresh(nc_win);
+  delwin(nc_win);
+  curs_set(0);
+  window_ex_cmd_end();
 }
 
 static void gen_output_str()
@@ -167,7 +193,7 @@ static void ex_tab(void *none, Cmdarg *arg)
     }
 
     int len = ed - st;
-    if (curpos + len >= maxpos) {
+    if (curpos + len + 2 >= maxpos) {
       maxpos = 2 * curpos;
       cmd.line = realloc(cmd.line, maxpos * sizeof(char*));
     }
@@ -326,25 +352,6 @@ void ex_input(int key)
     stop_ex_cmd();
   else
     ex_onkey();
-}
-
-void stop_ex_cmd()
-{
-  log_msg("EXCMD", "stop_ex_cmd");
-  if (menu) {
-    ex_cmd_pop(-1);
-    free(cmd_stack);
-    menu_stop(menu);
-    menu = NULL;
-  }
-  free(cmd.line);
-  free(fmt_out);
-  cmdline_cleanup(&cmd);
-  werase(nc_win);
-  wnoutrefresh(nc_win);
-  delwin(nc_win);
-  curs_set(0);
-  window_ex_cmd_end();
 }
 
 void ex_cmd_push(fn_context *cx)

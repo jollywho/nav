@@ -29,6 +29,11 @@ void event_init(void)
   uv_timer_init(&loop, &event_timer);
 }
 
+void event_cleanup(void)
+{
+  uv_loop_close(&loop);
+}
+
 uint64_t os_hrtime(void)
 {
   return uv_hrtime();
@@ -41,7 +46,7 @@ uv_loop_t *eventloop(void)
 
 void stop_event_loop(void)
 {
-  before = os_hrtime();
+  uv_stop(&loop);
 }
 
 void start_event_loop(void)

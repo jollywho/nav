@@ -4,6 +4,7 @@
 #include "fnav/tui/buffer.h"
 
 void window_init(void);
+void window_cleanup(void);
 void window_req_draw(void *obj, argv_callback cb);
 void window_input(int key);
 

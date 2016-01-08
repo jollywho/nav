@@ -75,7 +75,7 @@ static void create_proc(Op_cntlr *op, String path)
   uv_disable_stdio_inheritance();
   int ret = uv_spawn(&op->loop.uv, &op->proc, &op->opts);
   op->ready = false;
-  log_msg("?", "%s", uv_strerror(ret));
+  log_msg("?", "file: |%s|, %s", path, uv_strerror(ret));
   uv_unref((uv_handle_t*) &op->proc);
 }
 

@@ -141,7 +141,7 @@ Cntlr* fm_new(Buffer *buf)
   key_tbl.tbl = key_defaults;
   key_tbl.cmd_idx = cmd_idx;
   key_tbl.maxsize = KEYS_SIZE;
-  input_init_tbl(&key_tbl);
+  input_setup_tbl(&key_tbl);
   FM_cntlr *fm = malloc(sizeof(FM_cntlr));
   fm->base.name = "fm";
   fm->base.fmt_name = "   FM    ";

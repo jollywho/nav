@@ -5,6 +5,16 @@
 
 Cmd_T *cmd_table;
 
+void cmd_clearall()
+{
+  log_msg("CMD", "cmd_clearall");
+  Cmd_T *it, *tmp;
+  HASH_ITER(hh, cmd_table, it, tmp) {
+    HASH_DEL(cmd_table, it);
+    free(it);
+  }
+}
+
 int name_sort(Cmd_T *a, Cmd_T *b)
 {
   return strcmp(a->name, b->name);
