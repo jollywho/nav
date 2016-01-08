@@ -214,8 +214,7 @@ static void stat_cb(uv_fs_t *req)
         struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
         if (fq->uv_stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
           log_msg("FS", "STAT:NOP");
-          CREATE_EVENT(&fq->fs_h->loop.events, fs_signal_handle, 1, fq->fs_h);
-          return;
+          return fs_close_req(fq);
         }
       }
     }
@@ -223,6 +222,10 @@ static void stat_cb(uv_fs_t *req)
 
   if (S_ISDIR(fq->uv_stat.st_mode)) {
     uv_fs_scandir(&fq->fs_h->loop.uv, &fq->uv_fs, fq->req_name, 0, scan_cb);
+  }
+  else {
+    free(fq->req_name);
+    free(fq);
   }
 }
 

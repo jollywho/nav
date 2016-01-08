@@ -30,6 +30,8 @@ static void* win_sort();
 static void* win_cd();
 static void win_layout();
 static void window_ex_cmd();
+static void wintest();
+static void wintestq();
 
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
 static const Cmd_T cmdtable[] = {
@@ -65,6 +67,9 @@ static fn_key key_defaults[] = {
   {'J',     win_layout,      0,           MOVE_DOWN},
   {'K',     win_layout,      0,           MOVE_UP},
   {'L',     win_layout,      0,           MOVE_RIGHT},
+  {'s',     wintest,      0,           MOVE_UP},
+  {'v',     wintest,      0,           MOVE_LEFT},
+  {'q',     wintestq,      0,           MOVE_LEFT},
 };
 static fn_keytbl key_tbl;
 static short cmd_idx[KEYS_SIZE];
@@ -126,6 +131,24 @@ static void win_layout(Window *_w, Cmdarg *arg)
 {
   enum move_dir dir = arg->arg;
   layout_movement(&win.layout, dir);
+}
+
+static void wintest(Window *_w, Cmdarg *arg)
+{
+  log_msg("WINDOW", "win_new");
+  enum move_dir dir = arg->arg;
+  layout_movement(&win.layout, dir);
+  window_add_buffer(dir);
+}
+
+static void wintestq(Window *_w, Cmdarg *arg)
+{
+  log_msg("WINDOW", "win_close");
+  Buffer *buf = layout_buf(&win.layout);
+  //if (buf) {
+  //  cntlr_close(buf_cntlr(buf));
+  //}
+  window_remove_buffer();
 }
 
 void window_input(int key)
@@ -256,11 +279,6 @@ void window_req_draw(void *obj, argv_callback cb)
   CREATE_EVENT(&win.loop.events, cb, 1, obj);
 }
 
-void window_draw_all()
-{
-  log_msg("WINDOW", "DRAW_ALL");
-}
-
 void window_remove_buffer()
 {
   log_msg("WINDOW", "BUFFER +CLOSE+");
@@ -269,7 +287,6 @@ void window_remove_buffer()
     buf_delete(buf);
   }
   layout_remove_buffer(&win.layout);
-  window_draw_all();
 }
 
 void window_add_buffer(enum move_dir dir)

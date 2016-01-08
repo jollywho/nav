@@ -117,6 +117,7 @@ static void update_sub_items(Container *c)
 
 static void swap_focus(Layout *layout, Container *c)
 {
+  log_msg("LAYOUT", "swap_focus");
   if (layout->focus) {
     buf_toggle_focus(layout->focus->buf, 0);
     overlay_unfocus(layout->focus->ov);
@@ -180,6 +181,7 @@ void layout_remove_buffer(Layout *layout)
   log_msg("LAYOUT", "layout_remove_buffer");
   Container *c = layout->focus;
   Container *hc = c->parent;
+  if (!hc) return;
 
   Container *next = next_or_prev(c);
   TAILQ_REMOVE(&hc->p, c, ent);
@@ -199,8 +201,14 @@ void layout_remove_buffer(Layout *layout)
     next = hc;
     update_sub_items(hc);
   }
-  while (TAILQ_FIRST(&next->p)) {
-    next = TAILQ_FIRST(&next->p);
+  if (next) {
+    while (1) {
+      if (!TAILQ_EMPTY(&next->p)) {
+        next = TAILQ_FIRST(&next->p);
+      }
+      else
+        break;
+    }
   }
 
   swap_focus(layout, next);
@@ -266,7 +274,9 @@ void layout_movement(Layout *layout, enum move_dir dir)
 }
 
 Buffer* layout_buf(Layout *layout)
-{return layout->focus->buf;}
+{
+  return layout->focus->buf;
+}
 
 void layout_set_status(Layout *layout, String name, String usr,
     String in, String out)

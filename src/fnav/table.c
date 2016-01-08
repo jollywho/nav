@@ -90,10 +90,20 @@ void tbl_del(String name)
   fn_fld *f, *ftmp;
   HASH_ITER(hh, t->fields, f, ftmp) {
     HASH_DEL(t->fields, f);
+    log_msg("CLEANUP", "deleting field {%s} ...", f->key);
     //TODO: del val
     //TODO: del lis
+    //TODO: del ent
+    //TODO: del rec
     free(f->key);
     free(f);
+  }
+  fn_vt_fld *vf, *vftmp;
+  HASH_ITER(hh, t->vtfields, vf, vftmp) {
+    HASH_DEL(t->vtfields, vf);
+    log_msg("CLEANUP", "deleting field {%s} ...", vf->key);
+    free(vf->key);
+    free(vf);
   }
   HASH_DEL(FN_MASTER, t);
 }
@@ -125,6 +135,7 @@ void tbl_mk_vt_fld(String tn, String name, tbl_vt_cb cb)
   log_msg("TABLE", "making {%s} vt_field {%s} ...", tn, name);
   fn_tbl *t = get_tbl(tn);
   fn_vt_fld *fld = malloc(sizeof(fn_vt_fld));
+  *fld = (fn_vt_fld){0};
   fld->key = strdup(name);
   fld->cb = cb;
   HASH_ADD_STR(t->vtfields, key, fld);
@@ -375,7 +386,6 @@ static void tbl_insert(fn_tbl *t, trans_rec *trec)
   fn_rec *rec = mk_rec(t);
 
   for(int i = 0; i < rec->fld_count; i++) {
-    log_msg("TABLE", "inserting %s %s ", trec->flds[i], (String)trec->data[i]);
     void *data = trec->data[i];
 
     fn_fld *f;

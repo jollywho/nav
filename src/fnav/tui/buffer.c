@@ -67,6 +67,7 @@ Buffer* buf_new()
   buf->nc_win = newwin(1,1,0,0);
   buf->dirty = false;
   buf->queued = false;
+  buf->del = false;
   buf->attached = false;
   buf->nodraw = false;
   buf->focused = false;
@@ -80,11 +81,25 @@ Buffer* buf_new()
   return buf;
 }
 
+static int buf_expire(Buffer *buf)
+{
+  if (buf->del) {
+    log_msg("BUFEXPIREEEEEEEEEEEEEEEEEE", "%d", buf->del);
+    werase(buf->nc_win);
+    wnoutrefresh(buf->nc_win);
+    delwin(buf->nc_win);
+    free(buf);
+    return 1;
+  }
+  return 0;
+}
+
 void buf_delete(Buffer *buf)
 {
-  log_msg("BUFFER", "cleanup");
-  delwin(buf->nc_win);
-  free(buf);
+  log_msg("BUFFER", "delete");
+  buf->del = true;
+  if (!buf->queued)
+    buf_expire(buf);
 }
 
 static void resize_adjustment(Buffer *buf)
@@ -180,6 +195,8 @@ void buf_draw(void **argv)
 {
   log_msg("BUFFER", "draw");
   Buffer *buf = (Buffer*)argv[0];
+  if (buf_expire(buf)) return;
+
   werase(buf->nc_win);
 
   buf->dirty = false;

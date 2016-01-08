@@ -20,7 +20,7 @@ static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal) {
   uv_close((uv_handle_t*) req, NULL);
   Op_cntlr *op = (Op_cntlr*)req->data;
   op->ready = true;
-  system("pkill compton");
+  //system("pkill compton");
 }
 
 static void chld_handler(uv_signal_t *handle, int signum)
@@ -57,10 +57,10 @@ static void chld_handler(uv_signal_t *handle, int signum)
 static void create_proc(Op_cntlr *op, String path)
 {
   log_msg("OP", "create_proc");
-  op->opts.file = "mpv";
   op->opts.flags = UV_PROCESS_DETACHED;
   op->opts.exit_cb = exit_cb;
   char *rv[] = {"mpv", "--fs", path, NULL};
+  op->opts.file = rv[0];
   op->opts.args = rv;
   op->proc.data = op;
 
@@ -75,7 +75,9 @@ static void create_proc(Op_cntlr *op, String path)
   uv_disable_stdio_inheritance();
   int ret = uv_spawn(&op->loop.uv, &op->proc, &op->opts);
   op->ready = false;
-  log_msg("?", "file: |%s|, %s", path, uv_strerror(ret));
+  if (ret < 0) {
+    log_msg("?", "file: |%s|, %s", path, uv_strerror(ret));
+  }
   uv_unref((uv_handle_t*) &op->proc);
 }
 
@@ -95,7 +97,7 @@ static void fileopen_cb(Cntlr *host, Cntlr *caller)
   //ventry *head = fnd_val("op_procs", "ext", (char*)ext);
 
   create_proc(op, path);
-  system("mpv_i");
+  //system("mpv_i");
 }
 
 void op_loop(Loop *loop, int ms)

@@ -27,6 +27,7 @@ struct Buffer {
   fn_handle *hndl;
   bool dirty;
   bool queued;
+  bool del;
   bool attached;
   bool nodraw;
   bool focused;

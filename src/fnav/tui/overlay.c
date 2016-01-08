@@ -10,6 +10,8 @@ struct Overlay {
   pos_T ov_ofs;
   int separator;
   int lines;
+  bool queued;
+  bool del;
 
   String name;
   String usr_arg;
@@ -32,19 +34,46 @@ Overlay* overlay_new()
   ov->color_namebox = attr_color("OverlayActive");
   ov->name = strdup("         ");
   ov->usr_arg = strdup("         ");
-  ov->pipe_in = ov->pipe_out = NULL;
+  ov->pipe_in = NULL;
+  ov->pipe_out = NULL;
+  ov->queued = false;
+  ov->del = false;
   return ov;
+}
+
+static int overlay_expire(Overlay *ov)
+{
+  if (ov->del) {
+    log_msg("EXPIRRRRRRRREEEEE", "%d", ov->del);
+    delwin(ov->nc_win_sep);
+    delwin(ov->nc_win_st);
+    free(ov);
+    return 1;
+  }
+  return 0;
 }
 
 void overlay_delete(Overlay *ov)
 {
+  log_msg("overlay", "delete");
+  if (ov->del)
+    return;
   if (ov->name) free(ov->name);
   if (ov->usr_arg) free(ov->usr_arg);
   if (ov->pipe_in) free(ov->pipe_in);
   if (ov->pipe_out) free(ov->pipe_out);
-  delwin(ov->nc_win_sep);
-  delwin(ov->nc_win_st);
-  free(ov);
+
+  ov->del = true;
+  if (!ov->queued)
+    overlay_expire(ov);
+}
+
+static void overlay_refresh(Overlay *ov)
+{
+  if (ov->queued)
+    return;
+  ov->queued = true;
+  window_req_draw(ov, overlay_draw);
 }
 
 void overlay_clear(Overlay *ov)
@@ -60,13 +89,13 @@ void overlay_clear(Overlay *ov)
 void overlay_focus(Overlay *ov)
 {
   ov->color_namebox = attr_color("OverlayActive");
-  window_req_draw(ov, overlay_draw);
+  overlay_refresh(ov);
 }
 
 void overlay_unfocus(Overlay *ov)
 {
   ov->color_namebox = attr_color("OverlayInactive");
-  window_req_draw(ov, overlay_draw);
+  overlay_refresh(ov);
 }
 
 void overlay_set(Overlay *ov, pos_T size, pos_T ofs, int sep)
@@ -84,7 +113,7 @@ void overlay_set(Overlay *ov, pos_T size, pos_T ofs, int sep)
   wresize(ov->nc_win_sep, size.lnum + 1, 1);
   mvwin(ov->nc_win_sep, ofs.lnum, ofs.col - 1);
 
-  window_req_draw(ov, overlay_draw);
+  overlay_refresh(ov);
 }
 
 static void set_string(String *from, String to)
@@ -101,13 +130,16 @@ void overlay_edit(Overlay *ov, String name, String usr, String in, String out)
   set_string(&ov->usr_arg, usr);
   set_string(&ov->pipe_in, in);
   set_string(&ov->pipe_out, out);
-  window_req_draw(ov, overlay_draw);
+  overlay_refresh(ov);
 }
 
 void overlay_draw(void **argv)
 {
   log_msg("OVERLAY", "draw");
   Overlay *ov = argv[0];
+  if (!ov) return;
+  if (overlay_expire(ov)) return;
+  ov->queued = false;
 
   DRAW_STR(ov, nc_win_st, 0, 0, ov->name, color_namebox);
 

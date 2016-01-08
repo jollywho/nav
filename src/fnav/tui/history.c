@@ -40,8 +40,10 @@ void hist_delete(fn_hist* hst)
 
 void hist_pop(fn_hist *hst)
 {
+  log_msg("HIST", "hist_pop");
   hist_item *last = TAILQ_LAST(&hst->p, cont);
   TAILQ_REMOVE(&hst->p, last, ent);
+  free(last->line);
   free(last);
   hst->count--;
 }
@@ -52,7 +54,7 @@ void hist_push(fn_hist *hst, Cmdline *cmd)
   hst->cmd = cmd;
   hist_item *item = malloc(sizeof(hist_item));
   hst->count++;
-  item->line = "";
+  item->line = strdup("");
   hst->cur = item;
   TAILQ_INSERT_TAIL(&hst->p, item, ent);
   //if (count > SETTING_MAX)
@@ -70,6 +72,7 @@ void hist_save(fn_hist *hst)
     if (utarray_len(hst->cmd->tokens) < 1)
       return hist_pop(hst);
 
+  free(last->line);
   last->line = strdup(hst->cmd->line);
 }
 
