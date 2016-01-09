@@ -198,9 +198,9 @@ void buf_draw(void **argv)
       String it = model_str_line(m, buf->top + i);
       if (!it) break;
       String path = model_fld_line(m, "fullpath", buf->top + i);
-      //if (isdir(path))
-      //  DRAW_STR(buf, nc_win, i, 0, it, col_dir);
-      //else
+      if (isdir(path))
+        DRAW_STR(buf, nc_win, i, 0, it, col_dir);
+      else
         DRAW_STR(buf, nc_win, i, 0, it, col_text);
     }
     String it = model_str_line(m, buf->top + buf->lnum);

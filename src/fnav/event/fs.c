@@ -46,7 +46,7 @@ void fs_cleanup(FS_handle *fsh)
 
 char* conspath(const char *str1, const char *str2)
 {
-  char* result;
+  char *result;
   if (strcmp(str1, "/") == 0)
     asprintf(&result, "/%s", str2);
   else
@@ -73,8 +73,12 @@ String fs_expand_path(String path)
 
 bool isdir(String path)
 {
+  if (!path) return false;
   ventry *ent = fnd_val("fm_stat", "fullpath", path);
+  if (!ent) return false;
   struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
+  if (!st) return false;
+  if (!st->st_mode) return false;
   return (S_ISDIR(st->st_mode));
 }
 
@@ -151,17 +155,21 @@ void fs_loop(Loop *loop, int ms)
   process_loop(loop, ms);
 }
 
-static void send_stat(FS_req *fq, const char *dir, char *upd)
+static int send_stat(FS_req *fq, const char *dir, char *upd)
 {
   FS_handle *fh = fq->fs_h;
   struct stat *s = malloc(sizeof(struct stat));
-  stat(dir, s);
+  if (stat(dir, s) == -1) {
+    free(s);
+    return 1;
+  }
 
   trans_rec *r = mk_trans_rec(tbl_fld_count("fm_stat"));
   edit_trans(r, "fullpath", (void*)dir,NULL);
   edit_trans(r, "update", NULL, (void*)upd);
   edit_trans(r, "stat", NULL,(void*)s);
   CREATE_EVENT(&fh->loop.events, commit, 2, "fm_stat", r);
+  return 0;
 }
 
 static void scan_cb(uv_fs_t *req)
@@ -180,6 +188,7 @@ static void scan_cb(uv_fs_t *req)
   send_stat(fq, req->path, "yes");
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
+    int err = 0;
     trans_rec *r = mk_trans_rec(tbl_fld_count("fm_files"));
     edit_trans(r, "name", (void*)dent.name,NULL);
     edit_trans(r, "dir", (void*)req->path,NULL);
@@ -188,12 +197,17 @@ static void scan_cb(uv_fs_t *req)
     ventry *ent = fnd_val("fm_stat", "fullpath", full);
     if (!ent) {
       log_msg("FS", "--fresh stat-- %s", full);
-      send_stat(fq, full, "no");
+      err = send_stat(fq, full, "no");
     }
 
     edit_trans(r, "fullpath", (void*)full,NULL);
     free(full);
-    CREATE_EVENT(&fh->loop.events, commit, 2, "fm_files", r);
+
+    if (err)
+      clear_trans(r, 1);
+    else {
+      CREATE_EVENT(&fh->loop.events, commit, 2, "fm_files", r);
+    }
   }
   fs_close_req(fq);
 }
@@ -224,6 +238,7 @@ static void stat_cb(uv_fs_t *req)
     uv_fs_scandir(&fq->fs_h->loop.uv, &fq->uv_fs, fq->req_name, 0, scan_cb);
   }
   else {
+    uv_fs_req_cleanup(&fq->uv_fs);
     free(fq->req_name);
     free(fq);
   }
@@ -270,6 +285,7 @@ static void fs_close_req(FS_req *fq)
 {
   log_msg("FS", "reset %s", (char*)fq->req_name);
   CREATE_EVENT(&fq->fs_h->loop.events, fs_signal_handle, 1, fq->fs_h);
+  uv_fs_req_cleanup(&fq->uv_fs);
   free(fq->req_name);
   free(fq);
 }

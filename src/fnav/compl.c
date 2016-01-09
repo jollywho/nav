@@ -24,6 +24,7 @@ void compl_init()
   cur_cmpl = NULL;
   String param = strdup("cmd:string:cmds");
   compl_param(&cxroot, param);
+  free(param);
 
   for (int i = 0; i < (int)DEFAULT_SIZE; i++) {
     compl_entry *it = malloc(sizeof(compl_entry));

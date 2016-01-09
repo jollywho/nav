@@ -316,7 +316,7 @@ void commit(void **data)
   log_msg("TABLE", "commit");
   fn_tbl *t = get_tbl(data[0]);
   tbl_insert(t, data[1]);
-  clear_trans(data[1]);
+  clear_trans(data[1], 0);
 }
 
 static fn_val* new_entry(fn_rec *rec, fn_fld *fld, void *data, int typ, int indx)
@@ -370,10 +370,10 @@ static void check_set_lis(fn_fld *f, String key, fn_rec *rec)
     fn_lis *ll;
     HASH_FIND_STR(f->lis, key, ll);
     if (ll) {
-      log_msg("TABLE", "SET LIS");
       /* if lis hasn't obtained a rec, set it now. */
       if (!ll->ent) {
         ll->rec = rec;
+        log_msg("TABLE", "SET LIS");
       }
     }
   }
@@ -466,21 +466,21 @@ trans_rec* mk_trans_rec(int fld_count)
 void edit_trans(trans_rec *r, String fname, String val, void *data)
 {
   r->flds[r->count] = fname;
-  if (!data) {
-    r->data[r->count] = strdup(val);
-    r->type[r->count] = 1;
-  }
-  else {
+  if (!val) {
     r->data[r->count] = data;
     r->type[r->count] = 0;
+  }
+  else {
+    r->data[r->count] = strdup(val);
+    r->type[r->count] = 1;
   }
   r->count++;
 }
 
-void clear_trans(trans_rec *r)
+void clear_trans(trans_rec *r, int flush)
 {
   for (int i = 0; i < r->count; i++) {
-    if (r->type[i] == 1) {
+    if (r->type[i] == 1 || flush) {
       free(r->data[i]);
     }
   }
