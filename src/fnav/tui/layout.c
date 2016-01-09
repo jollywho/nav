@@ -29,9 +29,9 @@ pos_T layout_size()
 
 static void create_container(Container *c, enum move_dir dir)
 {
+  memset(c, 0, sizeof(Container));
   if (dir == MOVE_UP   || dir == MOVE_DOWN ) c->dir = L_HORIZ;
   if (dir == MOVE_LEFT || dir == MOVE_RIGHT) c->dir = L_VERT;
-  memset(c, 0, sizeof(Container));
   TAILQ_INIT(&c->p);
   c->ov = overlay_new();
 }
@@ -134,7 +134,7 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
   Container *hc = focus->parent;
 
   Container *c = malloc(sizeof(Container));
-  if (layout->root == focus) {
+  if (focus->root) {
     dir = MOVE_UP;
   }
   create_container(c, dir);
