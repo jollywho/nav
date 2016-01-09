@@ -185,7 +185,7 @@ static void* win_pipe(List *args, enum move_dir flags)
   if (utarray_len(args->items) < 2) return 0;
   Buffer *buf = layout_buf(&win.layout);
 
-  int *wnum = list_arg(args, 1);
+  int *wnum = list_arg(args, 1, VAR_NUMBER);
 
   if (buf && wnum) {
     Cntlr *rhs = cntlr_from_id(*wnum);
@@ -199,7 +199,7 @@ static void* win_cd(List *args, int flags)
 {
   log_msg("WINDOW", "win_cd");
 
-  String path = list_arg(args, 1);
+  String path = list_arg(args, 1, VAR_STRING);
   if (!path) path = "~";
   Cntlr *cntlr = buf_cntlr(layout_buf(&win.layout));
   if (cntlr) {
@@ -212,7 +212,7 @@ static void* win_sort(List *args, int flags)
 {
   log_msg("WINDOW", "win_sort");
 
-  String fld = list_arg(args, 1);
+  String fld = list_arg(args, 1, VAR_STRING);
   buf_sort(layout_buf(&win.layout), fld, flags);
   return 0;
 }
@@ -222,7 +222,7 @@ static void* win_new(List *args, enum move_dir flags)
   log_msg("WINDOW", "win_new");
   window_add_buffer(flags);
 
-  String cmd = list_arg(args, 1);
+  String cmd = list_arg(args, 1, VAR_STRING);
   if (cmd)
     return cntlr_open(cmd, layout_buf(&win.layout));
   return NULL;

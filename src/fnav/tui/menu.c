@@ -76,7 +76,7 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
   int i = 0;
   int pos = 0;
   while ((word = cmdline_tokindex(cmd, i))) {
-    String key = token_val(word);
+    String key = token_val(word, VAR_STRING);
     fn_context *find = find_context(mnu->cx, key);
     if (find) {
       mnu->cx = find->params[0];

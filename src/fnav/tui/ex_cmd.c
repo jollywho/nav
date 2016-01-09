@@ -418,7 +418,7 @@ String ex_cmd_curstr()
 {
   Token *tok = ex_cmd_curtok();
   if (tok)
-    return token_val(tok);
+    return token_val(tok, VAR_STRING);
   else
     return "";
 }

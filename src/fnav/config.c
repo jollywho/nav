@@ -185,7 +185,7 @@ static void* edit_color(List *args)
   Token *arg2 = (Token*)utarray_eltptr(args->items, 3);
 
   fn_color col = {
-    .key = strdup(token_val(word)),
+    .key = strdup(token_val(word, VAR_STRING)),
     .fg = TOKEN_NUM(arg1->var),
     .bg = TOKEN_NUM(arg2->var),
   };
@@ -206,9 +206,8 @@ static void* edit_mapping(List *args)
 
 static void* add_source(List *args)
 {
-  if (utarray_len(args->items) < 1) return 0;
-  Token *word = (Token*)utarray_eltptr(args->items, 1);
-  String file = token_val(word);
+  String file = list_arg(args, 1, VAR_STRING);
+  if (!file) return 0;
 
   wordexp_t p;
   char *path;

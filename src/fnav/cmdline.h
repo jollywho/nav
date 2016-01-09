@@ -57,7 +57,7 @@ struct Dict {
 struct Cmdstr {
   int pipet;               /* pipe flag types */
   QUEUE stack;
-  Token *args;
+  Token args;
   int ret_t;
   int exec;
   void *ret;
@@ -78,12 +78,11 @@ void cmdline_cleanup(Cmdline *cmdline);
 void cmdline_build(Cmdline *cmdline);
 void cmdline_req_run(Cmdline *cmdline);
 
-int  cmdline_prev_word(Cmdline *cmdline, int pos);
 Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed);
 Token* cmdline_tokindex(Cmdline *cmdline, int idx);
 Token* cmdline_last(Cmdline *cmdline);
 
-void* token_val(Token *token);
-void* list_arg(List *lst, int argc);
+void* token_val(Token *token, char v_type);
+void* list_arg(List *lst, int argc, char v_type);
 
 #endif

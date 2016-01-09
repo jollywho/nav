@@ -13,12 +13,8 @@
 #include "fnav/log.h"
 #include "fnav/macros.h"
 
-static UT_icd dict_icd = { sizeof(Pair),   NULL };
-static UT_icd list_icd = { sizeof(Token),  NULL };
-static UT_icd cmd_icd  = { sizeof(Cmdstr), NULL };
-
 typedef struct {
-  Token *item;
+  Token item;
   QUEUE node;
 } queue_item;
 
@@ -26,9 +22,14 @@ typedef struct {
   (c = (Cmdstr*)utarray_next(cl->cmds, c))
 static void pair_delete(Token *token);
 
-void* token_val(Token *token)
+static UT_icd dict_icd = { sizeof(Pair),   NULL };
+static UT_icd list_icd = { sizeof(Token),  NULL };
+static UT_icd cmd_icd  = { sizeof(Cmdstr), NULL };
+
+void* token_val(Token *token, char v_type)
 {
   if (!token) return NULL;
+  if (token->var.v_type != v_type) return NULL;
   switch (token->var.v_type) {
     case VAR_LIST:
       return token->var.vval.v_list;
@@ -43,20 +44,20 @@ void* token_val(Token *token)
   }
 }
 
-void* list_arg(List *lst, int argc)
+void* list_arg(List *lst, int argc, char v_type)
 {
   if (!lst || utarray_len(lst->items) < argc) return NULL;
   Token *word = (Token*)utarray_eltptr(lst->items, argc);
-  return token_val(word);
+  return token_val(word, v_type);
 }
 
 static void list_delete(Token *token)
 {
   log_msg("CMDLINE", "list_delete");
-  List *list = token->var.vval.v_list;
+  List *list = token_val(token, VAR_LIST);
   UT_array *arr = list->items;
-  Token *word = NULL;
 
+  Token *word = NULL;
   while ((word = (Token*)utarray_next(arr, word))) {
     switch(word->var.v_type) {
       case VAR_LIST:
@@ -69,23 +70,22 @@ static void list_delete(Token *token)
         pair_delete(word);
         break;
       case VAR_STRING:
-        free(token_val(word));
+        free(token_val(word, VAR_STRING));
       default:
         break;
     }
   }
-  utarray_free(arr);
   free(list);
-  free(token);
+  utarray_free(arr);
 }
 
 static void pair_delete(Token *token)
 {
   log_msg("CMDLINE", "pair_delete");
-  Pair *pair = token->var.vval.v_pair;
+  Pair *pair = token_val(token, VAR_PAIR);
   Token *key = pair->key;
   Token *value = pair->value;
-  free(token_val(key));
+  free(token_val(key, VAR_PAIR));
   if (value->var.v_type == VAR_LIST)
     list_delete(value);
   else if (value->var.v_type == VAR_DICT)
@@ -93,7 +93,7 @@ static void pair_delete(Token *token)
   else if (value->var.v_type == VAR_PAIR)
     pair_delete(value);
   else {
-    free(token_val(value));
+    free(token_val(value, VAR_STRING));
   }
 }
 
@@ -118,13 +118,13 @@ void cmdline_cleanup(Cmdline *cmdline)
   if (!cmdline->cmds) return;
   Cmdstr *cmd = NULL;
   while (NEXT_CMD(cmdline, cmd)) {
-    list_delete(cmd->args);
+    list_delete(&cmd->args);
   }
   utarray_free(cmdline->cmds);
   utarray_free(cmdline->tokens);
 }
 
-static void stack_push(QUEUE *queue, Token *token)
+static void stack_push(QUEUE *queue, Token token)
 {
   log_msg("CMDLINE", "stack_push");
   queue_item *item = malloc(sizeof(queue_item));
@@ -138,7 +138,7 @@ static queue_item *queue_node_data(QUEUE *queue)
   return QUEUE_DATA(queue, queue_item, node);
 }
 
-static Token* stack_prevprev(QUEUE *stack)
+static Token stack_prevprev(QUEUE *stack)
 {
   QUEUE *p = QUEUE_PREV(stack);
   p = QUEUE_PREV(p);
@@ -146,57 +146,55 @@ static Token* stack_prevprev(QUEUE *stack)
   return item->item;
 }
 
-static Token* stack_pop(QUEUE *stack)
+static Token stack_pop(QUEUE *stack)
 {
   log_msg("CMDLINE", "stack_pop");
   QUEUE *h = QUEUE_HEAD(stack);
   queue_item *item = queue_node_data(h);
   QUEUE_REMOVE(&item->node);
-  Token *token = item->item;
+  Token token = item->item;
   free(item);
   return token;
 }
 
-static Token* stack_head(QUEUE *stack)
+static Token stack_head(QUEUE *stack)
 {
   QUEUE *h = QUEUE_HEAD(stack);
   queue_item *item = queue_node_data(h);
-  Token *token = item->item;
+  Token token = item->item;
   return token;
 }
 
-static Token* pair_new()
+static Token pair_new()
 {
-  Token* token = malloc(sizeof(Token));
+  Token token;
+  memset(&token, 0, sizeof(Token));
   Pair *p = malloc(sizeof(Pair));
-  token->var.v_type = VAR_PAIR;
-  token->var.vval.v_pair = p;
+  token.var.v_type = VAR_PAIR;
+  token.var.vval.v_pair = p;
   return token;
 }
 
-static Token* list_new()
+static Token list_new()
 {
-  Token* token = malloc(sizeof(Token));
+  Token token;
+  memset(&token, 0, sizeof(Token));
   List *l = malloc(sizeof(List));
-  token->var.v_type = VAR_LIST;
+  token.var.v_type = VAR_LIST;
   utarray_new(l->items, &list_icd);
-  token->var.vval.v_list = l;
+  token.var.vval.v_list = l;
   return token;
 }
 
-static Token* dict_new()
+static Token dict_new()
 {
-  Token* token = malloc(sizeof(Token));
+  Token token;
+  memset(&token, 0, sizeof(Token));
   Dict *d = malloc(sizeof(Dict));
-  token->var.v_type = VAR_DICT;
+  token.var.v_type = VAR_DICT;
   utarray_new(d->items, &dict_icd);
-  token->var.vval.v_dict = d;
+  token.var.vval.v_dict = d;
   return token;
-}
-
-int cmdline_prev_word(Cmdline *cmdline, int pos)
-{
-  return 0;
 }
 
 static void cmdline_create_token(Cmdline *cmdline, char *str, int st, int ed)
@@ -253,47 +251,6 @@ static void cmdline_tokenize(Cmdline *cmdline)
   }
 }
 
-static void pop(QUEUE *stack)
-{
-  Token *token = stack_pop(stack);
-  Token *parent = stack_head(stack);
-  log_msg("CMDLINE", "pop %d", token->var.v_type);
-
-  if (parent->var.v_type == VAR_LIST) {
-    utarray_push_back(parent->var.vval.v_list->items, token);
-    parent->end = token->end;
-  }
-  else if (parent->var.v_type == VAR_DICT) {
-    utarray_push_back(parent->var.vval.v_dict->items, token);
-    parent->end = token->end;
-  }
-  else if (stack_prevprev(stack)->var.v_type == VAR_PAIR) {
-    Token *key = stack_pop(stack);
-    Token *p = stack_prevprev(stack);
-    log_msg("CMDLINE", "%s:%s", token_val(key), token_val(token));
-    p->var.vval.v_pair->key = key;
-    p->var.vval.v_pair->value = token;
-
-    stack_pop(stack);
-    Token *pt = stack_head(stack);
-    utarray_push_back(pt->var.vval.v_list->items, p);
-  }
-}
-
-static void push(Token *token, QUEUE *stack)
-{
-  log_msg("CMDLINE", "push %d", token->var.v_type);
-  if (token->var.v_type == VAR_STRING) {
-    int temp;
-    if (sscanf(token->var.vval.v_string, "%d", &temp)) {
-      free(token_val(token));
-      token->var.v_type = VAR_NUMBER;
-      token->var.vval.v_number = temp;
-    }
-  }
-  stack_push(stack, token);
-}
-
 static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)
 {
   Token *nword = (Token*)utarray_next(cmdline->tokens, word);
@@ -306,19 +263,6 @@ static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)
   return nword;
 }
 
-static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
-{
-  Token *next = (Token*)utarray_next(cmdline->tokens, token);
-  if (next) {
-    String str = token_val(next);
-    if (str && str[0] == ':') {
-      push(pair_new(), stack);
-      return true;
-    }
-  }
-  return false;
-}
-
 Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
 {
   if (!cmdline->cmds) return NULL;
@@ -326,10 +270,10 @@ Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
   Cmdstr *cmd = NULL;
   NEXT_CMD(cmdline, cmd);
 
-  List *list = cmd->args->var.vval.v_list;
+  List *list = token_val(&cmd->args, VAR_LIST);
   UT_array *arr = list->items;
-  Token *word = NULL;
 
+  Token *word = NULL;
   while ((word = (Token*)utarray_next(arr, word))) {
     if (MAX(0, MIN(ed, word->end) - MAX(st, word->start)) > 0)
       return word;
@@ -343,7 +287,7 @@ Token* cmdline_tokindex(Cmdline *cmdline, int idx)
   Cmdstr *cmd = NULL;
   NEXT_CMD(cmdline, cmd);
 
-  List *list = cmd->args->var.vval.v_list;
+  List *list = cmd->args.var.vval.v_list;
   UT_array *arr = list->items;
   Token *word = NULL;
 
@@ -361,6 +305,59 @@ Token* cmdline_last(Cmdline *cmdline)
   return word;
 }
 
+static void pop(QUEUE *stack)
+{
+  Token token = stack_pop(stack);
+  Token parent = stack_head(stack);
+  log_msg("CMDLINE", "pop %d", token.var.v_type);
+
+  if (parent.var.v_type == VAR_LIST) {
+    utarray_push_back(parent.var.vval.v_list->items, &token);
+    parent.end = token.end;
+  }
+  else if (parent.var.v_type == VAR_DICT) {
+    utarray_push_back(parent.var.vval.v_dict->items, &token);
+    parent.end = token.end;
+  }
+  else if (stack_prevprev(stack).var.v_type == VAR_PAIR) {
+    Token key = stack_pop(stack);
+    Token p = stack_prevprev(stack);
+    p.var.vval.v_pair->key = &key;
+    p.var.vval.v_pair->value = &token;
+
+    stack_pop(stack);
+    Token pt = stack_head(stack);
+    utarray_push_back(pt.var.vval.v_list->items, &p);
+  }
+}
+
+static void push(Token token, QUEUE *stack)
+{
+  log_msg("CMDLINE", "push %d", token.var.v_type);
+  if (token.var.v_type == VAR_STRING) {
+    int temp;
+    if (sscanf(token_val(&token, VAR_STRING), "%d", &temp)) {
+      free(token_val(&token, VAR_STRING));
+      token.var.v_type = VAR_NUMBER;
+      token.var.vval.v_number = temp;
+    }
+  }
+  stack_push(stack, token);
+}
+
+static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
+{
+  Token *next = (Token*)utarray_next(cmdline->tokens, token);
+  if (next) {
+    String str = token_val(next, VAR_STRING);
+    if (str && str[0] == ':') {
+      push(pair_new(), stack);
+      return true;
+    }
+  }
+  return false;
+}
+
 static Token* cmdline_parse(Cmdline *cmdline, Token *word)
 {
   log_msg("CMDLINE", "cmdline_parse");
@@ -375,7 +372,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
   stack_push(stack, cmd.args);
 
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
-    char *str = token_val(word);
+    char *str = token_val(word, VAR_STRING);
     if (str[0] == '!')
       cmd.exec = 1;
 
@@ -388,7 +385,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
       case ':':
         break;
       case ',':
-        push(word, stack);
+        push(*word, stack);
       case '}':
       case ']':
         /*FALLTHROUGH*/
@@ -397,15 +394,16 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
         //
       case '{':
         push(dict_new(), stack);
-        stack_head(stack)->start = word->start;
+        Token head = stack_head(stack);
+        head.start = word->start;
         break;
       case '[':
         push(list_new(), stack);
-        stack_head(stack)->start = word->start;
+        head.start = word->start;
         break;
       default:
         seek = seek_ahead(cmdline, stack, word);
-        push(word, stack);
+        push(*word, stack);
         if (!seek)
           pop(stack);
     }
@@ -496,9 +494,9 @@ void cmdline_req_run(Cmdline *cmdline)
       Cmdstr *tmp = cmd;
       NEXT_CMD(cmdline, tmp);
 
-      List *args = token_val(tmp->args);
+      List *args = token_val(&tmp->args, VAR_LIST);
       Token *word = (Token*)utarray_front(args->items);
-      String arg = token_val(word);
+      String arg = token_val(word, VAR_STRING);
 
       if (!cntlr_isloaded(arg))
         log_msg("ERROR", "cntlr %s not valid", arg);
