@@ -159,7 +159,7 @@ breakout:
 fn_context* find_context(fn_context *cx, String name)
 {
   log_msg("COMPL", "find_context");
-  if (!(cx)) {
+  if (!cx || !name) {
     log_msg("COMPL", "not available.");
     return NULL;
   }
@@ -177,7 +177,7 @@ fn_context* find_context(fn_context *cx, String name)
   }
   else {
     fn_context *it;
-    for (it = (cx)->sub; it != NULL; it = it->hh.next) {
+    for (it = cx->sub; it != NULL; it = it->hh.next) {
       log_msg("COMPL", "::");
       fn_context *ret = find_context(it, name);
       if (ret)
@@ -225,7 +225,7 @@ fn_context* context_start()
 void compl_update(fn_context *cx, String line)
 {
   log_msg("COMPL", "compl_update");
-  if (!cx) return;
+  if (!cx || !line) return;
   if (!cx->cmpl) return;
   log_msg("COMPL", "%s", line);
 

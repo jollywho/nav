@@ -38,12 +38,6 @@ struct Token {
   typ_T var;
 };
 
-#define TOKEN_LIST(token) \
-  token->args->var.vval.v_list
-
-#define TOKEN_STR(var) \
-  var.vval.v_string
-
 #define TOKEN_NUM(var) \
   var.vval.v_number
 
@@ -88,5 +82,8 @@ int  cmdline_prev_word(Cmdline *cmdline, int pos);
 Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed);
 Token* cmdline_tokindex(Cmdline *cmdline, int idx);
 Token* cmdline_last(Cmdline *cmdline);
+
+void* token_val(Token *token);
+void* list_arg(List *lst, int argc);
 
 #endif

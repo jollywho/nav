@@ -7,6 +7,7 @@
 typedef struct fn_rec fn_rec;
 typedef struct fn_val fn_val;
 typedef struct fn_fld fn_fld;
+typedef struct fn_vt_fld fn_vt_fld;
 typedef struct fn_lis fn_lis;
 typedef struct tentry tentry;
 typedef struct ventry ventry;

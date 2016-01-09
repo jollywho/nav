@@ -26,6 +26,30 @@ typedef struct {
   (c = (Cmdstr*)utarray_next(cl->cmds, c))
 static void pair_delete(Token *token);
 
+void* token_val(Token *token)
+{
+  if (!token) return NULL;
+  switch (token->var.v_type) {
+    case VAR_LIST:
+      return token->var.vval.v_list;
+    case VAR_DICT:
+      return token->var.vval.v_dict;
+    case VAR_PAIR:
+      return token->var.vval.v_pair;
+    case VAR_STRING:
+      return token->var.vval.v_string;
+    default:
+      return NULL;
+  }
+}
+
+void* list_arg(List *lst, int argc)
+{
+  if (!lst || utarray_len(lst->items) < argc) return NULL;
+  Token *word = (Token*)utarray_eltptr(lst->items, argc);
+  return token_val(word);
+}
+
 static void list_delete(Token *token)
 {
   log_msg("CMDLINE", "list_delete");
@@ -45,7 +69,7 @@ static void list_delete(Token *token)
         pair_delete(word);
         break;
       case VAR_STRING:
-        free(TOKEN_STR(word->var));
+        free(token_val(word));
       default:
         break;
     }
@@ -61,7 +85,7 @@ static void pair_delete(Token *token)
   Pair *pair = token->var.vval.v_pair;
   Token *key = pair->key;
   Token *value = pair->value;
-  free(TOKEN_STR(key->var));
+  free(token_val(key));
   if (value->var.v_type == VAR_LIST)
     list_delete(value);
   else if (value->var.v_type == VAR_DICT)
@@ -69,7 +93,7 @@ static void pair_delete(Token *token)
   else if (value->var.v_type == VAR_PAIR)
     pair_delete(value);
   else {
-    free(TOKEN_STR(value->var));
+    free(token_val(value));
   }
 }
 
@@ -246,7 +270,7 @@ static void pop(QUEUE *stack)
   else if (stack_prevprev(stack)->var.v_type == VAR_PAIR) {
     Token *key = stack_pop(stack);
     Token *p = stack_prevprev(stack);
-    log_msg("CMDLINE", "%s:%s", TOKEN_STR(key->var), TOKEN_STR(token->var));
+    log_msg("CMDLINE", "%s:%s", token_val(key), token_val(token));
     p->var.vval.v_pair->key = key;
     p->var.vval.v_pair->value = token;
 
@@ -262,7 +286,7 @@ static void push(Token *token, QUEUE *stack)
   if (token->var.v_type == VAR_STRING) {
     int temp;
     if (sscanf(token->var.vval.v_string, "%d", &temp)) {
-      free(TOKEN_STR(token->var));
+      free(token_val(token));
       token->var.v_type = VAR_NUMBER;
       token->var.vval.v_number = temp;
     }
@@ -286,7 +310,8 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
 {
   Token *next = (Token*)utarray_next(cmdline->tokens, token);
   if (next) {
-    if (TOKEN_STR(next->var)[0] == ':') {
+    String str = token_val(next);
+    if (str && str[0] == ':') {
       push(pair_new(), stack);
       return true;
     }
@@ -350,7 +375,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
   stack_push(stack, cmd.args);
 
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
-    char *str = TOKEN_STR(word->var);
+    char *str = token_val(word);
     if (str[0] == '!')
       cmd.exec = 1;
 
@@ -363,6 +388,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
       case ':':
         break;
       case ',':
+        push(word, stack);
       case '}':
       case ']':
         /*FALLTHROUGH*/
@@ -470,9 +496,9 @@ void cmdline_req_run(Cmdline *cmdline)
       Cmdstr *tmp = cmd;
       NEXT_CMD(cmdline, tmp);
 
-      List *args = TOKEN_LIST(tmp);
+      List *args = token_val(tmp->args);
       Token *word = (Token*)utarray_front(args->items);
-      String arg = TOKEN_STR(word->var);
+      String arg = token_val(word);
 
       if (!cntlr_isloaded(arg))
         log_msg("ERROR", "cntlr %s not valid", arg);

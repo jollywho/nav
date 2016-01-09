@@ -144,7 +144,7 @@ static void wintest(Window *_w, Cmdarg *arg)
 static void wintestq(Window *_w, Cmdarg *arg)
 {
   log_msg("WINDOW", "win_close");
-  Buffer *buf = layout_buf(&win.layout);
+  //Buffer *buf = layout_buf(&win.layout);
   //if (buf) {
   //  cntlr_close(buf_cntlr(buf));
   //}
@@ -185,12 +185,10 @@ static void* win_pipe(List *args, enum move_dir flags)
   if (utarray_len(args->items) < 2) return 0;
   Buffer *buf = layout_buf(&win.layout);
 
-  Token *word = (Token*)utarray_eltptr(args->items, 1);
-  if (word->var.v_type != VAR_NUMBER) return 0;
+  int *wnum = list_arg(args, 1);
 
-  if (buf) {
-    int id = TOKEN_NUM(word->var);
-    Cntlr *rhs = cntlr_from_id(id);
+  if (buf && wnum) {
+    Cntlr *rhs = cntlr_from_id(*wnum);
     //TODO: replace pipe if already set
     send_hook_msg("pipe_attach", buf_cntlr(buf), rhs);
   }
@@ -201,12 +199,8 @@ static void* win_cd(List *args, int flags)
 {
   log_msg("WINDOW", "win_cd");
 
-  String path = "";
-  if (utarray_len(args->items) == 2) {
-    Token *word = (Token*)utarray_eltptr(args->items, 1);
-    if (word->var.v_type != VAR_STRING) return 0;
-    path = TOKEN_STR(word->var);
-  }
+  String path = list_arg(args, 1);
+  if (!path) path = "~";
   Cntlr *cntlr = buf_cntlr(layout_buf(&win.layout));
   if (cntlr) {
     fm_req_dir(cntlr, path);
@@ -218,12 +212,7 @@ static void* win_sort(List *args, int flags)
 {
   log_msg("WINDOW", "win_sort");
 
-  String fld = "";
-  if (utarray_len(args->items) == 2) {
-    Token *word = (Token*)utarray_eltptr(args->items, 1);
-    if (word->var.v_type != VAR_STRING) return 0;
-    fld = TOKEN_STR(word->var);
-  }
+  String fld = list_arg(args, 1);
   buf_sort(layout_buf(&win.layout), fld, flags);
   return 0;
 }
@@ -233,13 +222,10 @@ static void* win_new(List *args, enum move_dir flags)
   log_msg("WINDOW", "win_new");
   window_add_buffer(flags);
 
-  Cntlr *ret = NULL;
-  Token *word = (Token*)utarray_eltptr(args->items, 1);
-
-  if (word) {
-    ret = cntlr_open(TOKEN_STR(word->var), layout_buf(&win.layout));
-  }
-  return ret;
+  String cmd = list_arg(args, 1);
+  if (cmd)
+    return cntlr_open(cmd, layout_buf(&win.layout));
+  return NULL;
 }
 
 static void* win_close(List *args, int cmd_flags)

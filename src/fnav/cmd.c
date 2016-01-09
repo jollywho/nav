@@ -42,12 +42,12 @@ void cmd_run(Cmdstr *cmdstr)
   log_msg("CMD", "cmd_run");
   Token *word = NULL;
 
-  List *args = TOKEN_LIST(cmdstr);
+  List *args = token_val(cmdstr->args);
   if (utarray_len(args->items) < 1) return;
 
   word = (Token*)utarray_front(args->items);
 
-  Cmd_T *fun = cmd_find(TOKEN_STR(word->var));
+  Cmd_T *fun = cmd_find(token_val(word));
   if (!fun) return; // :'(
 
   cmdstr->ret_t = CNTLR;

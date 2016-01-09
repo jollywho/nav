@@ -7,7 +7,7 @@
 #include "fnav/compl.h"
 
 fn_tbl* get_tbl(String t);
-static void tbl_del_rec(fn_rec *rec);
+static ventry* tbl_del_rec(fn_rec *rec, ventry *cur);
 static void tbl_insert(fn_tbl *t, trans_rec *trec);
 
 struct fn_val {
@@ -35,11 +35,11 @@ struct fn_fld {
   UT_hash_handle hh;
 };
 
-typedef struct {
+struct fn_vt_fld {
   String key;
   tbl_vt_cb cb;
   UT_hash_handle hh;
-} fn_vt_fld;
+};
 
 struct fn_tbl {
   String key;
@@ -277,12 +277,8 @@ void tbl_del_val(String tn, String fname, String val)
     if (v) {
       /* iterate entries of val. */
       ventry *it = v->rlist;
-      int count = v->count;
-        log_msg("TAB", "DELCOUN %d", v->count);
-      for (int i = 0; i < count; i++) {
-        log_msg("TAB", "ITERHEAD %s %s %s",tn,fname,val);
-        it = it->next;
-        tbl_del_rec(it->rec);
+      while (it) {
+        it = tbl_del_rec(it->rec, it);
       }
     }
   }
@@ -413,11 +409,10 @@ static void tbl_insert(fn_tbl *t, trans_rec *trec)
   }
 }
 
-static void tbl_del_rec(fn_rec *rec)
+static ventry* tbl_del_rec(fn_rec *rec, ventry *cur)
 {
   log_msg("TABLE", "delete_rec()");
   for(int i = 0; i < rec->fld_count; i++) {
-    log_msg("TABLE", "next");
     ventry *it = rec->vlist[i];
     if (!it) {
       if (rec->vals[i]->fld == typVOID) {
@@ -426,7 +421,6 @@ static void tbl_del_rec(fn_rec *rec)
       free(rec->vals[i]);
     }
     if (it) {
-      log_msg("TABLE", "got entry");
       fn_val *val = it->val;
       it->val->count--;
 
@@ -436,20 +430,27 @@ static void tbl_del_rec(fn_rec *rec)
         fn_lis *ll;
         HASH_FIND_STR(fld->lis, val->key, ll);
         if (ll) {
-          log_msg("TAB", "CLEAR ");
+          log_msg("TAB", "CLEAR LIS");
           ll->ent = NULL;
         }
         free(val->key);
         free(rec->vals[i]);
+        if (cur == it) {
+          cur = NULL;
+        }
       }
       it->next->prev = it->prev;
       it->prev->next = it->next;
+      if (cur == it) {
+        cur = it->next;
+      }
       free(it);
     }
   }
   free(rec->vals);
   free(rec->vlist);
   free(rec);
+  return cur;
 }
 
 trans_rec* mk_trans_rec(int fld_count)

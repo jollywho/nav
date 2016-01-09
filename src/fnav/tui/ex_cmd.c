@@ -125,7 +125,7 @@ static void gen_output_str()
   int i, j;
 
   free(fmt_out);
-  fmt_out = calloc(maxpos, maxpos * 2 * sizeof(char*));
+  fmt_out = calloc(maxpos+1, sizeof(char*));
 
   i = j = 0;
   while ((ch = cmd.line[i])) {
@@ -225,8 +225,7 @@ static void ex_hist(void *none, Cmdarg *arg)
     free(cmd.line);
 
     if (strlen(ret) < 1) {
-      cmd.line = malloc(maxpos * sizeof(char*));
-      memset(cmd.line, 0, maxpos);
+      cmd.line = calloc(maxpos, sizeof(char*));
     }
     else
       cmd.line = strdup(ret);
@@ -293,7 +292,8 @@ static void ex_killword()
 
 static void ex_killline()
 {
-  memset(cmd.line, 0, maxpos);
+  free(cmd.line);
+  cmd.line = calloc(maxpos, sizeof(char*));
   curpos = -1;
 
   ex_cmd_pop(-1);
@@ -418,7 +418,7 @@ String ex_cmd_curstr()
 {
   Token *tok = ex_cmd_curtok();
   if (tok)
-    return TOKEN_STR(tok->var);
+    return token_val(tok);
   else
     return "";
 }
