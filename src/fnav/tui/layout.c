@@ -31,7 +31,7 @@ static void create_container(Container *c, enum move_dir dir)
 {
   if (dir == MOVE_UP   || dir == MOVE_DOWN ) c->dir = L_HORIZ;
   if (dir == MOVE_LEFT || dir == MOVE_RIGHT) c->dir = L_VERT;
-  c->count = 0;
+  memset(c, 0, sizeof(Container));
   TAILQ_INIT(&c->p);
   c->ov = overlay_new();
 }
@@ -40,12 +40,11 @@ void layout_init(Layout *layout)
 {
   log_msg("LAYOUT", "layout_init");
   Container *root = malloc(sizeof(Container));
+  create_container(root, MOVE_UP);
   root->buf = NULL;
   root->parent = root;
   root->size = layout_size();
   root->size.lnum--;  //cmdline, status
-  root->ofs = (pos_T){0,0};
-  create_container(root, MOVE_UP);
   root->root = 1;
   layout->root = root;
   layout->focus = root;

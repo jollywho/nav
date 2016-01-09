@@ -13,14 +13,16 @@
 //cntlr is made.
 
 Op_cntlr *op;
-int refs;
+int refs = 0;
+uv_process_t proc;
+uv_process_options_t opts;
 
 static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal) {
   log_msg("OP", "exit_cb");
   uv_close((uv_handle_t*) req, NULL);
   Op_cntlr *op = (Op_cntlr*)req->data;
   op->ready = true;
-  //system("pkill compton");
+  system("pkill compton");
 }
 
 static void chld_handler(uv_signal_t *handle, int signum)
@@ -57,28 +59,28 @@ static void chld_handler(uv_signal_t *handle, int signum)
 static void create_proc(Op_cntlr *op, String path)
 {
   log_msg("OP", "create_proc");
-  op->opts.flags = UV_PROCESS_DETACHED;
-  op->opts.exit_cb = exit_cb;
+  opts.flags = UV_PROCESS_DETACHED;
+  opts.exit_cb = exit_cb;
   char *rv[] = {"mpv", "--fs", path, NULL};
-  op->opts.file = rv[0];
-  op->opts.args = rv;
-  op->proc.data = op;
+  opts.file = rv[0];
+  opts.args = rv;
+  proc.data = op;
 
   if (!op->ready) {
     log_msg("OP", "kill");
-    uv_kill(op->proc.pid, SIGKILL);
-    uv_close((uv_handle_t*)&op->proc, NULL);
+    uv_kill(proc.pid, SIGKILL);
+    uv_close((uv_handle_t*)&proc, NULL);
     uv_run(&op->loop.uv, UV_RUN_NOWAIT);
   }
   log_msg("OP", "spawn");
   uv_signal_start(&op->loop.children_watcher, chld_handler, SIGCHLD);
   uv_disable_stdio_inheritance();
-  int ret = uv_spawn(&op->loop.uv, &op->proc, &op->opts);
+  int ret = uv_spawn(&op->loop.uv, &proc, &opts);
   op->ready = false;
   if (ret < 0) {
     log_msg("?", "file: |%s|, %s", path, uv_strerror(ret));
   }
-  uv_unref((uv_handle_t*) &op->proc);
+  uv_unref((uv_handle_t*) &proc);
 }
 
 const char *file_ext(const char *filename) {
@@ -97,7 +99,7 @@ static void fileopen_cb(Cntlr *host, Cntlr *caller)
   //ventry *head = fnd_val("op_procs", "ext", (char*)ext);
 
   create_proc(op, path);
-  //system("mpv_i");
+  system("mpv_i");
 }
 
 void op_loop(Loop *loop, int ms)

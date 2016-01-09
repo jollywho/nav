@@ -38,10 +38,6 @@ static fn_key key_defaults[] = {
 static fn_keytbl key_tbl;
 static short cmd_idx[KEYS_SIZE];
 
-#define SET_POS(pos,y,x)       \
-  (pos.col) = (x);             \
-  (pos.lnum) = (y);            \
-
 #define INC_POS(pos,x,y)       \
   (pos.col) += (x);            \
   (pos.lnum) += (y);           \
@@ -62,19 +58,8 @@ Buffer* buf_new()
 {
   log_msg("BUFFER", "new");
   Buffer *buf = malloc(sizeof(Buffer));
-  SET_POS(buf->b_size, 0, 0);
-  SET_POS(buf->b_ofs, 0, 0);
+  memset(buf, 0, sizeof(Buffer));
   buf->nc_win = newwin(1,1,0,0);
-  buf->dirty = false;
-  buf->queued = false;
-  buf->del = false;
-  buf->attached = false;
-  buf->nodraw = false;
-  buf->focused = false;
-  buf->input_cb = NULL;
-  buf->matches = NULL;
-  buf->lnum = buf->top = 0;
-  buf->ldif = 0;
   buf->col_select = attr_color("BufSelected");
   buf->col_text = attr_color("BufText");
   buf->col_dir = attr_color("BufDir");
@@ -84,7 +69,6 @@ Buffer* buf_new()
 static int buf_expire(Buffer *buf)
 {
   if (buf->del) {
-    log_msg("BUFEXPIREEEEEEEEEEEEEEEEEE", "%d", buf->del);
     werase(buf->nc_win);
     wnoutrefresh(buf->nc_win);
     delwin(buf->nc_win);
@@ -214,9 +198,9 @@ void buf_draw(void **argv)
       String it = model_str_line(m, buf->top + i);
       if (!it) break;
       String path = model_fld_line(m, "fullpath", buf->top + i);
-      if (isdir(path))
-        DRAW_STR(buf, nc_win, i, 0, it, col_dir);
-      else
+      //if (isdir(path))
+      //  DRAW_STR(buf, nc_win, i, 0, it, col_dir);
+      //else
         DRAW_STR(buf, nc_win, i, 0, it, col_text);
     }
     String it = model_str_line(m, buf->top + buf->lnum);

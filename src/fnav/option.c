@@ -5,9 +5,6 @@
 #include "fnav/cmdline.h"
 #include "fnav/cmd.h"
 
-#define HASH_INS(t,obj) \
-  HASH_ADD_KEYPTR(hh, t, obj->key, strlen(obj->key), obj);
-
 typedef struct {
   fn_color *hi_colors;
   // maps
@@ -31,6 +28,7 @@ void clear_colors()
 void option_init()
 {
   options = malloc(sizeof(fn_options));
+  memset(options, 0, sizeof(fn_options));
   options->max_col_pairs = 1;
   init_pair(0, 0, 0);
 }
@@ -57,7 +55,7 @@ void set_color(fn_color *color)
 
   col->pair = ++options->max_col_pairs;
   init_pair(col->pair, col->fg, col->bg);
-  HASH_INS(options->hi_colors, col);
+  HASH_ADD_STR(options->hi_colors, key, col);
 }
 
 int attr_color(const String name)

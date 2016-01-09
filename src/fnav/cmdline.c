@@ -195,18 +195,18 @@ static void cmdline_create_token(Cmdline *cmdline, char *str, int st, int ed)
 
 static void cmdline_tokenize(Cmdline *cmdline)
 {
-  char ch;
+  char ch[2] = "";
   int st, ed, pos;
   char *str = cmdline->line;
 
   st = ed = pos = 0;
   for(;;) {
-    ch = str[pos++];
-    if (ch == '\0') {
+    ch[0] = str[pos++];
+    if (!ch[0]) {
       cmdline_create_token(cmdline, str, st, ed);
       break;
     }
-    else if (ch == '"') {
+    else if (ch[0] == '"') {
       char *closech = strchr(&str[pos], '"');
       if (closech) {
         int end = (closech - &str[pos]) + pos;
@@ -216,9 +216,9 @@ static void cmdline_tokenize(Cmdline *cmdline)
         st = end;
       }
     }
-    else if (strpbrk(&ch, ":|<>,[]{} ")) {
+    else if (strpbrk(ch, ":|<>,[]{} ")) {
       cmdline_create_token(cmdline, str, st, ed);
-      if (ch != ' ') {
+      if (*ch != ' ') {
         cmdline_create_token(cmdline, str, pos-1, pos);
         ed = pos;
       }

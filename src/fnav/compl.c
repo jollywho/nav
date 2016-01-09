@@ -93,12 +93,17 @@ void compl_add_context(String fmt_compl)
     return;
   }
   else {
+    // TODO:
+    // find parent context from name
+    // finalize new context
+    // search parent of parent's container with depth 0
+    // search each item's params for keyptr
+    // if match, create copy of context and insert to param
     String saveptr;
     String lhs = strtok_r(line, ";", &saveptr);
     String name = strtok(lhs, ":");
 
     String wildch = strtok(NULL, ":");
-    //FIXME: wildch should attach context to all matches
     if (wildch[0] == '*') {
       name = strtok(NULL, ":");
       keyptr = strdup(strtok(NULL, ":"));

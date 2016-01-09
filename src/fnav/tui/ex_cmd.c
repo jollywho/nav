@@ -226,7 +226,7 @@ static void ex_hist(void *none, Cmdarg *arg)
 
     if (strlen(ret) < 1) {
       cmd.line = malloc(maxpos * sizeof(char*));
-      memset(cmd.line, 0, strlen(cmd.line));
+      memset(cmd.line, 0, maxpos);
     }
     else
       cmd.line = strdup(ret);
@@ -293,7 +293,7 @@ static void ex_killword()
 
 static void ex_killline()
 {
-  memset(cmd.line, 0, strlen(cmd.line));
+  memset(cmd.line, 0, maxpos);
   curpos = -1;
 
   ex_cmd_pop(-1);

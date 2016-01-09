@@ -9,7 +9,6 @@ struct Overlay {
   pos_T ov_size;
   pos_T ov_ofs;
   int separator;
-  int lines;
   bool queued;
   bool del;
 
@@ -27,24 +26,21 @@ struct Overlay {
 Overlay* overlay_new()
 {
   Overlay *ov = malloc(sizeof(Overlay));
+  memset(ov, 0, sizeof(Overlay));
   ov->nc_win_st = newwin(1,1,0,0);
   ov->nc_win_sep = newwin(1,1,0,0);
   ov->color_sep = attr_color("OverlaySep");
   ov->color_line = attr_color("OverlayLine");
   ov->color_namebox = attr_color("OverlayActive");
+  ov->color_args = attr_color("OverlayActive");
   ov->name = strdup("         ");
   ov->usr_arg = strdup("         ");
-  ov->pipe_in = NULL;
-  ov->pipe_out = NULL;
-  ov->queued = false;
-  ov->del = false;
   return ov;
 }
 
 static int overlay_expire(Overlay *ov)
 {
   if (ov->del) {
-    log_msg("EXPIRRRRRRRREEEEE", "%d", ov->del);
     delwin(ov->nc_win_sep);
     delwin(ov->nc_win_st);
     free(ov);

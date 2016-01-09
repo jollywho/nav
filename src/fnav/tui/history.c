@@ -21,9 +21,8 @@ struct fn_hist {
 fn_hist* hist_new()
 {
   fn_hist *hst = malloc(sizeof(fn_hist));
+  memset(hst, 0, sizeof(fn_hist));
   TAILQ_INIT(&hst->p);
-  hst->cur = NULL;
-  hst->count = 0;
   return hst;
 }
 

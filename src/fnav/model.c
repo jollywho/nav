@@ -59,6 +59,7 @@ static int str_sort(const void *a, const void *b, void *arg)
 void model_init(fn_handle *hndl)
 {
   Model *model = malloc(sizeof(Model));
+  memset(model, 0, sizeof(Model));
   model->hndl = hndl;
   hndl->model = model;
   model->sort_type = strdup("");
