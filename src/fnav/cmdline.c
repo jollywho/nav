@@ -75,8 +75,8 @@ static void list_delete(Token *token)
         break;
     }
   }
-  free(list);
   utarray_free(arr);
+  free(list);
 }
 
 static void pair_delete(Token *token)

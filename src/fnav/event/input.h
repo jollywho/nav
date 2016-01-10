@@ -30,5 +30,6 @@ void input_init(void);
 void input_cleanup(void);
 void input_setup_tbl(fn_keytbl *kt);
 int find_command(fn_keytbl *kt, int cmdchar);
+void input_check();
 
 #endif

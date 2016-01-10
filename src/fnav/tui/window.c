@@ -13,15 +13,16 @@
 #include "fnav/tui/fm_cntlr.h"
 
 struct Window {
-  Loop loop;
   Layout layout;
   uv_timer_t draw_timer;
   bool ex;
+  bool dirty;
+  int refs;
 };
 
+const uint64_t RFSH_RATE = 10;
 Window win;
 
-static void window_loop();
 static void* win_new();
 static void* win_shut();
 static void* win_close();
@@ -67,9 +68,9 @@ static fn_key key_defaults[] = {
   {'J',     win_layout,      0,           MOVE_DOWN},
   {'K',     win_layout,      0,           MOVE_UP},
   {'L',     win_layout,      0,           MOVE_RIGHT},
-  {'s',     wintest,      0,           MOVE_UP},
-  {'v',     wintest,      0,           MOVE_LEFT},
-  {'q',     wintestq,      0,           MOVE_LEFT},
+  {'s',     wintest,         0,           MOVE_UP},
+  {'v',     wintest,         0,           MOVE_LEFT},
+  {'q',     wintestq,        0,           MOVE_LEFT},
 };
 static fn_keytbl key_tbl;
 static short cmd_idx[KEYS_SIZE];
@@ -90,10 +91,10 @@ void window_init(void)
   key_tbl.maxsize = KEYS_SIZE;
   input_setup_tbl(&key_tbl);
 
-  loop_add(&win.loop, window_loop);
-  uv_timer_init(&win.loop.uv, &win.loop.delay);
   uv_timer_init(eventloop(), &win.draw_timer);
   win.ex = false;
+  win.dirty = false;
+  win.refs = 0;
 
   signal(SIGWINCH, sig_resize);
   layout_init(&win.layout);
@@ -118,7 +119,6 @@ void window_cleanup(void)
   ex_cmd_cleanup();
   cmd_clearall();
   layout_cleanup(&win.layout);
-  loop_remove(&win.loop);
 }
 
 static void* win_shut()
@@ -250,19 +250,38 @@ void window_ex_cmd_end()
   win.ex = false;
 }
 
-static void window_loop(Loop *loop, int ms)
+void window_draw(void **argv)
 {
-  if (!queue_empty(&win.loop.events)) {
-    process_loop(&win.loop, ms);
-    if (win.ex)
-      cmdline_refresh();
+  win.refs--;
+
+  void *obj = argv[0];
+  argv_callback cb = argv[1];
+  cb(&obj);
+}
+
+static void window_update(uv_timer_t *handle)
+{
+  log_msg("****************************", "%d", win.refs);
+  if (win.ex)
+    cmdline_refresh();
+  doupdate();
+  if (win.refs < 1) {
+    uv_timer_stop(handle);
+    win.dirty = false;
   }
 }
 
 void window_req_draw(void *obj, argv_callback cb)
 {
   log_msg("WINDOW", "req draw");
-  CREATE_EVENT(&win.loop.events, cb, 1, obj);
+  if (!win.dirty) {
+    win.dirty = true;
+    uv_timer_start(&win.draw_timer, window_update, RFSH_RATE, RFSH_RATE);
+  }
+  if (obj && cb) {
+    win.refs++;
+    CREATE_EVENT(drawq(), window_draw, 2, obj, cb);
+  }
 }
 
 void window_remove_buffer()

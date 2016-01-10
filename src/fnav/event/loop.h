@@ -14,17 +14,17 @@ struct queue {
 };
 
 typedef struct loop Loop;
-typedef void(*loop_cb)(Loop *loop, int ms);
 struct loop {
   uv_loop_t uv;
-  Queue events;
+  Queue eventq;
+  Queue drawq;
   SLIST_HEAD(WatcherPtr, process) children;
   uv_signal_t children_watcher;
-  uv_timer_t delay;
+  uv_check_t event_check;
   uv_timer_t children_kill_timer;
   size_t children_stop_requests;
-  loop_cb cb;
   SLIST_ENTRY(loop) ent;
+  bool running;
 };
 
 #define EVENT_HANDLER_MAX_ARGC 4
@@ -61,13 +61,11 @@ static inline Event event_create(argv_callback cb, int argc, ...)
 
 void loop_init();
 void loop_destoy();
-void loop_add(Loop *loop, loop_cb cb);
+void loop_add(Loop *loop);
 void loop_remove(Loop *loop);
 
 void queue_push(Queue *queue, Event event);
 void queue_put_event(Queue *queue, Event event);
 bool queue_empty(Queue *queue);
-void process_loop(Loop *loop, int ms);
-void doloops(int ms);
 
 #endif

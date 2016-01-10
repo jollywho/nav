@@ -16,6 +16,8 @@ struct loop_list {
   SLIST_HEAD(looplist, loop) p;
 };
 
+static void check_events(uv_check_t *handle);
+static void loop_process_events(Loop *loop, int ms);
 struct loop_list loop_pool;
 
 void loop_init()
@@ -34,46 +36,26 @@ static void queue_new(Queue *queue)
   QUEUE_INIT(&queue->headtail);
 }
 
-void loop_add(Loop *loop, loop_cb cb)
+void loop_add(Loop *loop)
 {
   log_msg("INIT", "new loop");
   uv_loop_init(&loop->uv);
-  uv_timer_init(&loop->uv, &loop->delay);
+  uv_check_init(&loop->uv, &loop->event_check);
   uv_timer_init(&loop->uv, &loop->children_kill_timer);
   uv_signal_init(&loop->uv, &loop->children_watcher);
   SLIST_INIT(&loop->children);
   SLIST_INSERT_HEAD(&loop_pool.p, loop, ent);
-  loop->cb = cb;
   loop->uv.data = &loop;
-  queue_new(&loop->events);
+  queue_new(&loop->eventq);
+  queue_new(&loop->drawq);
+  loop->running = false;
 }
 
 void loop_remove(Loop *lp)
 {
   SLIST_REMOVE(&loop_pool.p, lp, loop, ent);
-  uv_timer_stop(&lp->delay);
+  //uv_timer_stop(&lp->delay);
   uv_loop_close(&lp->uv);
-}
-
-void doloops(int ms)
-{
-  int remaining = ms;
-  uint64_t before = (remaining > 0) ? os_hrtime() : 0;
-  Loop *it;
-  SLIST_FOREACH(it, &loop_pool.p, ent) {
-    if (remaining == 0) {
-      break;
-    }
-    else if (remaining > 0) {
-      it->cb(it, ms);
-      uint64_t now = os_hrtime();
-      remaining -= (int) ((now - before) / 1000000);
-      before = now;
-      if (remaining <= 0) {
-        break;
-      }
-    }
-  }
 }
 
 void queue_push(Queue *queue, Event event)
@@ -87,6 +69,10 @@ void queue_push(Queue *queue, Event event)
 void queue_put_event(Queue *queue, Event event)
 {
   queue_push(queue, event);
+  if (!mainloop()->running) {
+    mainloop()->running = true;
+    uv_check_start(&mainloop()->event_check, check_events);
+  }
 }
 
 bool queue_empty(Queue *queue)
@@ -118,19 +104,15 @@ static void timeout_cb(uv_timer_t *handle)
 void queue_process_events(Queue *queue, int ms)
 {
   int remaining = ms;
+  uint64_t before = (remaining > 0) ? os_hrtime() : 0;
   while (!queue_empty(queue)) {
-    uint64_t before = (remaining > 0) ? os_hrtime() : 0;
-    if (remaining == 0) {
-      break;
-    }
-    else if (remaining > 0) {
+    if (remaining > 0) {
       Event e = queue_pop(queue);
       if (e.handler) {
         e.handler(e.argv);
       }
       uint64_t now = os_hrtime();
       remaining -= (int) ((now - before) / 1000000);
-      before = now;
       if (remaining <= 0) {
         break;
       }
@@ -138,27 +120,17 @@ void queue_process_events(Queue *queue, int ms)
   }
 }
 
-void loop_process_events(Loop *loop, int ms)
+#define TIMEOUT 10
+
+static void check_events(uv_check_t *handle)
 {
-  uv_run_mode mode = UV_RUN_ONCE;
-
-  if (ms > 0) {
-    uv_timer_start(&loop->delay, timeout_cb, (uint64_t)ms, (uint64_t)ms);
-    uv_unref((uv_handle_t*)&loop->delay);
+  queue_process_events(eventq(), TIMEOUT);
+  queue_process_events(drawq(),  TIMEOUT);
+  if (queue_empty(eventq()) && queue_empty(drawq())) {
+    mainloop()->running = false;
+    uv_check_stop(handle);
   }
-  else if (ms == 0)
-    mode = UV_RUN_NOWAIT;
-
-  mode = UV_RUN_NOWAIT; // FIXME: UV_RUN_ONCE is blocking
-  uv_run(&loop->uv, mode);
-
-  if (ms > 0) {
+  else {
+    uv_run(eventloop(), UV_RUN_NOWAIT);
   }
-  uv_timer_stop(&loop->delay);
-  queue_process_events(&loop->events, ms);
-}
-
-void process_loop(Loop *loop, int ms)
-{
-  loop_process_events(loop, ms);
 }

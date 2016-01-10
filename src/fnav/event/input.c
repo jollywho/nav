@@ -13,7 +13,6 @@ uv_poll_t poll_handle;
 uv_loop_t loop;
 
 TermKey *tk;
-void event_input();
 
 typedef unsigned char char_u;
 
@@ -83,12 +82,6 @@ int name_to_mod_mask(int c)
   return 0;
 }
 
-void input_check()
-{
-  log_msg("INPUT", "INPUT CHECK");
-  event_input();
-}
-
 void input_init(void)
 {
   log_msg("INIT", "INPUT");
@@ -130,8 +123,9 @@ int extract_modifiers(int key, int *modp)
   return key;
 }
 
-void event_input()
+void input_check()
 {
+  log_msg("INPUT", ">>>>>>>>>>>>>>>>>>>>>>>>>");
   TermKeyKey key;
   TermKeyResult ret;
 

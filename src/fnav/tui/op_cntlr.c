@@ -5,6 +5,7 @@
 #include "fnav/model.h"
 #include "fnav/event/hook.h"
 #include "fnav/tui/op_cntlr.h"
+#include "fnav/event/event.h"
 
 //TODO: we want a single mpv process shared across all cntlr instances
 //so basically, create an op_cntlr once on the first init call. return
@@ -70,12 +71,12 @@ static void create_proc(Op_cntlr *op, String path)
     log_msg("OP", "kill");
     uv_kill(proc.pid, SIGKILL);
     uv_close((uv_handle_t*)&proc, NULL);
-    uv_run(&op->loop.uv, UV_RUN_NOWAIT);
+    uv_run(eventloop(), UV_RUN_NOWAIT);
   }
   log_msg("OP", "spawn");
-  uv_signal_start(&op->loop.children_watcher, chld_handler, SIGCHLD);
+  uv_signal_start(&mainloop()->children_watcher, chld_handler, SIGCHLD);
   uv_disable_stdio_inheritance();
-  int ret = uv_spawn(&op->loop.uv, &proc, &opts);
+  int ret = uv_spawn(eventloop(), &proc, &opts);
   op->ready = false;
   if (ret < 0) {
     log_msg("?", "file: |%s|, %s", path, uv_strerror(ret));
@@ -102,11 +103,6 @@ static void fileopen_cb(Cntlr *host, Cntlr *caller)
   system("mpv_i");
 }
 
-void op_loop(Loop *loop, int ms)
-{
-  process_loop(loop, ms);
-}
-
 static void pipe_attach_cb(Cntlr *host, Cntlr *caller)
 {
   log_msg("OP", "pipe_attach_cb");
@@ -120,8 +116,6 @@ Cntlr* op_new()
     op = malloc(sizeof(Op_cntlr));
     op->base.top = op;
     op->ready = true;
-    loop_add(&op->loop, op_loop);
-    uv_timer_init(&op->loop.uv, &op->loop.delay);
     if (tbl_mk("op_procs")) {
       tbl_mk_fld("op_procs", "ext", typSTRING);
       tbl_mk_fld("op_procs", "file", typSTRING);

@@ -4,6 +4,7 @@
 
 #include "fnav/event/shell.h"
 #include "fnav/event/wstream.h"
+#include "fnav/event/event.h"
 #include "fnav/model.h"
 #include "fnav/log.h"
 #include "fnav/config.h"
@@ -43,12 +44,10 @@ Shell* shell_init(Cntlr *cntlr)
   sh->readout = NULL;
   sh->msg = NULL;
 
-  loop_add(&sh->loop, shell_loop);
-  uv_timer_init(&sh->loop.uv, &sh->loop.delay);
-
-  sh->uvproc = uv_process_init(&sh->loop, sh);
+  sh->loop = mainloop();
+  sh->uvproc = uv_process_init(sh->loop, sh);
   sh->proc = &sh->uvproc.process;
-  sh->proc->events = &sh->loop.events;
+  sh->proc->events = &sh->loop->eventq;
   sh->proc->in = &sh->in;
   sh->proc->out = &sh->out;
   sh->proc->fin_cb = shell_fin_cb;
@@ -64,7 +63,6 @@ void shell_args(Shell *sh, String *args, shell_stdout_cb readout)
 void shell_free(Shell *sh)
 {
   log_msg("SHELL", "shell_free");
-  loop_remove(&sh->loop);
   if (sh->msg)  free(sh->msg);
   //if (sh->name) free(sh->name);
   //if (sh->argv) free(sh->argv);
@@ -87,7 +85,7 @@ void shell_start(Shell *sh)
   sh->blocking = true;
   wstream_init(sh->proc->in, 0);
   if (sh->readout) {
-    rstream_init(sh->proc->out, &sh->loop.events, 0);
+    rstream_init(sh->proc->out, &sh->loop->eventq, 0);
     rstream_start(sh->proc->out, sh->data_cb);
   }
   if (sh->msg)
@@ -146,11 +144,6 @@ static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
   if (written) {
     rbuffer_consumed(buf, count);
   }
-}
-
-static void shell_loop(Loop *loop, int ms)
-{
-  process_loop(loop, ms);
 }
 
 static void shell_write_cb(Stream *stream, void *data, int status)

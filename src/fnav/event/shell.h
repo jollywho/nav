@@ -12,7 +12,7 @@ typedef struct {
 typedef void (*shell_stdout_cb)(Cntlr *c, String out);
 
 typedef struct {
-  Loop loop;
+  Loop *loop;
   Stream in, out, err;
   DynamicBuffer buf;
   stream_read_cb data_cb;

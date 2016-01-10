@@ -8,7 +8,6 @@ typedef struct {
   uv_fs_event_t watcher;
   uv_timer_t watcher_timer;
   fn_handle *hndl;
-  Loop loop;
   bool cancel;
   bool running;
   bool queued;

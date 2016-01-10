@@ -24,9 +24,8 @@ FS_handle* fs_init(fn_handle *h)
 {
   log_msg("FS", "open req");
   FS_handle *fsh = malloc(sizeof(FS_handle));
-  loop_add(&fsh->loop, fs_loop);
-  uv_fs_event_init(&fsh->loop.uv, &fsh->watcher);
-  uv_timer_init(&fsh->loop.uv, &fsh->watcher_timer);
+  uv_fs_event_init(eventloop(), &fsh->watcher);
+  uv_timer_init(eventloop(), &fsh->watcher_timer);
   fsh->hndl = h;
   fsh->running = false;
   fsh->watcher.data = fsh;
@@ -40,7 +39,6 @@ void fs_cleanup(FS_handle *fsh)
   //TODO: spin until loop cleared
   uv_fs_event_stop(&fsh->watcher);
   uv_timer_stop(&fsh->watcher_timer);
-  loop_remove(&fsh->loop);
   free(fsh);
 }
 
@@ -104,7 +102,7 @@ void fs_async_open(FS_handle *fsh, Cntlr *cntlr, String path)
   fq->uv_fs.data = fq;
   fq->data = cntlr;
 
-  uv_fs_stat(&fsh->loop.uv, &fq->uv_fs, path, req_stat_cb);
+  uv_fs_stat(eventloop(), &fq->uv_fs, path, req_stat_cb);
 }
 
 void* fs_vt_stat_resolv(fn_rec *rec, String key)
@@ -140,7 +138,7 @@ void fs_open(FS_handle *fsh, const String dir)
   fsh->last_ran = os_hrtime();
   fsh->queued = false;
 
-  uv_fs_stat(&fq->fs_h->loop.uv, &fq->uv_fs, dir, stat_cb);
+  uv_fs_stat(eventloop(), &fq->uv_fs, dir, stat_cb);
   //uv_fs_event_start(&fsh->watcher, watch_cb, fsh->path, 1);
 }
 
@@ -150,14 +148,9 @@ void fs_close(FS_handle *h)
   uv_fs_event_stop(&h->watcher);
 }
 
-void fs_loop(Loop *loop, int ms)
-{
-  process_loop(loop, ms);
-}
-
 static int send_stat(FS_req *fq, const char *dir, char *upd)
 {
-  FS_handle *fh = fq->fs_h;
+  //FS_handle *fh = fq->fs_h;
   struct stat *s = malloc(sizeof(struct stat));
   if (stat(dir, s) == -1) {
     free(s);
@@ -168,7 +161,7 @@ static int send_stat(FS_req *fq, const char *dir, char *upd)
   edit_trans(r, "fullpath", (void*)dir,NULL);
   edit_trans(r, "update", NULL, (void*)upd);
   edit_trans(r, "stat", NULL,(void*)s);
-  CREATE_EVENT(&fh->loop.events, commit, 2, "fm_stat", r);
+  CREATE_EVENT(eventq(), commit, 2, "fm_stat", r);
   return 0;
 }
 
@@ -178,7 +171,7 @@ static void scan_cb(uv_fs_t *req)
   log_msg("FS", "path: %s", req->path);
   uv_dirent_t dent;
   FS_req *fq = req->data;
-  FS_handle *fh = fq->fs_h;
+  //FS_handle *fh = fq->fs_h;
 
   /* clear outdated records */
   tbl_del_val("fm_files", "dir", (String)req->path);
@@ -206,7 +199,7 @@ static void scan_cb(uv_fs_t *req)
     if (err)
       clear_trans(r, 1);
     else {
-      CREATE_EVENT(&fh->loop.events, commit, 2, "fm_files", r);
+      CREATE_EVENT(eventq(), commit, 2, "fm_files", r);
     }
   }
   fs_close_req(fq);
@@ -235,7 +228,7 @@ static void stat_cb(uv_fs_t *req)
   }
 
   if (S_ISDIR(fq->uv_stat.st_mode)) {
-    uv_fs_scandir(&fq->fs_h->loop.uv, &fq->uv_fs, fq->req_name, 0, scan_cb);
+    uv_fs_scandir(eventloop(), &fq->uv_fs, fq->req_name, 0, scan_cb);
   }
   else {
     uv_fs_req_cleanup(&fq->uv_fs);
@@ -284,7 +277,7 @@ static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,
 static void fs_close_req(FS_req *fq)
 {
   log_msg("FS", "reset %s", (char*)fq->req_name);
-  CREATE_EVENT(&fq->fs_h->loop.events, fs_signal_handle, 1, fq->fs_h);
+  CREATE_EVENT(eventq(), fs_signal_handle, 1, fq->fs_h);
   uv_fs_req_cleanup(&fq->uv_fs);
   free(fq->req_name);
   free(fq);

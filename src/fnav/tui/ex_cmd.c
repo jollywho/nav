@@ -97,7 +97,7 @@ void start_ex_cmd(int state)
   }
   cmdline_init(&cmd, max.col);
   hist_push(EXCMD_HIST(), &cmd);
-  cmdline_draw();
+  window_req_draw(NULL, NULL);
 }
 
 void stop_ex_cmd()
@@ -323,7 +323,7 @@ static void ex_onkey()
     }
   }
   mflag &= ~EX_CLEAR;
-  cmdline_draw();
+  window_req_draw(NULL, NULL);
 }
 
 void ex_input(int key)

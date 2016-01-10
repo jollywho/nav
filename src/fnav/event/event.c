@@ -2,36 +2,20 @@
 #include <ncurses.h>
 
 #include "fnav/event/event.h"
+#include "fnav/event/input.h"
 #include "fnav/log.h"
 
-uv_loop_t loop;
-uv_timer_t event_timer;
-uint64_t before;
-uint64_t after;
-
-const uint64_t TIMESTEP = 10;
-
-void main_event_loop(uv_timer_t *handle)
-{
-  uv_timer_stop(&event_timer);
-  before = os_hrtime();
-  doloops(TIMESTEP);
-  after = os_hrtime();
-  doupdate();
-  uv_timer_start(&event_timer, main_event_loop,
-      (uint64_t)TIMESTEP, (uint64_t)TIMESTEP);
-}
+Loop loop;
 
 void event_init(void)
 {
   log_msg("INIT", "event");
-  uv_loop_init(&loop);
-  uv_timer_init(&loop, &event_timer);
+  loop_add(&loop);
 }
 
 void event_cleanup(void)
 {
-  uv_loop_close(&loop);
+  uv_loop_close(&loop.uv);
 }
 
 uint64_t os_hrtime(void)
@@ -41,18 +25,37 @@ uint64_t os_hrtime(void)
 
 uv_loop_t *eventloop(void)
 {
+  return &loop.uv;
+}
+
+Loop* mainloop(void)
+{
   return &loop;
+}
+
+Queue* drawq(void)
+{
+  return &loop.drawq;
+}
+
+Queue* eventq(void)
+{
+  return &loop.eventq;
+}
+
+void event_input(void)
+{
+  input_check();
 }
 
 void stop_event_loop(void)
 {
-  uv_stop(&loop);
+  uv_stop(&loop.uv);
 }
 
 void start_event_loop(void)
 {
   log_msg("EVENT", "::::started::::");
-  uv_timer_start(&event_timer, main_event_loop, TIMESTEP, 0);
-  uv_run(&loop, UV_RUN_DEFAULT);
+  uv_run(&loop.uv, UV_RUN_DEFAULT);
   log_msg("EVENT", "::::exited:::::");
 }

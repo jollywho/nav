@@ -7,7 +7,6 @@ typedef struct Op_cntlr Op_cntlr;
 
 struct Op_cntlr {
   Cntlr base;
-  Loop loop;
   fn_handle *hndl;
   bool ready;
 };
