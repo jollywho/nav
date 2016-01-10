@@ -4,7 +4,6 @@
 #include "fnav/event/loop.h"
 #include "fnav/event/stream.h"
 
-extern char *p_sh;          /* 'shell' */
 typedef enum {
   kProcessTypeUv,
   kProcessTypePty

@@ -156,27 +156,16 @@ void shell_exec(String line)
   log_msg("SHELL", "shell_exec");
   log_msg("SHELL", "%s", line);
   if (strlen(line) < 2) return;
-  line = strip_whitespace(line);
-  line = &line[1]; // skip '!'
 
   Shell *sh = shell_init(NULL);
 
-  String cmds = strtok(line, "|");
-  String name = strtok(cmds, " ");
-  String argv = strtok(NULL, "");
+  String rv = strdup(&line[1]);
 
-  if (!name || !argv) {
-    return;
-  }
-  asprintf(&name, "%s", name);
-  asprintf(&argv, "%s", argv);
-
-  log_msg("SHELL", "%s %s", name, argv);
+  log_msg("SHELL", "%s", rv);
 
   sh->disposable = true;
-  char* args[3] = {name, argv, NULL};
+  char* args[4] = {p_sh, "-c", rv, NULL};
   shell_args(sh, (String*)args, NULL);
   shell_start(sh);
-  free(name);
-  free(argv);
+  free(rv);
 }

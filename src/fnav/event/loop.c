@@ -16,6 +16,7 @@ struct loop_list {
   SLIST_HEAD(looplist, loop) p;
 };
 
+#define TIMEOUT 10
 static void check_events(uv_check_t *handle);
 static void loop_process_events(Loop *loop, int ms);
 struct loop_list loop_pool;
@@ -54,7 +55,6 @@ void loop_add(Loop *loop)
 void loop_remove(Loop *lp)
 {
   SLIST_REMOVE(&loop_pool.p, lp, loop, ent);
-  //uv_timer_stop(&lp->delay);
   uv_loop_close(&lp->uv);
 }
 
@@ -119,8 +119,6 @@ void queue_process_events(Queue *queue, int ms)
     }
   }
 }
-
-#define TIMEOUT 10
 
 static void check_events(uv_check_t *handle)
 {
