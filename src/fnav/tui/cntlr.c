@@ -119,7 +119,7 @@ Cntlr* focus_cntlr()
 void cntlr_pipe(Cntlr *cntlr)
 {
   Buffer *buf = window_get_focus();
-  buf_set_status(buf, 0, 0, 0, "|> op");
+  buf_set_status(buf, 0, 0, 0, "op");
 }
 
 Cntlr* cntlr_from_id(int id)

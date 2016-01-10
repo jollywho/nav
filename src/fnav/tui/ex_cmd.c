@@ -194,8 +194,7 @@ static void ex_tab(void *none, Cmdarg *arg)
 
     int len = ed - st;
     if (curpos + len + 2 >= maxpos) {
-      maxpos = 2 * curpos;
-      cmd.line = realloc(cmd.line, maxpos * sizeof(char*));
+      cmd.line = realloc(cmd.line, maxpos *= 2);
     }
 
     int i;
@@ -254,8 +253,7 @@ static void ex_spc()
   mflag |= EX_RIGHT;
   mflag &= ~(EX_FRESH|EX_NEW);
   if (curpos >= maxpos) {
-    maxpos = 2 * curpos;
-    cmd.line = realloc(cmd.line, maxpos * sizeof(char*));
+    cmd.line = realloc(cmd.line, maxpos *= 2);
   }
   cmd.line[curpos] = ' ';
 }
@@ -341,8 +339,7 @@ void ex_input(int key)
     mflag |= EX_RIGHT;
     mflag &= ~(EX_FRESH|EX_NEW);
     if (curpos >= maxpos) {
-      maxpos = 2 * curpos;
-      cmd.line = realloc(cmd.line, maxpos * sizeof(char*));
+      cmd.line = realloc(cmd.line, maxpos *= 2);
     }
     // FIXME: wide char support
     cmd.line[curpos] = key;
@@ -360,8 +357,8 @@ void ex_cmd_push(fn_context *cx)
   cur_part++;
 
   if (cur_part >= max_part) {
-    max_part = 2 * max_part;
-    cmd_stack = realloc(cmd_stack, max_part * sizeof(cmd_part*));
+    max_part *= 2;
+    cmd_stack = realloc(cmd_stack, max_part*sizeof(cmd_part*));
   }
 
   cmd_stack[cur_part] = malloc(sizeof(cmd_part));

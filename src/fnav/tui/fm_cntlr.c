@@ -169,6 +169,7 @@ Cntlr* fm_new(Buffer *buf)
   model_init(fm->base.hndl);
   model_open(fm->base.hndl);
   buf_set_cntlr(buf, &fm->base);
+  buf_set_status(buf, 0, fm->cur_dir, 0, 0);
   hook_init(&fm->base);
 
   fm->fs = fs_init(fm->base.hndl);
