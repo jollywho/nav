@@ -3,17 +3,19 @@
 
 #include "fnav/cmdline.h"
 
-typedef struct Regexmatch Regexmatch;
+typedef struct LineMatch LineMatch;
 
-void regex_build(String line);
-void regex_destroy(Buffer *buf);
+LineMatch* regex_new(fn_handle *hndl);
+void regex_destroy(fn_handle *hndl);
+void regex_build(LineMatch *lm, String line);
+void regex_del_matches(LineMatch *lm);
 
-void regex_mk_pivot();
-void regex_swap_pivot();
-void regex_pivot();
+void regex_mk_pivot(LineMatch *lm);
+void regex_swap_pivot(LineMatch *lm);
+void regex_pivot(LineMatch *lm);
 
-void regex_hover();
-void regex_next(int line);
-void regex_prev(int line);
+void regex_hover(LineMatch *lm);
+void regex_next(LineMatch *lm, int line);
+void regex_prev(LineMatch *lm, int line);
 
 #endif

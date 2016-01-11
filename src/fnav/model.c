@@ -65,11 +65,14 @@ void model_init(fn_handle *hndl)
   model->sort_type = strdup("");
   model->sort_rev = 1;
   utarray_new(model->lines, &icd);
+  Buffer *buf = hndl->buf;
+  buf->matches = regex_new(hndl);
 }
 
 void model_cleanup(fn_handle *hndl)
 {
   Model *m = hndl->model;
+  regex_destroy(hndl);
   utarray_free(m->lines);
   free(m->sort_type);
   free(m);

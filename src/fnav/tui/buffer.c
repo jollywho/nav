@@ -149,13 +149,6 @@ void buf_set_status(Buffer *buf, String name, String usr, String in, String out)
   overlay_edit(buf->ov, name, usr, in, out);
 }
 
-void buf_set_linematch(Buffer *buf, LineMatch *match)
-{
-  log_msg("BUFFER", "buf_set_linematch");
-  regex_destroy(buf);
-  buf->matches = match;
-}
-
 void buf_toggle_focus(Buffer *buf, int focus)
 {
   log_msg("BUFFER", "buf_toggle_focus %d", focus);
@@ -221,7 +214,7 @@ void buf_full_invalidate(Buffer *buf, int index, int lnum)
   werase(buf->nc_win);
   buf->top = index;
   buf->lnum = lnum;
-  regex_destroy(buf);
+  regex_del_matches(buf->matches);
   model_set_curs(m, buf->top + buf->lnum);
   buf_refresh(buf);
 }
@@ -272,9 +265,9 @@ static void buf_search(Buffer *buf, Cmdarg *arg)
 {
   log_msg("BUFFER", "buf_search");
   if (arg->arg == FORWARD)
-    regex_next(buf->top + buf->lnum);
+    regex_next(buf->matches, buf->top + buf->lnum);
   if (arg->arg == BACKWARD)
-    regex_prev(buf->top + buf->lnum);
+    regex_prev(buf->matches, buf->top + buf->lnum);
 }
 
 void buf_move(Buffer *buf, int y, int x)

@@ -238,7 +238,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
         st = end;
       }
     }
-    else if (strpbrk(ch, ":|<>,[]{} ")) {
+    else if (strpbrk(ch, "/:|<>,[]{} ")) {
       cmdline_create_token(cmdline, str, st, ed);
       if (*ch != ' ') {
         cmdline_create_token(cmdline, str, pos-1, pos);
@@ -370,6 +370,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
 
   cmd.args = list_new();
   stack_push(stack, cmd.args);
+  Token head = stack_head(stack);
 
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
     char *str = token_val(word, VAR_STRING);
@@ -394,7 +395,6 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
         //
       case '{':
         push(dict_new(), stack);
-        Token head = stack_head(stack);
         head.start = word->start;
         break;
       case '[':

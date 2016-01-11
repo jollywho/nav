@@ -8,75 +8,90 @@
 #define NSUBEXP  10
 
 struct LineMatch {
-  UT_array *linenum;
+  UT_array *lines;
+  fn_handle *hndl;
+  String regex;
+  pcre *comp;
+  pcre_extra *extra;
+  int pivot_top;
+  int pivot_lnum;
 };
 
-static LineMatch *pivot_matches;
-static String regex;
-static pcre *comp;
-static pcre_extra *extra;
-static int pivot_top = 0;
-static int pivot_lnum = 0;
 static int* nearest_next_match(UT_array *matches, int line);
 
 #define NEXT_OR_WRAP(match,l) \
-  l = (int*)utarray_next(match->linenum, l); \
-  l = l ? l : (int*)utarray_next(match->linenum, l);
+  l = (int*)utarray_next(match, l); \
+  l = l ? l : (int*)utarray_next(match, l);
 #define PREV_OR_WRAP(match,l) \
-  l = (int*)utarray_prev(match->linenum, l); \
-  l = l ? l : (int*)utarray_prev(match->linenum, l);
+  l = (int*)utarray_prev(match, l); \
+  l = l ? l : (int*)utarray_prev(match, l);
 
-static void regex_compile()
+static void regex_compile(LineMatch *lm)
 {
   const char *pcreErrorStr;
   int pcreErrorOffset;
 
-  comp = pcre_compile(regex,
+  lm->comp = pcre_compile(lm->regex,
       PCRE_CASELESS,
       &pcreErrorStr,
       &pcreErrorOffset,
       NULL);
 
-  if (comp == NULL) {
-    log_msg("REGEX", "COMPILE ERROR: %s, %s", regex, pcreErrorStr);
+  if (lm->comp == NULL) {
+    log_msg("REGEX", "COMPILE ERROR: %s, %s", lm->regex, pcreErrorStr);
     return;
   }
 
-  extra = pcre_study(comp, 0, &pcreErrorStr);
+  lm->extra = pcre_study(lm->comp, 0, &pcreErrorStr);
 
   if(pcreErrorStr != NULL) {
-    log_msg("REGEX", "COULD NOT STUDY: %s, %s", regex, pcreErrorStr);
+    log_msg("REGEX", "COULD NOT STUDY: %s, %s", lm->regex, pcreErrorStr);
     return;
   }
 }
 
-// TODO: compile pcre for each line in all window buffers. store in buffer
-void regex_build(String line)
+LineMatch* regex_new(fn_handle *hndl)
+{
+  LineMatch *lm = malloc(sizeof(LineMatch));
+  memset(lm, 0, sizeof(LineMatch));
+  lm->hndl = hndl;
+  lm->regex = strdup("");
+  utarray_new(lm->lines, &ut_int_icd);
+  return lm;
+}
+
+void regex_destroy(fn_handle *hndl)
+{
+  LineMatch *lm = hndl->buf->matches;
+  free(lm);
+  free(lm->regex);
+}
+
+void regex_build(LineMatch *lm, String line)
 {
   log_msg("REGEX", "build");
   log_msg("REGEX", ":%s:", line);
 
+  if (!lm) return;
   if (line) {
-    if (regex) pcre_free(regex);
-    if (extra) pcre_free(extra);
-    regex = strdup(line);
-    regex_compile();
+    regex_del_matches(lm);
+    pcre_free(lm->regex);
+    lm->regex = strdup(line);
   }
 
-  Buffer *buf = window_get_focus();
-  Model *m = buf->hndl->model;
-  LineMatch *matches = malloc(sizeof(LineMatch));
-  utarray_new(matches->linenum, &ut_int_icd);
+  regex_compile(lm);
 
-  int max = model_count(m);
+  utarray_new(lm->lines, &ut_int_icd);
+
+  int max = model_count(lm->hndl->model);
   for (int i = 0; i < max; i++) {
     int substr[NSUBEXP];
     const char *match;
 
-    String subject = model_str_line(m, i);
+    String subject = model_str_line(lm->hndl->model, i);
 
-    int ret = pcre_exec(comp,
-        extra,
+    int ret = pcre_exec(lm->comp,
+        lm->extra,
         subject,
         strlen(subject),  // length of string
         0,                // Start looking at this point
@@ -91,117 +106,117 @@ void regex_build(String line)
 
       for(int j = 0; j < ret; j++) {
         if (substr[j*2+1] > 0) {
-          utarray_push_back(matches->linenum, &i);
+          utarray_push_back(lm->lines, &i);
           break;
         }
       }
       pcre_free_substring(match);
     }
   }
-  pivot_matches = matches;
+  pcre_free(lm->extra);
+  pcre_free(lm->comp);
 }
 
-void regex_destroy(Buffer *buf)
+void regex_del_matches(LineMatch *lm)
 {
-  if (buf->matches) {
-    log_msg("REGEX", "regex_destroy");
-    utarray_free(buf->matches->linenum);
-    free(buf->matches);
-    buf->matches = NULL;
-  }
+  log_msg("REGEX", "regex_del_matches");
+  if (!lm) return;
+  if (!lm->lines) return;
+  utarray_free(lm->lines);
+  lm->lines = NULL;
+  regex_mk_pivot(lm);
 }
 
-static int focus_cur_line()
+static int focus_cur_line(LineMatch *lm)
 {
-  return pivot_top + pivot_lnum;
+  return lm->pivot_top + lm->pivot_lnum;
 }
 
 static int line_diff(int to, int from)
 { return to - from; }
 
-static void regex_focus(int to, int from)
+static void regex_focus(LineMatch *lm, int to, int from)
 {
   log_msg("REGEX", "regex_focus");
-  Buffer *buf = window_get_focus();
-  buf_move(buf, line_diff(to, from), 0);
+  buf_move(lm->hndl->buf, line_diff(to, from), 0);
 }
 
-void regex_pivot()
+void regex_pivot(LineMatch *lm)
 {
-  Buffer *buf = window_get_focus();
-  buf_full_invalidate(buf, pivot_top, pivot_lnum);
+  if (!lm) return;
+  regex_focus(lm, lm->pivot_lnum + lm->pivot_top, lm->hndl->buf->lnum);
 }
 
-void regex_mk_pivot()
+void regex_mk_pivot(LineMatch *lm)
 {
-  Buffer *buf = window_get_focus();
-  pivot_top = buf_top(buf);
-  pivot_lnum = buf_line(buf);
+  if (!lm) return;
+  lm->pivot_top = buf_top(lm->hndl->buf);
+  lm->pivot_lnum = buf_line(lm->hndl->buf);
 }
 
-void regex_swap_pivot()
+void regex_swap_pivot(LineMatch *lm)
 {
   log_msg("REGEX", "regex_swap_pivot");
-  Buffer *buf = window_get_focus();
-  buf_set_linematch(buf, pivot_matches);
+  if (!lm) return;
 }
 
-void regex_hover()
+void regex_hover(LineMatch *lm)
 {
-  int line = focus_cur_line();
+  if (!lm) return;
+  int line = focus_cur_line(lm);
 
-  if (!pivot_matches) return;
-  if (utarray_len(pivot_matches->linenum) < 1) return;
+  if (!lm->lines) return;
+  if (utarray_len(lm->lines) < 1) return;
 
-  int *ret = nearest_next_match(pivot_matches->linenum, line);
+  int *ret = nearest_next_match(lm->lines, line);
   if (ret) {
-    regex_focus(*ret, line);
+    regex_focus(lm, *ret, line);
   }
   else {
-    NEXT_OR_WRAP(pivot_matches, ret);
-    regex_focus(*ret, line);
+    NEXT_OR_WRAP(lm->lines, ret);
+    regex_focus(lm, *ret, line);
   }
 }
 
-static LineMatch* get_or_make_matches()
+static void get_or_make_matches(LineMatch *lm)
 {
-  Buffer *buf = window_get_focus();
-  LineMatch *matches = buf->matches;
-  if (!matches) {
-    regex_build(NULL);
-    regex_swap_pivot();
+  if (!lm->lines) {
+    regex_mk_pivot(lm);
+    regex_build(lm, NULL);
+    regex_swap_pivot(lm);
   }
-  return buf->matches;
 }
 
 // pivot buffernode focus to closest match.
 // varies by direction: '/', '?'
-void regex_next(int line)
+void regex_next(LineMatch *lm, int line)
 {
   log_msg("REGEX", "regex_next");
+  if (!lm) return;
+  get_or_make_matches(lm);
+  if (!lm->lines) return;
+  if (utarray_len(lm->lines) < 1) return;
 
-  LineMatch *matches = get_or_make_matches();
-  if (utarray_len(matches->linenum) < 1) return;
-
-  int *ret = nearest_next_match(matches->linenum, line);
+  int *ret = nearest_next_match(lm->lines, line);
   if (ret)
   if (*ret == line)
-    NEXT_OR_WRAP(matches, ret);
-  regex_focus(*ret, line);
+    NEXT_OR_WRAP(lm->lines, ret);
+  regex_focus(lm, *ret, line);
 }
 
-void regex_prev(int line)
+void regex_prev(LineMatch *lm, int line)
 {
   log_msg("REGEX", "regex_prev");
+  if (!lm) return;
+  get_or_make_matches(lm);
+  if (!lm->lines) return;
+  if (utarray_len(lm->lines) < 1) return;
 
-  LineMatch *matches = get_or_make_matches();
-  if (utarray_len(matches->linenum) < 1) return;
-
-  int *ret = nearest_next_match(matches->linenum, line);
+  int *ret = nearest_next_match(lm->lines, line);
   if (ret)
   if (*ret >= line)
-    PREV_OR_WRAP(matches, ret);
-  regex_focus(*ret, line);
+    PREV_OR_WRAP(lm->lines, ret);
+  regex_focus(lm, *ret, line);
 }
 
 static int* nearest_next_match(UT_array *matches, int line)

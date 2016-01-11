@@ -24,6 +24,7 @@ static String fmt_out;
 static Menu *menu;
 static fn_hist *hist_cmds;
 static fn_hist *hist_regs;
+static LineMatch *lm;
 
 char state_symbol[] = {'/',':'};
 static int ex_state;
@@ -87,8 +88,12 @@ void start_ex_cmd(int state)
   mflag = 0;
   fmt_out = malloc(1);
   col_text = attr_color("ComplText");
-  if (window_get_focus() && state == EX_REG_STATE)
-    regex_mk_pivot();
+
+  if (window_get_focus() && state == EX_REG_STATE) {
+    Buffer *buf = window_get_focus();
+    lm = buf->matches;
+    regex_mk_pivot(lm);
+  }
   else {
     cmd_stack = malloc(STACK_MIN * sizeof(cmd_part*));
     cur_part = -1;
@@ -109,6 +114,7 @@ void stop_ex_cmd()
     menu_stop(menu);
     menu = NULL;
   }
+  lm = NULL;
   free(cmd.line);
   free(fmt_out);
   cmdline_cleanup(&cmd);
@@ -170,7 +176,7 @@ void cmdline_refresh()
 static void ex_esc()
 {
   if (ex_state == EX_REG_STATE) {
-    regex_pivot();
+    regex_pivot(lm);
     hist_save(EXCMD_HIST());
   }
   else {
@@ -240,7 +246,7 @@ static void ex_car()
     cmdline_req_run(&cmd);
   }
   else {
-    regex_swap_pivot();
+    regex_swap_pivot(lm);
   }
   hist_save(EXCMD_HIST());
   mflag = EX_QUIT;
@@ -306,7 +312,7 @@ static void ex_onkey()
     cmdline_build(&cmd);
     if (!(mflag & (EX_FRESH|EX_HIST))) {
       Token *tok = cmdline_last(&cmd);
-      if (tok) {
+      if (tok && strlen(ex_cmd_curstr())) {
         if (curpos + 1 > tok->end && curpos > 0)
           mflag |= EX_NEW;
       }
@@ -315,9 +321,9 @@ static void ex_onkey()
   }
   else {
     if (window_focus_attached() && curpos > CURS_MIN) {
-      regex_build(cmd.line);
-      regex_pivot();
-      regex_hover();
+      regex_build(lm, cmd.line);
+      regex_pivot(lm);
+      regex_hover(lm);
     }
   }
   mflag &= ~EX_CLEAR;

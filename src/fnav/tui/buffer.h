@@ -2,9 +2,7 @@
 #define FN_TUI_BUFFER_H
 
 #include <ncurses.h>
-#include "fnav/table.h"
-
-typedef struct LineMatch LineMatch;
+#include "fnav/regex.h"
 
 typedef void (*buffer_input_cb)(Buffer *buf, int key);
 

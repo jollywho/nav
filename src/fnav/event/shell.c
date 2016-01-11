@@ -11,7 +11,6 @@
 
 static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
   bool eof);
-static void shell_loop(Loop *loop, int ms);
 static void shell_write_cb(Stream *stream, void *data, int status);
 static void shell_write(Shell *sh, String msg);
 
