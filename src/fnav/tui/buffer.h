@@ -64,6 +64,7 @@ int buf_input(Buffer *bn, int key);
 void buf_refresh(Buffer *buf);
 void buf_toggle_focus(Buffer *buf, int focus);
 
+void buf_move_invalid(Buffer *buf, int index, int lnum);
 void buf_move(Buffer *buf, int y, int x);
 void buf_scroll(Buffer *buf, int y, int max);
 

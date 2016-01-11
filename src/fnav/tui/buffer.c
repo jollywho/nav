@@ -205,18 +205,22 @@ void buf_draw(void **argv)
   wnoutrefresh(buf->nc_win);
 }
 
+void buf_move_invalid(Buffer *buf, int index, int lnum)
+{
+  Model *m = buf->hndl->model;
+  buf->top = index;
+  buf->lnum = lnum;
+  model_set_curs(m, buf->top + buf->lnum);
+  buf_refresh(buf);
+}
+
 void buf_full_invalidate(Buffer *buf, int index, int lnum)
 {
   // buffer reset and reentrance
   log_msg("BUFFER", "buf_full_invalidate");
   if (!buf->attached) return;
-  Model *m = buf->hndl->model;
-  werase(buf->nc_win);
-  buf->top = index;
-  buf->lnum = lnum;
   regex_del_matches(buf->matches);
-  model_set_curs(m, buf->top + buf->lnum);
-  buf_refresh(buf);
+  buf_move_invalid(buf, index, lnum);
 }
 
 // input entry point.

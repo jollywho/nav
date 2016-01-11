@@ -124,7 +124,6 @@ void regex_del_matches(LineMatch *lm)
   if (!lm->lines) return;
   utarray_free(lm->lines);
   lm->lines = NULL;
-  regex_mk_pivot(lm);
 }
 
 static int focus_cur_line(LineMatch *lm)
@@ -137,6 +136,7 @@ static int line_diff(int to, int from)
 
 static void regex_focus(LineMatch *lm, int to, int from)
 {
+  if (!lm) return;
   log_msg("REGEX", "regex_focus");
   buf_move(lm->hndl->buf, line_diff(to, from), 0);
 }
@@ -144,20 +144,17 @@ static void regex_focus(LineMatch *lm, int to, int from)
 void regex_pivot(LineMatch *lm)
 {
   if (!lm) return;
-  regex_focus(lm, lm->pivot_lnum + lm->pivot_top, lm->hndl->buf->lnum);
+  log_msg("REGEX", "regex_pivot");
+  Buffer *buf = lm->hndl->buf;
+  buf_move_invalid(buf, lm->pivot_top, lm->pivot_lnum);
 }
 
 void regex_mk_pivot(LineMatch *lm)
 {
   if (!lm) return;
+  log_msg("REGEX", "regex_mk_pivot");
   lm->pivot_top = buf_top(lm->hndl->buf);
   lm->pivot_lnum = buf_line(lm->hndl->buf);
-}
-
-void regex_swap_pivot(LineMatch *lm)
-{
-  log_msg("REGEX", "regex_swap_pivot");
-  if (!lm) return;
 }
 
 void regex_hover(LineMatch *lm)
@@ -183,7 +180,6 @@ static void get_or_make_matches(LineMatch *lm)
   if (!lm->lines) {
     regex_mk_pivot(lm);
     regex_build(lm, NULL);
-    regex_swap_pivot(lm);
   }
 }
 

@@ -245,9 +245,6 @@ static void ex_car()
   if (ex_state == EX_CMD_STATE) {
     cmdline_req_run(&cmd);
   }
-  else {
-    regex_swap_pivot(lm);
-  }
   hist_save(EXCMD_HIST());
   mflag = EX_QUIT;
 }

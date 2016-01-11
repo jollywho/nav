@@ -11,7 +11,6 @@ void regex_build(LineMatch *lm, String line);
 void regex_del_matches(LineMatch *lm);
 
 void regex_mk_pivot(LineMatch *lm);
-void regex_swap_pivot(LineMatch *lm);
 void regex_pivot(LineMatch *lm);
 
 void regex_hover(LineMatch *lm);
