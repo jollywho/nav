@@ -13,21 +13,15 @@ typedef struct {
   bool queued;
   uint64_t last_ran;
   String path;
-} FS_handle;
 
-typedef struct {
-  FS_handle *fs_h;
-
-  uv_stat_t uv_stat;
   uv_fs_t uv_fs; //data->req_handle
-
   void *data;
-  String req_name;
-} FS_req;
+
+} FS_handle;
 
 FS_handle* fs_init(fn_handle *h);
 void fs_cleanup(FS_handle *fsh);
-void fs_open(FS_handle *h, const String dir);
+void fs_open(FS_handle *h, String dir);
 void fs_close(FS_handle *h);
 bool isdir(String path);
 String fs_expand_path(String path);

@@ -238,7 +238,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
         st = end;
       }
     }
-    else if (strpbrk(ch, "/:|<>,[]{} ")) {
+    else if (strpbrk(ch, ":|<>,[]{} ")) {
       cmdline_create_token(cmdline, str, st, ed);
       if (*ch != ' ') {
         cmdline_create_token(cmdline, str, pos-1, pos);

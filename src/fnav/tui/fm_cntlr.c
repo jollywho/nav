@@ -148,10 +148,11 @@ Cntlr* fm_new(Buffer *buf)
   fm->op_count = 1;
   fm->mo_count = 1;
 
-  if (!active_dir) {
-    active_dir = get_current_dir_name();
-  }
-  fm->cur_dir = strdup(active_dir);
+  if (!active_dir)
+    fm->cur_dir = get_current_dir_name();
+  else
+    fm->cur_dir = strdup(active_dir);
+  active_dir = fm->cur_dir;
 
   if (tbl_mk("fm_files")) {
     tbl_mk_fld("fm_files", "name", typSTRING);
