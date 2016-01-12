@@ -96,6 +96,8 @@ static void req_stat_cb(uv_fs_t *req)
 void fs_async_open(FS_handle *fsh, Cntlr *cntlr, String path)
 {
   log_msg("FS", "fs_async_open");
+  uv_fs_req_cleanup(&fsh->uv_fs);
+  memset(&fsh->uv_fs, 0, sizeof(uv_fs_t));
   fsh->path = path;
   fsh->uv_fs.data = fsh;
   fsh->data = cntlr;
@@ -127,13 +129,14 @@ void fs_signal_handle(void **data)
 void fs_open(FS_handle *fsh, String dir)
 {
   log_msg("FS", "fs open %s", dir);
+  uv_fs_req_cleanup(&fsh->uv_fs);
+  memset(&fsh->uv_fs, 0, sizeof(uv_fs_t));
   fsh->uv_fs.data = fsh;
   fsh->running = true;
   fsh->path = dir;
   fsh->last_ran = os_hrtime();
   fsh->queued = false;
 
-  uv_fs_req_cleanup(&fsh->uv_fs);
   uv_fs_stat(eventloop(), &fsh->uv_fs, fsh->path, stat_cb);
   //uv_fs_event_start(&fsh->watcher, watch_cb, fsh->path, 1);
 }
@@ -227,9 +230,8 @@ static void stat_cb(uv_fs_t *req)
     uv_fs_req_cleanup(&fsh->uv_fs);
     uv_fs_scandir(eventloop(), &fsh->uv_fs, fsh->path, 0, scan_cb);
   }
-  else {
-    uv_fs_req_cleanup(&fsh->uv_fs);
-  }
+  else
+    fs_close_req(fsh);
 }
 
 static void fs_reopen(FS_handle *fsh)
