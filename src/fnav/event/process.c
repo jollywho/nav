@@ -220,9 +220,6 @@ static void process_close_event(uv_prepare_t *handle)
   if (proc->cb) {
     proc->cb(proc, proc->status, proc->data);
   }
-  if (proc->fin_cb) {
-    proc->fin_cb(proc->data);
-  }
 }
 
 static void decref(Process *proc)

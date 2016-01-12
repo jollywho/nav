@@ -12,7 +12,6 @@ typedef enum {
 typedef struct process Process;
 typedef void (*process_exit_cb)(Process *proc, int status, void *data);
 typedef void (*internal_process_cb)(Process *proc);
-typedef void (*process_finish_cb)(void *data);
 
 struct process {
   ProcessType type;
@@ -24,7 +23,6 @@ struct process {
   char **argv;
   Stream *in, *out, *err;
   process_exit_cb cb;
-  process_finish_cb fin_cb;
   internal_process_cb internal_exit_cb, internal_close_cb;
   bool closed, term_sent;
   Queue *events;

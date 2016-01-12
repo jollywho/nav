@@ -1,7 +1,4 @@
 // shell
-
-#include <malloc.h>
-
 #include "fnav/event/shell.h"
 #include "fnav/event/wstream.h"
 #include "fnav/event/event.h"
@@ -9,15 +6,20 @@
 #include "fnav/log.h"
 #include "fnav/config.h"
 
+#define MAX_PROC 10
+
+static Shell shells[MAX_PROC+1];
+static int sh_count = 0;
+
 static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
   bool eof);
 static void shell_write_cb(Stream *stream, void *data, int status);
 static void shell_write(Shell *sh, String msg);
 
-void shell_fin_cb(void *data)
+static void process_exit(Process *proc, int status, void *data)
 {
   log_msg("SHELL", "fin");
-  Shell *sh = data;
+  Shell *sh = (Shell*)data;
   if (!sh) return;
   sh->blocking = false;
   if (sh->again) {
@@ -25,29 +27,34 @@ void shell_fin_cb(void *data)
     sh->again = false;
     shell_start(sh);
   }
-  //if (sh->disposable)
-  //  free(sh);
+  if (sh->reg)
+    sh_count--;
 }
 
 Shell* shell_init(Cntlr *cntlr)
 {
   log_msg("SHELL", "init");
   Shell *sh = malloc(sizeof(Shell));
-  memset(sh, 0, sizeof(Shell));
+  sh->msg = NULL;
+  sh->readout = NULL;
+  sh->blocking = false;
+  sh->again = false;
+  sh->reg = false;
 
   sh->loop = mainloop();
+  sh->caller = cntlr;
   sh->uvproc = uv_process_init(sh->loop, sh);
-  sh->proc = &sh->uvproc.process;
-  sh->proc->events = eventq();
-  sh->proc->in = &sh->in;
-  sh->proc->out = &sh->out;
-  sh->proc->fin_cb = shell_fin_cb;
+  Process *proc = &sh->uvproc.process;
+  proc->events = eventq();
+  proc->in = &sh->in;
+  proc->out = &sh->out;
+  proc->cb = process_exit;
   return sh;
 }
 
 void shell_args(Shell *sh, String *args, shell_stdout_cb readout)
 {
-  sh->proc->argv = args;
+  sh->uvproc.process.argv = args;
   sh->readout = readout;
 }
 
@@ -61,21 +68,23 @@ void shell_free(Shell *sh)
 void shell_start(Shell *sh)
 {
   log_msg("SHELL", "start");
+  Process *proc = &sh->uvproc.process;
   if (sh->blocking) {
     log_msg("SHELL", "|***BLOCKED**|");
     sh->again = true;
     return;
   }
-  if (!process_spawn(sh->proc)) {
+  if (!process_spawn(proc)) {
     log_msg("PROC", "cannot execute");
+    sh_count--;
     return;
   }
-  sh->proc->in->events = NULL;
   sh->blocking = true;
-  wstream_init(sh->proc->in, 0);
+  proc->in->events = NULL;
+  wstream_init(proc->in, 0);
   if (sh->readout) {
-    rstream_init(sh->proc->out, &sh->loop->eventq, 0);
-    rstream_start(sh->proc->out, sh->data_cb);
+    rstream_init(proc->out, &sh->loop->eventq, 0);
+    rstream_start(proc->out, sh->data_cb);
   }
   if (sh->msg)
     shell_write(sh, sh->msg);
@@ -84,7 +93,7 @@ void shell_start(Shell *sh)
 void shell_stop(Shell *sh)
 {
   log_msg("SHELL", "stop");
-  process_stop(sh->proc);
+  process_stop(&sh->uvproc.process);
 }
 
 void shell_set_in_buffer(Shell *sh, String msg)
@@ -102,7 +111,7 @@ static void shell_write(Shell *sh, String msg)
   if (!wstream_write(&sh->in, input_buffer)) {
     // couldn't write, stop the process and tell the user about it
     log_msg("SHELL", "couldn't write");
-    process_stop(sh->proc);
+    process_stop(&sh->uvproc.process);
     return;
   }
   // close the input stream after everything is written
@@ -146,15 +155,32 @@ void shell_exec(String line)
   log_msg("SHELL", "%s", line);
   if (strlen(line) < 2) return;
 
-  Shell *sh = shell_init(NULL);
+  if (sh_count + 1 > MAX_PROC) {
+    log_msg("SHELL", "**** MAX PROC. CANNOT LAUNCH****");
+    return;
+  }
+
+  Shell *sh = &shells[sh_count];
+  sh->loop = mainloop();
+  sh->uvproc = uv_process_init(sh->loop, sh);
+  sh->msg = NULL;
+  sh->readout = NULL;
+  sh->blocking = false;
+  sh->again = false;
+  sh->reg = true;
+
+  Process *proc = &sh->uvproc.process;
+  proc = &sh->uvproc.process;
+  proc->events = eventq();
+  proc->in = &sh->in;
+  proc->out = &sh->out;
+  proc->cb = process_exit;
 
   String rv = strdup(&line[1]);
 
-  log_msg("SHELL", "%s", rv);
-
-  sh->disposable = true;
   char* args[4] = {p_sh, "-c", rv, NULL};
-  shell_args(sh, (String*)args, NULL);
+  shell_args(sh, args, NULL);
   shell_start(sh);
+  sh_count++;
   free(rv);
 }
