@@ -11,7 +11,8 @@ typedef struct {
 
 typedef void (*shell_stdout_cb)(Cntlr *c, String out);
 
-typedef struct {
+typedef struct Shell Shell;
+struct Shell {
   Loop *loop;
   Stream in, out, err;
   DynamicBuffer buf;
@@ -24,7 +25,8 @@ typedef struct {
   bool again;
   bool disposable;
   String msg;
-} Shell;
+  Shell *self;
+};
 
 Shell* shell_init(Cntlr *cntlr);
 void shell_args(Shell *sh, String *args, shell_stdout_cb readout);

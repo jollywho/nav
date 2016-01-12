@@ -261,7 +261,6 @@ void window_draw(void **argv)
 
 static void window_update(uv_timer_t *handle)
 {
-  log_msg("****************************", "%d", win.refs);
   if (win.ex)
     cmdline_refresh();
   doupdate();

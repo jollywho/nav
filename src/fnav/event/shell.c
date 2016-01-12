@@ -14,10 +14,10 @@ static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
 static void shell_write_cb(Stream *stream, void *data, int status);
 static void shell_write(Shell *sh, String msg);
 
-void shell_fin_cb(Process *proc, void *data)
+void shell_fin_cb(void *data)
 {
   log_msg("SHELL", "fin");
-  Shell *sh = (Shell*)data;
+  Shell *sh = data;
   if (!sh) return;
   sh->blocking = false;
   if (sh->again) {
@@ -25,28 +25,20 @@ void shell_fin_cb(Process *proc, void *data)
     sh->again = false;
     shell_start(sh);
   }
-  if (sh->disposable)
-    shell_free(sh);
+  //if (sh->disposable)
+  //  free(sh);
 }
 
 Shell* shell_init(Cntlr *cntlr)
 {
   log_msg("SHELL", "init");
   Shell *sh = malloc(sizeof(Shell));
-  sh->buf.data = NULL;
-  sh->buf.cap = 0;
-  sh->buf.len = 0;
-  sh->data_cb = out_data_cb;
-  sh->caller = cntlr;
-  sh->blocking = false;
-  sh->again = false;
-  sh->readout = NULL;
-  sh->msg = NULL;
+  memset(sh, 0, sizeof(Shell));
 
   sh->loop = mainloop();
   sh->uvproc = uv_process_init(sh->loop, sh);
   sh->proc = &sh->uvproc.process;
-  sh->proc->events = &sh->loop->eventq;
+  sh->proc->events = eventq();
   sh->proc->in = &sh->in;
   sh->proc->out = &sh->out;
   sh->proc->fin_cb = shell_fin_cb;
@@ -63,8 +55,6 @@ void shell_free(Shell *sh)
 {
   log_msg("SHELL", "shell_free");
   if (sh->msg)  free(sh->msg);
-  //if (sh->name) free(sh->name);
-  //if (sh->argv) free(sh->argv);
   free(sh);
 }
 
