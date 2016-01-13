@@ -14,19 +14,36 @@ struct HookList {
   String msg;
 };
 
-static void intchar_copy(void *_dst, const void *_src) {
+static void hook_copy(void *_dst, const void *_src)
+{
   Hook *dst = (Hook*)_dst, *src = (Hook*)_src;
   dst->caller = src->caller;
   dst->fn = src->fn;
   dst->msg = src->msg ? strdup(src->msg) : NULL;
 }
 
-static void intchar_dtor(void *_elt) {
+static void hook_dtor(void *_elt)
+{
   Hook *elt = (Hook*)_elt;
   if (elt->msg) free(elt->msg);
 }
-static UT_icd hook_icd = { sizeof(Hook),NULL,intchar_copy,intchar_dtor };
-static UT_icd list_icd =  { sizeof(HookList),NULL,NULL,NULL };
+
+static void hooklist_copy(void *_dst, const void *_src)
+{
+  HookList *dst = (HookList*)_dst;
+  HookList *src = (HookList*)_src;
+  dst->msg = src->msg ? strdup(src->msg) : NULL;
+  dst->hooks = src->hooks;
+}
+
+static void hooklist_dtor(void *_elt)
+{
+  HookList *elt = (HookList*)_elt;
+  if (elt->msg) free(elt->msg);
+  utarray_free(elt->hooks);
+}
+static UT_icd hook_icd = { sizeof(Hook),NULL,hook_copy,hook_dtor };
+static UT_icd list_icd = { sizeof(HookList),NULL,NULL,NULL };
 
 static int hook_cmp(const void *_a, const void *_b)
 {
@@ -60,18 +77,22 @@ void hook_add(Cntlr *host, Cntlr *caller, hook_cb fn, String msg)
 {
   log_msg("HOOK", "ADD");
   HookHandler *host_handle = host->event_hooks;
-  HookList find = {.msg = msg};
+  HookList find = {.msg = msg, .hooks = NULL};
 
   HookList *hl = (HookList*)utarray_find(host_handle->hosted, &find, hook_cmp);
   if (!hl) {
+    //TODO add hook to caller's owner list
+    Hook hook = {fn,caller,host, msg};
     utarray_new(find.hooks, &hook_icd);
-    utarray_push_back(host->event_hooks->hosted, &find);
-    hl = &find;
+    utarray_push_back(find.hooks, &hook);
+
+    utarray_push_back(host_handle->hosted, &find);
+    utarray_sort(host_handle->hosted, hook_cmp_arg, 0);
   }
-  //TODO add hook to caller's owner list
-  Hook hook = {fn,caller,host,msg};
-  utarray_push_back(hl->hooks, &hook);
-  utarray_sort(hl->hooks, hook_cmp_arg, 0);
+  else {
+    Hook hook = {fn,caller,host, msg};
+    utarray_push_back(hl->hooks, &hook);
+  }
 }
 
 void hook_remove(Cntlr *host, Cntlr *caller, String msg)
@@ -111,13 +132,13 @@ void send_hook_msg(String msg, Cntlr *host, Cntlr *caller)
   HookList *hl = (HookList*)utarray_find(host_handle->hosted, &find, hook_cmp);
   if (!hl) return;
 
+  log_msg("HOOK", "(<%s>) msg sent", msg);
   Hook *it = (Hook*)utarray_front(hl->hooks);
-  if (caller) {
-    it->fn(host, caller);
-    return;
-  }
   while (it) {
-    it->fn(host, it->caller);
+    if (caller)
+      it->fn(host, caller);
+    else
+      it->fn(host, it->caller);
     it = (Hook*)utarray_next(hl->hooks, it);
   }
 }
