@@ -12,6 +12,7 @@ typedef struct fn_handle fn_handle;
 typedef struct Model Model;
 typedef struct HookHandler HookHandler;
 typedef struct Overlay Overlay;
+typedef struct fn_reg fn_reg;
 
 typedef Cntlr* (*cntlr_open_cb)(Buffer *b);
 typedef void (*cntlr_close_cb)(Cntlr *cntlr);
@@ -23,6 +24,7 @@ struct fn_handle {
   String key;     // listening value
   String key_fld; // listening field
   String fname;   // filter field
+  fn_reg *registers;
 };
 
 struct Cntlr {

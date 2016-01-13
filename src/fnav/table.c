@@ -145,8 +145,8 @@ void tbl_mk_vt_fld(String tn, String name, tbl_vt_cb cb)
 fn_rec* mk_rec(fn_tbl *t)
 {
   fn_rec *rec = malloc(sizeof(fn_rec));
-  rec->vals = malloc(sizeof(fn_val*)*t->count);
-  rec->vlist = malloc(sizeof(fn_val*)*t->count);
+  rec->vals  = malloc(t->count * sizeof(fn_val*));
+  rec->vlist = malloc(t->count * sizeof(fn_val*));
   rec->fld_count = t->count;
   return rec;
 }
@@ -434,6 +434,7 @@ static ventry* tbl_del_rec(fn_rec *rec, ventry *cur)
           ll->ent = NULL;
         }
         free(val->key);
+        rec->vals[i]->rlist = NULL;
         free(rec->vals[i]);
         if (cur == it) {
           cur = NULL;
@@ -457,9 +458,9 @@ trans_rec* mk_trans_rec(int fld_count)
 {
   trans_rec *r = malloc(sizeof(trans_rec));
   r->max = fld_count;
-  r->flds = malloc(sizeof(String*)*r->max);
-  r->data = malloc(sizeof(void*)*r->max);
-  r->type = malloc(sizeof(bool*)*r->max);
+  r->flds = malloc(r->max * sizeof(String));
+  r->data = malloc(r->max * sizeof(void*));
+  r->type = malloc(r->max * sizeof(bool));
   r->count = 0;
   return r;
 }

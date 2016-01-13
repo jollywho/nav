@@ -2,6 +2,7 @@
 #include "fnav/cmd.h"
 #include "fnav/log.h"
 #include "fnav/compl.h"
+#include "fnav/table.h"
 
 Cmd_T *cmd_table;
 
