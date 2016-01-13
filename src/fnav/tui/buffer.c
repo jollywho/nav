@@ -13,18 +13,17 @@
 
 enum Type { OPERATOR, MOTION };
 
-typedef struct {
-  String name;
-  enum Type type;
-  void (*f)();
-} Key;
-
 static void buf_mv_page();
 static void buf_mv();
 static void buf_search();
 static void buf_g();
-static void buf_y();
-static void buf_p();
+static void buf_yank();
+static void buf_gen_event();
+
+#define EV_PASTE  0
+#define EV_REMOVE 1
+#define MAX_EVENTS ARRAY_SIZE(buf_events)
+static String buf_events[] = {"paste", "remove"};
 
 #define KEYS_SIZE ARRAY_SIZE(key_defaults)
 static fn_key key_defaults[] = {
@@ -36,8 +35,9 @@ static fn_key key_defaults[] = {
   {'k',     buf_mv,          0,           BACKWARD},
   {'g',     buf_g,           0,           BACKWARD},
   {'G',     buf_g,           0,           FORWARD},
-  {'y',     buf_y,           0,           0},
-  {'p',     buf_p,           0,           0},
+  {'y',     buf_yank,        0,           0},
+  {'p',     buf_gen_event,   0,           EV_PASTE},
+  {'X',     buf_gen_event,   0,           EV_REMOVE},
 };
 static fn_keytbl key_tbl;
 static short cmd_idx[KEYS_SIZE];
@@ -349,18 +349,15 @@ static void buf_g(Buffer *buf, Cmdarg *arg)
   buf_move(buf, y, 0);
 }
 
-static void buf_y(Buffer *buf, Cmdarg *arg)
+static void buf_yank(Buffer *buf, Cmdarg *arg)
 {
   reg_set(buf->hndl, "0", "fullpath");
 }
 
-static void buf_p(Buffer *buf, Cmdarg *arg)
+static void buf_gen_event(Buffer *buf, Cmdarg *arg)
 {
-  fn_reg *reg = reg_get(buf->hndl, "0");
-  if (reg) {
-    log_msg("BUFFER", "reg %s %s", reg->key, rec_fld(reg->rec, "fullpath"));
-    //start shell here
-  }
+  if (arg->arg > MAX_EVENTS || arg->arg < 0) return;
+  send_hook_msg(buf_events[arg->arg], buf->cntlr, NULL);
 }
 
 void buf_sort(Buffer *buf, String fld, int flags)

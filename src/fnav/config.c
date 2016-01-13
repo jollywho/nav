@@ -23,6 +23,9 @@ static const Cmd_T cmdtable[] = {
   {"source", add_source,     0},
 };
 char *p_sh = "/bin/sh";
+char *p_cp = "cp";
+char *p_mv = "mv";
+char *p_rm = "rm";
 
 void config_setup()
 {

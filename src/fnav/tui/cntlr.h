@@ -24,7 +24,6 @@ struct fn_handle {
   String key;     // listening value
   String key_fld; // listening field
   String fname;   // filter field
-  fn_reg *registers;
 };
 
 struct Cntlr {

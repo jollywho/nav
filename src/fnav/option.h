@@ -4,6 +4,11 @@
 #include "fnav/fnav.h"
 #include "fnav/lib/uthash.h"
 
+extern char *p_sh;          /* 'shell' */
+extern char *p_cp;          /* 'copy   cmd' */
+extern char *p_mv;          /* 'move   cmd' */
+extern char *p_rm;          /* 'remove cmd' */
+
 typedef struct {
   UT_hash_handle hh;
   int pair;

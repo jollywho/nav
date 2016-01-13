@@ -1,6 +1,8 @@
 #ifndef FN_ASCII_H
 #define FN_ASCII_H
 
+#include <stdbool.h>
+
 #define CharOrd(x)      ((x) < 'a' ? (x) - 'A' : (x) - 'a')
 #define CharOrdLow(x)   ((x) - 'a')
 #define CharOrdUp(x)    ((x) - 'A')
@@ -97,5 +99,19 @@
 # define ASCII_ISUPPER(c) ((unsigned)(c) >= 'A' && (unsigned)(c) <= 'Z')
 # define ASCII_ISALPHA(c) (ASCII_ISUPPER(c) || ASCII_ISLOWER(c))
 # define ASCII_ISALNUM(c) (ASCII_ISALPHA(c) || ascii_isdigit(c))
+
+/// Check whether character is a decimal digit.
+///
+/// Library isdigit() function is officially locale-dependent and, for
+/// example, returns true for superscript 1 (¹) in locales where encoding
+/// contains it in lower 8 bits. Also avoids crashes in case c is below
+/// 0 or above 255: library functions are officially defined as accepting
+/// only EOF and unsigned char values (otherwise it is undefined behaviour)
+/// what may be used for some optimizations (e.g. simple `return
+/// isdigit_table[c];`).
+static inline bool ascii_isdigit(int c)
+{
+  return c >= '0' && c <= '9';
+}
 
 #endif

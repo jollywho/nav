@@ -34,6 +34,8 @@ struct Model {
   UT_array *lines;
 };
 
+static fn_reg *registers;
+
 static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
 #define REV_FN(cond,fn,a,b) ((cond) > 0 ? (fn((a),(b))) : (fn((b),(a))))
 
@@ -206,9 +208,8 @@ String model_str_expansion(String val)
 
 fn_reg* reg_get(fn_handle *hndl, String reg_ch)
 {
-  log_msg("model", "reg_get");
   fn_reg *find;
-  HASH_FIND_STR(hndl->registers, reg_ch, find);
+  HASH_FIND_STR(registers, reg_ch, find);
   return find;
 }
 
@@ -217,12 +218,12 @@ void reg_set(fn_handle *hndl, String reg_ch, String fld)
   log_msg("model", "reg_set");
   fn_reg *find = reg_get(hndl, reg_ch);
   if (find) {
-    HASH_DEL(hndl->registers, find);
+    HASH_DEL(registers, find);
     free(find->key);
     free(find);
   }
   fn_reg *reg = malloc(sizeof(fn_reg));
   reg->rec = hndl->model->cur;
   reg->key = strdup(reg_ch);
-  HASH_ADD_STR(hndl->registers, key, reg);
+  HASH_ADD_STR(registers, key, reg);
 }

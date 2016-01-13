@@ -4,7 +4,7 @@
 #include "fnav/event/event.h"
 #include "fnav/model.h"
 #include "fnav/log.h"
-#include "fnav/config.h"
+#include "fnav/option.h"
 
 #define MAX_PROC 10
 

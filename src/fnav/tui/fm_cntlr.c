@@ -13,6 +13,8 @@
 #include "fnav/tui/fm_cntlr.h"
 #include "fnav/log.h"
 #include "fnav/cmd.h"
+#include "fnav/option.h"
+#include "fnav/event/shell.h"
 
 static void fm_left();
 static void fm_right();
@@ -106,6 +108,57 @@ void fm_req_dir(Cntlr *cntlr, String path)
   }
 }
 
+static String next_valid_path(String path)
+{
+  String str = strdup(path);
+  free(path);
+
+  //TODO: increment '_0' if already exists
+  struct stat s;
+  while (stat(str, &s) == 0) {
+    String tmp;
+    asprintf(&tmp, "%s_0", str);
+    free(str);
+    str = tmp;
+  }
+  return str;
+}
+
+static void fm_paste(Cntlr *host, Cntlr *caller)
+{
+  log_msg("FM_CNTLR", "fm_paste");
+  FM_cntlr *self = (FM_cntlr*)host->top;
+  fn_reg *reg = reg_get(host->hndl, "0");
+  if (!reg) return;
+
+  String src = rec_fld(reg->rec, "fullpath");
+  String name = rec_fld(reg->rec, "name");
+  log_msg("BUFFER", "{%s} |%s|", reg->key, src);
+  String dest;
+  asprintf(&dest, "%s/%s", self->cur_dir, name);
+  dest = next_valid_path(dest);
+
+  String cmdstr;
+  asprintf(&cmdstr, "!%s %s %s", p_cp, src, dest);
+
+  log_msg("BUFFER", "%s", cmdstr);
+  shell_exec(cmdstr);
+  free(dest);
+  free(cmdstr);
+}
+
+static void fm_remove(Cntlr *host, Cntlr *caller)
+{
+  log_msg("FM_CNTLR", "fm_remove");
+  String src = model_curs_value(host->hndl->model, "fullpath");
+
+  String cmdstr;
+  asprintf(&cmdstr, "!%s %s", p_rm, src);
+  log_msg("BUFFER", "%s", cmdstr);
+  shell_exec(cmdstr);
+  free(cmdstr);
+}
+
 int cntlr_input(Cntlr *cntlr, int key)
 {
   Cmdarg ca;
@@ -172,6 +225,8 @@ Cntlr* fm_new(Buffer *buf)
   buf_set_cntlr(buf, &fm->base);
   buf_set_status(buf, 0, fm->cur_dir, 0, 0);
   hook_init(&fm->base);
+  hook_add(&fm->base, &fm->base, fm_paste, "paste");
+  hook_add(&fm->base, &fm->base, fm_remove, "remove");
 
   fm->fs = fs_init(fm->base.hndl);
   fs_open(fm->fs, fm->cur_dir);
