@@ -16,7 +16,7 @@
 
 void init(void)
 {
-  log_set("T");
+//  log_set("IMG");
   log_init();
   log_msg("INIT", "__________INIT_START____________");
   setlocale(LC_CTYPE, "");

@@ -309,11 +309,12 @@ static void ex_onkey()
     cmdline_build(&cmd);
     if (!(mflag & (EX_FRESH|EX_HIST))) {
       Token *tok = cmdline_last(&cmd);
-      if (tok && strlen(ex_cmd_curstr())) {
+      if (tok) {
         if (curpos + 1 > tok->end && curpos > 0)
           mflag |= EX_NEW;
       }
     }
+    log_msg("MENU", "do");
     menu_update(menu, &cmd);
   }
   else {

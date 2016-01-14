@@ -118,7 +118,6 @@ void send_hook_msg(String msg, Cntlr *host, Cntlr *caller)
   HookList *hl = (HookList*)utarray_find(host_handle->hosted, &find, hook_cmp);
   if (!hl) return;
 
-  log_msg("HOOK", "(<%s>) msg sent", msg);
   Hook *it = (Hook*)utarray_front(hl->hooks);
   while (it) {
     if (caller)

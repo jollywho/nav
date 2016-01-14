@@ -40,6 +40,7 @@ Shell* shell_init(Cntlr *cntlr)
   sh->blocking = false;
   sh->again = false;
   sh->reg = false;
+  sh->data_cb = out_data_cb;
 
   sh->loop = mainloop();
   sh->caller = cntlr;
@@ -76,11 +77,11 @@ void shell_start(Shell *sh)
   }
   if (!process_spawn(proc)) {
     log_msg("PROC", "cannot execute");
-    sh_count--;
+    if (sh->reg)
+      sh_count--;
     return;
   }
   sh->blocking = true;
-  proc->in->events = NULL;
   wstream_init(proc->in, 0);
   if (sh->readout) {
     rstream_init(proc->out, &sh->loop->eventq, 0);
@@ -160,6 +161,7 @@ void shell_exec(String line)
     return;
   }
 
+  //TODO: try malloc version again with data_cb & readout
   Shell *sh = &shells[sh_count];
   sh->loop = mainloop();
   sh->uvproc = uv_process_init(sh->loop, sh);
@@ -168,6 +170,7 @@ void shell_exec(String line)
   sh->blocking = false;
   sh->again = false;
   sh->reg = true;
+  sh->data_cb = out_data_cb;
 
   Process *proc = &sh->uvproc.process;
   proc = &sh->uvproc.process;

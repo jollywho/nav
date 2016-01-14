@@ -139,7 +139,6 @@ static void cursor_change_cb(Cntlr *host, Cntlr *caller)
   }
 }
 
-#include <unistd.h>
 static void try_refresh(Cntlr *host, Cntlr *none)
 {
   Img_cntlr *img = (Img_cntlr*)host->top;

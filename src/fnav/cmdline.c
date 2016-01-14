@@ -37,6 +37,8 @@ void* token_val(Token *token, char v_type)
       return token->var.vval.v_dict;
     case VAR_PAIR:
       return token->var.vval.v_pair;
+    case VAR_NUMBER:
+      return &token->var.vval.v_number;
     case VAR_STRING:
       return token->var.vval.v_string;
     default:

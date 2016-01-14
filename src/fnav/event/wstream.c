@@ -4,6 +4,7 @@
 
 #include "fnav/event/loop.h"
 #include "fnav/event/wstream.h"
+#include "fnav/log.h"
 
 #define DEFAULT_MAXMEM 1024 * 1024 * 10
 static void write_cb(uv_write_t *req, int status);
@@ -17,6 +18,7 @@ typedef struct {
 void wstream_init_fd(Loop *loop, Stream *stream, int fd, size_t maxmem,
     void *data)
 {
+  log_msg("WSTREAM", "rstream_init_fd");
   stream_init(loop, stream, fd, NULL, data);
   wstream_init(stream, maxmem);
 }
@@ -24,12 +26,14 @@ void wstream_init_fd(Loop *loop, Stream *stream, int fd, size_t maxmem,
 void wstream_init_stream(Stream *stream, uv_stream_t *uvstream, size_t maxmem,
     void *data)
 {
+  log_msg("WSTREAM", "rstream_init_stream");
   stream_init(NULL, stream, -1, uvstream, data);
   wstream_init(stream, maxmem);
 }
 
 void wstream_init(Stream *stream, size_t maxmem)
 {
+  log_msg("WSTREAM", "init");
   stream->maxmem = maxmem ? maxmem : DEFAULT_MAXMEM;
 }
 
@@ -46,6 +50,7 @@ void wstream_init(Stream *stream, size_t maxmem)
 /// @param cb The callback
 void wstream_set_write_cb(Stream *stream, stream_write_cb cb)
 {
+  log_msg("WSTREAM", "wstream_set_write_cb");
   stream->write_cb = cb;
 }
 
@@ -58,6 +63,7 @@ void wstream_set_write_cb(Stream *stream, stream_write_cb cb)
 /// @return false if the write failed
 bool wstream_write(Stream *stream, WBuffer *buffer)
 {
+  log_msg("WSTREAM", "wstream_write");
   if (stream->curmem > stream->maxmem) {
     goto err;
   }
@@ -101,6 +107,7 @@ err:
 WBuffer* wstream_new_buffer(char *data, size_t size, size_t refcount,
   wbuffer_data_finalizer cb)
 {
+  log_msg("WSTREAM", "wstream_new_buffer");
   WBuffer *rv = malloc(sizeof(WBuffer));
   rv->size = size;
   rv->refcount = refcount;
@@ -112,6 +119,7 @@ WBuffer* wstream_new_buffer(char *data, size_t size, size_t refcount,
 
 static void write_cb(uv_write_t *req, int status)
 {
+  log_msg("WSTREAM", "write_cb");
   WRequest *data = req->data;
 
   data->stream->curmem -= data->buffer->size;
