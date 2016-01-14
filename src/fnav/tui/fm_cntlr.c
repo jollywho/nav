@@ -89,10 +89,13 @@ static void fm_right(Cntlr *cntlr, Cmdarg *arg)
     send_hook_msg("fileopen", cntlr, NULL);
 }
 
-void fm_ch_dir(Cntlr *cntlr, String path)
+void fm_ch_dir(void **args)
 {
   log_msg("FM_CNTLR", "fm_ch_dir");
+  Cntlr *cntlr = args[0];
+  String path = args[1];
   fm_opendir(cntlr, path, FORWARD);
+  free(path);
 }
 
 void fm_req_dir(Cntlr *cntlr, String path)

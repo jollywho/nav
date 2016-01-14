@@ -28,20 +28,6 @@ static void hook_dtor(void *_elt)
   if (elt->msg) free(elt->msg);
 }
 
-static void hooklist_copy(void *_dst, const void *_src)
-{
-  HookList *dst = (HookList*)_dst;
-  HookList *src = (HookList*)_src;
-  dst->msg = src->msg ? strdup(src->msg) : NULL;
-  dst->hooks = src->hooks;
-}
-
-static void hooklist_dtor(void *_elt)
-{
-  HookList *elt = (HookList*)_elt;
-  if (elt->msg) free(elt->msg);
-  utarray_free(elt->hooks);
-}
 static UT_icd hook_icd = { sizeof(Hook),NULL,hook_copy,hook_dtor };
 static UT_icd list_icd = { sizeof(HookList),NULL,NULL,NULL };
 

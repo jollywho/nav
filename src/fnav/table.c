@@ -426,26 +426,39 @@ static ventry* tbl_del_rec(fn_rec *rec, ventry *cur)
 
       if (val->count < 1 ) {
         fn_fld *fld = val->fld;
-        HASH_DEL(fld->vals, val);
+        fn_val *fnd;
+        HASH_FIND_STR(fld->vals, val->key, fnd);
+        log_msg("TABLE", "key %s ", val->key);
+        if (fnd) {
+          log_msg("TABLE", "rem ");
+          HASH_DEL(fld->vals, val);
+        }
         fn_lis *ll;
         HASH_FIND_STR(fld->lis, val->key, ll);
         if (ll) {
-          log_msg("TAB", "CLEAR LIS");
+          log_msg("TABLE", "CLEAR LIS");
           ll->ent = NULL;
         }
         free(val->key);
-        rec->vals[i]->rlist = NULL;
+        val->rlist = NULL;
         free(rec->vals[i]);
         if (cur == it) {
           cur = NULL;
         }
+        free(it);
       }
-      it->next->prev = it->prev;
-      it->prev->next = it->next;
-      if (cur == it) {
-        cur = it->next;
+      else {
+        if (it == val->rlist) {
+          val->rlist = it->next;
+        }
+        it->next->prev = it->prev;
+        it->prev->next = it->next;
+        if (cur == it) {
+          cur = it->next;
+        }
+        free(it);
+        it = NULL;
       }
-      free(it);
     }
   }
   free(rec->vals);

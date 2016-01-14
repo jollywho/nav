@@ -86,10 +86,10 @@ static void req_stat_cb(uv_fs_t *req)
 {
   log_msg("FS", "req_stat_cb");
   FS_handle *fsh = req->data;
-  String path = realpath((String)req->path, NULL);
+  String path = realpath(fsh->path, NULL);
+  free(fsh->path);
   if (path) {
-    fm_ch_dir((Cntlr*)fsh->data, path);
-    free(path);
+    CREATE_EVENT(eventq(), fm_ch_dir, 2, fsh->data, path);
   }
 }
 
@@ -98,7 +98,7 @@ void fs_async_open(FS_handle *fsh, Cntlr *cntlr, String path)
   log_msg("FS", "fs_async_open");
   uv_fs_req_cleanup(&fsh->uv_fs);
   memset(&fsh->uv_fs, 0, sizeof(uv_fs_t));
-  fsh->path = path;
+  fsh->path = strdup(path);
   fsh->uv_fs.data = fsh;
   fsh->data = cntlr;
 
