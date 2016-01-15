@@ -11,13 +11,12 @@
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/fm_cntlr.h"
 
-#define RFRESH_RATE 1000
+#define RFSH_RATE 1000
 
 static void fs_close_req(FS_handle *fsh);
 static void stat_cb(uv_fs_t *req);
 void fs_loop(Loop *loop, int ms);
-static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,
-    int status);
+static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int status);
 static void watch_timer_cb(uv_timer_t *handle);
 
 FS_handle* fs_init(fn_handle *h)
@@ -134,8 +133,6 @@ void fs_open(FS_handle *fsh, String dir)
   fsh->uv_fs.data = fsh;
   fsh->running = true;
   fsh->path = dir;
-  fsh->last_ran = os_hrtime();
-  fsh->queued = false;
 
   uv_fs_stat(eventloop(), &fsh->uv_fs, fsh->path, stat_cb);
   uv_fs_event_start(&fsh->watcher, watch_cb, fsh->path, 1);
@@ -246,31 +243,18 @@ static void watch_timer_cb(uv_timer_t *handle)
 {
   log_msg("FS", "--watch_timer--");
   FS_handle *fsh = handle->data;
-  fsh->queued = false;
-  if (!fsh->running)
+  if (!fsh->running) {
     fs_reopen(fsh);
+  }
 }
 
-static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,
-    int status)
+static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int status)
 {
   log_msg("FS", "--watch--");
-  FS_handle *fsh = handle->data;
+  FS_handle *fsh = hndl->data;
 
-  if (!fsh->queued) {
-    int took = (int)(os_hrtime() - fsh->last_ran)/1000000;
-    //int delay = RFRESH_RATE - took;
-    int delay = RFRESH_RATE;
-    log_msg("FS", "=%d= took", took);
-    log_msg("FS", "=%d= delay", delay);
-    fsh->queued = true;
-    //if (took > 0) {
-      uv_fs_event_stop(&fsh->watcher);
-      uv_timer_start(&fsh->watcher_timer, watch_timer_cb, delay, delay);
-    //}
-    //else
-    //  fs_reopen(fsh);
-  }
+  uv_fs_event_stop(&fsh->watcher);
+  uv_timer_start(&fsh->watcher_timer, watch_timer_cb, RFSH_RATE, RFSH_RATE);
 }
 
 static void fs_close_req(FS_handle *fsh)

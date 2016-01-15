@@ -10,8 +10,6 @@ typedef struct {
   fn_handle *hndl;
   bool cancel;
   bool running;
-  bool queued;
-  uint64_t last_ran;
   String path;
 
   uv_fs_t uv_fs; //data->req_handle
