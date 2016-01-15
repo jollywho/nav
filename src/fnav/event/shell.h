@@ -8,10 +8,16 @@ typedef void (*shell_stdout_cb)(Cntlr *c, String out);
 
 typedef struct Shell Shell;
 struct Shell {
-  Loop *loop;
-  Stream in, out, err;
   stream_read_cb data_cb;
-  UvProcess uvproc;
+  union {
+    struct {
+      UvProcess uvproc;
+      Stream in;
+      Stream out;
+      Stream err;
+    } process;
+  } data;
+
   shell_stdout_cb readout;
   Cntlr *caller;
   bool blocking;

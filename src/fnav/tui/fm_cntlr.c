@@ -47,7 +47,7 @@ void cntlr_focus(Cntlr *cntlr)
 
 static int fm_opendir(Cntlr *cntlr, String path, short arg)
 {
-  log_msg("FS", "fm_opendir %s", path);
+  log_msg("FM", "fm_opendir %s", path);
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   fn_handle *h = cntlr->hndl;
   String cur_dir = self->cur_dir;
@@ -134,6 +134,7 @@ static void fm_paste(Cntlr *host, Cntlr *caller)
   fn_reg *reg = reg_get(host->hndl, "0");
   if (!reg) return;
 
+  //FIXME: handle deleted records
   String src = rec_fld(reg->rec, "fullpath");
   String name = rec_fld(reg->rec, "name");
   log_msg("BUFFER", "{%s} |%s|", reg->key, src);

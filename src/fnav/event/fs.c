@@ -11,7 +11,7 @@
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/fm_cntlr.h"
 
-#define RFRESH_RATE 10000
+#define RFRESH_RATE 1000
 
 static void fs_close_req(FS_handle *fsh);
 static void stat_cb(uv_fs_t *req);
@@ -138,7 +138,7 @@ void fs_open(FS_handle *fsh, String dir)
   fsh->queued = false;
 
   uv_fs_stat(eventloop(), &fsh->uv_fs, fsh->path, stat_cb);
-  //uv_fs_event_start(&fsh->watcher, watch_cb, fsh->path, 1);
+  uv_fs_event_start(&fsh->watcher, watch_cb, fsh->path, 1);
 }
 
 void fs_close(FS_handle *h)
@@ -149,7 +149,6 @@ void fs_close(FS_handle *h)
 
 static int send_stat(FS_handle *fsh, const char *dir, char *upd)
 {
-  //FS_handle *fh = fq->fs_h;
   struct stat *s = malloc(sizeof(struct stat));
   if (stat(dir, s) == -1) {
     free(s);
@@ -170,7 +169,6 @@ static void scan_cb(uv_fs_t *req)
   log_msg("FS", "path: %s", req->path);
   uv_dirent_t dent;
   FS_handle *fsh = req->data;
-  //FS_handle *fh = fq->fs_h;
 
   /* clear outdated records */
   tbl_del_val("fm_files", "dir",      (String)req->path);
@@ -236,16 +234,19 @@ static void stat_cb(uv_fs_t *req)
 
 static void fs_reopen(FS_handle *fsh)
 {
+  log_msg("FS", "--reopen--");
   uv_timer_stop(&fsh->watcher_timer);
   uv_fs_event_stop(&fsh->watcher);
-  model_close(fsh->hndl);
-  fs_open(fsh, fsh->path);
+  Cntlr *cntlr = buf_cntlr(fsh->hndl->buf);
+  void *args[] = {cntlr, strdup(fsh->path)};
+  fm_ch_dir(args);
 }
 
 static void watch_timer_cb(uv_timer_t *handle)
 {
   log_msg("FS", "--watch_timer--");
   FS_handle *fsh = handle->data;
+  fsh->queued = false;
   if (!fsh->running)
     fs_reopen(fsh);
 }
@@ -258,16 +259,17 @@ static void watch_cb(uv_fs_event_t *handle, const char *filename, int events,
 
   if (!fsh->queued) {
     int took = (int)(os_hrtime() - fsh->last_ran)/1000000;
-    int delay = RFRESH_RATE - took;
+    //int delay = RFRESH_RATE - took;
+    int delay = RFRESH_RATE;
     log_msg("FS", "=%d= took", took);
     log_msg("FS", "=%d= delay", delay);
     fsh->queued = true;
-    if (took > 0) {
+    //if (took > 0) {
       uv_fs_event_stop(&fsh->watcher);
-      //uv_timer_start(&fsh->watcher_timer, watch_timer_cb, delay, delay);
-    }
-    else
-      fs_reopen(fsh);
+      uv_timer_start(&fsh->watcher_timer, watch_timer_cb, delay, delay);
+    //}
+    //else
+    //  fs_reopen(fsh);
   }
 }
 
