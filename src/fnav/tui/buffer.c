@@ -49,13 +49,17 @@ static short cmd_idx[KEYS_SIZE];
 void buf_listen(fn_handle *hndl);
 void buf_draw(void **argv);
 
-void buf_setup()
+void buf_init()
 {
   log_msg("BUFFER", "init");
   key_tbl.tbl = key_defaults;
   key_tbl.cmd_idx = cmd_idx;
   key_tbl.maxsize = KEYS_SIZE;
   input_setup_tbl(&key_tbl);
+}
+
+void buf_cleanup()
+{
 }
 
 Buffer* buf_new()

@@ -108,17 +108,19 @@ void window_init(void)
     compl_add_context(compl_win[i]);
   }
   sig_resize(0);
-  buf_setup();
+  buf_init();
+  fm_init();
   ex_cmd_init();
 }
 
 void window_cleanup(void)
 {
   log_msg("CLEANUP", "window_cleanup");
-  //buf -> cntlr
   ex_cmd_cleanup();
   cmd_clearall();
   layout_cleanup(&win.layout);
+  buf_cleanup();
+  fm_cleanup();
 }
 
 static void* win_shut()

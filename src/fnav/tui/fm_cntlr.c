@@ -28,6 +28,39 @@ static fn_keytbl key_tbl;
 static short cmd_idx[KEYS_SIZE];
 static String active_dir;
 
+void fm_init()
+{
+  key_tbl.tbl = key_defaults;
+  key_tbl.cmd_idx = cmd_idx;
+  key_tbl.maxsize = KEYS_SIZE;
+  input_setup_tbl(&key_tbl);
+  active_dir = get_current_dir_name();
+  if (tbl_mk("fm_files")) {
+    tbl_mk_fld("fm_files", "name", typSTRING);
+    tbl_mk_fld("fm_files", "dir", typSTRING);
+    tbl_mk_fld("fm_files", "fullpath", typSTRING);
+    tbl_mk_vt_fld("fm_files", "mtime", fs_vt_stat_resolv);
+  }
+
+  if (tbl_mk("fm_stat")) {
+    tbl_mk_fld("fm_stat", "fullpath", typSTRING);
+    tbl_mk_fld("fm_stat", "update", typVOID);
+    tbl_mk_fld("fm_stat", "stat", typVOID);
+  }
+}
+
+void fm_cleanup()
+{
+  free(active_dir);
+  // remove tables
+}
+
+static void fm_active_dir(FM_cntlr *fm)
+{
+  fm->cur_dir = active_dir;
+  active_dir = fm->cur_dir;
+}
+
 void cntlr_cancel(Cntlr *cntlr)
 {
   log_msg("FM", "<|_CANCEL_|>");
@@ -195,34 +228,14 @@ static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
 Cntlr* fm_new(Buffer *buf)
 {
   log_msg("FM_CNTLR", "init");
-  key_tbl.tbl = key_defaults;
-  key_tbl.cmd_idx = cmd_idx;
-  key_tbl.maxsize = KEYS_SIZE;
-  input_setup_tbl(&key_tbl);
   FM_cntlr *fm = malloc(sizeof(FM_cntlr));
   fm->base.name = "fm";
   fm->base.fmt_name = "   FM    ";
   fm->op_count = 1;
   fm->mo_count = 1;
 
-  if (!active_dir)
-    fm->cur_dir = get_current_dir_name();
-  else
-    fm->cur_dir = strdup(active_dir);
-  active_dir = fm->cur_dir;
+  fm_active_dir(fm);
 
-  if (tbl_mk("fm_files")) {
-    tbl_mk_fld("fm_files", "name", typSTRING);
-    tbl_mk_fld("fm_files", "dir", typSTRING);
-    tbl_mk_fld("fm_files", "fullpath", typSTRING);
-    tbl_mk_vt_fld("fm_files", "mtime", fs_vt_stat_resolv);
-  }
-
-  if (tbl_mk("fm_stat")) {
-    tbl_mk_fld("fm_stat", "fullpath", typSTRING);
-    tbl_mk_fld("fm_stat", "update", typVOID);
-    tbl_mk_fld("fm_stat", "stat", typVOID);
-  }
   init_fm_hndl(fm, buf, &fm->base, fm->cur_dir);
   model_init(fm->base.hndl);
   model_open(fm->base.hndl);
@@ -241,7 +254,7 @@ void fm_delete(Cntlr *cntlr)
 {
   log_msg("FM_CNTLR", "cleanup");
   FM_cntlr *fm = cntlr->top;
-  fn_handle *h = cntlr->hndl;
+  fn_handle *h = fm->base.hndl;
   model_close(h);
   model_cleanup(h);
   //hook remove_caller
@@ -249,6 +262,5 @@ void fm_delete(Cntlr *cntlr)
   hook_cleanup(&fm->base);
   fs_cleanup(fm->fs);
   free(h);
-  free(fm->cur_dir);
   free(fm);
 }

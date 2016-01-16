@@ -27,7 +27,7 @@ char *p_cp = "cp";
 char *p_mv = "mv";
 char *p_rm = "rm";
 
-void config_setup()
+void config_init()
 {
   for (int i = 0; i < (int)CMDS_SIZE; i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));

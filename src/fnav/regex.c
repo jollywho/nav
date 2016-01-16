@@ -63,8 +63,8 @@ LineMatch* regex_new(fn_handle *hndl)
 void regex_destroy(fn_handle *hndl)
 {
   LineMatch *lm = hndl->buf->matches;
-  free(lm);
   free(lm->regex);
+  free(lm);
 }
 
 void regex_build(LineMatch *lm, String line)

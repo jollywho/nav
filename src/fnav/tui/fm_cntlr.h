@@ -14,6 +14,8 @@ struct FM_cntlr {
   FS_handle *fs;
 };
 
+void fm_init();
+void fm_cleanup();
 Cntlr* fm_new(Buffer *buf);
 void fm_delete(Cntlr *cntlr);
 

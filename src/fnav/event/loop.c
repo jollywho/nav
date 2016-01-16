@@ -12,25 +12,8 @@ struct queue_item {
   QUEUE node;
 };
 
-struct loop_list {
-  SLIST_HEAD(looplist, loop) p;
-};
-
 #define TIMEOUT 10
 static void check_events(uv_check_t *handle);
-static void loop_process_events(Loop *loop, int ms);
-struct loop_list loop_pool;
-
-void loop_init()
-{
-  log_msg("INIT", "loop pool");
-  SLIST_INIT(&loop_pool.p);
-}
-
-void loop_destoy()
-{
-  SLIST_REMOVE_HEAD(&loop_pool.p, ent);
-}
 
 static void queue_new(Queue *queue)
 {
@@ -45,17 +28,10 @@ void loop_add(Loop *loop)
   uv_timer_init(&loop->uv, &loop->children_kill_timer);
   uv_signal_init(&loop->uv, &loop->children_watcher);
   SLIST_INIT(&loop->children);
-  SLIST_INSERT_HEAD(&loop_pool.p, loop, ent);
   loop->uv.data = &loop;
   queue_new(&loop->eventq);
   queue_new(&loop->drawq);
   loop->running = false;
-}
-
-void loop_remove(Loop *lp)
-{
-  SLIST_REMOVE(&loop_pool.p, lp, loop, ent);
-  uv_loop_close(&lp->uv);
 }
 
 void queue_push(Queue *queue, Event event)
@@ -95,10 +71,6 @@ static Event queue_pop(Queue *queue)
   e = item->item;
   free(item);
   return e;
-}
-
-static void timeout_cb(uv_timer_t *handle)
-{
 }
 
 void queue_process_events(Queue *queue, int ms)

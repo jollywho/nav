@@ -11,6 +11,7 @@ static const int ROW_MAX = 5;
 
 struct Menu {
   WINDOW *nc_win;
+  fn_handle *hndl;
 
   fn_context *cx;
   bool docmpl;
@@ -29,10 +30,28 @@ struct Menu {
   int col_line;
 };
 
-Menu* menu_start()
+Menu* menu_new()
+{
+  log_msg("MENU", "menu_new");
+  Menu *mnu = malloc(sizeof(Menu));
+
+  mnu->col_select = attr_color("BufSelected");
+  mnu->col_text   = attr_color("ComplText");
+  mnu->col_div    = attr_color("OverlaySep");
+  mnu->col_box    = attr_color("OverlayActive");
+  mnu->col_line   = attr_color("OverlayLine");
+
+  return mnu;
+}
+
+void menu_delete(Menu *mnu)
+{
+  free(mnu);
+}
+
+void menu_start(Menu *mnu)
 {
   log_msg("MENU", "menu_start");
-  Menu *mnu = malloc(sizeof(Menu));
 
   pos_T size = layout_size();
   mnu->size = (pos_T){ROW_MAX+1, size.col};
@@ -45,23 +64,24 @@ Menu* menu_start()
       mnu->ofs.lnum,
       mnu->ofs.col);
 
-  mnu->col_select = attr_color("BufSelected");
-  mnu->col_text   = attr_color("ComplText");
-  mnu->col_div    = attr_color("OverlaySep");
-  mnu->col_box    = attr_color("OverlayActive");
-  mnu->col_line   = attr_color("OverlayLine");
-
   mnu->lnum = 0;
   mnu->rebuild = false;
 
   menu_restart(mnu);
+}
 
-  return mnu;
+void menu_stop(Menu *mnu)
+{
+  log_msg("MENU", "menu_stop");
+  werase(mnu->nc_win);
+  wnoutrefresh(mnu->nc_win);
+
+  delwin(mnu->nc_win);
+  window_shift(ROW_MAX+1);
 }
 
 void menu_restart(Menu *mnu)
 {
-  if (!mnu) return;
   mnu->cx = context_start();
   mnu->docmpl = false;
   ex_cmd_push(mnu->cx);
@@ -99,17 +119,6 @@ void menu_rebuild(Menu *mnu)
 {
   menu_restart(mnu);
   mnu->rebuild = true;
-}
-
-void menu_stop(Menu *mnu)
-{
-  log_msg("MENU", "menu_stop");
-  werase(mnu->nc_win);
-  wnoutrefresh(mnu->nc_win);
-
-  delwin(mnu->nc_win);
-  free(mnu);
-  window_shift(ROW_MAX+1);
 }
 
 void menu_update(Menu *mnu, Cmdline *cmd)

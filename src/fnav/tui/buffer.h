@@ -43,7 +43,8 @@ enum move_dir {
 };
 enum dir_type { L_HORIZ, L_VERT };
 
-void buf_setup();
+void buf_init();
+void buf_cleanup();
 Buffer* buf_new();
 void buf_delete(Buffer *buf);
 

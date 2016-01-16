@@ -68,6 +68,7 @@ void ex_cmd_init()
   input_setup_tbl(&key_tbl);
   hist_cmds = hist_new();
   hist_regs = hist_new();
+  menu = menu_new();
 }
 
 void ex_cmd_cleanup()
@@ -75,6 +76,7 @@ void ex_cmd_cleanup()
   log_msg("CLEANUP", "ex_cmd_cleanup");
   hist_delete(hist_cmds);
   hist_delete(hist_regs);
+  menu_delete(menu);
 }
 
 void start_ex_cmd(int state)
@@ -98,7 +100,7 @@ void start_ex_cmd(int state)
     cmd_stack = malloc(STACK_MIN * sizeof(cmd_part*));
     cur_part = -1;
     max_part = STACK_MIN;
-    menu = menu_start();
+    menu_start(menu);
   }
   cmdline_init(&cmd, max.col);
   hist_push(EXCMD_HIST(), &cmd);
@@ -112,7 +114,6 @@ void stop_ex_cmd()
     ex_cmd_pop(-1);
     free(cmd_stack);
     menu_stop(menu);
-    menu = NULL;
   }
   lm = NULL;
   free(cmd.line);

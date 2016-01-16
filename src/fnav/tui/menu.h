@@ -5,7 +5,10 @@
 
 typedef struct Menu Menu;
 
-Menu* menu_start();
+Menu* menu_new();
+void menu_delete(Menu *mnu);
+
+void menu_start(Menu *mnu);
 void menu_restart(Menu *mnu);
 void menu_stop(Menu *mnu);
 

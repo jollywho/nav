@@ -27,11 +27,10 @@ void init(void)
   use_default_colors();
 
   option_init();
-  config_setup();
+  config_init();
   config_load(NULL);
   curs_set(0);
 
-  loop_init();
   tables_init();
   event_init();
   input_init();
@@ -48,7 +47,6 @@ void cleanup(void)
   input_cleanup();
   event_cleanup();
   tables_cleanup();
-  //loop?
   option_cleanup();
   endwin();
   //logger
