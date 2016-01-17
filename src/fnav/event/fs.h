@@ -14,6 +14,7 @@ typedef struct {
 
   uv_fs_t uv_fs; //data->req_handle
   void *data;
+  argv_callback open_cb;
 
 } FS_handle;
 

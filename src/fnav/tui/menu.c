@@ -6,12 +6,14 @@
 #include "fnav/tui/layout.h"
 #include "fnav/tui/window.h"
 #include "fnav/option.h"
+#include "fnav/event/fs.h"
 
 static const int ROW_MAX = 5;
 
 struct Menu {
   WINDOW *nc_win;
   fn_handle *hndl;
+  FS_handle *fs;
 
   fn_context *cx;
   bool docmpl;
@@ -30,10 +32,36 @@ struct Menu {
   int col_line;
 };
 
+static void menu_fs_cb(void **args)
+{
+  ventry *head = args[0];
+  // TODO:
+  // fnd_lis
+  // create compl by iterating lis ventry
+  // update matches
+
+}
+
+void path_list(String line)
+{
+  log_msg("MENU", "compl path_list");
+  // TODO:
+  // search order:
+  //  default   | fm active_path
+  //  prefix '/'| treat as root
+  //  last   '/'| next dir level; ignores trailing chars
+  //
+  // trim trailing '/'
+  //
+  // fs_open(prepared_str)
+}
+
 Menu* menu_new()
 {
   log_msg("MENU", "menu_new");
   Menu *mnu = malloc(sizeof(Menu));
+  fn_handle *hndl = malloc(sizeof(fn_handle));
+  mnu->hndl = hndl;
 
   mnu->col_select = attr_color("BufSelected");
   mnu->col_text   = attr_color("ComplText");
@@ -41,6 +69,13 @@ Menu* menu_new()
   mnu->col_box    = attr_color("OverlayActive");
   mnu->col_line   = attr_color("OverlayLine");
 
+  memset(mnu->hndl, 0, sizeof(fn_handle));
+  mnu->hndl->tn = "fm_files";
+  mnu->hndl->key_fld = "dir";
+  mnu->hndl->fname = "name";
+
+  mnu->fs = fs_init(mnu->hndl);
+  mnu->fs->open_cb = menu_fs_cb;
   return mnu;
 }
 
@@ -125,6 +160,8 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 {
   log_msg("MENU", "menu_update");
   log_msg("MENU", "##%d", ex_cmd_state());
+  // TODO:
+  // rerun switch on compl's dynamic flag
 
   if (mnu->rebuild)
     return rebuild_contexts(mnu, cmd);

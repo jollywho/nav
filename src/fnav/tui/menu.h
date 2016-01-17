@@ -18,4 +18,6 @@ void menu_update(Menu *mnu, Cmdline *cmd);
 void menu_draw(Menu *mnu);
 String menu_next(Menu *mnu, int dir);
 
+void path_list(String line);
+
 #endif

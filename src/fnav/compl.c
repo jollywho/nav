@@ -4,6 +4,7 @@
 
 #include "fnav/cmd.h"
 #include "fnav/tui/cntlr.h"
+#include "fnav/tui/menu.h"
 #include "fnav/table.h"
 
 #define DEFAULT_SIZE ARRAY_SIZE(compl_defaults)
@@ -11,6 +12,7 @@ static compl_entry compl_defaults[] = {
   { "cmds",    cmd_list      },
   { "cntlrs",  cntlr_list    },
   { "fields",  field_list    },
+  { "paths",   path_list     },
 };
 
 static compl_entry *compl_table;
