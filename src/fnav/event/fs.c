@@ -28,6 +28,7 @@ FS_handle* fs_init(fn_handle *h)
   uv_timer_init(eventloop(), &fsh->watcher_timer);
   fsh->hndl = h;
   fsh->running = false;
+  fsh->open_cb = NULL;
   fsh->watcher.data = fsh;
   fsh->watcher_timer.data = fsh;
   return fsh;
@@ -140,7 +141,9 @@ void fs_open(FS_handle *fsh, String dir)
   fsh->path = dir;
 
   uv_fs_stat(eventloop(), &fsh->uv_fs, fsh->path, stat_cb);
-  uv_fs_event_start(&fsh->watcher, watch_cb, fsh->path, 1);
+  if (!fsh->open_cb) {
+    uv_fs_event_start(&fsh->watcher, watch_cb, fsh->path, 1);
+  }
 }
 
 void fs_close(FS_handle *h)

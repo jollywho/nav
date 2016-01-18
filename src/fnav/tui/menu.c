@@ -34,9 +34,15 @@ struct Menu {
   int col_line;
 };
 
+static void menu_queue_draw(void **argv)
+{
+  menu_draw(argv[0]);
+}
+
 static void menu_fs_cb(void **args)
 {
   log_msg("MENU", "menu_fs_cb");
+  compl_destroy(cur_menu->cx);
   ventry *ent = fnd_val("fm_files", "dir", cur_menu->hndl->key);
   int count = tbl_ent_count(ent);
   compl_new(count, COMPL_DYNAMIC);
@@ -50,7 +56,7 @@ static void menu_fs_cb(void **args)
   // FIXME: should check if cx changed
   compl_force_cur(cur_menu->cx);
   compl_update(cur_menu->cx, ex_cmd_curstr());
-  menu_draw(cur_menu);
+  window_req_draw(cur_menu, menu_queue_draw);
 }
 
 void path_list(String line)

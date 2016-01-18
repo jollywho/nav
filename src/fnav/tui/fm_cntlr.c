@@ -267,5 +267,6 @@ void fm_delete(Cntlr *cntlr)
 
 String fm_cur_dir(Cntlr *cntlr)
 {
-  return active_dir;
+  FM_cntlr *fm = cntlr->top;
+  return fm->cur_dir;
 }

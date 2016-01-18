@@ -110,7 +110,7 @@ void start_ex_cmd(int state)
 void stop_ex_cmd()
 {
   log_msg("EXCMD", "stop_ex_cmd");
-  if (menu) {
+  if (ex_state == EX_CMD_STATE) {
     ex_cmd_pop(-1);
     free(cmd_stack);
     menu_stop(menu);
@@ -152,7 +152,7 @@ static void cmdline_draw()
   werase(nc_win);
   curs_set(1);
 
-  if (menu)
+  if (ex_state == EX_CMD_STATE)
     menu_draw(menu);
 
   wattron(nc_win, COLOR_PAIR(col_text));

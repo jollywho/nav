@@ -153,7 +153,6 @@ fn_rec* mk_rec(fn_tbl *t)
 
 ventry* fnd_val(String tn, String fname, String val)
 {
-  log_msg("TABLE", "fnd_val() %s %s,%s",tn ,fname, val);
   fn_tbl *t = get_tbl(tn);
   fn_fld *f;
   HASH_FIND_STR(t->fields, fname, f);
