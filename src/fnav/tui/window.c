@@ -176,6 +176,11 @@ Buffer* window_get_focus()
   return layout_buf(&win.layout);
 }
 
+Cntlr* window_get_cntlr()
+{
+  return window_get_focus()->cntlr;
+}
+
 int window_focus_attached()
 {
   return buf_attached(layout_buf(&win.layout));

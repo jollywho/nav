@@ -117,12 +117,15 @@ void fs_signal_handle(void **data)
   log_msg("FS", "fs_signal_handle");
   FS_handle *fsh = data[0];
   fn_handle *h = fsh->hndl;
-  fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
-  ventry *head = lis_get_val(l, "dir");
-  if (fsh->open_cb)
-    fsh->open_cb((void*)head);
-  else if (l && head) {
-    model_read_entry(h->model, l, head);
+  if (fsh->open_cb) {
+    fsh->open_cb(NULL);
+  }
+  else {
+    fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
+    ventry *head = lis_get_val(l, "dir");
+    if (l && head) {
+      model_read_entry(h->model, l, head);
+    }
   }
   fsh->running = false;
 }

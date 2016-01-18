@@ -190,6 +190,14 @@ fn_context* find_context(fn_context *cx, String name)
   }
 }
 
+void compl_force_cur(fn_context *cx)
+{
+  if (cur_cmpl) {
+    cx->cmpl = cur_cmpl;
+  }
+  cur_cmpl = NULL;
+}
+
 void compl_build(fn_context *cx, String line)
 {
   log_msg("COMPL", "compl_build");
@@ -205,10 +213,7 @@ void compl_build(fn_context *cx, String line)
 
   find->gen(line);
 
-  if (cur_cmpl) {
-    cx->cmpl = cur_cmpl;
-  }
-  cur_cmpl = NULL;
+  compl_force_cur(cx);
 }
 
 void compl_destroy(fn_context *cx)

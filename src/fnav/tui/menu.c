@@ -5,10 +5,12 @@
 #include "fnav/tui/ex_cmd.h"
 #include "fnav/tui/layout.h"
 #include "fnav/tui/window.h"
+#include "fnav/tui/fm_cntlr.h"
 #include "fnav/option.h"
 #include "fnav/event/fs.h"
 
 static const int ROW_MAX = 5;
+static Menu *cur_menu;
 
 struct Menu {
   WINDOW *nc_win;
@@ -34,17 +36,27 @@ struct Menu {
 
 static void menu_fs_cb(void **args)
 {
-  ventry *head = args[0];
-  // TODO:
-  // fnd_lis
-  // create compl by iterating lis ventry
-  // update matches
+  log_msg("MENU", "menu_fs_cb");
+  ventry *ent = fnd_val("fm_files", "dir", cur_menu->hndl->key);
+  int count = tbl_ent_count(ent);
+  compl_new(count, COMPL_DYNAMIC);
 
+  for (int i = 0; i < count; i++) {
+    fn_rec *rec = ent->rec;
+    log_msg("----------", "%s", rec_fld(rec, "name"));
+    compl_set_index(i, rec_fld(rec, "name"), 0, NULL);
+    ent = ent->next;
+  }
+  // FIXME: should check if cx changed
+  compl_force_cur(cur_menu->cx);
+  compl_update(cur_menu->cx, ex_cmd_curstr());
+  menu_draw(cur_menu);
 }
 
 void path_list(String line)
 {
   log_msg("MENU", "compl path_list");
+  if (!cur_menu) return;
   // TODO:
   // search order:
   //  default   | fm active_path
@@ -53,7 +65,12 @@ void path_list(String line)
   //
   // trim trailing '/'
   //
-  // fs_open(prepared_str)
+  if (strlen(line) < 1) {
+    Cntlr *cntlr = window_get_cntlr();
+    line = fm_cur_dir(cntlr);
+    cur_menu->hndl->key = line;
+  }
+  fs_open(cur_menu->fs, line);
 }
 
 Menu* menu_new()
@@ -76,12 +93,14 @@ Menu* menu_new()
 
   mnu->fs = fs_init(mnu->hndl);
   mnu->fs->open_cb = menu_fs_cb;
+  cur_menu = mnu;
   return mnu;
 }
 
 void menu_delete(Menu *mnu)
 {
   free(mnu);
+  cur_menu = NULL;
 }
 
 void menu_start(Menu *mnu)
@@ -160,8 +179,6 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 {
   log_msg("MENU", "menu_update");
   log_msg("MENU", "##%d", ex_cmd_state());
-  // TODO:
-  // rerun switch on compl's dynamic flag
 
   if (mnu->rebuild)
     return rebuild_contexts(mnu, cmd);

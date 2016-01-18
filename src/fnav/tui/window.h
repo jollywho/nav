@@ -13,6 +13,7 @@ void window_remove_buffer();
 void window_ex_cmd_end();
 void window_draw_all();
 Buffer* window_get_focus();
+Cntlr* window_get_cntlr();
 int window_focus_attached();
 void window_shift(int lines);
 

@@ -264,3 +264,8 @@ void fm_delete(Cntlr *cntlr)
   free(h);
   free(fm);
 }
+
+String fm_cur_dir(Cntlr *cntlr)
+{
+  return active_dir;
+}

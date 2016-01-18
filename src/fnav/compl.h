@@ -55,5 +55,6 @@ void compl_set_index(int idx, String key, int colcount, String *cols);
 
 fn_compl* compl_match_index(int idx);
 fn_context* find_context(fn_context *cx, String name);
+void compl_force_cur();
 
 #endif
