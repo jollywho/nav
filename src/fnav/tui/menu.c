@@ -20,13 +20,13 @@ struct Menu {
   fn_context *cx;
   bool docmpl;
   bool rebuild;
+  String line_key;
 
   pos_T size;
   pos_T ofs;
 
   int row_max;
   int lnum;
-  int block;
 
   int col_text;
   int col_div;
@@ -56,7 +56,7 @@ static void menu_fs_cb(void **args)
   }
   // FIXME: should check if cx changed
   compl_force_cur(cur_menu->cx);
-  compl_update(cur_menu->cx, ex_cmd_curstr());
+  compl_update(cur_menu->cx, cur_menu->line_key);
   window_req_draw(cur_menu, menu_queue_draw);
 }
 
@@ -74,27 +74,53 @@ void path_list(List *args)
   log_msg("MENU", "path_list");
   if (!cur_menu) return;
   Cntlr *cntlr = window_get_cntlr();
-  String dir = NULL;
+  String dir, val = NULL;
 
-  String word = list_arg(args, ex_cmd_curidx(), VAR_STRING);
-  if (!word) {
+  int exec = 0;
+  int pos = ex_cmd_curidx();
+  Token *tok = tok_arg(args, pos);
+
+  if (!tok) {
+    log_msg("MENU", "!TOK");
     dir = fm_cur_dir(cntlr);
+    fs_async_open(cur_menu->fs, NULL, dir);
   }
   else {
-    log_msg("MENU", "%s" , word);
-    if (word[0] != '/') {
-      dir = conspath(fm_cur_dir(cntlr), word);
+    log_msg("MENU", "TOK!");
+
+    dir = token_val(tok, VAR_STRING);
+    cur_menu->line_key = dir;
+
+    if (dir[0] != '/') {
+      dir = conspath(fm_cur_dir(cntlr), dir);
     }
-    else
-      dir = word;
+
+    int prev = tok->block;
+    while ((tok = tok_arg(args, ++pos))) {
+      if (prev != tok->block)
+        break;
+      val = token_val(tok, VAR_STRING);
+
+      if (val[0] == '/') {
+        exec = 1;
+        cur_menu->line_key = "";
+        continue;
+      }
+      else {
+        exec = 0;
+        cur_menu->line_key = val;
+        log_msg("MENU", "%s %s", dir, val);
+        String tmp = conspath(dir, val);
+        free(dir);
+        dir = tmp;
+      }
+    }
+
+    log_msg("MENU", "dir: %s", dir);
+    log_msg("MENU", "key: %s", cur_menu->line_key);
+    if (exec)
+      fs_async_open(cur_menu->fs, NULL, dir);
   }
-
-  // get next token until block changes
-  // tmp = conspath(dir, next)
-  // free old
-  // dir = tmp
-
-  fs_async_open(cur_menu->fs, NULL, dir);
 }
 
 Menu* menu_new()
@@ -231,7 +257,11 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   if (mnu->docmpl || compl_isdynamic(mnu->cx))
     compl_build(mnu->cx, ex_cmd_curlist());
 
-  compl_update(mnu->cx, ex_cmd_curstr());
+  if (!compl_isdynamic(mnu->cx))
+    mnu->line_key = ex_cmd_curstr();
+
+  compl_update(mnu->cx, mnu->line_key);
+
   mnu->docmpl = false;
 }
 

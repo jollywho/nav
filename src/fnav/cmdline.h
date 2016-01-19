@@ -77,5 +77,6 @@ Token* cmdline_last(Cmdline *cmdline);
 
 void* token_val(Token *token, char v_type);
 void* list_arg(List *lst, int argc, char v_type);
+void* tok_arg(List *lst, int argc);
 
 #endif

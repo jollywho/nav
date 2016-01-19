@@ -447,5 +447,6 @@ List* ex_cmd_curlist()
 
 int ex_cmd_curidx()
 {
-  return utarray_eltidx(cmd.cmds, ex_cmd_curtok());
+  List *list = ex_cmd_curlist();
+  return utarray_eltidx(list->items, ex_cmd_curtok());
 }

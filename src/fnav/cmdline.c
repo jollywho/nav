@@ -53,6 +53,13 @@ void* list_arg(List *lst, int argc, char v_type)
   return token_val(word, v_type);
 }
 
+void* tok_arg(List *lst, int argc)
+{
+  if (!lst || utarray_len(lst->items) < argc) return NULL;
+  Token *word = (Token*)utarray_eltptr(lst->items, argc);
+  return word;
+}
+
 static void list_delete(Token *token)
 {
   log_msg("CMDLINE", "list_delete");
