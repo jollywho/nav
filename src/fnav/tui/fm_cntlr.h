@@ -20,7 +20,6 @@ Cntlr* fm_new(Buffer *buf);
 void fm_delete(Cntlr *cntlr);
 
 void fm_req_dir(Cntlr *cntlr, String path);
-void fm_ch_dir(void **args);
 String fm_cur_dir(Cntlr *cntlr);
 
 #endif

@@ -122,7 +122,7 @@ static void fm_right(Cntlr *cntlr, Cmdarg *arg)
     send_hook_msg("fileopen", cntlr, NULL);
 }
 
-void fm_ch_dir(void **args)
+static void fm_ch_dir(void **args)
 {
   log_msg("FM_CNTLR", "fm_ch_dir");
   Cntlr *cntlr = args[0];
@@ -136,12 +136,17 @@ void fm_req_dir(Cntlr *cntlr, String path)
   log_msg("FM_CNTLR", "fm_req_dir");
   if (strcmp(cntlr->name, "fm") != 0) return;
 
+  if (path[0] != '/' && path[0] != '~') {
+    path = conspath(fm_cur_dir(cntlr), path);
+  }
   String newpath = fs_expand_path(path);
   if (newpath) {
     FM_cntlr *self = (FM_cntlr*)cntlr->top;
     fs_async_open(self->fs, cntlr, newpath);
     free(newpath);
   }
+  //if (tmp)
+  //  free(tmp);
 }
 
 static String next_valid_path(String path)
@@ -246,6 +251,8 @@ Cntlr* fm_new(Buffer *buf)
   hook_add(&fm->base, &fm->base, fm_remove, "remove");
 
   fm->fs = fs_init(fm->base.hndl);
+  fm->fs->stat_cb = fm_ch_dir;
+  fm->fs->data = &fm->base;
   fs_open(fm->fs, fm->cur_dir);
   return &fm->base;
 }

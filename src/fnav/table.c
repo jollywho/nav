@@ -303,6 +303,12 @@ void tbl_add_lis(String tn, String key_fld, String key)
       ll->key = strdup(key);
       ll->key_fld = ff;
       HASH_ADD_STR(ff->lis, key, ll);
+      /* check if value exists and attach */
+      fn_val *val;
+      HASH_FIND_STR(ff->vals, key, val);
+      if (val) {
+        ll->rec = val->rlist->rec;
+      }
     }
   }
 }

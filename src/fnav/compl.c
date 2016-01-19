@@ -289,3 +289,12 @@ static int count_subgrps(String str, String fnd)
   }
   return count;
 }
+
+bool compl_isdynamic(fn_context *cx)
+{
+  if (!cx || !cx->cmpl) return false;
+  if (cx->cmpl->comp_type == COMPL_STATIC)
+    return false;
+  else
+    return true;
+}

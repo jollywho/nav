@@ -199,7 +199,7 @@ static Token dict_new()
   return token;
 }
 
-static void cmdline_create_token(Cmdline *cmdline, char *str, int st, int ed)
+static void cmdline_create_token(UT_array *ar, char *str, int st, int ed, int b)
 {
   int len = ed - st;
   if (len < 1) return;
@@ -209,12 +209,13 @@ static void cmdline_create_token(Cmdline *cmdline, char *str, int st, int ed)
   Token token = {
     .start = st,
     .end = ed,
+    .block = b,
     .var = {
       .v_type = VAR_STRING,
       .vval.v_string = vstr
     }
   };
-  utarray_push_back(cmdline->tokens, &token);
+  utarray_push_back(ar, &token);
 }
 
 static void cmdline_tokenize(Cmdline *cmdline)
@@ -222,28 +223,32 @@ static void cmdline_tokenize(Cmdline *cmdline)
   char ch[] = {0,'\0'};
   int st, ed, pos;
   char *str = cmdline->line;
+  int block = 0;
 
   st = ed = pos = 0;
   for(;;) {
     ch[0] = str[pos++];
     if (ch[0] == '\0') {
-      cmdline_create_token(cmdline, str, st, ed);
+      cmdline_create_token(cmdline->tokens, str, st, ed, block);
       break;
     }
     else if (ch[0] == '"') {
       char *closech = strchr(&str[pos], '"');
       if (closech) {
         int end = (closech - &str[pos]) + pos;
-        cmdline_create_token(cmdline, str, pos, end);
+        cmdline_create_token(cmdline->tokens, str, pos, end, block);
         end++;
         pos = end;
         st = end;
       }
     }
-    else if (strpbrk(ch, ":|<>,[]{} ")) {
-      cmdline_create_token(cmdline, str, st, ed);
-      if (*ch != ' ') {
-        cmdline_create_token(cmdline, str, pos-1, pos);
+    else if (strpbrk(ch, "/:|<>,[]{} ")) {
+      cmdline_create_token(cmdline->tokens, str, st, ed, block);
+      if (*ch == ' ') {
+        block++;
+      }
+      else {
+        cmdline_create_token(cmdline->tokens, str, pos-1, pos, block);
         ed = pos;
       }
       st = pos;

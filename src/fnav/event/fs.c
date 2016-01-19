@@ -9,7 +9,6 @@
 #include "fnav/log.h"
 #include "fnav/table.h"
 #include "fnav/tui/buffer.h"
-#include "fnav/tui/fm_cntlr.h"
 
 #define RFSH_RATE 1000
 
@@ -44,9 +43,9 @@ void fs_cleanup(FS_handle *fsh)
   free(fsh);
 }
 
-char* conspath(const char *str1, const char *str2)
+String conspath(const char *str1, const char *str2)
 {
-  char *result;
+  String result;
   if (strcmp(str1, "/") == 0)
     asprintf(&result, "/%s", str2);
   else
@@ -86,23 +85,14 @@ static void req_stat_cb(uv_fs_t *req)
 {
   log_msg("FS", "req_stat_cb");
   FS_handle *fsh = req->data;
+  uv_stat_t stat = req->statbuf;
+
   String path = realpath(fsh->path, NULL);
+  log_msg("FS", "req_stat_cb %s", fsh->path);
   free(fsh->path);
-  if (path) {
-    CREATE_EVENT(eventq(), fm_ch_dir, 2, fsh->data, path);
+  if (path && S_ISDIR(stat.st_mode)) {
+    CREATE_EVENT(eventq(), fsh->stat_cb, 2, fsh->data, path);
   }
-}
-
-void fs_async_open(FS_handle *fsh, Cntlr *cntlr, String path)
-{
-  log_msg("FS", "fs_async_open");
-  uv_fs_req_cleanup(&fsh->uv_fs);
-  memset(&fsh->uv_fs, 0, sizeof(uv_fs_t));
-  fsh->path = strdup(path);
-  fsh->uv_fs.data = fsh;
-  fsh->data = cntlr;
-
-  uv_fs_stat(eventloop(), &fsh->uv_fs, path, req_stat_cb);
 }
 
 void* fs_vt_stat_resolv(fn_rec *rec, String key)
@@ -131,9 +121,23 @@ void fs_signal_handle(void **data)
   fsh->running = false;
 }
 
+void fs_async_open(FS_handle *fsh, Cntlr *cntlr, String path)
+{
+  log_msg("FS", "fs_async_open");
+  //FIXME:block on running and enqueue
+  uv_fs_req_cleanup(&fsh->uv_fs);
+  memset(&fsh->uv_fs, 0, sizeof(uv_fs_t));
+  fsh->path = strdup(path);
+  fsh->uv_fs.data = fsh;
+  fsh->data = cntlr;
+
+  uv_fs_stat(eventloop(), &fsh->uv_fs, path, req_stat_cb);
+}
+
 void fs_open(FS_handle *fsh, String dir)
 {
   log_msg("FS", "fs open %s", dir);
+  //FIXME:block on running and enqueue
   uv_fs_req_cleanup(&fsh->uv_fs);
   memset(&fsh->uv_fs, 0, sizeof(uv_fs_t));
   fsh->uv_fs.data = fsh;
@@ -242,9 +246,8 @@ static void fs_reopen(FS_handle *fsh)
   log_msg("FS", "--reopen--");
   uv_timer_stop(&fsh->watcher_timer);
   uv_fs_event_stop(&fsh->watcher);
-  Cntlr *cntlr = buf_cntlr(fsh->hndl->buf);
-  void *args[] = {cntlr, strdup(fsh->path)};
-  fm_ch_dir(args);
+
+  CREATE_EVENT(eventq(), fsh->stat_cb, 2, fsh->data, fsh->path);
 }
 
 static void watch_timer_cb(uv_timer_t *handle)

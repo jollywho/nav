@@ -315,7 +315,6 @@ static void ex_onkey()
           mflag |= EX_NEW;
       }
     }
-    log_msg("MENU", "do");
     menu_update(menu, &cmd);
   }
   else {

@@ -19,5 +19,6 @@ void menu_draw(Menu *mnu);
 String menu_next(Menu *mnu, int dir);
 
 void path_list(String line);
+void menu_ch_dir(void **args);
 
 #endif

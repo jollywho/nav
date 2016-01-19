@@ -15,6 +15,7 @@ typedef struct {
   uv_fs_t uv_fs; //data->req_handle
   void *data;
   argv_callback open_cb;
+  argv_callback stat_cb;
 
 } FS_handle;
 
@@ -27,5 +28,6 @@ String fs_expand_path(String path);
 String fs_parent_dir(const String path);
 void fs_async_open(FS_handle *fsh, Cntlr *cntlr, String path);
 void* fs_vt_stat_resolv(fn_rec *rec, String key);
+String conspath(const char *str1, const char *str2);
 
 #endif

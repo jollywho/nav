@@ -42,6 +42,7 @@ static void menu_queue_draw(void **argv)
 static void menu_fs_cb(void **args)
 {
   log_msg("MENU", "menu_fs_cb");
+  log_msg("MENU", "%s", cur_menu->hndl->key);
   compl_destroy(cur_menu->cx);
   ventry *ent = fnd_val("fm_files", "dir", cur_menu->hndl->key);
   int count = tbl_ent_count(ent);
@@ -59,24 +60,37 @@ static void menu_fs_cb(void **args)
   window_req_draw(cur_menu, menu_queue_draw);
 }
 
+void menu_ch_dir(void **args)
+{
+  log_msg("MENU", "menu_ch_dir");
+  String dir = args[1];
+  if (!dir) return;
+  cur_menu->hndl->key = dir;
+  fs_open(cur_menu->fs, dir);
+}
+
 void path_list(String line)
 {
   log_msg("MENU", "compl path_list");
+  log_msg("||||", " %s ", line);
   if (!cur_menu) return;
-  // TODO:
-  // search order:
-  //  default   | fm active_path
-  //  prefix '/'| treat as root
-  //  last   '/'| next dir level; ignores trailing chars
-  //
-  // trim trailing '/'
-  //
-  if (strlen(line) < 1) {
-    Cntlr *cntlr = window_get_cntlr();
-    line = fm_cur_dir(cntlr);
-    cur_menu->hndl->key = line;
+  Cntlr *cntlr = window_get_cntlr();
+  String dir = NULL;
+
+  if (line[0] != '/') {
+    dir = conspath(fm_cur_dir(cntlr), line);
   }
-  fs_open(cur_menu->fs, line);
+  else {
+    dir = line;
+  }
+  // attempt to find subdirs in path string
+  // next == '/' -> continue
+
+  //FIXME: need to ignore each delimit of slash for matches
+  if (strlen(dir) > 1 && dir[strlen(dir)] == '/') {
+    dir[strlen(dir)] = 0;
+  }
+  fs_async_open(cur_menu->fs, NULL, dir);
 }
 
 Menu* menu_new()
@@ -99,6 +113,7 @@ Menu* menu_new()
 
   mnu->fs = fs_init(mnu->hndl);
   mnu->fs->open_cb = menu_fs_cb;
+  mnu->fs->stat_cb = menu_ch_dir;
   cur_menu = mnu;
   return mnu;
 }
@@ -209,7 +224,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
     }
     ex_cmd_push(mnu->cx);
   }
-  if (mnu->docmpl)
+  if (mnu->docmpl || compl_isdynamic(mnu->cx))
     compl_build(mnu->cx, ex_cmd_curstr());
   compl_update(mnu->cx, ex_cmd_curstr());
   mnu->docmpl = false;
