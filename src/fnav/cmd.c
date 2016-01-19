@@ -55,7 +55,7 @@ void cmd_run(Cmdstr *cmdstr)
   cmdstr->ret = fun->cmd_func(args, fun->flags);
 }
 
-void cmd_list(String line)
+void cmd_list(List *args)
 {
   log_msg("CMD", "compl cmd_list");
   unsigned int count = HASH_COUNT(cmd_table);

@@ -7,6 +7,7 @@
 // these need to align with state_symbol array
 #define EX_CMD_STATE 1
 #define EX_REG_STATE 0
+#define EX_OFF_STATE -1
 
 #define EX_EMPTY  1
 #define EX_LEFT   2
@@ -37,7 +38,9 @@ char ex_cmd_curch();
 int ex_cmd_curpos();
 Token* ex_cmd_curtok();
 String ex_cmd_curstr();
+List* ex_cmd_curlist();
 int ex_cmd_state();
+int ex_cmd_curidx();
 
 void ex_cmd_push(fn_context *cx);
 cmd_part* ex_cmd_pop(int count);

@@ -18,7 +18,7 @@ void menu_update(Menu *mnu, Cmdline *cmd);
 void menu_draw(Menu *mnu);
 String menu_next(Menu *mnu, int dir);
 
-void path_list(String line);
+void path_list(List *args);
 void menu_ch_dir(void **args);
 
 #endif

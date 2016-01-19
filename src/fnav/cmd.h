@@ -29,6 +29,6 @@ void cmd_remove(String name);
 void cmd_clearall();
 void cmd_run(Cmdstr *cmdstr);
 Cmd_T* cmd_find(String name);
-void cmd_list(String line);
+void cmd_list(List *args);
 
 #endif

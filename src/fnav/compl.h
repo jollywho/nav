@@ -33,7 +33,7 @@ struct fn_context {
   UT_hash_handle hh;
 };
 
-typedef void (*compl_genfn)(String line);
+typedef void (*compl_genfn)(List* args);
 typedef struct {
   String key;
   compl_genfn gen;
@@ -46,7 +46,7 @@ void compl_add_context(String fmt_compl);
 
 fn_context* context_start();
 void compl_update(fn_context *cx, String line);
-void compl_build(fn_context *cx, String line);
+void compl_build(fn_context *cx, List *args);
 void compl_destroy(fn_context *cx);
 
 void compl_new(int size, int dynamic);

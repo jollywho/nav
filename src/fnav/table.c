@@ -516,7 +516,7 @@ void clear_trans(trans_rec *r, int flush)
 // get cntlr's table list
 // iterate list of tables
 // add field to compl
-void field_list(String line)
+void field_list(List *args)
 {
   if (HASH_COUNT(FN_MASTER) < 1) return;
   fn_tbl *t = get_tbl("fm_files");

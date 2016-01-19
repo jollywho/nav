@@ -123,6 +123,7 @@ void stop_ex_cmd()
   wnoutrefresh(nc_win);
   delwin(nc_win);
   curs_set(0);
+  ex_state = EX_OFF_STATE;
   window_ex_cmd_end();
 }
 
@@ -432,4 +433,19 @@ int ex_cmd_state()
 void ex_cmd_set(int pos)
 {
   curpos = pos;
+}
+
+List* ex_cmd_curlist()
+{
+  if (ex_state == EX_OFF_STATE) return NULL;
+  if (!cmd.cmds) return NULL;
+  Cmdstr *cmdstr = (Cmdstr*)utarray_next(cmd.cmds, ex_cmd_curtok());
+  if (!cmdstr) return NULL;
+  List *list = token_val(&cmdstr->args, VAR_LIST);
+  return list;
+}
+
+int ex_cmd_curidx()
+{
+  return utarray_eltidx(cmd.cmds, ex_cmd_curtok());
 }

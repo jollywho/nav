@@ -6,13 +6,6 @@
 #include "fnav/lib/queue.h"
 #include "fnav/lib/utarray.h"
 
-typedef struct Token Token;
-typedef struct Pair Pair;
-typedef struct Dict Dict;
-typedef struct List List;
-typedef struct Cmdstr Cmdstr;
-typedef struct Cmdline Cmdline;
-
 typedef struct {
   char v_type;              /* see below: VAR_NUMBER, VAR_STRING, etc. */
   union {

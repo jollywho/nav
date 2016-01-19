@@ -54,6 +54,6 @@ Cntlr* focus_cntlr();
 Cntlr* cntlr_from_id(int id);
 void cntlr_pipe(Cntlr *cntlr);
 
-void cntlr_list(String line);
+void cntlr_list(List *args);
 
 #endif

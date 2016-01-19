@@ -198,7 +198,7 @@ void compl_force_cur(fn_context *cx)
   cur_cmpl = NULL;
 }
 
-void compl_build(fn_context *cx, String line)
+void compl_build(fn_context *cx, List *args)
 {
   log_msg("COMPL", "compl_build");
   if (!cx) return;
@@ -211,7 +211,7 @@ void compl_build(fn_context *cx, String line)
     return;
   }
 
-  find->gen(line);
+  find->gen(args);
 
   compl_force_cur(cx);
 }

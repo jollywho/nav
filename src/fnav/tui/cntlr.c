@@ -131,7 +131,7 @@ Cntlr* cntlr_from_id(int id)
   return NULL;
 }
 
-void cntlr_list(String line)
+void cntlr_list(List *args)
 {
   compl_new(TABLE_SIZE, COMPL_STATIC);
   for (int i = 0; i < (int)TABLE_SIZE; i++) {

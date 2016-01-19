@@ -26,6 +26,7 @@ struct Menu {
 
   int row_max;
   int lnum;
+  int block;
 
   int col_text;
   int col_div;
@@ -50,7 +51,6 @@ static void menu_fs_cb(void **args)
 
   for (int i = 0; i < count; i++) {
     fn_rec *rec = ent->rec;
-    log_msg("----------", "%s", rec_fld(rec, "name"));
     compl_set_index(i, rec_fld(rec, "name"), 0, NULL);
     ent = ent->next;
   }
@@ -69,27 +69,31 @@ void menu_ch_dir(void **args)
   fs_open(cur_menu->fs, dir);
 }
 
-void path_list(String line)
+void path_list(List *args)
 {
-  log_msg("MENU", "compl path_list");
-  log_msg("||||", " %s ", line);
+  log_msg("MENU", "path_list");
   if (!cur_menu) return;
   Cntlr *cntlr = window_get_cntlr();
   String dir = NULL;
 
-  if (line[0] != '/') {
-    dir = conspath(fm_cur_dir(cntlr), line);
+  String word = list_arg(args, ex_cmd_curidx(), VAR_STRING);
+  if (!word) {
+    dir = fm_cur_dir(cntlr);
   }
   else {
-    dir = line;
+    log_msg("MENU", "%s" , word);
+    if (word[0] != '/') {
+      dir = conspath(fm_cur_dir(cntlr), word);
+    }
+    else
+      dir = word;
   }
-  // attempt to find subdirs in path string
-  // next == '/' -> continue
 
-  //FIXME: need to ignore each delimit of slash for matches
-  if (strlen(dir) > 1 && dir[strlen(dir)] == '/') {
-    dir[strlen(dir)] = 0;
-  }
+  // get next token until block changes
+  // tmp = conspath(dir, next)
+  // free old
+  // dir = tmp
+
   fs_async_open(cur_menu->fs, NULL, dir);
 }
 
@@ -160,7 +164,7 @@ void menu_restart(Menu *mnu)
   mnu->cx = context_start();
   mnu->docmpl = false;
   ex_cmd_push(mnu->cx);
-  compl_build(mnu->cx, "");
+  compl_build(mnu->cx, NULL);
   compl_update(mnu->cx, "");
 }
 
@@ -184,7 +188,7 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
   if (i > 0) {
     mnu->cx = ex_cmd_pop(1)->cx;
     ex_cmd_set(pos - 1);
-    compl_build(mnu->cx, ex_cmd_curstr());
+    compl_build(mnu->cx, ex_cmd_curlist());
     compl_update(mnu->cx, ex_cmd_curstr());
   }
   mnu->rebuild = false;
@@ -225,7 +229,8 @@ void menu_update(Menu *mnu, Cmdline *cmd)
     ex_cmd_push(mnu->cx);
   }
   if (mnu->docmpl || compl_isdynamic(mnu->cx))
-    compl_build(mnu->cx, ex_cmd_curstr());
+    compl_build(mnu->cx, ex_cmd_curlist());
+
   compl_update(mnu->cx, ex_cmd_curstr());
   mnu->docmpl = false;
 }
