@@ -7,25 +7,31 @@
 typedef struct fentry fentry;
 typedef struct fn_fs fn_fs;
 
+#define FS_READ  0
+#define FS_WRITE 1
+
 struct fn_fs {
   String path;
 
   fn_handle *hndl;
+  uv_fs_t uv_fs;  /* readonly stat */
 
   void *data;
+  int mode;    /* FS_MODE: READ,WRITE */
   argv_callback open_cb;
   argv_callback stat_cb;
   UT_hash_handle hh;
 };
 
-fn_fs* fs_init(fn_handle *h);
-void fs_cleanup(fn_fs *fsh);
-void fs_open(fn_fs *h, String dir);
-void fs_close(fn_fs *h);
+fn_fs* fs_init(fn_handle *hndl);
+void fs_cleanup(fn_fs *fs);
+void fs_open(fn_fs *fs, String dir);
+void fs_close(fn_fs *fs);
+void fs_read(fn_fs *fs, String dir);
+
 bool isdir(String path);
 String fs_expand_path(String path);
 String fs_parent_dir(const String path);
-void fs_async_open(fn_fs *fsh, Cntlr *cntlr, String path);
 void* fs_vt_stat_resolv(fn_rec *rec, String key);
 String conspath(const char *str1, const char *str2);
 

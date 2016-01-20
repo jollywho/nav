@@ -65,8 +65,8 @@ void menu_ch_dir(void **args)
   log_msg("MENU", "menu_ch_dir");
   String dir = args[1];
   if (!dir) return;
-  cur_menu->hndl->key = dir;
   fs_open(cur_menu->fs, dir);
+  cur_menu->hndl->key = cur_menu->fs->path;
 }
 
 void path_list(List *args)
@@ -83,7 +83,7 @@ void path_list(List *args)
   if (!tok) {
     log_msg("MENU", "!TOK");
     dir = fm_cur_dir(cntlr);
-    fs_async_open(cur_menu->fs, NULL, dir);
+    fs_read(cur_menu->fs, dir);
   }
   else {
     log_msg("MENU", "TOK!");
@@ -119,7 +119,7 @@ void path_list(List *args)
     log_msg("MENU", "dir: %s", dir);
     log_msg("MENU", "key: %s", cur_menu->line_key);
     if (exec)
-      fs_async_open(cur_menu->fs, NULL, dir);
+      fs_read(cur_menu->fs, dir);
   }
 }
 
@@ -144,6 +144,7 @@ Menu* menu_new()
   mnu->fs = fs_init(mnu->hndl);
   mnu->fs->open_cb = menu_fs_cb;
   mnu->fs->stat_cb = menu_ch_dir;
+  mnu->fs->data = mnu;
   cur_menu = mnu;
   return mnu;
 }

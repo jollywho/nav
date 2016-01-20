@@ -127,7 +127,6 @@ static void fm_ch_dir(void **args)
   Cntlr *cntlr = args[0];
   String path = args[1];
   fm_opendir(cntlr, path, FORWARD);
-  free(path);
 }
 
 void fm_req_dir(Cntlr *cntlr, String path)
@@ -141,7 +140,7 @@ void fm_req_dir(Cntlr *cntlr, String path)
   String newpath = fs_expand_path(path);
   if (newpath) {
     FM_cntlr *self = (FM_cntlr*)cntlr->top;
-    fs_async_open(self->fs, cntlr, newpath);
+    fs_read(self->fs, newpath);
     free(newpath);
   }
   //if (tmp)

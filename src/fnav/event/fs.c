@@ -34,7 +34,7 @@ static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int sta
 static void watch_timer_cb(uv_timer_t *handle);
 static void fs_mux_open(fentry *ent);
 
-static void fs_mux(fn_fs *fs)
+static fentry* fs_mux(fn_fs *fs)
 {
   fentry *ent = NULL;
   HASH_FIND_STR(ent_tbl, fs->path, ent);
@@ -58,11 +58,7 @@ static void fs_mux(fn_fs *fs)
   if (!find) {
     HASH_ADD_STR(ent->listeners, path, fs);
   }
-
-  //TODO: if timer is running, reopen immediately
-  if (!ent->running) {
-    fs_mux_open(ent);
-  }
+  return ent;
 }
 
 static void del_ent(uv_handle_t *hndl)
@@ -149,19 +145,26 @@ bool isdir(String path)
   return (S_ISDIR(st->st_mode));
 }
 
-static void req_stat_cb(uv_fs_t *req)
+static void stat_cleanup(void **args)
 {
-  log_msg("FS", "req_stat_cb");
+  free(args[0]);
+}
+
+static void stat_read_cb(uv_fs_t *req)
+{
+  log_msg("FS", "stat_read_cb");
   fn_fs *fs = req->data;
   uv_stat_t stat = req->statbuf;
 
-  String path = realpath(fs->path, NULL);
-  log_msg("FS", "req_stat_cb %s", fs->path);
-  free(fs->path);
+  String path = realpath(req->path, NULL);
+  log_msg("FS", "req_stat_cb %s", req->path);
 
-  // iterate listeners and call queue stat_cb if set in fn_fs
   if (path && S_ISDIR(stat.st_mode)) {
     CREATE_EVENT(eventq(), fs->stat_cb, 2, fs->data, path);
+    CREATE_EVENT(eventq(), stat_cleanup, 1, path);
+  }
+  else {
+    free(path);
   }
 }
 
@@ -186,8 +189,6 @@ void fs_signal_handle(void **data)
       it->open_cb(NULL);
     }
     else {
-      //FIXME: model needs to close automatically otherwise this 
-      //reruns an extra time per overlapping fs.
       fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
       ventry *head = lis_get_val(l, "dir");
       if (l && head) {
@@ -198,33 +199,26 @@ void fs_signal_handle(void **data)
   ent->running = false;
 }
 
-void fs_async_open(fn_fs *fs, Cntlr *cntlr, String path)
+void fs_read(fn_fs *fs, String dir)
 {
-  log_msg("FS", "fs_async_open");
-  //FIXME:block on running and enqueue
-  //uv_fs_req_cleanup(&fsh->uv_fs);
-  //memset(&fsh->uv_fs, 0, sizeof(uv_fs_t));
-  //fsh->path = strdup(path);
-  //fsh->uv_fs.data = fsh;
-  //fsh->data = cntlr;
-
-  //uv_fs_stat(eventloop(), &fsh->uv_fs, path, req_stat_cb);
-}
-
-static void fs_mux_open(fentry *ent)
-{
-  log_msg("FS", "fs mux open %s", ent->key);
-  ent->running = true;
-
-  uv_fs_stat(eventloop(), &ent->uv_fs, ent->key, stat_cb);
-  uv_fs_event_start(&ent->watcher, watch_cb, ent->key, 1);
+  log_msg("FS", "fs read %s", dir);
+  fs->uv_fs.data = fs;
+  uv_fs_stat(eventloop(), &fs->uv_fs, dir, stat_read_cb);
 }
 
 void fs_open(fn_fs *fs, String dir)
 {
   log_msg("FS", "fs open %s", dir);
   fs->path = strdup(dir);
-  fs_mux(fs);
+  fentry *ent = fs_mux(fs);
+
+  //TODO: if timer is running, reopen immediately
+  if (!ent->running) {
+    ent->running = true;
+
+    uv_fs_stat(eventloop(), &ent->uv_fs, ent->key, stat_cb);
+    uv_fs_event_start(&ent->watcher, watch_cb, ent->key, 1);
+  }
 }
 
 void fs_close(fn_fs *fs)
@@ -324,7 +318,12 @@ static void fs_reopen(fentry *ent)
   uv_timer_stop(&ent->watcher_timer);
   uv_fs_event_stop(&ent->watcher);
 
-  //CREATE_EVENT(eventq(), ent->stat_cb, 2, ent->data, ent->key);
+  fn_fs *it;
+  for (it = ent->listeners; it != NULL; it = it->hh.next) {
+    //FIXME: queue not being processed here
+    if (it->stat_cb)
+      CREATE_EVENT(eventq(), it->stat_cb, 2, it->data, it->path);
+  }
 }
 
 static void watch_timer_cb(uv_timer_t *handle)
