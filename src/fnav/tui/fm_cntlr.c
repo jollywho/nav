@@ -67,7 +67,6 @@ void cntlr_cancel(Cntlr *cntlr)
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
   self->op_count = 1;
   self->mo_count = 1;
-  self->fs->cancel = true;
 }
 
 void cntlr_focus(Cntlr *cntlr)
@@ -85,7 +84,7 @@ static int fm_opendir(Cntlr *cntlr, String path, short arg)
   fn_handle *h = cntlr->hndl;
   String cur_dir = self->cur_dir;
 
-  if (!self->fs->running) {
+  //if (!self->fs->running) {
     free(cur_dir);
     model_close(h);
     cur_dir = strdup(path);
@@ -98,7 +97,7 @@ static int fm_opendir(Cntlr *cntlr, String path, short arg)
     fs_open(self->fs, cur_dir);
     self->cur_dir = cur_dir;
     return 1;
-  }
+  //}
   return 0;
 }
 

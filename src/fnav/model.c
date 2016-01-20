@@ -29,6 +29,7 @@ struct Model {
   fn_rec *cur;
   ventry *head;
   bool blocking;
+  bool opened;
   String sort_type;
   int sort_rev;
   UT_array *lines;
@@ -91,6 +92,7 @@ void model_close(fn_handle *hndl)
   Model *m = hndl->model;
   Buffer *b = hndl->buf;
   m->blocking = true;
+  hndl->model->opened = false;
   lis_save(m->lis, buf_top(b), buf_line(b));
   utarray_clear(m->lines);
 }
@@ -118,6 +120,7 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
 {
   log_msg("MODEL", "model_read_entry");
   fn_handle *h = m->hndl;
+  if (m->opened) return;
   if (!lis->ent) {
     lis->ent = lis_set_val(lis, h->fname);
   }
@@ -129,6 +132,7 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   refind_line(m->lis);
   buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
   model_sort(m, NULL, 0);
+  m->opened = true;
   m->blocking = false;
 }
 

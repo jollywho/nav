@@ -15,7 +15,7 @@ static Menu *cur_menu;
 struct Menu {
   WINDOW *nc_win;
   fn_handle *hndl;
-  FS_handle *fs;
+  fn_fs *fs;
 
   fn_context *cx;
   bool docmpl;

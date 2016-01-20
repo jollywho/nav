@@ -10,37 +10,105 @@
 #include "fnav/table.h"
 #include "fnav/tui/buffer.h"
 
+struct fentry {
+  String key;
+
+  uv_fs_event_t watcher;
+  uv_fs_t uv_fs; //data->req_handle
+  uv_timer_t watcher_timer;
+  bool cancel;
+  bool running;
+  int refs;
+  fn_fs *listeners;
+  UT_hash_handle hh;
+};
+
+static fentry *ent_tbl;
+
 #define RFSH_RATE 1000
 
-static void fs_close_req(FS_handle *fsh);
+static void fs_close_req(fentry *ent);
 static void stat_cb(uv_fs_t *req);
 void fs_loop(Loop *loop, int ms);
 static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int status);
 static void watch_timer_cb(uv_timer_t *handle);
+static void fs_mux_open(fentry *ent);
 
-FS_handle* fs_init(fn_handle *h)
+static void fs_mux(fn_fs *fs)
 {
-  log_msg("FS", "open req");
-  FS_handle *fsh = malloc(sizeof(FS_handle));
-  memset(fsh, 0, sizeof(FS_handle));
-  uv_fs_event_init(eventloop(), &fsh->watcher);
-  uv_timer_init(eventloop(), &fsh->watcher_timer);
-  fsh->hndl = h;
-  fsh->running = false;
-  fsh->open_cb = NULL;
-  fsh->watcher.data = fsh;
-  fsh->watcher_timer.data = fsh;
-  return fsh;
+  fentry *ent = NULL;
+  HASH_FIND_STR(ent_tbl, fs->path, ent);
+  if (!ent) {
+    ent = malloc(sizeof(fentry));
+    ent->running = false;
+    ent->cancel = false;
+    ent->listeners = NULL;
+    ent->key = strdup(fs->path);
+    ent->refs = 2;
+    uv_fs_event_init(eventloop(), &ent->watcher);
+    uv_timer_init(eventloop(), &ent->watcher_timer);
+    ent->watcher.data = ent;
+    ent->watcher_timer.data = ent;
+    ent->uv_fs.data = ent;
+    HASH_ADD_STR(ent_tbl, key, ent);
+  }
+
+  fn_fs *find = NULL;
+  HASH_FIND_PTR(ent->listeners, fs->path, find);
+  if (!find) {
+    HASH_ADD_STR(ent->listeners, path, fs);
+  }
+
+  //TODO: if timer is running, reopen immediately
+  if (!ent->running) {
+    fs_mux_open(ent);
+  }
 }
 
-void fs_cleanup(FS_handle *fsh)
+static void del_ent(uv_handle_t *hndl)
+{
+  fentry *ent = hndl->data;
+  ent->refs--;
+  if (ent->refs < 1) {
+    free(ent->key);
+    free(ent);
+  }
+}
+
+static void fs_demux(fn_fs *fs)
+{
+  fentry *ent = NULL;
+  HASH_FIND_STR(ent_tbl, fs->path, ent);
+
+  HASH_DEL(ent->listeners, fs);
+  free(fs->path);
+
+  if (HASH_COUNT(ent->listeners) < 1) {
+    HASH_DEL(ent_tbl, ent);
+    uv_timer_stop(&ent->watcher_timer);
+    uv_fs_event_stop(&ent->watcher);
+    uv_fs_req_cleanup(&ent->uv_fs);
+    uv_handle_t *hw = (uv_handle_t*)&ent->watcher;
+    uv_handle_t *ht = (uv_handle_t*)&ent->watcher_timer;
+    uv_close(hw, del_ent);
+    uv_close(ht, del_ent);
+  }
+}
+
+fn_fs* fs_init(fn_handle *hndl)
+{
+  log_msg("FS", "open req");
+  fn_fs *fs = malloc(sizeof(fn_fs));
+  memset(fs, 0, sizeof(fn_fs));
+  fs->hndl = hndl;
+  return fs;
+}
+
+void fs_cleanup(fn_fs *fs)
 {
   log_msg("FS", "cleanup");
-  //TODO: spin until loop cleared
-  uv_fs_event_stop(&fsh->watcher);
-  uv_timer_stop(&fsh->watcher_timer);
-  uv_fs_req_cleanup(&fsh->uv_fs);
-  free(fsh);
+
+  // iterate tbl and delete each ent and its subparts
 }
 
 String conspath(const char *str1, const char *str2)
@@ -84,14 +152,16 @@ bool isdir(String path)
 static void req_stat_cb(uv_fs_t *req)
 {
   log_msg("FS", "req_stat_cb");
-  FS_handle *fsh = req->data;
+  fn_fs *fs = req->data;
   uv_stat_t stat = req->statbuf;
 
-  String path = realpath(fsh->path, NULL);
-  log_msg("FS", "req_stat_cb %s", fsh->path);
-  free(fsh->path);
+  String path = realpath(fs->path, NULL);
+  log_msg("FS", "req_stat_cb %s", fs->path);
+  free(fs->path);
+
+  // iterate listeners and call queue stat_cb if set in fn_fs
   if (path && S_ISDIR(stat.st_mode)) {
-    CREATE_EVENT(eventq(), fsh->stat_cb, 2, fsh->data, path);
+    CREATE_EVENT(eventq(), fs->stat_cb, 2, fs->data, path);
   }
 }
 
@@ -106,57 +176,64 @@ void* fs_vt_stat_resolv(fn_rec *rec, String key)
 void fs_signal_handle(void **data)
 {
   log_msg("FS", "fs_signal_handle");
-  FS_handle *fsh = data[0];
-  fn_handle *h = fsh->hndl;
-  if (fsh->open_cb) {
-    fsh->open_cb(NULL);
-  }
-  else {
-    fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
-    ventry *head = lis_get_val(l, "dir");
-    if (l && head) {
-      model_read_entry(h->model, l, head);
+  fentry *ent = data[0];
+
+  fn_fs *it;
+  for (it = ent->listeners; it != NULL; it = it->hh.next) {
+    fn_handle *h = it->hndl;
+
+    if (it->open_cb) {
+      it->open_cb(NULL);
+    }
+    else {
+      //FIXME: model needs to close automatically otherwise this 
+      //reruns an extra time per overlapping fs.
+      fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
+      ventry *head = lis_get_val(l, "dir");
+      if (l && head) {
+        model_read_entry(h->model, l, head);
+      }
     }
   }
-  fsh->running = false;
+  ent->running = false;
 }
 
-void fs_async_open(FS_handle *fsh, Cntlr *cntlr, String path)
+void fs_async_open(fn_fs *fs, Cntlr *cntlr, String path)
 {
   log_msg("FS", "fs_async_open");
   //FIXME:block on running and enqueue
-  uv_fs_req_cleanup(&fsh->uv_fs);
-  memset(&fsh->uv_fs, 0, sizeof(uv_fs_t));
-  fsh->path = strdup(path);
-  fsh->uv_fs.data = fsh;
-  fsh->data = cntlr;
+  //uv_fs_req_cleanup(&fsh->uv_fs);
+  //memset(&fsh->uv_fs, 0, sizeof(uv_fs_t));
+  //fsh->path = strdup(path);
+  //fsh->uv_fs.data = fsh;
+  //fsh->data = cntlr;
 
-  uv_fs_stat(eventloop(), &fsh->uv_fs, path, req_stat_cb);
+  //uv_fs_stat(eventloop(), &fsh->uv_fs, path, req_stat_cb);
 }
 
-void fs_open(FS_handle *fsh, String dir)
+static void fs_mux_open(fentry *ent)
+{
+  log_msg("FS", "fs mux open %s", ent->key);
+  ent->running = true;
+
+  uv_fs_stat(eventloop(), &ent->uv_fs, ent->key, stat_cb);
+  uv_fs_event_start(&ent->watcher, watch_cb, ent->key, 1);
+}
+
+void fs_open(fn_fs *fs, String dir)
 {
   log_msg("FS", "fs open %s", dir);
-  //FIXME:block on running and enqueue
-  uv_fs_req_cleanup(&fsh->uv_fs);
-  memset(&fsh->uv_fs, 0, sizeof(uv_fs_t));
-  fsh->uv_fs.data = fsh;
-  fsh->running = true;
-  fsh->path = dir;
-
-  uv_fs_stat(eventloop(), &fsh->uv_fs, fsh->path, stat_cb);
-  if (!fsh->open_cb) {
-    uv_fs_event_start(&fsh->watcher, watch_cb, fsh->path, 1);
-  }
+  fs->path = strdup(dir);
+  fs_mux(fs);
 }
 
-void fs_close(FS_handle *h)
+void fs_close(fn_fs *fs)
 {
-  uv_timer_stop(&h->watcher_timer);
-  uv_fs_event_stop(&h->watcher);
+  log_msg("FS", "fs close %s", fs->path);
+  fs_demux(fs);
 }
 
-static int send_stat(FS_handle *fsh, const char *dir, char *upd)
+static int send_stat(fentry *ent, const char *dir, char *upd)
 {
   struct stat *s = malloc(sizeof(struct stat));
   if (stat(dir, s) == -1) {
@@ -177,14 +254,14 @@ static void scan_cb(uv_fs_t *req)
   log_msg("FS", "--scan--");
   log_msg("FS", "path: %s", req->path);
   uv_dirent_t dent;
-  FS_handle *fsh = req->data;
+  fentry *ent = req->data;
 
   /* clear outdated records */
   tbl_del_val("fm_files", "dir",      (String)req->path);
   tbl_del_val("fm_stat",  "fullpath", (String)req->path);
 
   /* add stat. TODO: should reuse uvstat in stat_cb */
-  send_stat(fsh, req->path, "yes");
+  send_stat(ent, ent->key, "yes");
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
     int err = 0;
@@ -193,10 +270,10 @@ static void scan_cb(uv_fs_t *req)
     edit_trans(r, "dir",  (String)req->path, NULL);
     String full = conspath(req->path, dent.name);
 
-    ventry *ent = fnd_val("fm_stat", "fullpath", full);
-    if (!ent) {
+    ventry *vent = fnd_val("fm_stat", "fullpath", full);
+    if (!vent) {
       log_msg("FS", "--fresh stat-- %s", full);
-      err = send_stat(fsh, full, "no");
+      err = send_stat(ent, full, "no");
     }
 
     edit_trans(r, "fullpath", (String)full,   NULL);
@@ -208,69 +285,69 @@ static void scan_cb(uv_fs_t *req)
       CREATE_EVENT(eventq(), commit, 2, "fm_files", r);
     }
   }
-  fs_close_req(fsh);
+  fs_close_req(ent);
 }
 
 static void stat_cb(uv_fs_t *req)
 {
   log_msg("FS", "stat cb");
-  FS_handle *fsh = req->data;
+  fentry *ent = req->data;
   uv_stat_t stat = req->statbuf;
 
-  ventry *ent = fnd_val("fm_files", "dir", fsh->path);
+  ventry *vent = fnd_val("fm_files", "dir", ent->key);
 
-  if (ent) {
-    ent = fnd_val("fm_stat", "fullpath", fsh->path);
-    if (ent) {
-      char *upd = (char*)rec_fld(ent->rec, "update");
+  if (vent) {
+    vent = fnd_val("fm_stat", "fullpath", ent->key);
+    if (vent) {
+      char *upd = (char*)rec_fld(vent->rec, "update");
       if (*upd) {
-        struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
+        struct stat *st = (struct stat*)rec_fld(vent->rec, "stat");
         if (stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
           log_msg("FS", "STAT:NOP");
-          return fs_close_req(fsh);
+          return fs_close_req(ent);
         }
       }
     }
   }
 
   if (S_ISDIR(stat.st_mode)) {
-    uv_fs_req_cleanup(&fsh->uv_fs);
-    uv_fs_scandir(eventloop(), &fsh->uv_fs, fsh->path, 0, scan_cb);
+    uv_fs_req_cleanup(&ent->uv_fs);
+    uv_fs_scandir(eventloop(), &ent->uv_fs, ent->key, 0, scan_cb);
   }
   else
-    fs_close_req(fsh);
+    fs_close_req(ent);
 }
 
-static void fs_reopen(FS_handle *fsh)
+static void fs_reopen(fentry *ent)
 {
   log_msg("FS", "--reopen--");
-  uv_timer_stop(&fsh->watcher_timer);
-  uv_fs_event_stop(&fsh->watcher);
+  uv_timer_stop(&ent->watcher_timer);
+  uv_fs_event_stop(&ent->watcher);
 
-  CREATE_EVENT(eventq(), fsh->stat_cb, 2, fsh->data, fsh->path);
+  //CREATE_EVENT(eventq(), ent->stat_cb, 2, ent->data, ent->key);
 }
 
 static void watch_timer_cb(uv_timer_t *handle)
 {
   log_msg("FS", "--watch_timer--");
-  FS_handle *fsh = handle->data;
-  if (!fsh->running) {
-    fs_reopen(fsh);
+  fentry *ent = handle->data;
+  if (!ent->running) {
+    fs_reopen(ent);
   }
 }
 
 static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int status)
 {
   log_msg("FS", "--watch--");
-  FS_handle *fsh = hndl->data;
+  fentry *ent = hndl->data;
 
-  uv_fs_event_stop(&fsh->watcher);
-  uv_timer_start(&fsh->watcher_timer, watch_timer_cb, RFSH_RATE, RFSH_RATE);
+  uv_fs_event_stop(&ent->watcher);
+  uv_timer_start(&ent->watcher_timer, watch_timer_cb, RFSH_RATE, RFSH_RATE);
 }
 
-static void fs_close_req(FS_handle *fsh)
+static void fs_close_req(fentry *ent)
 {
-  log_msg("FS", "reset %s", (char*)fsh->path);
-  CREATE_EVENT(eventq(), fs_signal_handle, 1, fsh);
-  uv_fs_req_cleanup(&fsh->uv_fs);
+  log_msg("FS", "reset %s", ent->key);
+  CREATE_EVENT(eventq(), fs_signal_handle, 1, ent);
+  uv_fs_req_cleanup(&ent->uv_fs);
 }

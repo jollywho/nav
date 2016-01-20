@@ -4,29 +4,28 @@
 #include "fnav/event/loop.h"
 #include "fnav/table.h"
 
-typedef struct {
-  uv_fs_event_t watcher;
-  uv_timer_t watcher_timer;
-  fn_handle *hndl;
-  bool cancel;
-  bool running;
+typedef struct fentry fentry;
+typedef struct fn_fs fn_fs;
+
+struct fn_fs {
   String path;
 
-  uv_fs_t uv_fs; //data->req_handle
+  fn_handle *hndl;
+
   void *data;
   argv_callback open_cb;
   argv_callback stat_cb;
+  UT_hash_handle hh;
+};
 
-} FS_handle;
-
-FS_handle* fs_init(fn_handle *h);
-void fs_cleanup(FS_handle *fsh);
-void fs_open(FS_handle *h, String dir);
-void fs_close(FS_handle *h);
+fn_fs* fs_init(fn_handle *h);
+void fs_cleanup(fn_fs *fsh);
+void fs_open(fn_fs *h, String dir);
+void fs_close(fn_fs *h);
 bool isdir(String path);
 String fs_expand_path(String path);
 String fs_parent_dir(const String path);
-void fs_async_open(FS_handle *fsh, Cntlr *cntlr, String path);
+void fs_async_open(fn_fs *fsh, Cntlr *cntlr, String path);
 void* fs_vt_stat_resolv(fn_rec *rec, String key);
 String conspath(const char *str1, const char *str2);
 
