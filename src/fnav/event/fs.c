@@ -73,11 +73,16 @@ static void del_ent(uv_handle_t *hndl)
 
 static void fs_demux(fn_fs *fs)
 {
+  log_msg("FS", "open req");
+  if (!fs->path) return;
   fentry *ent = NULL;
   HASH_FIND_STR(ent_tbl, fs->path, ent);
 
+  log_msg("FS", "open req");
+  if (!ent) return;
   HASH_DEL(ent->listeners, fs);
   free(fs->path);
+  log_msg("FS", "open req");
 
   if (HASH_COUNT(ent->listeners) < 1) {
     HASH_DEL(ent_tbl, ent);
@@ -147,7 +152,9 @@ bool isdir(String path)
 
 static void stat_cleanup(void **args)
 {
-  free(args[0]);
+  fn_fs *fs = args[0];
+  free(args[1]);
+  free(fs->readkey);
 }
 
 static void stat_read_cb(uv_fs_t *req)
@@ -156,12 +163,12 @@ static void stat_read_cb(uv_fs_t *req)
   fn_fs *fs = req->data;
   uv_stat_t stat = req->statbuf;
 
-  String path = realpath(req->path, NULL);
+  String path = realpath(fs->readkey, NULL);
   log_msg("FS", "req_stat_cb %s", req->path);
 
   if (path && S_ISDIR(stat.st_mode)) {
     CREATE_EVENT(eventq(), fs->stat_cb, 2, fs->data, path);
-    CREATE_EVENT(eventq(), stat_cleanup, 1, path);
+    CREATE_EVENT(eventq(), stat_cleanup, 2, fs, path);
   }
   else {
     free(path);
@@ -181,7 +188,7 @@ void fs_signal_handle(void **data)
   log_msg("FS", "fs_signal_handle");
   fentry *ent = data[0];
 
-  fn_fs *it;
+  fn_fs *it = NULL;
   for (it = ent->listeners; it != NULL; it = it->hh.next) {
     fn_handle *h = it->hndl;
 
@@ -203,7 +210,8 @@ void fs_read(fn_fs *fs, String dir)
 {
   log_msg("FS", "fs read %s", dir);
   fs->uv_fs.data = fs;
-  uv_fs_stat(eventloop(), &fs->uv_fs, dir, stat_read_cb);
+  fs->readkey = strdup(dir);
+  uv_fs_stat(eventloop(), &fs->uv_fs, fs->readkey, stat_read_cb);
 }
 
 void fs_open(fn_fs *fs, String dir)

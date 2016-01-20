@@ -7,17 +7,14 @@
 typedef struct fentry fentry;
 typedef struct fn_fs fn_fs;
 
-#define FS_READ  0
-#define FS_WRITE 1
-
 struct fn_fs {
   String path;
 
   fn_handle *hndl;
   uv_fs_t uv_fs;  /* readonly stat */
+  String readkey;
 
   void *data;
-  int mode;    /* FS_MODE: READ,WRITE */
   argv_callback open_cb;
   argv_callback stat_cb;
   UT_hash_handle hh;

@@ -65,6 +65,7 @@ void menu_ch_dir(void **args)
   log_msg("MENU", "menu_ch_dir");
   String dir = args[1];
   if (!dir) return;
+  fs_close(cur_menu->fs);
   fs_open(cur_menu->fs, dir);
   cur_menu->hndl->key = cur_menu->fs->path;
 }
