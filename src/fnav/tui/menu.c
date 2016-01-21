@@ -45,8 +45,10 @@ static void menu_fs_cb(void **args)
 {
   log_msg("MENU", "menu_fs_cb");
   log_msg("MENU", "%s", cur_menu->hndl->key);
+  fs_close(cur_menu->fs);
   compl_destroy(cur_menu->cx);
   ventry *ent = fnd_val("fm_files", "dir", cur_menu->hndl->key);
+  if (!ent) return;
   int count = tbl_ent_count(ent);
   compl_new(count, COMPL_DYNAMIC);
 
@@ -69,8 +71,9 @@ void menu_ch_dir(void **args)
   String dir = args[1];
   if (!dir) return;
   fs_close(cur_menu->fs);
+  free(cur_menu->hndl->key);
   fs_open(cur_menu->fs, dir);
-  cur_menu->hndl->key = cur_menu->fs->path;
+  cur_menu->hndl->key = strdup(dir);
 }
 
 void path_list(List *args)
@@ -102,6 +105,7 @@ void path_list(List *args)
       return;
     }
 
+    //FIXME: expand path first
     if (dir[0] != '/') {
       dir = conspath(fm_cur_dir(cntlr), dir);
     }

@@ -13,6 +13,7 @@ struct fn_fs {
   fn_handle *hndl;
   uv_fs_t uv_fs;  /* readonly stat */
   String readkey;
+  fentry *ent;
 
   void *data;
   argv_callback open_cb;
@@ -25,6 +26,8 @@ void fs_cleanup(fn_fs *fs);
 void fs_open(fn_fs *fs, String dir);
 void fs_close(fn_fs *fs);
 void fs_read(fn_fs *fs, String dir);
+
+bool fs_blocking(fn_fs *fs);
 
 bool isdir(String path);
 String fs_expand_path(String path);

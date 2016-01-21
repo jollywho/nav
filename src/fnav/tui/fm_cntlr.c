@@ -142,9 +142,9 @@ static int fm_opendir(Cntlr *cntlr, String path, short arg)
   fn_handle *h = cntlr->hndl;
   String cur_dir = self->cur_dir;
 
-  //if (!self->fs->running) {
-    free(cur_dir);
+  if (!fs_blocking(self->fs)) {
     model_close(h);
+    //free(cur_dir);
     cur_dir = strdup(path);
     if (arg == BACKWARD)
       cur_dir = fs_parent_dir(cur_dir);
@@ -155,7 +155,7 @@ static int fm_opendir(Cntlr *cntlr, String path, short arg)
     fs_open(self->fs, cur_dir);
     self->cur_dir = cur_dir;
     return 1;
-  //}
+  }
   return 0;
 }
 

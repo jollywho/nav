@@ -58,6 +58,7 @@ static fentry* fs_mux(fn_fs *fs)
   if (!find) {
     HASH_ADD_STR(ent->listeners, path, fs);
   }
+  fs->ent = ent;
   return ent;
 }
 
@@ -74,15 +75,10 @@ static void del_ent(uv_handle_t *hndl)
 static void fs_demux(fn_fs *fs)
 {
   log_msg("FS", "open req");
-  if (!fs->path) return;
-  fentry *ent = NULL;
-  HASH_FIND_STR(ent_tbl, fs->path, ent);
+  if (!fs->ent) return;
+  fentry *ent = fs->ent;
 
-  log_msg("FS", "open req");
-  if (!ent) return;
   HASH_DEL(ent->listeners, fs);
-  free(fs->path);
-  log_msg("FS", "open req");
 
   if (HASH_COUNT(ent->listeners) < 1) {
     HASH_DEL(ent_tbl, ent);
@@ -94,6 +90,9 @@ static void fs_demux(fn_fs *fs)
     uv_close(hw, del_ent);
     uv_close(ht, del_ent);
   }
+
+  free(fs->path);
+  fs->ent = NULL;
 }
 
 fn_fs* fs_init(fn_handle *hndl)
@@ -209,6 +208,12 @@ void fs_signal_handle(void **data)
   ent->running = false;
 }
 
+bool fs_blocking(fn_fs *fs)
+{
+  if (!fs->ent) return false;
+  return fs->ent->running;
+}
+
 void fs_read(fn_fs *fs, String dir)
 {
   log_msg("FS", "fs read %s", dir);
@@ -234,7 +239,6 @@ void fs_open(fn_fs *fs, String dir)
 
 void fs_close(fn_fs *fs)
 {
-  log_msg("FS", "fs close %s", fs->path);
   fs_demux(fs);
 }
 
@@ -340,6 +344,7 @@ static void fs_reopen(fentry *ent)
 static void watch_timer_cb(uv_timer_t *handle)
 {
   log_msg("FS", "--watch_timer--");
+  return;
   fentry *ent = handle->data;
   if (!ent->running) {
     fs_reopen(ent);
