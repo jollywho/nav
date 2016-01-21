@@ -11,6 +11,7 @@ void hist_delete(fn_hist* hst);
 void hist_push(fn_hist *hst, Cmdline *cmd);
 void hist_pop(fn_hist *hst);
 void hist_save(fn_hist *hst);
+void hist_insert(String line);
 
 void role_call(fn_hist *hst);
 

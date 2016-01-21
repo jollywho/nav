@@ -29,6 +29,7 @@ static void* win_close();
 static void* win_pipe();
 static void* win_sort();
 static void* win_cd();
+static void* win_mark();
 static void win_layout();
 static void window_ex_cmd();
 static void wintest();
@@ -36,7 +37,7 @@ static void wintestq();
 
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
 static const Cmd_T cmdtable[] = {
-  {"qa",     win_shut,   0},
+  {"qa",     win_shut,    0},
   {"q",      win_close,   0},
   {"close",  win_close,   0},
   {"new",    win_new,     MOVE_UP},
@@ -45,6 +46,7 @@ static const Cmd_T cmdtable[] = {
   {"sort",   win_sort,    1},
   {"sort!",  win_sort,    -1},
   {"cd",     win_cd,      0},
+  {"mark",   win_mark,    0},
 };
 
 #define COMPL_SIZE ARRAY_SIZE(compl_win)
@@ -58,6 +60,7 @@ static String compl_win[] = {
   "cmd:sort!;field:string:fields",
   "cmd:*:cntlr:fm;path:string:paths",
   "cmd:cd;path:string:paths",
+  "cmd:mark;label:string:marklbls",
 };
 
 #define KEYS_SIZE ARRAY_SIZE(key_defaults)
@@ -211,6 +214,19 @@ static void* win_cd(List *args, int flags)
   Cntlr *cntlr = buf_cntlr(layout_buf(&win.layout));
   if (cntlr) {
     fm_req_dir(cntlr, path);
+  }
+  return 0;
+}
+
+static void* win_mark(List *args, int flags)
+{
+  log_msg("WINDOW", "win_mark");
+
+  String label = list_arg(args, 1, VAR_STRING);
+  if (!label) return 0;
+  Cntlr *cntlr = buf_cntlr(layout_buf(&win.layout));
+  if (cntlr) {
+    fm_mark_dir(cntlr, label);
   }
   return 0;
 }

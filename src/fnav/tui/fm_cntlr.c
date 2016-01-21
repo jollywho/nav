@@ -14,19 +14,25 @@
 #include "fnav/log.h"
 #include "fnav/cmd.h"
 #include "fnav/option.h"
+#include "fnav/compl.h"
 #include "fnav/event/shell.h"
 
 static void fm_left();
 static void fm_right();
+static void fm_mark();
 
 #define KEYS_SIZE ARRAY_SIZE(key_defaults)
 static fn_key key_defaults[] = {
   {'h',     fm_left,        0,             BACKWARD},
   {'l',     fm_right,       0,             FORWARD},
+  {'m',     fm_mark,        0,             0},
 };
+
 static fn_keytbl key_tbl;
 static short cmd_idx[KEYS_SIZE];
 static String active_dir;
+static FM_mark *lbl_marks;
+static FM_mark *key_marks;
 
 void fm_init()
 {
@@ -55,10 +61,50 @@ void fm_cleanup()
   // remove tables
 }
 
+void mark_list(List *args)
+{
+}
+
+void marklbl_list(List *args)
+{
+  unsigned int count = HASH_CNT(hh2, lbl_marks);
+  compl_new(count, COMPL_STATIC);
+  FM_mark *it;
+  int i = 0;
+  for (it = lbl_marks; it != NULL; it = it->hh2.next) {
+    compl_set_index(i, it->label, 0, NULL);
+    //TODO: add path in info column
+    i++;
+  }
+}
+
 static void fm_active_dir(FM_cntlr *fm)
 {
   fm->cur_dir = active_dir;
   active_dir = fm->cur_dir;
+}
+
+static void fm_mark(Cntlr *cntlr, Cmdarg *arg)
+{
+  log_msg("FM", "fm_mark");
+  // set operator to mark
+  // input: check operator state before search
+}
+
+void fm_mark_dir(Cntlr *cntlr, String label)
+{
+  log_msg("FM", "fm_mark_dir");
+  FM_cntlr *self = (FM_cntlr*)cntlr->top;
+
+  FM_mark *mrk;
+  HASH_FIND(hh2, lbl_marks, label, strlen(label), mrk);
+  //TODO: if mrk, delete existing then add as below
+  if (!mrk) {
+    mrk = malloc(sizeof(FM_mark));
+    mrk->label = strdup(label);
+    mrk->path = strdup(self->cur_dir);
+    HASH_ADD(hh2, lbl_marks, label, strlen(mrk->label), mrk);
+  }
 }
 
 void cntlr_cancel(Cntlr *cntlr)

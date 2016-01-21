@@ -195,12 +195,15 @@ bool info_read(FILE *file)
   while (!feof(file)) {
     line = read_line(file);
     line_number++;
-    line = strip_whitespace(line);
-    if (line[0] == '#' || strlen(line) < 1) {
+    if (line[0] == '#' || !strpbrk(&line[0], "?/:'@")) {
       free(line);
       continue;
     }
     log_msg("CONFIG", "info: %s", line);
+    // determine info line type from first char
+    // run function based on type
+    // ''' -> mark_insert key
+    // '@' -> mark_insert name
     free(line);
   }
   return 1;

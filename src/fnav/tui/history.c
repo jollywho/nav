@@ -94,3 +94,8 @@ String hist_next(fn_hist *hst)
   hst->cur = item;
   return item->line;
 }
+
+void hist_insert(String line)
+{
+  // get type based on line[0] from ex_cmd
+}
