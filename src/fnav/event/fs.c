@@ -344,7 +344,6 @@ static void fs_reopen(fentry *ent)
 static void watch_timer_cb(uv_timer_t *handle)
 {
   log_msg("FS", "--watch_timer--");
-  return;
   fentry *ent = handle->data;
   if (!ent->running) {
     fs_reopen(ent);

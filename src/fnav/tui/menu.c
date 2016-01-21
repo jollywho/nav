@@ -72,8 +72,8 @@ void menu_ch_dir(void **args)
   if (!dir) return;
   fs_close(cur_menu->fs);
   free(cur_menu->hndl->key);
-  fs_open(cur_menu->fs, dir);
   cur_menu->hndl->key = strdup(dir);
+  fs_open(cur_menu->fs, dir);
 }
 
 void path_list(List *args)

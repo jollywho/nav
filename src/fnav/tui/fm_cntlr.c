@@ -30,7 +30,7 @@ static fn_key key_defaults[] = {
 
 static fn_keytbl key_tbl;
 static short cmd_idx[KEYS_SIZE];
-static String active_dir;
+static FM_cntlr *active_fm;
 static FM_mark *lbl_marks;
 static FM_mark *key_marks;
 
@@ -40,7 +40,7 @@ void fm_init()
   key_tbl.cmd_idx = cmd_idx;
   key_tbl.maxsize = KEYS_SIZE;
   input_setup_tbl(&key_tbl);
-  active_dir = get_current_dir_name();
+  active_fm = NULL;
   if (tbl_mk("fm_files")) {
     tbl_mk_fld("fm_files", "name", typSTRING);
     tbl_mk_fld("fm_files", "dir", typSTRING);
@@ -57,7 +57,6 @@ void fm_init()
 
 void fm_cleanup()
 {
-  free(active_dir);
   // remove tables
 }
 
@@ -79,8 +78,13 @@ void marklbl_list(List *args)
 
 static void fm_active_dir(FM_cntlr *fm)
 {
-  fm->cur_dir = active_dir;
-  active_dir = fm->cur_dir;
+  if (!active_fm) {
+    fm->cur_dir = get_current_dir_name();
+  }
+  else {
+    fm->cur_dir = strdup(active_fm->cur_dir);
+  }
+  active_fm = fm;
 }
 
 static void fm_mark(Cntlr *cntlr, Cmdarg *arg)
@@ -131,7 +135,7 @@ void cntlr_focus(Cntlr *cntlr)
 {
   log_msg("FM", "cntlr_focus");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  active_dir = self->cur_dir;
+  active_fm = self;
   buf_refresh(cntlr->hndl->buf);
 }
 
@@ -144,7 +148,7 @@ static int fm_opendir(Cntlr *cntlr, String path, short arg)
 
   if (!fs_blocking(self->fs)) {
     model_close(h);
-    //free(cur_dir);
+    free(cur_dir);
     cur_dir = strdup(path);
     if (arg == BACKWARD)
       cur_dir = fs_parent_dir(cur_dir);
