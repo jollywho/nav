@@ -29,6 +29,7 @@ void init(void)
   option_init();
   config_init();
   config_load(NULL);
+  info_load(NULL);
   curs_set(0);
 
   tables_init();

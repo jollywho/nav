@@ -155,6 +155,7 @@ static void stat_cleanup(void **args)
   fn_fs *fs = args[0];
   free(args[1]);
   free(fs->readkey);
+  uv_fs_req_cleanup(&fs->uv_fs);
 }
 
 static void stat_read_cb(uv_fs_t *req)
@@ -172,6 +173,8 @@ static void stat_read_cb(uv_fs_t *req)
   }
   else {
     free(path);
+    free(fs->readkey);
+    uv_fs_req_cleanup(&fs->uv_fs);
   }
 }
 

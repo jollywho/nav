@@ -27,6 +27,17 @@ char *p_cp = "cp";
 char *p_mv = "mv";
 char *p_rm = "rm";
 
+static const char *config_paths[] = {
+  "$HOME/.fnavrc",
+  "$HOME/.fnav/.fnavrc",
+  "/etc/fnav/.fnavrc",
+};
+static const char *info_paths[] = {
+  "$HOME/.fnavinfo",
+  "$HOME/.fnav/.fnavinfo",
+  "/etc/fnav/.fnavinfo",
+};
+
 void config_init()
 {
   for (int i = 0; i < (int)CMDS_SIZE; i++) {
@@ -60,18 +71,13 @@ char* strip_whitespace(char *_str)
   return str;
 }
 
-static char* get_config_path(void)
+static char* get_config_path(const char* paths[], ssize_t len)
 {
-  static const char *config_paths[] = {
-    "$HOME/.fnavrc",
-    "$HOME/.fnav/.fnavrc",
-    "/etc/fnav/.fnavrc",
-  };
   wordexp_t p;
   char *path;
 
   int i;
-  for (i = 0; i < (int)(sizeof(config_paths) / sizeof(char *)); ++i) {
+  for (i = 0; i < (int)(len / sizeof(char *)); ++i) {
     if (wordexp(config_paths[i], &p, 0) == 0) {
       path = p.we_wordv[0];
       if (file_exists(path)) {
@@ -129,7 +135,7 @@ bool config_load(const char *file)
   if (file != NULL) {
     path = strdup(file);
   } else {
-    path = get_config_path();
+    path = get_config_path(config_paths, sizeof(config_paths));
   }
 
   if (path == NULL) {
@@ -152,6 +158,54 @@ bool config_load(const char *file)
   return config_load_success;
 }
 
+bool info_load(const char *file)
+{
+  log_msg("CONFIG", "config_load");
+  char *path;
+  if (file != NULL) {
+    path = strdup(file);
+  } else {
+    path = get_config_path(info_paths, sizeof(info_paths));
+  }
+
+  if (path == NULL) {
+    log_msg("CONFIG", "Unable to find an info file!");
+    return false;
+  }
+
+  FILE *f = fopen(path, "r");
+  free(path);
+  if (!f) {
+    fprintf(stderr, "Unable to open %s for reading", path);
+    return false;
+  }
+
+  bool config_load_success;
+  config_load_success = info_read(f);
+
+  fclose(f);
+
+  return config_load_success;
+}
+
+bool info_read(FILE *file)
+{
+  int line_number = 0;
+  char *line;
+  while (!feof(file)) {
+    line = read_line(file);
+    line_number++;
+    line = strip_whitespace(line);
+    if (line[0] == '#' || strlen(line) < 1) {
+      free(line);
+      continue;
+    }
+    log_msg("CONFIG", "info: %s", line);
+    free(line);
+  }
+  return 1;
+}
+
 bool config_read(FILE *file)
 {
   int line_number = 0;
@@ -161,6 +215,7 @@ bool config_read(FILE *file)
     line_number++;
     line = strip_whitespace(line);
     if (line[0] == '#' || strlen(line) < 1) {
+      free(line);
       continue;
     }
     log_msg("CONFIG", "conf: %s", line);
