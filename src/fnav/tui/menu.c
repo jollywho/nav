@@ -20,6 +20,7 @@ struct Menu {
   fn_context *cx;
   bool docmpl;
   bool rebuild;
+  bool active;
   String line_key;
 
   pos_T size;
@@ -55,9 +56,11 @@ static void menu_fs_cb(void **args)
     ent = ent->next;
   }
   // FIXME: should check if cx changed
-  compl_force_cur(cur_menu->cx);
-  compl_update(cur_menu->cx, cur_menu->line_key);
-  window_req_draw(cur_menu, menu_queue_draw);
+  if (cur_menu->active) {
+    compl_force_cur(cur_menu->cx);
+    compl_update(cur_menu->cx, cur_menu->line_key);
+    window_req_draw(cur_menu, menu_queue_draw);
+  }
 }
 
 void menu_ch_dir(void **args)
@@ -180,6 +183,7 @@ void menu_start(Menu *mnu)
 
   mnu->lnum = 0;
   mnu->rebuild = false;
+  mnu->active = true;
 
   menu_restart(mnu);
 }
@@ -192,6 +196,7 @@ void menu_stop(Menu *mnu)
 
   delwin(mnu->nc_win);
   window_shift(ROW_MAX+1);
+  mnu->active = false;
 }
 
 void menu_restart(Menu *mnu)
@@ -277,6 +282,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 void menu_draw(Menu *mnu)
 {
   log_msg("MENU", "menu_draw");
+  if (!mnu || !mnu->active) return;
 
   werase(mnu->nc_win);
 
