@@ -92,6 +92,13 @@ void path_list(List *args)
     dir = token_val(tok, VAR_STRING);
     cur_menu->line_key = dir;
 
+    if (dir[0] == '@') {
+      marklbl_list(args);
+      compl_force_cur(cur_menu->cx);
+      compl_update(cur_menu->cx, cur_menu->line_key);
+      return;
+    }
+
     if (dir[0] != '/') {
       dir = conspath(fm_cur_dir(cntlr), dir);
     }
@@ -290,9 +297,10 @@ void menu_draw(Menu *mnu)
     DRAW_STR(mnu, nc_win, i, 0, ">", col_div);
     DRAW_STR(mnu, nc_win, i, 2, row->key, col_text);
 
+    int ofs = strlen(row->key);
     for (int c = 0; c < row->colcount; c++) {
-      String col = row->columns[i];
-      DRAW_STR(mnu, nc_win, i, 2, col, col_text);
+      String col = row->columns;
+      DRAW_STR(mnu, nc_win, i, ofs+3, col, col_text);
     }
   }
   String key = mnu->cx->key;

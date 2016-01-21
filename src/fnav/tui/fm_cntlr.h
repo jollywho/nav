@@ -16,11 +16,9 @@ struct FM_cntlr {
 };
 
 struct FM_mark {
-  int key;       /* hh1 key */
-  String label;  /* hh2 key */
+  String key;
   String path;
-  UT_hash_handle hh1;
-  UT_hash_handle hh2;
+  UT_hash_handle hh;
 };
 
 void fm_init();

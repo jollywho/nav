@@ -275,7 +275,7 @@ void compl_delete(fn_compl *cmpl)
   free(cmpl);
 }
 
-void compl_set_index(int idx, String key, int colcount, String *cols)
+void compl_set_index(int idx, String key, int colcount, String cols)
 {
   cur_cmpl->rows[idx] = malloc(sizeof(compl_item));
   cur_cmpl->rows[idx]->key = key;

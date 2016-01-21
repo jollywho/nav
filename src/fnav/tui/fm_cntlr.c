@@ -67,13 +67,12 @@ void mark_list(List *args)
 
 void marklbl_list(List *args)
 {
-  unsigned int count = HASH_CNT(hh2, lbl_marks);
+  unsigned int count = HASH_COUNT(lbl_marks);
   compl_new(count, COMPL_STATIC);
   FM_mark *it;
   int i = 0;
-  for (it = lbl_marks; it != NULL; it = it->hh2.next) {
-    compl_set_index(i, it->label, 0, NULL);
-    //TODO: add path in info column
+  for (it = lbl_marks; it != NULL; it = it->hh.next) {
+    compl_set_index(i, it->key, 1, it->path);
     i++;
   }
 }
@@ -91,20 +90,33 @@ static void fm_mark(Cntlr *cntlr, Cmdarg *arg)
   // input: check operator state before search
 }
 
+static void mark_del(FM_mark **mrk, FM_mark **tbl)
+{
+  log_msg("FM", "MARKDEL");
+  HASH_DEL(*tbl, *mrk);
+  free((*mrk)->key);
+  free((*mrk)->path);
+  free((*mrk));
+}
+
 void fm_mark_dir(Cntlr *cntlr, String label)
 {
   log_msg("FM", "fm_mark_dir");
   FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  String key;
+  if (label[0] == '@')
+    label = &label[1];
+  asprintf(&key, "@%s", label);
 
   FM_mark *mrk;
-  HASH_FIND(hh2, lbl_marks, label, strlen(label), mrk);
-  //TODO: if mrk, delete existing then add as below
-  if (!mrk) {
-    mrk = malloc(sizeof(FM_mark));
-    mrk->label = strdup(label);
-    mrk->path = strdup(self->cur_dir);
-    HASH_ADD(hh2, lbl_marks, label, strlen(mrk->label), mrk);
+  HASH_FIND_STR(lbl_marks, key, mrk);
+  if (mrk) {
+    mark_del(&mrk, &lbl_marks);
   }
+  mrk = malloc(sizeof(FM_mark));
+  mrk->key = key;
+  mrk->path = strdup(self->cur_dir);
+  HASH_ADD_STR(lbl_marks, key, mrk);
 }
 
 void cntlr_cancel(Cntlr *cntlr)
@@ -180,17 +192,24 @@ void fm_req_dir(Cntlr *cntlr, String path)
   log_msg("FM_CNTLR", "fm_req_dir");
   if (strcmp(cntlr->name, "fm") != 0) return;
 
+  if (path[0] == '@') {
+    FM_mark *mrk;
+    HASH_FIND_STR(lbl_marks, path, mrk);
+    if (mrk) {
+      path = mrk->path;
+    }
+  }
+
   if (path[0] != '/' && path[0] != '~') {
     path = conspath(fm_cur_dir(cntlr), path);
   }
+
   String newpath = fs_expand_path(path);
   if (newpath) {
     FM_cntlr *self = (FM_cntlr*)cntlr->top;
     fs_read(self->fs, newpath);
     free(newpath);
   }
-  //if (tmp)
-  //  free(tmp);
 }
 
 static String next_valid_path(String path)
