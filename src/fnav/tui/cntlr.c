@@ -5,6 +5,8 @@
 #include "fnav/tui/op_cntlr.h"
 #include "fnav/tui/img_cntlr.h"
 #include "fnav/compl.h"
+#include "fnav/log.h"
+#include "fnav/option.h"
 
 #define TABLE_SIZE ARRAY_SIZE(cntlr_table)
 struct _cntlr_table {

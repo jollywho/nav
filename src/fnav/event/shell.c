@@ -18,7 +18,7 @@ static UT_array *proctbl;
 static char* args[4];
 static UT_icd sh_icd = { sizeof(Shell),   NULL };
 
-void shell_setup()
+void shell_init()
 {
   utarray_new(proctbl, &sh_icd);
 }

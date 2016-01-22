@@ -10,6 +10,7 @@
 #include "fnav/event/hook.h"
 #include "fnav/event/input.h"
 #include "fnav/compl.h"
+#include "fnav/info.h"
 #include "fnav/tui/fm_cntlr.h"
 
 struct Window {
@@ -174,6 +175,11 @@ void window_input(int key)
   }
 }
 
+String window_active_dir()
+{
+  return fm_cur_dir(window_get_cntlr());
+}
+
 Buffer* window_get_focus()
 {
   return layout_buf(&win.layout);
@@ -226,7 +232,7 @@ static void* win_mark(List *args, int flags)
   if (!label) return 0;
   Cntlr *cntlr = buf_cntlr(layout_buf(&win.layout));
   if (cntlr) {
-    fm_mark_dir(cntlr, label);
+    mark_label_dir(label, fm_cur_dir(cntlr));
   }
   return 0;
 }

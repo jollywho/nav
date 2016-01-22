@@ -16,5 +16,6 @@ Buffer* window_get_focus();
 Cntlr* window_get_cntlr();
 int window_focus_attached();
 void window_shift(int lines);
+String window_active_dir();
 
 #endif

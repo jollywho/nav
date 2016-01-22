@@ -2,6 +2,7 @@
 #define FN_TUI_CNTLR_H
 
 #include "fnav/fnav.h"
+#include "fnav/config.h"
 
 typedef void (*argv_callback)(void **argv);
 typedef struct Window Window;
@@ -55,5 +56,10 @@ Cntlr* cntlr_from_id(int id);
 void cntlr_pipe(Cntlr *cntlr);
 
 void cntlr_list(List *args);
+
+void fm_mark_dir(Cntlr *cntlr, String label);
+void mark_list(List *args);
+void marklbl_list(List *args);
+String* mark_info_save();
 
 #endif

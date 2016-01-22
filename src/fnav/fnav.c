@@ -29,8 +29,7 @@ void init(void)
 
   option_init();
   config_init();
-  config_load(NULL);
-  info_load(NULL);
+  config_load_defaults();
   curs_set(0);
 
   tables_init();
@@ -38,7 +37,7 @@ void init(void)
   input_init();
   compl_init();
   window_init();
-  shell_setup();
+  shell_init();
   log_msg("INIT", "__________INIT_END______________");
 }
 
@@ -69,6 +68,7 @@ int main(int argc, char **argv)
 
   init();
   start_event_loop();
+  config_write_info();
   cleanup();
   log_msg("INIT", "_______END_OF_EXECUTION_________");
 }

@@ -6,6 +6,7 @@
 #include "fnav/option.h"
 #include "fnav/cmdline.h"
 #include "fnav/cmd.h"
+#include "fnav/info.h"
 
 static void* edit_setting();
 static void* edit_color();
@@ -71,14 +72,14 @@ char* strip_whitespace(char *_str)
   return str;
 }
 
-static char* get_config_path(const char* paths[], ssize_t len)
+static char* get_config_path(const char **paths, ssize_t len)
 {
   wordexp_t p;
   char *path;
 
   int i;
   for (i = 0; i < (int)(len / sizeof(char *)); ++i) {
-    if (wordexp(config_paths[i], &p, 0) == 0) {
+    if (wordexp(paths[i], &p, 0) == 0) {
       path = p.we_wordv[0];
       if (file_exists(path)) {
         path = strdup(path);
@@ -128,64 +129,52 @@ static char* read_line(FILE *file)
   return string;
 }
 
-bool config_load(const char *file)
+static FILE* config_open(const char *file, const char **defaults, char *mode)
 {
-  log_msg("CONFIG", "config_load");
+  log_msg("CONFIG", "config_open");
   char *path;
   if (file != NULL) {
     path = strdup(file);
   } else {
-    path = get_config_path(config_paths, sizeof(config_paths));
+    path = get_config_path(defaults, sizeof(defaults));
   }
 
   if (path == NULL) {
     log_msg("CONFIG", "Unable to find a config file!");
-    return false;
+    return NULL;
   }
 
-  FILE *f = fopen(path, "r");
+  FILE *f = fopen(path, mode);
   free(path);
   if (!f) {
     fprintf(stderr, "Unable to open %s for reading", path);
-    return false;
+    return NULL;
   }
-
-  bool config_load_success;
-  config_load_success = config_read(f);
-
-  fclose(f);
-
-  return config_load_success;
+  return f;
 }
 
-bool info_load(const char *file)
+void config_load(const char *file)
 {
-  log_msg("CONFIG", "config_load");
-  char *path;
-  if (file != NULL) {
-    path = strdup(file);
-  } else {
-    path = get_config_path(info_paths, sizeof(info_paths));
-  }
-
-  if (path == NULL) {
-    log_msg("CONFIG", "Unable to find an info file!");
-    return false;
-  }
-
-  FILE *f = fopen(path, "r");
-  free(path);
-  if (!f) {
-    fprintf(stderr, "Unable to open %s for reading", path);
-    return false;
-  }
-
-  bool config_load_success;
-  config_load_success = info_read(f);
-
+  FILE *f = config_open(file, config_paths, "r");
+  config_read(f);
   fclose(f);
+}
 
-  return config_load_success;
+void config_load_defaults()
+{
+  config_load(NULL);
+
+  FILE *f = config_open(NULL, info_paths, "r");
+  info_read(f);
+  fclose(f);
+}
+
+void config_write_info()
+{
+  log_msg("CONFIG", "config_write_info");
+  FILE *f = config_open(NULL, info_paths, "w");
+  info_write_file(f);
+  fclose(f);
 }
 
 bool info_read(FILE *file)
@@ -200,10 +189,7 @@ bool info_read(FILE *file)
       continue;
     }
     log_msg("CONFIG", "info: %s", line);
-    // determine info line type from first char
-    // run function based on type
-    // ''' -> mark_insert key
-    // '@' -> mark_insert name
+    info_parse(line);
     free(line);
   }
   return 1;
