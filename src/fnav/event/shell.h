@@ -9,26 +9,24 @@ typedef void (*shell_stdout_cb)(Cntlr *c, String out);
 typedef struct Shell Shell;
 struct Shell {
   stream_read_cb data_cb;
-  union {
-    struct {
-      UvProcess uvproc;
-      Stream in;
-      Stream out;
-      Stream err;
-    } process;
-  } data;
+  UvProcess uvproc;
+  Stream in;
+  Stream out;
+  Stream err;
 
   shell_stdout_cb readout;
   Cntlr *caller;
   bool blocking;
   bool again;
   bool reg;
+  int tbl_idx;
   String msg;
 };
 
-Shell* shell_init(Cntlr *cntlr);
+void shell_init();
+Shell* shell_new(Cntlr *cntlr);
+void shell_delete(Shell *sh);
 void shell_args(Shell *sh, String *args, shell_stdout_cb readout);
-void shell_free(Shell *sh);
 void shell_start(Shell *sh);
 void shell_stop(Shell *sh);
 void shell_set_in_buffer(Shell *sh, String msg);

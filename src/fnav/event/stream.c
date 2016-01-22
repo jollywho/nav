@@ -11,10 +11,9 @@ static void close_cb(uv_handle_t *handle);
 
 /// Sets the stream associated with `fd` to "blocking" mode.
 ///
-/// @return `0` on success, or `-errno` on failure.
+/// @return `0` on success, or libuv error code on failure.
 int stream_set_blocking(int fd, bool blocking)
 {
-  log_msg("STREAM", "stream_set_blocking");
   // Private loop to avoid conflict with existing watcher(s):
   //    uv__io_stop: Assertion `loop->watchers[w->fd] == w' failed.
   uv_loop_t loop;
@@ -32,7 +31,6 @@ int stream_set_blocking(int fd, bool blocking)
 void stream_init(Loop *loop, Stream *stream, int fd, uv_stream_t *uvstream,
     void *data)
 {
-  log_msg("STREAM", "init");
   stream->uvstream = uvstream;
 
   if (fd >= 0) {
@@ -55,7 +53,6 @@ void stream_init(Loop *loop, Stream *stream, int fd, uv_stream_t *uvstream,
 
   if (stream->uvstream) {
     stream->uvstream->data = stream;
-    loop = stream->uvstream->loop->data;
   }
 
   stream->data = data;
@@ -70,21 +67,11 @@ void stream_init(Loop *loop, Stream *stream, int fd, uv_stream_t *uvstream,
   stream->internal_close_cb = NULL;
   stream->closed = false;
   stream->buffer = NULL;
-}
-
-void stream_close_handle(Stream *stream)
-{
-  log_msg("STREAM", "stream_close_handle");
-  if (stream->uvstream) {
-    uv_close((uv_handle_t *)stream->uvstream, close_cb);
-  } else {
-    uv_close((uv_handle_t *)&stream->uv.idle, close_cb);
-  }
+  stream->events = NULL;
 }
 
 void stream_close(Stream *stream, stream_close_cb on_stream_close)
 {
-  log_msg("STREAM", "close");
   assert(!stream->closed);
   stream->closed = true;
   stream->close_cb = on_stream_close;
@@ -94,9 +81,17 @@ void stream_close(Stream *stream, stream_close_cb on_stream_close)
   }
 }
 
+void stream_close_handle(Stream *stream)
+{
+  if (stream->uvstream) {
+    uv_close((uv_handle_t *)stream->uvstream, close_cb);
+  } else {
+    uv_close((uv_handle_t *)&stream->uv.idle, close_cb);
+  }
+}
+
 static void close_cb(uv_handle_t *handle)
 {
-  log_msg("STREAM", "close_cb");
   Stream *stream = handle->data;
   if (stream->buffer) {
     rbuffer_free(stream->buffer);

@@ -13,6 +13,7 @@
 #include "fnav/event/input.h"
 #include "fnav/table.h"
 #include "fnav/compl.h"
+#include "fnav/event/shell.h"
 
 void init(void)
 {
@@ -37,6 +38,7 @@ void init(void)
   input_init();
   compl_init();
   window_init();
+  shell_setup();
   log_msg("INIT", "__________INIT_END______________");
 }
 

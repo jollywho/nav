@@ -29,10 +29,7 @@ static fentry *ent_tbl;
 
 static void fs_close_req(fentry *ent);
 static void stat_cb(uv_fs_t *req);
-void fs_loop(Loop *loop, int ms);
 static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int status);
-static void watch_timer_cb(uv_timer_t *handle);
-static void fs_mux_open(fentry *ent);
 
 static fentry* fs_mux(fn_fs *fs)
 {

@@ -24,7 +24,7 @@ struct process {
   Stream *in, *out, *err;
   process_exit_cb cb;
   internal_process_cb internal_exit_cb, internal_close_cb;
-  bool closed, term_sent;
+  bool closed, term_sent, detach;
   Queue *events;
   uv_prepare_t uv_check;
   SLIST_ENTRY(process) ent;
@@ -47,6 +47,7 @@ static inline Process process_init(Loop *loop, ProcessType type, void *data)
     .cb = NULL,
     .closed = false,
     .term_sent = false,
+    .detach = false,
     .internal_close_cb = NULL,
     .internal_exit_cb = NULL,
   };
@@ -58,5 +59,6 @@ void process_close_in(Process *proc);
 void process_close_out(Process *proc);
 void process_close_err(Process *proc);
 void process_stop(Process *proc);
+int process_wait(Process *proc, int ms, Queue *events);
 
 #endif

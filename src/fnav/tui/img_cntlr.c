@@ -177,14 +177,14 @@ Cntlr* img_new(Buffer *buf)
   buf_set_cntlr(buf, &img->base);
   buf_set_pass(buf);
 
-  img->sh_size = shell_init(&img->base);
+  img->sh_size = shell_new(&img->base);
   shell_args(img->sh_size, (String*)t_args, shell_stdout_font_cb);
   shell_start(img->sh_size);
 
-  img->sh_draw = shell_init(&img->base);
+  img->sh_draw = shell_new(&img->base);
   shell_args(img->sh_draw, (String*)args, NULL);
 
-  img->sh_clear = shell_init(&img->base);
+  img->sh_clear = shell_new(&img->base);
   shell_args(img->sh_clear, (String*)args, NULL);
 
   hook_init(&img->base);

@@ -20,9 +20,7 @@
     }                                                               \
   } while (0)
 
-
-
-int got_int = 0;
+static bool process_is_tearing_down = false;
 
 static void on_process_stream_close(Stream *stream, void *data);
 static void on_process_exit(Process *proc);
@@ -67,7 +65,13 @@ bool process_spawn(Process *proc)
     if (proc->err) {
       uv_close((uv_handle_t *)&proc->err->uv.pipe, NULL);
     }
-    process_close(proc);
+
+    if (proc->type == kProcessTypeUv) {
+      uv_close((uv_handle_t *)&(((UvProcess *)proc)->uv), NULL);
+    } else {
+      process_close(proc);
+    }
+    free(proc->argv);
     proc->status = -1;
     return false;
   }
@@ -76,6 +80,7 @@ bool process_spawn(Process *proc)
 
   if (proc->in) {
     stream_init(NULL, proc->in, -1, (uv_stream_t *)&proc->in->uv.pipe, data);
+    proc->in->events = proc->events;
     proc->in->internal_data = proc;
     proc->in->internal_close_cb = on_process_stream_close;
     proc->refcount++;
@@ -83,6 +88,7 @@ bool process_spawn(Process *proc)
 
   if (proc->out) {
     stream_init(NULL, proc->out, -1, (uv_stream_t *)&proc->out->uv.pipe, data);
+    proc->out->events = proc->events;
     proc->out->internal_data = proc;
     proc->out->internal_close_cb = on_process_stream_close;
     proc->refcount++;
@@ -90,6 +96,7 @@ bool process_spawn(Process *proc)
 
   if (proc->err) {
     stream_init(NULL, proc->err, -1, (uv_stream_t *)&proc->err->uv.pipe, data);
+    proc->err->events = proc->events;
     proc->err->internal_data = proc;
     proc->err->internal_close_cb = on_process_stream_close;
     proc->refcount++;
@@ -107,6 +114,7 @@ bool process_spawn(Process *proc)
 void process_teardown(Loop *loop)
 {
   log_msg("PROCESS", "teardown");
+  process_is_tearing_down = true;
   Process *it;
   SLIST_FOREACH(it, &loop->children, ent) {
     log_msg("PROCESS", "*********");
@@ -144,6 +152,7 @@ void process_close_out(Process *proc)
 
 void process_close_err(Process *proc) 
 {
+  log_msg("PROCESS", "process_close_err");
   CLOSE_PROC_STREAM(proc, err);
 }
 
@@ -245,6 +254,11 @@ static void decref(Process *proc)
 static void process_close(Process *proc)
 {
   log_msg("PROCESS", "process_close");
+  if (process_is_tearing_down && proc->detach && proc->closed) {
+    // If a detached process dies while tearing down it might get closed twice.
+    return;
+  }
+
   proc->closed = true;
   switch (proc->type) {
     case kProcessTypeUv:

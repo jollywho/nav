@@ -23,7 +23,7 @@ void rstream_init_fd(Loop *loop, Stream *stream, int fd, size_t bufsize,
 {
   log_msg("RSTREAM", "rstream_init_fd");
   stream_init(loop, stream, fd, NULL, data);
-  rstream_init(stream, NULL, bufsize);
+  rstream_init(stream, bufsize);
 }
 
 void rstream_init_stream(Stream *stream, uv_stream_t *uvstream, size_t bufsize,
@@ -31,17 +31,16 @@ void rstream_init_stream(Stream *stream, uv_stream_t *uvstream, size_t bufsize,
 {
   log_msg("RSTREAM", "rstream_init_stream");
   stream_init(NULL, stream, -1, uvstream, data);
-  rstream_init(stream, NULL, bufsize);
+  rstream_init(stream, bufsize);
 }
 
-void rstream_init(Stream *stream, Queue *queue, size_t bufsize)
+void rstream_init(Stream *stream, size_t bufsize)
 {
   log_msg("RSTREAM", "init");
   stream->buffer = rbuffer_new(bufsize);
   stream->buffer->data = stream;
   stream->buffer->full_cb = on_rbuffer_full;
   stream->buffer->nonfull_cb = on_rbuffer_nonfull;
-  stream->events = queue;
 }
 
 /// Starts watching for events from a `Stream` instance.
