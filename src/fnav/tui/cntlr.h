@@ -37,7 +37,6 @@ struct Cntlr {
   void *top;
   void (*_cancel)(Cntlr *cntlr);
   void (*_focus)(Cntlr *cntlr);
-  int  (*_input)(Cntlr *cntlr, Cmdarg *ca);
   HookHandler *event_hooks;
 };
 

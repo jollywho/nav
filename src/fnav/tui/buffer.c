@@ -11,19 +11,32 @@
 #include "fnav/event/input.h"
 #include "fnav/event/fs.h"
 
-enum Type { OPERATOR, MOTION };
-
+static void buf_oper();
 static void buf_mv_page();
 static void buf_mv();
 static void buf_search();
 static void buf_g();
+static void buf_mark();
+static void buf_gomark();
 static void buf_yank();
 static void buf_gen_event();
 
 #define EV_PASTE  0
 #define EV_REMOVE 1
+#define EV_LEFT   2
+#define EV_RIGHT  3
 #define MAX_EVENTS ARRAY_SIZE(buf_events)
-static String buf_events[] = {"paste", "remove"};
+static String buf_events[] = {
+  "paste","remove","left","right",
+};
+
+static fn_oper key_operators[] = {
+  {NUL,      NUL,    NULL},
+  {'y',      NUL,    buf_yank},
+  {'m',      NUL,    buf_mark},
+  {'\'',     NUL,    buf_gomark},
+  {'g',      NUL,    buf_g},
+};
 
 #define KEYS_SIZE ARRAY_SIZE(key_defaults)
 static fn_key key_defaults[] = {
@@ -33,11 +46,15 @@ static fn_key key_defaults[] = {
   {'N',     buf_search,      0,           BACKWARD},
   {'j',     buf_mv,          0,           FORWARD},
   {'k',     buf_mv,          0,           BACKWARD},
-  {'g',     buf_g,           0,           BACKWARD},
+  {'g',     buf_oper,        0,           OP_G},
   {'G',     buf_g,           0,           FORWARD},
-  {'y',     buf_yank,        0,           0},
+  {'y',     buf_oper,        NCH,         OP_YANK},
+  {'m',     buf_oper,        NCH_A,       OP_MARK},
+  {'\'',    buf_oper,        NCH_A,       OP_JUMP},
   {'p',     buf_gen_event,   0,           EV_PASTE},
   {'X',     buf_gen_event,   0,           EV_REMOVE},
+  {'h',     buf_gen_event,   0,           EV_LEFT},
+  {'l',     buf_gen_event,   0,           EV_RIGHT},
 };
 static fn_keytbl key_tbl;
 static short cmd_idx[KEYS_SIZE];
@@ -47,7 +64,7 @@ static short cmd_idx[KEYS_SIZE];
   (pos.lnum) += (y);           \
 
 void buf_listen(fn_handle *hndl);
-void buf_draw(void **argv);
+void buf_draw(void **cav);
 
 void buf_init()
 {
@@ -231,32 +248,6 @@ void buf_full_invalidate(Buffer *buf, int index, int lnum)
   buf_move_invalid(buf, index, lnum);
 }
 
-// input entry point.
-// proper commands are chosen based on buffer state.
-int buf_input(Buffer *buf, Cmdarg *ca)
-{
-  log_msg("BUFFER", "input");
-  if (buf->input_cb) {
-    buf->input_cb(buf, ca);
-    return 1;
-  }
-  if (!buf->attached)
-    return 0;
-  if (model_blocking(buf->hndl))
-    return 0;
-  if (buf->cntlr) {
-    if (buf->cntlr->_input(buf->cntlr, ca))
-      return 1;
-  }
-  // TODO: check consumed
-  int idx = find_command(&key_tbl, ca->key);
-  ca->arg = key_defaults[idx].cmd_arg;
-  if (idx >= 0) {
-    key_defaults[idx].cmd_func(buf, ca);
-  }
-  return 0;
-}
-
 void buf_scroll(Buffer *buf, int y, int max)
 {
   log_msg("BUFFER", "scroll %d %d", buf->lnum, y);
@@ -272,12 +263,12 @@ void buf_scroll(Buffer *buf, int y, int max)
   buf->lnum += diff;
 }
 
-static void buf_search(Buffer *buf, Cmdarg *arg)
+static void buf_search(Buffer *buf, Cmdarg *ca)
 {
   log_msg("BUFFER", "buf_search");
-  if (arg->arg == FORWARD)
+  if (ca->arg == FORWARD)
     regex_next(buf->matches, buf->top + buf->lnum);
-  if (arg->arg == BACKWARD)
+  if (ca->arg == BACKWARD)
     regex_prev(buf->matches, buf->top + buf->lnum);
 }
 
@@ -288,21 +279,21 @@ void buf_move(Buffer *buf, int y, int x)
   buf_mv(buf, &arg);
 }
 
-static void buf_mv(Buffer *buf, Cmdarg *arg)
+static void buf_mv(Buffer *buf, Cmdarg *ca)
 {
-  log_msg("BUFFER", "buf_mv %d", arg->arg);
+  log_msg("BUFFER", "buf_mv %d", ca->arg);
   // move cursor N times in a dimension.
   // scroll if located on an edge.
   Model *m = buf->hndl->model;
-  int y = arg->arg;
+  int y = ca->arg;
   int m_max = model_count(buf->hndl->model);
   buf->lnum += y;
 
   if (y < 0 && buf->lnum < buf->b_size.lnum * 0.2) {
-    buf_scroll(buf, arg->arg, m_max);
+    buf_scroll(buf, ca->arg, m_max);
   }
   else if (y > 0 && buf->lnum > buf->b_size.lnum * 0.8) {
-    buf_scroll(buf, arg->arg, m_max);
+    buf_scroll(buf, ca->arg, m_max);
   }
 
   if (buf->lnum < 0) {
@@ -337,30 +328,66 @@ int buf_attached(Buffer *buf)
 void buf_set_overlay(Buffer *buf, Overlay *ov)
 {buf->ov = ov;}
 
-static void buf_mv_page(Buffer *buf, Cmdarg *arg)
+int buf_input(Buffer *buf, Cmdarg *ca)
+{
+  log_msg("BUFFER", "input");
+  if (buf->input_cb) {
+    buf->input_cb(buf, ca);
+    return 1;
+  }
+  if (!buf->attached)
+    return 0;
+  if (model_blocking(buf->hndl))
+    return 0;
+  if (buf->cntlr) {
+
+    int ret = find_do_cmd(&key_tbl, ca, buf);
+    if (!ret)
+      ret = find_do_op(key_operators, ca, buf);
+  }
+  return 0;
+}
+
+static void buf_oper(Buffer *buf, Cmdarg *ca)
+{
+  clearop(ca);
+  ca->oap.key = ca->arg;
+}
+
+static void buf_mv_page(Buffer *buf, Cmdarg *ca)
 {
   log_msg("BUFFER", "buf_mv_page");
-  int dir = arg->arg;
+  int dir = ca->arg;
   int y = (buf->b_size.lnum / 2) * dir;
   buf_move(buf, y, 0);
 }
 
-static void buf_g(Buffer *buf, Cmdarg *arg)
+static void buf_g(Buffer *buf, Cmdarg *ca)
 {
-  int dir = arg->arg;
+  int dir = ca->arg;
   int y = model_count(buf->hndl->model) * dir;
   buf_move(buf, y, 0);
 }
 
-static void buf_yank(Buffer *buf, Cmdarg *arg)
+static void buf_yank(Buffer *buf, Cmdarg *ca)
 {
   reg_set(buf->hndl, "0", "fullpath");
 }
 
-static void buf_gen_event(Buffer *buf, Cmdarg *arg)
+static void buf_mark(Buffer *buf, Cmdarg *ca)
 {
-  if (arg->arg > MAX_EVENTS || arg->arg < 0) return;
-  send_hook_msg(buf_events[arg->arg], buf->cntlr, NULL);
+  log_msg("BUFFER", "buf_mark");
+}
+
+static void buf_gomark(Buffer *buf, Cmdarg *ca)
+{
+  log_msg("BUFFER", "buf_gomark");
+}
+
+static void buf_gen_event(Buffer *buf, Cmdarg *ca)
+{
+  if (ca->arg > MAX_EVENTS || ca->arg < 0) return;
+  send_hook_msg(buf_events[ca->arg], buf->cntlr, NULL);
 }
 
 void buf_sort(Buffer *buf, String fld, int flags)

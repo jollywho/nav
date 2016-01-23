@@ -248,22 +248,64 @@ int find_command(fn_keytbl *kt, int cmdchar)
   return idx;
 }
 
-void set_oparg(Cmdarg *ca, void *obj, int key)
+int find_do_cmd(fn_keytbl *kt, Cmdarg *ca, void *obj)
 {
-  clear_oparg(ca);
-  ca->oap.key = key;
-  ca->oap.obj = obj;
+  if (ca->key == ESC) {
+    clearop(ca);
+    return 0;
+  }
+
+  if (op_pending(ca)) return 0;
+  int idx = find_command(kt, ca->key);
+  if (idx >= 0) {
+    ca->arg  = kt->tbl[idx].cmd_arg;
+    ca->type = kt->tbl[idx].cmd_flags;
+    kt->tbl[idx].cmd_func(obj, ca);
+    return 1;
+  }
+  return 0;
 }
 
-void clear_oparg(Cmdarg *ca)
+static int do_op(fn_oper *kt, Cmdarg *ca, void *obj)
+{
+  kt[ca->oap.key].cmd_func(obj, ca);
+  clearop(ca);
+  return 1;
+}
+
+int find_do_op(fn_oper *kt, Cmdarg *ca, void *obj)
+{
+  if (!op_pending(ca)) return 0;
+  log_msg("BUFFER", "do_op");
+  if (ca->type == NCH_A || ca->key == ca->oap.key) {
+    return do_op(kt, ca, obj);
+  }
+
+  if (ca->type == NCH_S) {
+    if (ca->nkey == kt[ca->oap.key].nchar)
+      return do_op(kt, ca, obj);
+    else
+      clearop(ca);
+  }
+
+  if (ca->type == NCH) {
+    if (ca->nkey != OP_NOP)
+      return do_op(kt, ca, obj);
+    else
+      ca->nkey = ca->key;
+  }
+  return 0;
+}
+
+void clearop(Cmdarg *ca)
 {
   log_msg("BUFFER", "clear_oparg");
   memset(&ca->oap, 0, sizeof(Oparg));
-  ca->nkey = 0;
-  ca->mkey = 0;
+  ca->nkey = OP_NOP;
+  ca->mkey = OP_NOP;
 }
 
-bool this_op_pending(void *obj, Cmdarg *arg)
+bool op_pending(Cmdarg *arg)
 {
-  return (arg->oap.obj == obj && arg->oap.key != OP_NOP);
+  return (arg->oap.key != OP_NOP);
 }

@@ -5,21 +5,12 @@
 #include "fnav/ascii.h"
 
 #define OP_NOP          0       /* no pending operation */
-#define OP_DELETE       1       /* "d"  delete operator */
-#define OP_YANK         2       /* "y"  yank   operator */
-#define OP_CHANGE       3       /* "c"  change operator */
-#define OP_MARK         4       /* "m"  mark   operator */
-#define OP_JUMP         5       /* "'"  jump   operator */
-
-/*
- * Generally speaking, every Normal mode command should either clear any
- * pending operator (with *clearop*()), or set the motion type variable
- * oap->motion_type.
- *
- * When a cursor motion command is made, it is marked as being a character or
- * line oriented motion.  Then, if an operator is in effect, the operation
- * becomes character or line oriented accordingly.
- */
+#define OP_YANK         1       /* "y"  yank   operator */
+#define OP_MARK         2       /* "m"  mark   operator */
+#define OP_JUMP         3       /* "'"  jump   operator */
+#define OP_G            4       /* "g"  spcl   operator */
+#define OP_DELETE       5       /* "d"  delete operator */
+#define OP_CHANGE       6       /* "c"  change operator */
 
 typedef struct {
   int key;                      // current pending operator type
@@ -33,7 +24,6 @@ typedef struct {
   long line_count;              // number of lines from op_start to op_end
                                 // (inclusive)
   bool is_VIsual;               // operator on Visual area
-  void *obj;
 } Oparg;
 
 struct Cmdarg {
@@ -41,10 +31,11 @@ struct Cmdarg {
   pos_T start;                  /* start of the operator */
   pos_T end;                    /* end of the operator */
   long opcount;                 /* count before an operator */
+  int type;
   int key;
   int nkey;
   int mkey;
-  int arg;
+  short arg;
 };
 
 typedef void (*key_func)(void *obj, Cmdarg *arg);
@@ -57,6 +48,12 @@ typedef struct {
 } fn_key;
 
 typedef struct {
+  int op_char;
+  int nchar;
+  key_func cmd_func;
+} fn_oper;
+
+typedef struct {
   fn_key *tbl;
   short *cmd_idx;
   int maxsize;
@@ -67,9 +64,10 @@ void input_init(void);
 void input_cleanup(void);
 void input_setup_tbl(fn_keytbl *kt);
 int find_command(fn_keytbl *kt, int cmdchar);
+int find_do_cmd(fn_keytbl *kt, Cmdarg *ca, void *obj);
+int find_do_op(fn_oper *kt, Cmdarg *ca, void *obj);
 void input_check();
-void set_oparg(Cmdarg *ca, void *obj, int key);
-void clear_oparg(Cmdarg *ca);
-bool this_op_pending(void *obj, Cmdarg *arg);
+void clearop(Cmdarg *ca);
+bool op_pending(Cmdarg *arg);
 
 #endif

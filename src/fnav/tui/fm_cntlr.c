@@ -18,29 +18,10 @@
 #include "fnav/event/shell.h"
 #include "fnav/info.h"
 
-static void fm_left();
-static void fm_right();
-static void fm_mark();
-static void fm_goto_mark();
-
-#define KEYS_SIZE ARRAY_SIZE(key_defaults)
-static fn_key key_defaults[] = {
-  {'h',     fm_left,        0,             BACKWARD},
-  {'l',     fm_right,       0,             FORWARD},
-  {'m',     fm_mark,        0,             0},
-  {'\'',    fm_goto_mark,   0,             0},
-};
-
-static fn_keytbl key_tbl;
-static short cmd_idx[KEYS_SIZE];
 static FM_cntlr *active_fm;
 
 void fm_init()
 {
-  key_tbl.tbl = key_defaults;
-  key_tbl.cmd_idx = cmd_idx;
-  key_tbl.maxsize = KEYS_SIZE;
-  input_setup_tbl(&key_tbl);
   active_fm = NULL;
   if (tbl_mk("fm_files")) {
     tbl_mk_fld("fm_files", "name", typSTRING);
@@ -112,57 +93,24 @@ static int fm_opendir(Cntlr *cntlr, String path, short arg)
   return 0;
 }
 
-static void fm_goto_mark(Cntlr *cntlr, Cmdarg *arg)
-{
-  log_msg("CNTLR", "fm_goto_mark");
-  if (arg->oap.key != OP_JUMP) {
-    set_oparg(arg, cntlr, OP_JUMP);
-    arg->nkey = arg->key;
-  }
-  else {
-    log_msg("CNTLR", "JUMP!");
-    log_msg("CNTLR", "%c", arg->nkey);
-    log_msg("CNTLR", "%c", arg->key);
-    // set pivot mark
-    // cd pivot
-    clear_oparg(arg);
-  }
-}
-
-static void fm_mark(Cntlr *cntlr, Cmdarg *arg)
-{
-  log_msg("CNTLR", "fm_mark");
-  if (arg->oap.key != OP_MARK) {
-    set_oparg(arg, cntlr, OP_MARK);
-    arg->nkey = arg->key;
-    // set mark
-  }
-  else {
-    log_msg("CNTLR", "MARK!");
-    log_msg("CNTLR", "%c", arg->nkey);
-    log_msg("CNTLR", "%c", arg->key);
-    clear_oparg(arg);
-  }
-}
-
-static void fm_left(Cntlr *cntlr, Cmdarg *arg)
+static void fm_left(Cntlr *host, Cntlr *caller)
 {
   log_msg("FM", "cmd left");
-  fn_handle *h = cntlr->hndl;
+  fn_handle *h = host->hndl;
   String path = model_curs_value(h->model, "dir");
-  fm_opendir(cntlr, path, arg->arg);
+  fm_opendir(host, path, BACKWARD);
 }
 
-static void fm_right(Cntlr *cntlr, Cmdarg *arg)
+static void fm_right(Cntlr *host, Cntlr *caller)
 {
   log_msg("FM", "cmd right");
-  fn_handle *h = cntlr->hndl;
+  fn_handle *h = host->hndl;
 
   String path = model_curs_value(h->model, "fullpath");
   if (isdir(path))
-    fm_opendir(cntlr, path, arg->arg);
+    fm_opendir(host, path, FORWARD);
   else
-    send_hook_msg("fileopen", cntlr, NULL);
+    send_hook_msg("fileopen", host, NULL);
 }
 
 static void fm_ch_dir(void **args)
@@ -246,23 +194,6 @@ static void fm_remove(Cntlr *host, Cntlr *caller)
   free(cmdstr);
 }
 
-int cntlr_input(Cntlr *cntlr, Cmdarg *ca)
-{
-  int key = ca->key;
-  if (this_op_pending(cntlr, ca)) {
-    key = ca->nkey;
-  }
-  int idx = find_command(&key_tbl, key);
-  ca->arg = key_defaults[idx].cmd_arg;
-  if (idx >= 0) {
-    key_defaults[idx].cmd_func(cntlr, ca);
-    return 1;
-  }
-  // TODO: send to pipe_cntlrs if not consumed
-  // if consumed return 1
-  return 0;
-}
-
 static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
 {
   fn_handle *hndl = malloc(sizeof(fn_handle));
@@ -273,7 +204,6 @@ static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
   hndl->fname = "name";
   c->hndl = hndl;
   c->_cancel = cntlr_cancel;
-  c->_input = cntlr_input;
   c->_focus = cntlr_focus;
   c->top = fm;
 }
@@ -295,8 +225,10 @@ Cntlr* fm_new(Buffer *buf)
   buf_set_cntlr(buf, &fm->base);
   buf_set_status(buf, 0, fm->cur_dir, 0, 0);
   hook_init(&fm->base);
-  hook_add(&fm->base, &fm->base, fm_paste, "paste");
+  hook_add(&fm->base, &fm->base, fm_paste,  "paste");
   hook_add(&fm->base, &fm->base, fm_remove, "remove");
+  hook_add(&fm->base, &fm->base, fm_left,   "left");
+  hook_add(&fm->base, &fm->base, fm_right,  "right");
 
   fm->fs = fs_init(fm->base.hndl);
   fm->fs->stat_cb = fm_ch_dir;

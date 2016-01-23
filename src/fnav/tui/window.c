@@ -166,15 +166,12 @@ void window_input(int key)
     ex_input(key);
   }
   else {
-    if (key == ESC)
-      clear_oparg(&win.ca);
-    if (window_get_focus())
-      buf_input(layout_buf(&win.layout), &win.ca);
-    int idx = find_command(&key_tbl, key);
-    win.ca.arg = key_defaults[idx].cmd_arg;
-    if (idx >= 0) {
-      key_defaults[idx].cmd_func(NULL, &win.ca);
+    int ret = 0;
+    if (window_get_focus()) {
+      ret = buf_input(layout_buf(&win.layout), &win.ca);
     }
+    if (!ret)
+      find_do_cmd(&key_tbl, &win.ca, NULL);
   }
 }
 

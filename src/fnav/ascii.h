@@ -72,9 +72,9 @@
 #define FORWARD  1
 #define BACKWARD (-1)
 
-#define NV_NCH      0x01          /* may need to get a second char */
-#define NV_NCH_NOP  (0x02|NV_NCH) /* get second char when no operator pending */
-#define NV_NCH_ALW  (0x04|NV_NCH) /* always get a second char */
+#define NCH    0x01       /* need second char */
+#define NCH_S  (0x02|NCH) /* NCH is special   */
+#define NCH_A  (0x04|NCH) /* NCH is any char  */
 
 /* Bits for modifier mask */
 /* 0x01 cannot be used, because the modifier must be 0x02 or higher */
