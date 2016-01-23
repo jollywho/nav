@@ -4,7 +4,7 @@
 #include "fnav/tui/cntlr.h"
 
 typedef struct Hook Hook;
-typedef void (*hook_cb)(Cntlr *host, Cntlr *caller);
+typedef void (*hook_cb)(Cntlr *host, Cntlr *caller, void *data);
 
 struct Hook {
   hook_cb fn;
@@ -13,7 +13,7 @@ struct Hook {
   String msg;
 };
 
-void send_hook_msg(String msg, Cntlr *host, Cntlr *caller);
+void send_hook_msg(String msg, Cntlr *host, Cntlr *caller, void *data);
 void hook_init(Cntlr *host);
 void hook_cleanup(Cntlr *host);
 

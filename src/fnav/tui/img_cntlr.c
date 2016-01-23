@@ -105,7 +105,7 @@ static int valid_ext(const char *path)
   return 0;
 }
 
-static int create_msg(Cntlr *host, Cntlr *caller)
+static int create_msg(Cntlr *host, Cntlr *caller, void *data)
 {
   Img_cntlr *img = (Img_cntlr*)caller->top;
   fn_handle *h = caller->hndl;
@@ -126,20 +126,20 @@ static int create_msg(Cntlr *host, Cntlr *caller)
   return 1;
 }
 
-static void cursor_change_cb(Cntlr *host, Cntlr *caller)
+static void cursor_change_cb(Cntlr *host, Cntlr *caller, void *data)
 {
   log_msg("IMG", "cursor_change_cb");
   Img_cntlr *img = (Img_cntlr*)caller->top;
 
   if (img->disabled) return;
 
-  if (create_msg(host, caller)) {
+  if (create_msg(host, caller, NULL)) {
     shell_set_in_buffer(img->sh_size, img->sz_msg);
     shell_start(img->sh_size);
   }
 }
 
-static void try_refresh(Cntlr *host, Cntlr *none)
+static void try_refresh(Cntlr *host, Cntlr *none, void *data)
 {
   Img_cntlr *img = (Img_cntlr*)host->top;
   if (!img->img_set) return;
@@ -150,7 +150,7 @@ static void try_refresh(Cntlr *host, Cntlr *none)
   shell_start(img->sh_size);
 }
 
-static void pipe_attach_cb(Cntlr *host, Cntlr *caller)
+static void pipe_attach_cb(Cntlr *host, Cntlr *caller, void *data)
 {
   log_msg("IMG", "pipe_attach_cb");
   hook_add(caller, host, cursor_change_cb, "cursor_change");

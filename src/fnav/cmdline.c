@@ -523,7 +523,7 @@ void cmdline_req_run(Cmdline *cmdline)
         lhs = focus_cntlr();
 
       if (lhs && rhs) {
-        send_hook_msg("pipe_attach", rhs, lhs);
+        send_hook_msg("pipe_attach", rhs, lhs, NULL);
         cntlr_pipe(lhs);
         cmd = tmp;
       }

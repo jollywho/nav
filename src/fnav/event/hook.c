@@ -8,6 +8,7 @@ struct HookHandler {
   UT_array *hosted;
   UT_array *owner;
 };
+
 typedef struct HookList HookList;
 struct HookList {
   UT_array *hooks;
@@ -109,7 +110,7 @@ void hook_clear(Cntlr *host)
   //  hook_clear_msg it
 }
 
-void send_hook_msg(String msg, Cntlr *host, Cntlr *caller)
+void send_hook_msg(String msg, Cntlr *host, Cntlr *caller, void *data)
 {
   log_msg("HOOK", "(<%s>) msg sent", msg);
   HookHandler *host_handle = host->event_hooks;
@@ -121,9 +122,9 @@ void send_hook_msg(String msg, Cntlr *host, Cntlr *caller)
   Hook *it = (Hook*)utarray_front(hl->hooks);
   while (it) {
     if (caller)
-      it->fn(host, caller);
+      it->fn(host, caller, data);
     else
-      it->fn(host, it->caller);
+      it->fn(host, it->caller, data);
     it = (Hook*)utarray_next(hl->hooks, it);
   }
 }

@@ -14,7 +14,7 @@ struct fn_mark {
 };
 
 static fn_mark *lbl_marks;
-static fn_mark *key_marks;
+static fn_mark *chr_marks;
 
 void info_parse(String line)
 {
@@ -35,7 +35,7 @@ static void write_mark_info(FILE *f, fn_mark *mrk)
 
 void info_write_file(FILE *file)
 {
-  log_msg("CONFIG", "config_write_info");
+  log_msg("INFO", "config_write_info");
   //load each info struct from options
   //write to file
   write_mark_info(file, lbl_marks);
@@ -59,7 +59,7 @@ void marklbl_list(List *args)
 
 static void mark_del(fn_mark **mrk, fn_mark **tbl)
 {
-  log_msg("FM", "MARKDEL");
+  log_msg("INFO", "MARKDEL");
   HASH_DEL(*tbl, *mrk);
   free((*mrk)->key);
   free((*mrk)->path);
@@ -77,9 +77,24 @@ String mark_path(String key)
   return ret;
 }
 
+String mark_str(int chr)
+{
+  fn_mark *mrk;
+  String key;
+  asprintf(&key, "'%c", chr);
+
+  String ret = NULL;
+  HASH_FIND_STR(chr_marks, key, mrk);
+  if (mrk) {
+    ret = mrk->path;
+  }
+  free(key);
+  return ret;
+}
+
 void mark_label_dir(String label, String dir)
 {
-  log_msg("FM", "fm_mark_dir");
+  log_msg("INFO", "mark_label_dir");
   String key;
   if (label[0] == '@')
     label = &label[1];
@@ -94,4 +109,21 @@ void mark_label_dir(String label, String dir)
   mrk->key = key;
   mrk->path = strdup(dir);
   HASH_ADD_STR(lbl_marks, key, mrk);
+}
+
+void mark_chr_str(int chr, String dir)
+{
+  log_msg("FM", "mark_key_str");
+  String key;
+  asprintf(&key, "'%c", chr);
+
+  fn_mark *mrk;
+  HASH_FIND_STR(chr_marks, key, mrk);
+  if (mrk) {
+    mark_del(&mrk, &chr_marks);
+  }
+  mrk = malloc(sizeof(fn_mark));
+  mrk->key = key;
+  mrk->path = strdup(dir);
+  HASH_ADD_STR(chr_marks, key, mrk);
 }

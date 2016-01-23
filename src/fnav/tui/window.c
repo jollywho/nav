@@ -206,7 +206,7 @@ static void* win_pipe(List *args, enum move_dir flags)
   if (buf && wnum) {
     Cntlr *rhs = cntlr_from_id(*wnum);
     //TODO: replace pipe if already set
-    send_hook_msg("pipe_attach", buf_cntlr(buf), rhs);
+    send_hook_msg("pipe_attach", buf_cntlr(buf), rhs, NULL);
   }
   return 0;
 }
@@ -219,7 +219,7 @@ static void* win_cd(List *args, int flags)
   if (!path) path = "~";
   Cntlr *cntlr = buf_cntlr(layout_buf(&win.layout));
   if (cntlr) {
-    fm_req_dir(cntlr, path);
+    send_hook_msg("open", cntlr, NULL, path);
   }
   return 0;
 }
@@ -232,7 +232,7 @@ static void* win_mark(List *args, int flags)
   if (!label) return 0;
   Cntlr *cntlr = buf_cntlr(layout_buf(&win.layout));
   if (cntlr) {
-    mark_label_dir(label, fm_cur_dir(cntlr));
+    mark_label_dir(label, window_active_dir());
   }
   return 0;
 }

@@ -90,7 +90,7 @@ const char *file_ext(const char *filename) {
     return dot + 1;
 }
 
-static void fileopen_cb(Cntlr *host, Cntlr *caller)
+static void fileopen_cb(Cntlr *host, Cntlr *caller, void *data)
 {
   log_msg("OP", "fileopen_cb");
   Op_cntlr *op = (Op_cntlr*)caller->top;
@@ -103,7 +103,7 @@ static void fileopen_cb(Cntlr *host, Cntlr *caller)
   system("mpv_i");
 }
 
-static void pipe_attach_cb(Cntlr *host, Cntlr *caller)
+static void pipe_attach_cb(Cntlr *host, Cntlr *caller, void *data)
 {
   log_msg("OP", "pipe_attach_cb");
   hook_add(caller, host, fileopen_cb, "fileopen");

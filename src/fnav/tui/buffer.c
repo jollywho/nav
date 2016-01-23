@@ -8,6 +8,7 @@
 #include "fnav/model.h"
 #include "fnav/regex.h"
 #include "fnav/option.h"
+#include "fnav/info.h"
 #include "fnav/event/input.h"
 #include "fnav/event/fs.h"
 
@@ -207,7 +208,7 @@ void buf_draw(void **argv)
 
   if (buf->nodraw) {
     wnoutrefresh(buf->nc_win);
-    send_hook_msg("window_resize", buf->cntlr, NULL);
+    send_hook_msg("window_resize", buf->cntlr, NULL, NULL);
     return;
   }
   if (buf->attached) {
@@ -307,7 +308,7 @@ static void buf_mv(Buffer *buf, Cmdarg *ca)
     buf->lnum = count - 1;
   }
   model_set_curs(m, buf->top + buf->lnum);
-  send_hook_msg("cursor_change", buf->cntlr, NULL);
+  send_hook_msg("cursor_change", buf->cntlr, NULL, NULL);
   buf_refresh(buf);
 }
 
@@ -377,17 +378,21 @@ static void buf_yank(Buffer *buf, Cmdarg *ca)
 static void buf_mark(Buffer *buf, Cmdarg *ca)
 {
   log_msg("BUFFER", "buf_mark");
+  mark_chr_str(ca->key, buf->hndl->key);
 }
 
 static void buf_gomark(Buffer *buf, Cmdarg *ca)
 {
   log_msg("BUFFER", "buf_gomark");
+  String path = mark_str(ca->key);
+  if (!path) return;
+  send_hook_msg("open", buf->cntlr, NULL, path);
 }
 
 static void buf_gen_event(Buffer *buf, Cmdarg *ca)
 {
   if (ca->arg > MAX_EVENTS || ca->arg < 0) return;
-  send_hook_msg(buf_events[ca->arg], buf->cntlr, NULL);
+  send_hook_msg(buf_events[ca->arg], buf->cntlr, NULL, NULL);
 }
 
 void buf_sort(Buffer *buf, String fld, int flags)

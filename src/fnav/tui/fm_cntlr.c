@@ -93,7 +93,7 @@ static int fm_opendir(Cntlr *cntlr, String path, short arg)
   return 0;
 }
 
-static void fm_left(Cntlr *host, Cntlr *caller)
+static void fm_left(Cntlr *host, Cntlr *caller, void *data)
 {
   log_msg("FM", "cmd left");
   fn_handle *h = host->hndl;
@@ -101,7 +101,7 @@ static void fm_left(Cntlr *host, Cntlr *caller)
   fm_opendir(host, path, BACKWARD);
 }
 
-static void fm_right(Cntlr *host, Cntlr *caller)
+static void fm_right(Cntlr *host, Cntlr *caller, void *data)
 {
   log_msg("FM", "cmd right");
   fn_handle *h = host->hndl;
@@ -110,7 +110,7 @@ static void fm_right(Cntlr *host, Cntlr *caller)
   if (isdir(path))
     fm_opendir(host, path, FORWARD);
   else
-    send_hook_msg("fileopen", host, NULL);
+    send_hook_msg("fileopen", host, NULL, NULL);
 }
 
 static void fm_ch_dir(void **args)
@@ -121,10 +121,10 @@ static void fm_ch_dir(void **args)
   fm_opendir(cntlr, path, FORWARD);
 }
 
-void fm_req_dir(Cntlr *cntlr, String path)
+static void fm_req_dir(Cntlr *cntlr, Cntlr *caller, void *data)
 {
   log_msg("FM_CNTLR", "fm_req_dir");
-  if (strcmp(cntlr->name, "fm") != 0) return;
+  String path = data;
 
   if (path[0] == '@') {
     path = mark_path(path);
@@ -158,7 +158,7 @@ static String next_valid_path(String path)
   return str;
 }
 
-static void fm_paste(Cntlr *host, Cntlr *caller)
+static void fm_paste(Cntlr *host, Cntlr *caller, void *data)
 {
   log_msg("FM_CNTLR", "fm_paste");
   FM_cntlr *self = (FM_cntlr*)host->top;
@@ -182,7 +182,7 @@ static void fm_paste(Cntlr *host, Cntlr *caller)
   free(cmdstr);
 }
 
-static void fm_remove(Cntlr *host, Cntlr *caller)
+static void fm_remove(Cntlr *host, Cntlr *caller, void *data)
 {
   log_msg("FM_CNTLR", "fm_remove");
   String src = model_curs_value(host->hndl->model, "fullpath");
@@ -225,10 +225,11 @@ Cntlr* fm_new(Buffer *buf)
   buf_set_cntlr(buf, &fm->base);
   buf_set_status(buf, 0, fm->cur_dir, 0, 0);
   hook_init(&fm->base);
-  hook_add(&fm->base, &fm->base, fm_paste,  "paste");
-  hook_add(&fm->base, &fm->base, fm_remove, "remove");
-  hook_add(&fm->base, &fm->base, fm_left,   "left");
-  hook_add(&fm->base, &fm->base, fm_right,  "right");
+  hook_add(&fm->base, &fm->base, fm_paste,   "paste");
+  hook_add(&fm->base, &fm->base, fm_remove,  "remove");
+  hook_add(&fm->base, &fm->base, fm_left,    "left");
+  hook_add(&fm->base, &fm->base, fm_right,   "right");
+  hook_add(&fm->base, &fm->base, fm_req_dir, "open");
 
   fm->fs = fs_init(fm->base.hndl);
   fm->fs->stat_cb = fm_ch_dir;
