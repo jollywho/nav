@@ -233,11 +233,11 @@ void buf_full_invalidate(Buffer *buf, int index, int lnum)
 
 // input entry point.
 // proper commands are chosen based on buffer state.
-int buf_input(Buffer *buf, int key)
+int buf_input(Buffer *buf, Cmdarg *ca)
 {
   log_msg("BUFFER", "input");
   if (buf->input_cb) {
-    buf->input_cb(buf, key);
+    buf->input_cb(buf, ca);
     return 1;
   }
   if (!buf->attached)
@@ -245,15 +245,14 @@ int buf_input(Buffer *buf, int key)
   if (model_blocking(buf->hndl))
     return 0;
   if (buf->cntlr) {
-    if (buf->cntlr->_input(buf->cntlr, key))
+    if (buf->cntlr->_input(buf->cntlr, ca))
       return 1;
   }
   // TODO: check consumed
-  Cmdarg ca;
-  int idx = find_command(&key_tbl, key);
-  ca.arg = key_defaults[idx].cmd_arg;
+  int idx = find_command(&key_tbl, ca->key);
+  ca->arg = key_defaults[idx].cmd_arg;
   if (idx >= 0) {
-    key_defaults[idx].cmd_func(buf, &ca);
+    key_defaults[idx].cmd_func(buf, ca);
   }
   return 0;
 }

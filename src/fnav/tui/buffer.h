@@ -4,7 +4,7 @@
 #include <ncurses.h>
 #include "fnav/regex.h"
 
-typedef void (*buffer_input_cb)(Buffer *buf, int key);
+typedef void (*buffer_input_cb)(Buffer *buf, Cmdarg *ca);
 
 struct Buffer {
   WINDOW *nc_win;
@@ -60,7 +60,7 @@ void buf_set_linematch(Buffer *buf, LineMatch *match);
 void buf_set_status(Buffer *buf, String name, String usr, String in, String out);
 
 void buf_full_invalidate(Buffer *buf, int index, int lnum);
-int buf_input(Buffer *bn, int key);
+int buf_input(Buffer *bn, Cmdarg *ca);
 
 void buf_refresh(Buffer *buf);
 void buf_toggle_focus(Buffer *buf, int focus);

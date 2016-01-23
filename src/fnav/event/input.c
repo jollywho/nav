@@ -247,3 +247,23 @@ int find_command(fn_keytbl *kt, int cmdchar)
   }
   return idx;
 }
+
+void set_oparg(Cmdarg *ca, void *obj, int key)
+{
+  clear_oparg(ca);
+  ca->oap.key = key;
+  ca->oap.obj = obj;
+}
+
+void clear_oparg(Cmdarg *ca)
+{
+  log_msg("BUFFER", "clear_oparg");
+  memset(&ca->oap, 0, sizeof(Oparg));
+  ca->nkey = 0;
+  ca->mkey = 0;
+}
+
+bool this_op_pending(void *obj, Cmdarg *arg)
+{
+  return (arg->oap.obj == obj && arg->oap.key != OP_NOP);
+}

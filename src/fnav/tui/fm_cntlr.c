@@ -21,12 +21,14 @@
 static void fm_left();
 static void fm_right();
 static void fm_mark();
+static void fm_goto_mark();
 
 #define KEYS_SIZE ARRAY_SIZE(key_defaults)
 static fn_key key_defaults[] = {
   {'h',     fm_left,        0,             BACKWARD},
   {'l',     fm_right,       0,             FORWARD},
   {'m',     fm_mark,        0,             0},
+  {'\'',    fm_goto_mark,   0,             0},
 };
 
 static fn_keytbl key_tbl;
@@ -110,11 +112,37 @@ static int fm_opendir(Cntlr *cntlr, String path, short arg)
   return 0;
 }
 
+static void fm_goto_mark(Cntlr *cntlr, Cmdarg *arg)
+{
+  log_msg("CNTLR", "fm_goto_mark");
+  if (arg->oap.key != OP_JUMP) {
+    set_oparg(arg, cntlr, OP_JUMP);
+    arg->nkey = arg->key;
+  }
+  else {
+    log_msg("CNTLR", "JUMP!");
+    log_msg("CNTLR", "%c", arg->nkey);
+    log_msg("CNTLR", "%c", arg->key);
+    // set pivot mark
+    // cd pivot
+    clear_oparg(arg);
+  }
+}
+
 static void fm_mark(Cntlr *cntlr, Cmdarg *arg)
 {
   log_msg("CNTLR", "fm_mark");
-  // set operator to mark
-  // input: check operator state before search
+  if (arg->oap.key != OP_MARK) {
+    set_oparg(arg, cntlr, OP_MARK);
+    arg->nkey = arg->key;
+    // set mark
+  }
+  else {
+    log_msg("CNTLR", "MARK!");
+    log_msg("CNTLR", "%c", arg->nkey);
+    log_msg("CNTLR", "%c", arg->key);
+    clear_oparg(arg);
+  }
 }
 
 static void fm_left(Cntlr *cntlr, Cmdarg *arg)
@@ -218,13 +246,16 @@ static void fm_remove(Cntlr *host, Cntlr *caller)
   free(cmdstr);
 }
 
-int cntlr_input(Cntlr *cntlr, int key)
+int cntlr_input(Cntlr *cntlr, Cmdarg *ca)
 {
-  Cmdarg ca;
+  int key = ca->key;
+  if (this_op_pending(cntlr, ca)) {
+    key = ca->nkey;
+  }
   int idx = find_command(&key_tbl, key);
-  ca.arg = key_defaults[idx].cmd_arg;
+  ca->arg = key_defaults[idx].cmd_arg;
   if (idx >= 0) {
-    key_defaults[idx].cmd_func(cntlr, &ca);
+    key_defaults[idx].cmd_func(cntlr, ca);
     return 1;
   }
   // TODO: send to pipe_cntlrs if not consumed

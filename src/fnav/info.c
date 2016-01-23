@@ -25,11 +25,6 @@ void info_parse(String line)
   }
 }
 
-void info_finish()
-{
-
-}
-
 static void write_mark_info(FILE *f, fn_mark *mrk)
 {
   if (!mrk) return;

@@ -16,6 +16,7 @@
 struct Window {
   Layout layout;
   uv_timer_t draw_timer;
+  Cmdarg ca;
   bool ex;
   bool dirty;
   int refs;
@@ -160,17 +161,19 @@ static void wintestq(Window *_w, Cmdarg *arg)
 void window_input(int key)
 {
   log_msg("WINDOW", "input");
+  win.ca.key = key;
   if (win.ex) {
     ex_input(key);
   }
   else {
+    if (key == ESC)
+      clear_oparg(&win.ca);
     if (window_get_focus())
-      buf_input(layout_buf(&win.layout), key);
-    Cmdarg ca;
+      buf_input(layout_buf(&win.layout), &win.ca);
     int idx = find_command(&key_tbl, key);
-    ca.arg = key_defaults[idx].cmd_arg;
+    win.ca.arg = key_defaults[idx].cmd_arg;
     if (idx >= 0) {
-      key_defaults[idx].cmd_func(NULL, &ca);
+      key_defaults[idx].cmd_func(NULL, &win.ca);
     }
   }
 }

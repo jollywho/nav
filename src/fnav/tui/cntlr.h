@@ -14,6 +14,7 @@ typedef struct Model Model;
 typedef struct HookHandler HookHandler;
 typedef struct Overlay Overlay;
 typedef struct fn_reg fn_reg;
+typedef struct Cmdarg Cmdarg;
 
 typedef Cntlr* (*cntlr_open_cb)(Buffer *b);
 typedef void (*cntlr_close_cb)(Cntlr *cntlr);
@@ -36,7 +37,7 @@ struct Cntlr {
   void *top;
   void (*_cancel)(Cntlr *cntlr);
   void (*_focus)(Cntlr *cntlr);
-  int  (*_input)(Cntlr *cntlr, int key);
+  int  (*_input)(Cntlr *cntlr, Cmdarg *ca);
   HookHandler *event_hooks;
 };
 
