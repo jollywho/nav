@@ -5,7 +5,6 @@
 #include "fnav/tui/ex_cmd.h"
 #include "fnav/tui/layout.h"
 #include "fnav/tui/window.h"
-#include "fnav/tui/fm_cntlr.h"
 #include "fnav/option.h"
 #include "fnav/event/fs.h"
 
@@ -80,7 +79,6 @@ void path_list(List *args)
 {
   log_msg("MENU", "path_list");
   if (!cur_menu) return;
-  Cntlr *cntlr = window_get_cntlr();
   String dir, val = NULL;
 
   int exec = 0;
@@ -89,7 +87,7 @@ void path_list(List *args)
 
   if (!tok) {
     log_msg("MENU", "!TOK");
-    dir = fm_cur_dir(cntlr);
+    dir = window_active_dir();
     fs_read(cur_menu->fs, dir);
   }
   else {
@@ -107,7 +105,7 @@ void path_list(List *args)
 
     //FIXME: expand path first
     if (dir[0] != '/') {
-      dir = conspath(fm_cur_dir(cntlr), dir);
+      dir = conspath(window_active_dir(), dir);
     }
 
     int prev = tok->block;

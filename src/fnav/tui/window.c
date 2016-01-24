@@ -11,7 +11,7 @@
 #include "fnav/event/input.h"
 #include "fnav/compl.h"
 #include "fnav/info.h"
-#include "fnav/tui/fm_cntlr.h"
+#include "fnav/plugins/fm/fm.h"
 
 struct Window {
   Layout layout;
@@ -55,12 +55,12 @@ static const Cmd_T cmdtable[] = {
 static String compl_win[] = {
   "cmd:q;window:string:wins",
   "cmd:close;window:string:wins",
-  "cmd:vnew;cntlr:string:cntlrs",
-  "cmd:new;cntlr:string:cntlrs",
+  "cmd:vnew;plugin:string:plugins",
+  "cmd:new;plugin:string:plugins",
   "cmd:pipe;window:number:wins",
   "cmd:sort;field:string:fields",
   "cmd:sort!;field:string:fields",
-  "cmd:*:cntlr:fm;path:string:paths",
+  "cmd:*:plugin:fm;path:string:paths",
   "cmd:cd;path:string:paths",
   "cmd:mark;label:string:marklbls",
 };
@@ -153,7 +153,7 @@ static void wintestq(Window *_w, Cmdarg *arg)
   log_msg("WINDOW", "win_close");
   //Buffer *buf = layout_buf(&win.layout);
   //if (buf) {
-  //  cntlr_close(buf_cntlr(buf));
+  //  plugin_close(buf_plugin(buf));
   //}
   window_remove_buffer();
 }
@@ -177,7 +177,7 @@ void window_input(int key)
 
 String window_active_dir()
 {
-  return fm_cur_dir(window_get_cntlr());
+  return fm_cur_dir(window_get_plugin());
 }
 
 Buffer* window_get_focus()
@@ -185,9 +185,9 @@ Buffer* window_get_focus()
   return layout_buf(&win.layout);
 }
 
-Cntlr* window_get_cntlr()
+Plugin* window_get_plugin()
 {
-  return window_get_focus()->cntlr;
+  return window_get_focus()->plugin;
 }
 
 int window_focus_attached()
@@ -204,9 +204,9 @@ static void* win_pipe(List *args, enum move_dir flags)
   int *wnum = list_arg(args, 1, VAR_NUMBER);
 
   if (buf && wnum) {
-    Cntlr *rhs = cntlr_from_id(*wnum);
+    Plugin *rhs = plugin_from_id(*wnum);
     //TODO: replace pipe if already set
-    send_hook_msg("pipe_attach", buf_cntlr(buf), rhs, NULL);
+    send_hook_msg("pipe_attach", buf_plugin(buf), rhs, NULL);
   }
   return 0;
 }
@@ -217,9 +217,9 @@ static void* win_cd(List *args, int flags)
 
   String path = list_arg(args, 1, VAR_STRING);
   if (!path) path = "~";
-  Cntlr *cntlr = buf_cntlr(layout_buf(&win.layout));
-  if (cntlr) {
-    send_hook_msg("open", cntlr, NULL, path);
+  Plugin *plugin = buf_plugin(layout_buf(&win.layout));
+  if (plugin) {
+    send_hook_msg("open", plugin, NULL, path);
   }
   return 0;
 }
@@ -230,8 +230,8 @@ static void* win_mark(List *args, int flags)
 
   String label = list_arg(args, 1, VAR_STRING);
   if (!label) return 0;
-  Cntlr *cntlr = buf_cntlr(layout_buf(&win.layout));
-  if (cntlr) {
+  Plugin *plugin = buf_plugin(layout_buf(&win.layout));
+  if (plugin) {
     mark_label_dir(label, window_active_dir());
   }
   return 0;
@@ -253,7 +253,7 @@ static void* win_new(List *args, enum move_dir flags)
 
   String cmd = list_arg(args, 1, VAR_STRING);
   if (cmd)
-    return cntlr_open(cmd, layout_buf(&win.layout));
+    return plugin_open(cmd, layout_buf(&win.layout));
   return NULL;
 }
 
@@ -262,7 +262,7 @@ static void* win_close(List *args, int cmd_flags)
   log_msg("WINDOW", "win_close");
   Buffer *buf = layout_buf(&win.layout);
   if (buf) {
-    cntlr_close(buf_cntlr(buf));
+    plugin_close(buf_plugin(buf));
   }
   window_remove_buffer();
   return NULL;

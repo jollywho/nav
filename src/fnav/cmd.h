@@ -10,7 +10,7 @@
 #define FUNCTION  0x08
 #define RANGE     0x10
 #define REGEX     0x20
-#define CNTLR     0x40
+#define PLUGIN    0x40
 
 typedef struct Cmd_T Cmd_T;
 typedef struct Cmd_Arg_T Cmd_Arg_T;

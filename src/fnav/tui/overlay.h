@@ -2,7 +2,7 @@
 #define FN_TUI_OVERLAY_H
 
 #include <ncurses.h>
-#include "fnav/tui/cntlr.h"
+#include "fnav/plugins/plugin.h"
 #include "fnav/option.h"
 
 Overlay* overlay_new();

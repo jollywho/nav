@@ -3,7 +3,7 @@
 #include <ctype.h>
 
 #include "fnav/lib/queue.h"
-#include "fnav/tui/cntlr.h"
+#include "fnav/plugins/plugin.h"
 #include "fnav/event/hook.h"
 #include "fnav/event/shell.h"
 #include "fnav/cmdline.h"
@@ -271,7 +271,7 @@ static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)
   if (!nword) return word;
   char ch = nword->var.vval.v_string[0];
   if (ch == '>')
-    (*cmd).pipet = PIPE_CNTLR;
+    (*cmd).pipet = PIPE_PLUGIN;
   else
     (*cmd).pipet = PIPE_CMD;
   return nword;
@@ -500,8 +500,8 @@ void cmdline_req_run(Cmdline *cmdline)
 
     cmd_run(cmd);
 
-    if (cmd->pipet == PIPE_CNTLR) {
-      Cntlr *lhs, *rhs;
+    if (cmd->pipet == PIPE_PLUGIN) {
+      Plugin *lhs, *rhs;
       lhs = rhs = NULL;
 
       // search for rhs in next cmd.
@@ -512,19 +512,19 @@ void cmdline_req_run(Cmdline *cmdline)
       Token *word = (Token*)utarray_front(args->items);
       String arg = token_val(word, VAR_STRING);
 
-      if (!cntlr_isloaded(arg))
-        log_msg("ERROR", "cntlr %s not valid", arg);
+      if (!plugin_isloaded(arg))
+        log_msg("ERROR", "plugin %s not valid", arg);
 
-      rhs = cntlr_open(arg, NULL);
+      rhs = plugin_open(arg, NULL);
 
-      if (cmd->ret_t == CNTLR)
+      if (cmd->ret_t == PLUGIN)
         lhs = cmd->ret;
       if (!lhs)
-        lhs = focus_cntlr();
+        lhs = focus_plugin();
 
       if (lhs && rhs) {
         send_hook_msg("pipe_attach", rhs, lhs, NULL);
-        cntlr_pipe(lhs);
+        plugin_pipe(lhs);
         cmd = tmp;
       }
     }

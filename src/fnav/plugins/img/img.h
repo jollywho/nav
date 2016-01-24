@@ -1,12 +1,12 @@
-#ifndef FN_TUI_IMG_CNTLR_H
-#define FN_TUI_IMG_CNTLR_H
+#ifndef FN_TUI_IMG_plugin_H
+#define FN_TUI_IMG_plugin_H
 
 #include "fnav/event/shell.h"
 
-typedef struct Img_cntlr Img_cntlr;
+typedef struct Img Img;
 
-struct Img_cntlr {
-  Cntlr base;
+struct Img {
+  Plugin base;
   Shell *sh_draw;
   Shell *sh_size;
   Shell *sh_clear;
@@ -22,7 +22,7 @@ struct Img_cntlr {
   int width; int height;
 };
 
-Cntlr* img_new(Buffer *buf);
-void img_delete(Cntlr *cntlr);
+Plugin* img_new(Buffer *buf);
+void img_delete(Plugin *plugin);
 
 #endif

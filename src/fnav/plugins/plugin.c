@@ -1,28 +1,26 @@
-#include "fnav/tui/cntlr.h"
+#include "fnav/plugins/plugin.h"
 #include "fnav/tui/window.h"
-#include "fnav/tui/fm_cntlr.h"
-#include "fnav/tui/sh_cntlr.h"
-#include "fnav/tui/op_cntlr.h"
-#include "fnav/tui/img_cntlr.h"
+#include "fnav/plugins/fm/fm.h"
+#include "fnav/plugins/op/op.h"
+#include "fnav/plugins/img/img.h"
 #include "fnav/compl.h"
 #include "fnav/log.h"
 #include "fnav/option.h"
 
-#define TABLE_SIZE ARRAY_SIZE(cntlr_table)
-struct _cntlr_table {
+#define TABLE_SIZE ARRAY_SIZE(plugin_table)
+struct _plugin_table {
   String name;
-  cntlr_open_cb open_cb;
-  cntlr_close_cb close_cb;
-} cntlr_table[] = {
+  plugin_open_cb open_cb;
+  plugin_close_cb close_cb;
+} plugin_table[] = {
   {"fm", fm_new, fm_delete},
-  {"sh", sh_new},
   {"op", op_new},
   {"img", img_new, img_delete},
 };
 
 typedef struct {
   int key;
-  Cntlr *cntlr;
+  Plugin *plugin;
   UT_hash_handle hh;
 } Cid;
 
@@ -36,19 +34,19 @@ int max_id;
 LIST_HEAD(ci, _Cid) id_pool;
 Cid *id_table;
 
-void cntlr_load(String name, cntlr_open_cb open_cb, cntlr_close_cb close_cb);
+void plugin_load(String name, plugin_open_cb open_cb, plugin_close_cb close_cb);
 
-static int find_cntlr(String name)
+static int find_plugin(String name)
 {
   for (int i = 0; i < (int)TABLE_SIZE; i++) {
-    if (strcmp(cntlr_table[i].name, name) == 0) {
+    if (strcmp(plugin_table[i].name, name) == 0) {
       return i;
     }
   }
   return -1;
 }
 
-static void set_cid(Cntlr *cntlr)
+static void set_cid(Plugin *plugin)
 {
   int key;
   Cid *cid = malloc(sizeof(Cid));
@@ -63,15 +61,15 @@ static void set_cid(Cntlr *cntlr)
     key = ++max_id;
 
   cid->key = key;
-  cid->cntlr = cntlr;
-  cntlr->id = key;
+  cid->plugin = plugin;
+  plugin->id = key;
   HASH_ADD_INT(id_table, key, cid);
 }
 
-static void unset_cid(Cntlr *cntlr)
+static void unset_cid(Plugin *plugin)
 {
   Cid *cid;
-  int key = cntlr->id;
+  int key = plugin->id;
 
   HASH_FIND_INT(id_table, &key, cid);
   HASH_DEL(id_table, cid);
@@ -83,60 +81,60 @@ static void unset_cid(Cntlr *cntlr)
   LIST_INSERT_HEAD(&id_pool, rem, ent);
 }
 
-Cntlr* cntlr_open(String name, Buffer *buf)
+Plugin* plugin_open(String name, Buffer *buf)
 {
-  int i = find_cntlr(name);
+  int i = find_plugin(name);
   if (i != -1) {
-    Cntlr *ret = cntlr_table[i].open_cb(buf);
+    Plugin *ret = plugin_table[i].open_cb(buf);
     set_cid(ret);
     return ret;
   }
   return NULL;
 }
 
-void cntlr_close(Cntlr *cntlr)
+void plugin_close(Plugin *plugin)
 {
-  if (!cntlr) return;
-  int i = find_cntlr(cntlr->name);
+  if (!plugin) return;
+  int i = find_plugin(plugin->name);
   if (i != -1) {
-    unset_cid(cntlr);
-    return cntlr_table[i].close_cb(cntlr);
+    unset_cid(plugin);
+    return plugin_table[i].close_cb(plugin);
   }
 }
 
-int cntlr_isloaded(String name)
+int plugin_isloaded(String name)
 {
-  if (find_cntlr(name)) {
+  if (find_plugin(name)) {
     return 1;
   }
   return 0;
 }
 
-Cntlr* focus_cntlr()
+Plugin* focus_plugin()
 {
   Buffer *buf = window_get_focus();
-  return buf->cntlr;
+  return buf->plugin;
 }
 
-void cntlr_pipe(Cntlr *cntlr)
+void plugin_pipe(Plugin *plugin)
 {
   Buffer *buf = window_get_focus();
   buf_set_status(buf, 0, 0, 0, "op");
 }
 
-Cntlr* cntlr_from_id(int id)
+Plugin* plugin_from_id(int id)
 {
   Cid *cid;
   HASH_FIND_INT(id_table, &id, cid);
   if (cid)
-    return cid->cntlr;
+    return cid->plugin;
   return NULL;
 }
 
-void cntlr_list(List *args)
+void plugin_list(List *args)
 {
   compl_new(TABLE_SIZE, COMPL_STATIC);
   for (int i = 0; i < (int)TABLE_SIZE; i++) {
-    compl_set_index(i, cntlr_table[i].name, 0, NULL);
+    compl_set_index(i, plugin_table[i].name, 0, NULL);
   }
 }

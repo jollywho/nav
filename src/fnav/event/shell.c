@@ -12,7 +12,7 @@ static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
   bool eof);
 static void shell_write_cb(Stream *stream, void *data, int status);
 static void shell_write(Shell *sh, String msg);
-static void shell_default_stdout_cb(Cntlr *cntlr, String out);
+static void shell_default_stdout_cb(Plugin *plugin, String out);
 
 static UT_array *proctbl;
 static char* args[4];
@@ -39,7 +39,7 @@ static void process_exit(Process *proc, int status, void *data)
   }
 }
 
-Shell* shell_new(Cntlr *cntlr)
+Shell* shell_new(Plugin *plugin)
 {
   log_msg("SHELL", "init");
   Shell *sh = malloc(sizeof(Shell));
@@ -50,7 +50,7 @@ Shell* shell_new(Cntlr *cntlr)
   sh->reg = false;
   sh->data_cb = out_data_cb;
 
-  sh->caller = cntlr;
+  sh->caller = plugin;
   sh->uvproc = uv_process_init(mainloop(), sh);
   Process *proc = &sh->uvproc.process;
   proc->events = eventq();
@@ -163,7 +163,7 @@ static void shell_write_cb(Stream *stream, void *data, int status)
   stream_close(stream, NULL);
 }
 
-static void shell_default_stdout_cb(Cntlr *cntlr, String out)
+static void shell_default_stdout_cb(Plugin *plugin, String out)
 {
   log_msg("SHELL", "stdout: %s", out);
 }

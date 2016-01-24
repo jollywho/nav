@@ -10,7 +10,7 @@
 #include "fnav/event/input.h"
 #include "fnav/event/hook.h"
 #include "fnav/tui/buffer.h"
-#include "fnav/tui/fm_cntlr.h"
+#include "fnav/plugins/fm/fm.h"
 #include "fnav/log.h"
 #include "fnav/cmd.h"
 #include "fnav/option.h"
@@ -18,7 +18,7 @@
 #include "fnav/event/shell.h"
 #include "fnav/info.h"
 
-static FM_cntlr *active_fm;
+static FM *active_fm;
 
 void fm_init()
 {
@@ -42,7 +42,7 @@ void fm_cleanup()
   // remove tables
 }
 
-static void fm_active_dir(FM_cntlr *fm)
+static void fm_active_dir(FM *fm)
 {
   if (!active_fm) {
     fm->cur_dir = get_current_dir_name();
@@ -53,27 +53,27 @@ static void fm_active_dir(FM_cntlr *fm)
   active_fm = fm;
 }
 
-void cntlr_cancel(Cntlr *cntlr)
+void plugin_cancel(Plugin *plugin)
 {
   log_msg("FM", "<|_CANCEL_|>");
-  FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  FM *self = (FM*)plugin->top;
   self->op_count = 1;
   self->mo_count = 1;
 }
 
-void cntlr_focus(Cntlr *cntlr)
+void plugin_focus(Plugin *plugin)
 {
-  log_msg("FM", "cntlr_focus");
-  FM_cntlr *self = (FM_cntlr*)cntlr->top;
+  log_msg("FM", "plugin_focus");
+  FM *self = (FM*)plugin->top;
   active_fm = self;
-  buf_refresh(cntlr->hndl->buf);
+  buf_refresh(plugin->hndl->buf);
 }
 
-static int fm_opendir(Cntlr *cntlr, String path, short arg)
+static int fm_opendir(Plugin *plugin, String path, short arg)
 {
   log_msg("FM", "fm_opendir %s", path);
-  FM_cntlr *self = (FM_cntlr*)cntlr->top;
-  fn_handle *h = cntlr->hndl;
+  FM *self = (FM*)plugin->top;
+  fn_handle *h = plugin->hndl;
   String cur_dir = self->cur_dir;
 
   if (!fs_blocking(self->fs)) {
@@ -93,7 +93,7 @@ static int fm_opendir(Cntlr *cntlr, String path, short arg)
   return 0;
 }
 
-static void fm_left(Cntlr *host, Cntlr *caller, void *data)
+static void fm_left(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("FM", "cmd left");
   fn_handle *h = host->hndl;
@@ -101,7 +101,7 @@ static void fm_left(Cntlr *host, Cntlr *caller, void *data)
   fm_opendir(host, path, BACKWARD);
 }
 
-static void fm_right(Cntlr *host, Cntlr *caller, void *data)
+static void fm_right(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("FM", "cmd right");
   fn_handle *h = host->hndl;
@@ -115,15 +115,15 @@ static void fm_right(Cntlr *host, Cntlr *caller, void *data)
 
 static void fm_ch_dir(void **args)
 {
-  log_msg("FM_CNTLR", "fm_ch_dir");
-  Cntlr *cntlr = args[0];
+  log_msg("FM_plugin", "fm_ch_dir");
+  Plugin *plugin = args[0];
   String path = args[1];
-  fm_opendir(cntlr, path, FORWARD);
+  fm_opendir(plugin, path, FORWARD);
 }
 
-static void fm_req_dir(Cntlr *cntlr, Cntlr *caller, void *data)
+static void fm_req_dir(Plugin *plugin, Plugin *caller, void *data)
 {
-  log_msg("FM_CNTLR", "fm_req_dir");
+  log_msg("FM_plugin", "fm_req_dir");
   String path = data;
 
   if (path[0] == '@') {
@@ -131,12 +131,12 @@ static void fm_req_dir(Cntlr *cntlr, Cntlr *caller, void *data)
   }
 
   if (path[0] != '/' && path[0] != '~') {
-    path = conspath(fm_cur_dir(cntlr), path);
+    path = conspath(fm_cur_dir(plugin), path);
   }
 
   String newpath = fs_expand_path(path);
   if (newpath) {
-    FM_cntlr *self = (FM_cntlr*)cntlr->top;
+    FM *self = (FM*)plugin->top;
     fs_read(self->fs, newpath);
     free(newpath);
   }
@@ -158,10 +158,10 @@ static String next_valid_path(String path)
   return str;
 }
 
-static void fm_paste(Cntlr *host, Cntlr *caller, void *data)
+static void fm_paste(Plugin *host, Plugin *caller, void *data)
 {
-  log_msg("FM_CNTLR", "fm_paste");
-  FM_cntlr *self = (FM_cntlr*)host->top;
+  log_msg("FM_plugin", "fm_paste");
+  FM *self = (FM*)host->top;
   fn_reg *reg = reg_get(host->hndl, "0");
   if (!reg) return;
 
@@ -182,9 +182,9 @@ static void fm_paste(Cntlr *host, Cntlr *caller, void *data)
   free(cmdstr);
 }
 
-static void fm_remove(Cntlr *host, Cntlr *caller, void *data)
+static void fm_remove(Plugin *host, Plugin *caller, void *data)
 {
-  log_msg("FM_CNTLR", "fm_remove");
+  log_msg("FM_plugin", "fm_remove");
   String src = model_curs_value(host->hndl->model, "fullpath");
 
   String cmdstr;
@@ -194,7 +194,7 @@ static void fm_remove(Cntlr *host, Cntlr *caller, void *data)
   free(cmdstr);
 }
 
-static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
+static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, String val)
 {
   fn_handle *hndl = malloc(sizeof(fn_handle));
   hndl->tn = "fm_files";
@@ -203,15 +203,15 @@ static void init_fm_hndl(FM_cntlr *fm, Buffer *b, Cntlr *c, String val)
   hndl->key = val;
   hndl->fname = "name";
   c->hndl = hndl;
-  c->_cancel = cntlr_cancel;
-  c->_focus = cntlr_focus;
+  c->_cancel = plugin_cancel;
+  c->_focus = plugin_focus;
   c->top = fm;
 }
 
-Cntlr* fm_new(Buffer *buf)
+Plugin* fm_new(Buffer *buf)
 {
-  log_msg("FM_CNTLR", "init");
-  FM_cntlr *fm = malloc(sizeof(FM_cntlr));
+  log_msg("FM_plugin", "init");
+  FM *fm = malloc(sizeof(FM));
   fm->base.name = "fm";
   fm->base.fmt_name = "   FM    ";
   fm->op_count = 1;
@@ -222,7 +222,7 @@ Cntlr* fm_new(Buffer *buf)
   init_fm_hndl(fm, buf, &fm->base, fm->cur_dir);
   model_init(fm->base.hndl);
   model_open(fm->base.hndl);
-  buf_set_cntlr(buf, &fm->base);
+  buf_set_plugin(buf, &fm->base);
   buf_set_status(buf, 0, fm->cur_dir, 0, 0);
   hook_init(&fm->base);
   hook_add(&fm->base, &fm->base, fm_paste,   "paste");
@@ -238,10 +238,10 @@ Cntlr* fm_new(Buffer *buf)
   return &fm->base;
 }
 
-void fm_delete(Cntlr *cntlr)
+void fm_delete(Plugin *plugin)
 {
-  log_msg("FM_CNTLR", "cleanup");
-  FM_cntlr *fm = cntlr->top;
+  log_msg("FM_plugin", "cleanup");
+  FM *fm = plugin->top;
   fn_handle *h = fm->base.hndl;
   model_close(h);
   model_cleanup(h);
@@ -253,8 +253,8 @@ void fm_delete(Cntlr *cntlr)
   free(fm);
 }
 
-String fm_cur_dir(Cntlr *cntlr)
+String fm_cur_dir(Plugin *plugin)
 {
-  FM_cntlr *fm = cntlr->top;
+  FM *fm = plugin->top;
   return fm->cur_dir;
 }

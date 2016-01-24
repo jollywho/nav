@@ -6,7 +6,7 @@
 #include <uv.h>
 
 #include "fnav/lib/queue.h"
-#include "fnav/tui/cntlr.h"
+#include "fnav/plugins/plugin.h"
 
 typedef struct queue Queue;
 struct queue {

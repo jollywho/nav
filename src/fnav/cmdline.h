@@ -2,7 +2,7 @@
 #define FN_CMDLINE_H
 
 #include "fnav.h"
-#include "fnav/tui/cntlr.h"
+#include "fnav/plugins/plugin.h"
 #include "fnav/lib/queue.h"
 #include "fnav/lib/utarray.h"
 
@@ -57,7 +57,7 @@ struct Cmdstr {
 };
 
 #define PIPE_CMD     1
-#define PIPE_CNTLR   2
+#define PIPE_PLUGIN  2
 
 struct Cmdline {
   UT_array *cmds;

@@ -4,7 +4,7 @@
 #include "fnav/event/uv_process.h"
 #include "fnav/event/rstream.h"
 
-typedef void (*shell_stdout_cb)(Cntlr *c, String out);
+typedef void (*shell_stdout_cb)(Plugin *c, String out);
 
 typedef struct Shell Shell;
 struct Shell {
@@ -15,7 +15,7 @@ struct Shell {
   Stream err;
 
   shell_stdout_cb readout;
-  Cntlr *caller;
+  Plugin *caller;
   bool blocking;
   bool again;
   bool reg;
@@ -24,7 +24,7 @@ struct Shell {
 };
 
 void shell_init();
-Shell* shell_new(Cntlr *cntlr);
+Shell* shell_new(Plugin *plugin);
 void shell_delete(Shell *sh);
 void shell_args(Shell *sh, String *args, shell_stdout_cb readout);
 void shell_start(Shell *sh);

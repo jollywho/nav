@@ -1,10 +1,10 @@
 #include <sys/wait.h>
 #include <errno.h>
+#include "fnav/plugins/op/op.h"
 #include "fnav/log.h"
 #include "fnav/table.h"
 #include "fnav/model.h"
 #include "fnav/event/hook.h"
-#include "fnav/tui/op_cntlr.h"
 #include "fnav/event/event.h"
 
 //TODO: we want a single mpv process shared across all cntlr instances
@@ -13,7 +13,7 @@
 //cleanup on count of 0. this mess can be properly managed when the real
 //cntlr is made.
 
-Op_cntlr *op;
+Op *op;
 int refs = 0;
 uv_process_t proc;
 uv_process_options_t opts;
@@ -21,7 +21,7 @@ uv_process_options_t opts;
 static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal) {
   log_msg("OP", "exit_cb");
   uv_close((uv_handle_t*) req, NULL);
-  Op_cntlr *op = (Op_cntlr*)req->data;
+  Op *op = (Op*)req->data;
   op->ready = true;
   system("pkill compton");
 }
@@ -57,7 +57,7 @@ static void chld_handler(uv_signal_t *handle, int signum)
   //}
 }
 
-static void create_proc(Op_cntlr *op, String path)
+static void create_proc(Op *op, String path)
 {
   log_msg("OP", "create_proc");
   opts.flags = UV_PROCESS_DETACHED;
@@ -90,10 +90,10 @@ const char *file_ext(const char *filename) {
     return dot + 1;
 }
 
-static void fileopen_cb(Cntlr *host, Cntlr *caller, void *data)
+static void fileopen_cb(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("OP", "fileopen_cb");
-  Op_cntlr *op = (Op_cntlr*)caller->top;
+  Op *op = (Op*)caller->top;
 
   String path = model_curs_value(host->hndl->model, "fullpath");
   //const char* ext = file_ext(path);
@@ -103,17 +103,17 @@ static void fileopen_cb(Cntlr *host, Cntlr *caller, void *data)
   system("mpv_i");
 }
 
-static void pipe_attach_cb(Cntlr *host, Cntlr *caller, void *data)
+static void pipe_attach_cb(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("OP", "pipe_attach_cb");
   hook_add(caller, host, fileopen_cb, "fileopen");
 }
 
-Cntlr* op_new()
+Plugin* op_new()
 {
   log_msg("OP", "INIT");
   if (!refs) {
-    op = malloc(sizeof(Op_cntlr));
+    op = malloc(sizeof(Op));
     op->base.top = op;
     op->ready = true;
     if (tbl_mk("op_procs")) {
@@ -132,7 +132,7 @@ Cntlr* op_new()
   return &op->base;
 }
 
-void op_delete(Cntlr *cntlr)
+void op_delete(Plugin *cntlr)
 {
   log_msg("OP", "op_cleanup");
 }

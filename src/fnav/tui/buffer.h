@@ -8,7 +8,7 @@ typedef void (*buffer_input_cb)(Buffer *buf, Cmdarg *ca);
 
 struct Buffer {
   WINDOW *nc_win;
-  Cntlr *cntlr;
+  Plugin *plugin;
   Overlay *ov;
 
   buffer_input_cb input_cb;
@@ -48,10 +48,10 @@ void buf_cleanup();
 Buffer* buf_new();
 void buf_delete(Buffer *buf);
 
-Cntlr* buf_cntlr(Buffer *buf);
+Plugin* buf_plugin(Buffer *buf);
 
 void buf_set_overlay(Buffer *buf, Overlay *ov);
-void buf_set_cntlr(Buffer *buf, Cntlr *cntlr);
+void buf_set_plugin(Buffer *buf, Plugin *plugin);
 void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs);
 
 void buf_set_pass(Buffer *buf);

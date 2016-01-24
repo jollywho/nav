@@ -3,15 +3,15 @@
 
 #include "fnav/event/pty_process.h"
 
-typedef struct Op_cntlr Op_cntlr;
+typedef struct Op Op;
 
-struct Op_cntlr {
-  Cntlr base;
+struct Op {
+  Plugin base;
   fn_handle *hndl;
   bool ready;
 };
 
-Cntlr* op_new();
-void op_delete(Cntlr *cntlr);
+Plugin* op_new();
+void op_delete(Plugin *plugin);
 
 #endif

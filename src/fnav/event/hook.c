@@ -44,7 +44,7 @@ static int hook_cmp_arg(const void *_a, const void *_b, void *arg)
   return strcmp(a->msg, b->msg);
 }
 
-void hook_init(Cntlr *host)
+void hook_init(Plugin *host)
 {
   log_msg("HOOK", "INIT");
   host->event_hooks = malloc(sizeof(HookHandler));
@@ -52,7 +52,7 @@ void hook_init(Cntlr *host)
   utarray_new(host->event_hooks->owner, &hook_icd);
 }
 
-void hook_cleanup(Cntlr *host)
+void hook_cleanup(Plugin *host)
 {
   log_msg("HOOK", "CLEANUP");
   utarray_free(host->event_hooks->hosted);
@@ -60,7 +60,7 @@ void hook_cleanup(Cntlr *host)
   free(host->event_hooks);
 }
 
-void hook_add(Cntlr *host, Cntlr *caller, hook_cb fn, String msg)
+void hook_add(Plugin *host, Plugin *caller, hook_cb fn, String msg)
 {
   log_msg("HOOK", "ADD");
   HookHandler *host_handle = host->event_hooks;
@@ -82,7 +82,7 @@ void hook_add(Cntlr *host, Cntlr *caller, hook_cb fn, String msg)
   }
 }
 
-void hook_remove(Cntlr *host, Cntlr *caller, String msg)
+void hook_remove(Plugin *host, Plugin *caller, String msg)
 {
   log_msg("HOOK", "remove");
   // TODO
@@ -92,7 +92,7 @@ void hook_remove(Cntlr *host, Cntlr *caller, String msg)
   // remove hook from owner's list
 }
 
-void hook_clear_msg(Cntlr *host, String msg)
+void hook_clear_msg(Plugin *host, String msg)
 {
   // TODO
   // find hooklist in host by msg
@@ -102,7 +102,7 @@ void hook_clear_msg(Cntlr *host, String msg)
   // remove hooklist from host
 }
 
-void hook_clear(Cntlr *host)
+void hook_clear(Plugin *host)
 {
   log_msg("HOOK", "clear");
   // TODO
@@ -110,7 +110,7 @@ void hook_clear(Cntlr *host)
   //  hook_clear_msg it
 }
 
-void send_hook_msg(String msg, Cntlr *host, Cntlr *caller, void *data)
+void send_hook_msg(String msg, Plugin *host, Plugin *caller, void *data)
 {
   log_msg("HOOK", "(<%s>) msg sent", msg);
   HookHandler *host_handle = host->event_hooks;

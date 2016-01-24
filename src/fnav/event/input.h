@@ -1,7 +1,7 @@
 #ifndef FN_INPUT_H
 #define FN_INPUT_H
 
-#include "fnav/tui/cntlr.h"
+#include "fnav/plugins/plugin.h"
 #include "fnav/ascii.h"
 
 #define OP_NOP          0       /* no pending operation */

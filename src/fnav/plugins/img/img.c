@@ -1,9 +1,9 @@
 #include <string.h>
+#include "fnav/plugins/img/img.h"
 #include "fnav/log.h"
 #include "fnav/table.h"
 #include "fnav/model.h"
 #include "fnav/event/hook.h"
-#include "fnav/tui/img_cntlr.h"
 #include "fnav/tui/buffer.h"
 #include "fnav/tui/layout.h"
 #include "fnav/event/shell.h"
@@ -20,10 +20,10 @@ static const char *SZ_ARG = "5;%s\n";
 static const char * const args[]   = {WM_IMG, NULL};
 static const char * const t_args[] = {WM_IMG, "-test", NULL};
 
-static void img_draw(Cntlr *cntlr)
+static void img_draw(Plugin *plugin)
 {
   log_msg("IMG", "img_draw");
-  Img_cntlr *img = (Img_cntlr*)cntlr->top;
+  Img *img = (Img*)plugin->top;
 
   pos_T pos = buf_ofs(img->buf);
   pos_T size = buf_size(img->buf);
@@ -56,25 +56,25 @@ static void img_draw(Cntlr *cntlr)
   shell_start(img->sh_draw);
 }
 
-static void shell_stdout_size_cb(Cntlr *cntlr, String out)
+static void shell_stdout_size_cb(Plugin *plugin, String out)
 {
   log_msg("IMG", "shell_stdout_size_cb");
   log_msg("IMG", "%s", out);
-  Img_cntlr *img = (Img_cntlr*)cntlr->top;
+  Img *img = (Img*)plugin->top;
 
   char *w = strtok(out, " ");
   char *h = strtok(NULL, " ");
   sscanf(w, "%d", &img->width);
   sscanf(h, "%d", &img->height);
   img->img_set = true;
-  img_draw(cntlr);
+  img_draw(plugin);
 }
 
-static void shell_stdout_font_cb(Cntlr *cntlr, String out)
+static void shell_stdout_font_cb(Plugin *plugin, String out)
 {
   log_msg("IMG", "shell_stdout_font_cb");
   log_msg("IMG", "%s", out);
-  Img_cntlr *img = (Img_cntlr*)cntlr->top;
+  Img *img = (Img*)plugin->top;
 
   char *w = strtok(out, " ");
   char *h = strtok(NULL, " ");
@@ -105,9 +105,9 @@ static int valid_ext(const char *path)
   return 0;
 }
 
-static int create_msg(Cntlr *host, Cntlr *caller, void *data)
+static int create_msg(Plugin *host, Plugin *caller, void *data)
 {
-  Img_cntlr *img = (Img_cntlr*)caller->top;
+  Img *img = (Img*)caller->top;
   fn_handle *h = caller->hndl;
 
   String path = model_curs_value(host->hndl->model, "fullpath");
@@ -126,10 +126,10 @@ static int create_msg(Cntlr *host, Cntlr *caller, void *data)
   return 1;
 }
 
-static void cursor_change_cb(Cntlr *host, Cntlr *caller, void *data)
+static void cursor_change_cb(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("IMG", "cursor_change_cb");
-  Img_cntlr *img = (Img_cntlr*)caller->top;
+  Img *img = (Img*)caller->top;
 
   if (img->disabled) return;
 
@@ -139,9 +139,9 @@ static void cursor_change_cb(Cntlr *host, Cntlr *caller, void *data)
   }
 }
 
-static void try_refresh(Cntlr *host, Cntlr *none, void *data)
+static void try_refresh(Plugin *host, Plugin *none, void *data)
 {
-  Img_cntlr *img = (Img_cntlr*)host->top;
+  Img *img = (Img*)host->top;
   if (!img->img_set) return;
   shell_set_in_buffer(img->sh_clear, img->cl_msg);
   shell_start(img->sh_clear);
@@ -150,16 +150,16 @@ static void try_refresh(Cntlr *host, Cntlr *none, void *data)
   shell_start(img->sh_size);
 }
 
-static void pipe_attach_cb(Cntlr *host, Cntlr *caller, void *data)
+static void pipe_attach_cb(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("IMG", "pipe_attach_cb");
   hook_add(caller, host, cursor_change_cb, "cursor_change");
 }
 
-Cntlr* img_new(Buffer *buf)
+Plugin* img_new(Buffer *buf)
 {
   log_msg("IMG", "INIT");
-  Img_cntlr *img = malloc(sizeof(Img_cntlr));
+  Img *img = malloc(sizeof(Img));
   fn_handle *hndl = malloc(sizeof(fn_handle));
   hndl->buf = buf;
   hndl->key = " ";
@@ -174,7 +174,7 @@ Cntlr* img_new(Buffer *buf)
   img->sz_msg = malloc(1);
   img->cl_msg = malloc(1);
   img->img_msg = malloc(1);
-  buf_set_cntlr(buf, &img->base);
+  buf_set_plugin(buf, &img->base);
   buf_set_pass(buf);
 
   img->sh_size = shell_new(&img->base);
@@ -194,10 +194,10 @@ Cntlr* img_new(Buffer *buf)
   return &img->base;
 }
 
-void img_delete(Cntlr *cntlr)
+void img_delete(Plugin *plugin)
 {
   log_msg("IMG", "img_cleanup");
-  Img_cntlr *img = (Img_cntlr*)cntlr->top;
+  Img *img = (Img*)plugin->top;
   shell_set_in_buffer(img->sh_clear, img->cl_msg);
   shell_start(img->sh_clear);
   img->disabled = true;

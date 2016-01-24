@@ -161,13 +161,13 @@ void buf_set_pass(Buffer *buf)
   buf->attached = false;
 }
 
-void buf_set_cntlr(Buffer *buf, Cntlr *cntlr)
+void buf_set_plugin(Buffer *buf, Plugin *plugin)
 {
-  log_msg("BUFFER", "buf_set_cntlr");
-  buf->cntlr = cntlr;
-  buf->hndl = cntlr->hndl;
+  log_msg("BUFFER", "buf_set_plugin");
+  buf->plugin = plugin;
+  buf->hndl = plugin->hndl;
   buf->attached = true;
-  overlay_edit(buf->ov, cntlr->fmt_name, 0, 0, 0);
+  overlay_edit(buf->ov, plugin->fmt_name, 0, 0, 0);
 }
 
 void buf_set_status(Buffer *buf, String name, String usr, String in, String out)
@@ -181,7 +181,7 @@ void buf_toggle_focus(Buffer *buf, int focus)
   if (!buf) return;
   buf->focused = focus;
   if (buf->attached)
-    buf->cntlr->_focus(buf->cntlr);
+    buf->plugin->_focus(buf->plugin);
   buf_refresh(buf);
 }
 
@@ -208,7 +208,7 @@ void buf_draw(void **argv)
 
   if (buf->nodraw) {
     wnoutrefresh(buf->nc_win);
-    send_hook_msg("window_resize", buf->cntlr, NULL, NULL);
+    send_hook_msg("window_resize", buf->plugin, NULL, NULL);
     return;
   }
   if (buf->attached) {
@@ -308,7 +308,7 @@ static void buf_mv(Buffer *buf, Cmdarg *ca)
     buf->lnum = count - 1;
   }
   model_set_curs(m, buf->top + buf->lnum);
-  send_hook_msg("cursor_change", buf->cntlr, NULL, NULL);
+  send_hook_msg("cursor_change", buf->plugin, NULL, NULL);
   buf_refresh(buf);
 }
 
@@ -320,8 +320,8 @@ pos_T buf_size(Buffer *buf)
 {return buf->b_size;}
 pos_T buf_ofs(Buffer *buf)
 {return buf->b_ofs;}
-Cntlr* buf_cntlr(Buffer *buf)
-{return buf->cntlr;}
+Plugin* buf_plugin(Buffer *buf)
+{return buf->plugin;}
 pos_T buf_pos(Buffer *buf)
 {return (pos_T){buf->lnum+1,0};}
 int buf_attached(Buffer *buf)
@@ -340,7 +340,7 @@ int buf_input(Buffer *buf, Cmdarg *ca)
     return 0;
   if (model_blocking(buf->hndl))
     return 0;
-  if (buf->cntlr) {
+  if (buf->plugin) {
 
     int ret = find_do_cmd(&key_tbl, ca, buf);
     if (!ret)
@@ -391,13 +391,13 @@ static void buf_gomark(Buffer *buf, Cmdarg *ca)
   log_msg("BUFFER", "buf_gomark");
   String path = mark_str(ca->key);
   if (!path) return;
-  send_hook_msg("open", buf->cntlr, NULL, path);
+  send_hook_msg("open", buf->plugin, NULL, path);
 }
 
 static void buf_gen_event(Buffer *buf, Cmdarg *ca)
 {
   if (ca->arg > MAX_EVENTS || ca->arg < 0) return;
-  send_hook_msg(buf_events[ca->arg], buf->cntlr, NULL, NULL);
+  send_hook_msg(buf_events[ca->arg], buf->plugin, NULL, NULL);
 }
 
 void buf_sort(Buffer *buf, String fld, int flags)

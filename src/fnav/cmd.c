@@ -51,7 +51,7 @@ void cmd_run(Cmdstr *cmdstr)
   Cmd_T *fun = cmd_find(token_val(word, VAR_STRING));
   if (!fun) return; // :'(
 
-  cmdstr->ret_t = CNTLR;
+  cmdstr->ret_t = PLUGIN;
   cmdstr->ret = fun->cmd_func(args, fun->flags);
 }
 

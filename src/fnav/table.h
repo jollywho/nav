@@ -2,7 +2,7 @@
 #define FN_TABLE_H
 
 #include "fnav/lib/uthash.h"
-#include "fnav/tui/cntlr.h"
+#include "fnav/plugins/plugin.h"
 
 typedef struct fn_rec fn_rec;
 typedef struct fn_val fn_val;
