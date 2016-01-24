@@ -109,12 +109,13 @@ static void pipe_attach_cb(Plugin *host, Plugin *caller, void *data)
   hook_add(caller, host, fileopen_cb, "fileopen");
 }
 
-Plugin* op_new()
+void op_new(Plugin *plugin, Buffer *buf)
 {
   log_msg("OP", "INIT");
   if (!refs) {
     op = malloc(sizeof(Op));
-    op->base.top = op;
+    op->base = plugin;
+    plugin->top = op;
     op->ready = true;
     if (tbl_mk("op_procs")) {
       tbl_mk_fld("op_procs", "ext", typSTRING);
@@ -125,11 +126,10 @@ Plugin* op_new()
       tbl_mk_fld("op_procs", "uv_proc", typVOID);
       tbl_mk_fld("op_procs", "uv_opts", typVOID);
     }
-    hook_init(&op->base);
+    hook_init(plugin);
   }
   refs++;
-  hook_add(&op->base, &op->base, pipe_attach_cb, "pipe_attach");
-  return &op->base;
+  hook_add(plugin, plugin, pipe_attach_cb, "pipe_attach");
 }
 
 void op_delete(Plugin *cntlr)

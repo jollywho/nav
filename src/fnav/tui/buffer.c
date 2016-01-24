@@ -167,6 +167,7 @@ void buf_set_plugin(Buffer *buf, Plugin *plugin)
   buf->plugin = plugin;
   buf->hndl = plugin->hndl;
   buf->attached = true;
+  overlay_bufno(buf->ov, plugin->id);
   overlay_edit(buf->ov, plugin->fmt_name, 0, 0, 0);
 }
 

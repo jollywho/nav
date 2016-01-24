@@ -156,42 +156,41 @@ static void pipe_attach_cb(Plugin *host, Plugin *caller, void *data)
   hook_add(caller, host, cursor_change_cb, "cursor_change");
 }
 
-Plugin* img_new(Buffer *buf)
+void img_new(Plugin *plugin, Buffer *buf)
 {
   log_msg("IMG", "INIT");
   Img *img = malloc(sizeof(Img));
+  img->base = plugin;
   fn_handle *hndl = malloc(sizeof(fn_handle));
   hndl->buf = buf;
   hndl->key = " ";
-  img->base.hndl = hndl;
+  plugin->hndl = hndl;
 
-  img->base.name = "img";
-  img->base.fmt_name = "IMG";
-  img->base.top = img;
+  plugin->name = "img";
+  plugin->fmt_name = "IMG";
+  plugin->top = img;
   img->buf = buf;
   img->disabled = false;
   img->img_set = false;
   img->sz_msg = malloc(1);
   img->cl_msg = malloc(1);
   img->img_msg = malloc(1);
-  buf_set_plugin(buf, &img->base);
+  buf_set_plugin(buf, plugin);
   buf_set_pass(buf);
 
-  img->sh_size = shell_new(&img->base);
+  img->sh_size = shell_new(plugin);
   shell_args(img->sh_size, (String*)t_args, shell_stdout_font_cb);
   shell_start(img->sh_size);
 
-  img->sh_draw = shell_new(&img->base);
+  img->sh_draw = shell_new(plugin);
   shell_args(img->sh_draw, (String*)args, NULL);
 
-  img->sh_clear = shell_new(&img->base);
+  img->sh_clear = shell_new(plugin);
   shell_args(img->sh_clear, (String*)args, NULL);
 
-  hook_init(&img->base);
-  hook_add(&img->base, &img->base, pipe_attach_cb, "pipe_attach");
-  hook_add(&img->base, &img->base, try_refresh, "window_resize");
-
-  return &img->base;
+  hook_init(plugin);
+  hook_add(plugin, plugin, pipe_attach_cb, "pipe_attach");
+  hook_add(plugin, plugin, try_refresh, "window_resize");
 }
 
 void img_delete(Plugin *plugin)

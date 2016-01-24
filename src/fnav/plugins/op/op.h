@@ -6,12 +6,12 @@
 typedef struct Op Op;
 
 struct Op {
-  Plugin base;
+  Plugin *base;
   fn_handle *hndl;
   bool ready;
 };
 
-Plugin* op_new();
+void op_new(Plugin *plugin, Buffer *buf);
 void op_delete(Plugin *plugin);
 
 #endif

@@ -16,7 +16,7 @@ typedef struct Overlay Overlay;
 typedef struct fn_reg fn_reg;
 typedef struct Cmdarg Cmdarg;
 
-typedef Plugin* (*plugin_open_cb)(Buffer *b);
+typedef void (*plugin_open_cb)(Plugin *base, Buffer *b);
 typedef void (*plugin_close_cb)(Plugin *plugin);
 
 struct fn_handle {

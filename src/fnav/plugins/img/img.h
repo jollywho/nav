@@ -6,7 +6,7 @@
 typedef struct Img Img;
 
 struct Img {
-  Plugin base;
+  Plugin *base;
   Shell *sh_draw;
   Shell *sh_size;
   Shell *sh_clear;
@@ -22,7 +22,7 @@ struct Img {
   int width; int height;
 };
 
-Plugin* img_new(Buffer *buf);
+void img_new(Plugin *plugin, Buffer *buf);
 void img_delete(Plugin *plugin);
 
 #endif

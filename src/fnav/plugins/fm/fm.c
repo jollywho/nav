@@ -208,46 +208,46 @@ static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, String val)
   c->top = fm;
 }
 
-Plugin* fm_new(Buffer *buf)
+void fm_new(Plugin *plugin, Buffer *buf)
 {
   log_msg("FM_plugin", "init");
   FM *fm = malloc(sizeof(FM));
-  fm->base.name = "fm";
-  fm->base.fmt_name = "FM";
+  fm->base = plugin;
+  plugin->name = "fm";
+  plugin->fmt_name = "FM";
   fm->op_count = 1;
   fm->mo_count = 1;
 
   fm_active_dir(fm);
 
-  init_fm_hndl(fm, buf, &fm->base, fm->cur_dir);
-  model_init(fm->base.hndl);
-  model_open(fm->base.hndl);
-  buf_set_plugin(buf, &fm->base);
+  init_fm_hndl(fm, buf, plugin, fm->cur_dir);
+  model_init(plugin->hndl);
+  model_open(plugin->hndl);
+  buf_set_plugin(buf, plugin);
   buf_set_status(buf, 0, fm->cur_dir, 0, 0);
-  hook_init(&fm->base);
-  hook_add(&fm->base, &fm->base, fm_paste,   "paste");
-  hook_add(&fm->base, &fm->base, fm_remove,  "remove");
-  hook_add(&fm->base, &fm->base, fm_left,    "left");
-  hook_add(&fm->base, &fm->base, fm_right,   "right");
-  hook_add(&fm->base, &fm->base, fm_req_dir, "open");
+  hook_init(plugin);
+  hook_add(plugin, plugin, fm_paste,   "paste");
+  hook_add(plugin, plugin, fm_remove,  "remove");
+  hook_add(plugin, plugin, fm_left,    "left");
+  hook_add(plugin, plugin, fm_right,   "right");
+  hook_add(plugin, plugin, fm_req_dir, "open");
 
-  fm->fs = fs_init(fm->base.hndl);
+  fm->fs = fs_init(plugin->hndl);
   fm->fs->stat_cb = fm_ch_dir;
-  fm->fs->data = &fm->base;
+  fm->fs->data = plugin;
   fs_open(fm->fs, fm->cur_dir);
-  return &fm->base;
 }
 
 void fm_delete(Plugin *plugin)
 {
   log_msg("FM_plugin", "cleanup");
   FM *fm = plugin->top;
-  fn_handle *h = fm->base.hndl;
+  fn_handle *h = fm->base->hndl;
   model_close(h);
   model_cleanup(h);
   //hook remove_caller
   //hook clear
-  hook_cleanup(&fm->base);
+  hook_cleanup(fm->base);
   fs_cleanup(fm->fs);
   free(h);
   free(fm);

@@ -7,7 +7,7 @@
 typedef struct FM FM;
 
 struct FM {
-  Plugin base;
+  Plugin *base;
   int op_count;
   int mo_count;
   String cur_dir;
@@ -16,7 +16,7 @@ struct FM {
 
 void fm_init();
 void fm_cleanup();
-Plugin* fm_new(Buffer *buf);
+void fm_new(Plugin *plugin, Buffer *buf);
 void fm_delete(Plugin *plugin);
 
 String fm_cur_dir(Plugin *plugin);

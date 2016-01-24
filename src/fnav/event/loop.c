@@ -14,7 +14,6 @@ struct queue_item {
 
 #define TIMEOUT 10
 static void prepare_events(uv_prepare_t *handle);
-static void check_events(uv_check_t *handle);
 
 static void queue_new(Queue *queue)
 {
