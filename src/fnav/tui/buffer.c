@@ -47,7 +47,7 @@ static fn_key key_defaults[] = {
   {'N',     buf_search,      0,           BACKWARD},
   {'j',     buf_mv,          0,           FORWARD},
   {'k',     buf_mv,          0,           BACKWARD},
-  {'g',     buf_oper,        0,           OP_G},
+  {'g',     buf_oper,        NCH_S,       BACKWARD},
   {'G',     buf_g,           0,           FORWARD},
   {'y',     buf_oper,        NCH,         OP_YANK},
   {'m',     buf_oper,        NCH_A,       OP_MARK},
@@ -351,8 +351,13 @@ int buf_input(Buffer *buf, Cmdarg *ca)
 
 static void buf_oper(Buffer *buf, Cmdarg *ca)
 {
+  log_msg("BUFFER", "buf_oper");
   clearop(ca);
-  ca->oap.key = ca->arg;
+  if (ca->type == NCH_S)
+    ca->oap.key = OP_G;
+  else
+    ca->oap.key = ca->arg;
+  ca->nkey = ca->key;
 }
 
 static void buf_mv_page(Buffer *buf, Cmdarg *ca)

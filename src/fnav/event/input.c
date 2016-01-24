@@ -277,7 +277,8 @@ int find_do_op(fn_oper *kt, Cmdarg *ca, void *obj)
 {
   if (!op_pending(ca)) return 0;
   log_msg("BUFFER", "do_op");
-  if (ca->type == NCH_A || ca->key == ca->oap.key) {
+  log_msg("BUFFER", "%c %c %c", ca->key, ca->oap.key, ca->nkey);
+  if (ca->type == NCH_A || ca->key == ca->nkey) {
     return do_op(kt, ca, obj);
   }
 
