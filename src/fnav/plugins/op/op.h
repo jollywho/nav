@@ -1,5 +1,5 @@
-#ifndef FN_TUI_OP_CNTLR_H
-#define FN_TUI_OP_CNTLR_H
+#ifndef FN_PLUGINS_OP_H
+#define FN_PLUGINS_OP_H
 
 #include "fnav/event/pty_process.h"
 

@@ -13,6 +13,7 @@ struct queue_item {
 };
 
 #define TIMEOUT 10
+static void prepare_events(uv_prepare_t *handle);
 static void check_events(uv_check_t *handle);
 
 static void queue_new(Queue *queue)
@@ -24,7 +25,7 @@ void loop_add(Loop *loop)
 {
   log_msg("INIT", "new loop");
   uv_loop_init(&loop->uv);
-  uv_check_init(&loop->uv, &loop->event_check);
+  uv_prepare_init(&loop->uv, &loop->event_prepare);
   uv_timer_init(&loop->uv, &loop->children_kill_timer);
   uv_signal_init(&loop->uv, &loop->children_watcher);
   SLIST_INIT(&loop->children);
@@ -46,8 +47,7 @@ void queue_put_event(Queue *queue, Event event)
 {
   queue_push(queue, event);
   if (!mainloop()->running) {
-    mainloop()->running = true;
-    uv_check_start(&mainloop()->event_check, check_events);
+    uv_prepare_start(&mainloop()->event_prepare, prepare_events);
   }
 }
 
@@ -92,15 +92,20 @@ void queue_process_events(Queue *queue, int ms)
   }
 }
 
-static void check_events(uv_check_t *handle)
+static void prepare_events(uv_prepare_t *handle)
 {
-  queue_process_events(eventq(), TIMEOUT);
-  queue_process_events(drawq(),  TIMEOUT);
-  if (queue_empty(eventq()) && queue_empty(drawq())) {
-    mainloop()->running = false;
-    uv_check_stop(handle);
+  if (mainloop()->running) return;
+  mainloop()->running = true;
+  while (1) {
+    queue_process_events(eventq(), TIMEOUT);
+    queue_process_events(drawq(),  TIMEOUT);
+    if (queue_empty(eventq()) && queue_empty(drawq())) {
+      uv_prepare_stop(handle);
+      break;
+    }
+    else {
+      uv_run(eventloop(), UV_RUN_NOWAIT);
+    }
   }
-  else {
-    uv_run(eventloop(), UV_RUN_NOWAIT);
-  }
+  mainloop()->running = false;
 }

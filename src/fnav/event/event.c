@@ -5,7 +5,7 @@
 #include "fnav/event/input.h"
 #include "fnav/log.h"
 
-Loop loop;
+static Loop loop;
 
 void event_init(void)
 {

@@ -20,7 +20,7 @@ struct loop {
   Queue drawq;
   SLIST_HEAD(WatcherPtr, process) children;
   uv_signal_t children_watcher;
-  uv_check_t event_check;
+  uv_prepare_t event_prepare;
   uv_timer_t children_kill_timer;
   size_t children_stop_requests;
   bool running;

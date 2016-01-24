@@ -195,6 +195,8 @@ void fs_signal_handle(void **data)
       it->open_cb(NULL);
     }
     else {
+      //FIXME: key expires without update if two fs share lis.
+      // each user should have unique lis.
       fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
       ventry *head = lis_get_val(l, "dir");
       if (l && head) {
@@ -332,9 +334,9 @@ static void fs_reopen(fentry *ent)
 
   fn_fs *it;
   for (it = ent->listeners; it != NULL; it = it->hh.next) {
-    //FIXME: queue not being processed here
-    if (it->stat_cb)
+    if (it->stat_cb) {
       CREATE_EVENT(eventq(), it->stat_cb, 2, it->data, it->path);
+    }
   }
 }
 

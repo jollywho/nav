@@ -1,5 +1,5 @@
-#ifndef FN_PLUGIN_FM_H
-#define FN_PLUGIN_FM_H
+#ifndef FN_PLUGINS_FM_H
+#define FN_PLUGINS_FM_H
 
 #include "fnav/plugins/plugin.h"
 #include "fnav/event/fs.h"

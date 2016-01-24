@@ -1,5 +1,5 @@
-#ifndef FN_TUI_IMG_plugin_H
-#define FN_TUI_IMG_plugin_H
+#ifndef FN_PLUGINS_IMG_H
+#define FN_PLUGINS_IMG_H
 
 #include "fnav/event/shell.h"
 

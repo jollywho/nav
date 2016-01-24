@@ -1,5 +1,5 @@
-#ifndef FN_TUI_plugin_H
-#define FN_TUI_plugin_H
+#ifndef FN_PLUGINS_PLUGIN_H
+#define FN_PLUGINS_PLUGIN_H
 
 #include "fnav/fnav.h"
 #include "fnav/config.h"

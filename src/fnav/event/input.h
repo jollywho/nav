@@ -1,5 +1,5 @@
-#ifndef FN_INPUT_H
-#define FN_INPUT_H
+#ifndef FN_EVENT_INPUT_H
+#define FN_EVENT_INPUT_H
 
 #include "fnav/plugins/plugin.h"
 #include "fnav/ascii.h"
