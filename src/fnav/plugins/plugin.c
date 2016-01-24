@@ -81,12 +81,16 @@ static void unset_cid(Plugin *plugin)
   LIST_INSERT_HEAD(&id_pool, rem, ent);
 }
 
+
+#include "fnav/tui/overlay.h"
+
 Plugin* plugin_open(String name, Buffer *buf)
 {
   int i = find_plugin(name);
   if (i != -1) {
     Plugin *ret = plugin_table[i].open_cb(buf);
     set_cid(ret);
+    overlay_bufno(buf->ov, ret->id);
     return ret;
   }
   return NULL;

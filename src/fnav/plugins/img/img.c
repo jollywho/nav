@@ -166,7 +166,7 @@ Plugin* img_new(Buffer *buf)
   img->base.hndl = hndl;
 
   img->base.name = "img";
-  img->base.fmt_name = "   IMG   ";
+  img->base.fmt_name = "IMG";
   img->base.top = img;
   img->buf = buf;
   img->disabled = false;

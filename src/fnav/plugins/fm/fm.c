@@ -213,7 +213,7 @@ Plugin* fm_new(Buffer *buf)
   log_msg("FM_plugin", "init");
   FM *fm = malloc(sizeof(FM));
   fm->base.name = "fm";
-  fm->base.fmt_name = "   FM    ";
+  fm->base.fmt_name = "FM";
   fm->op_count = 1;
   fm->mo_count = 1;
 

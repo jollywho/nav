@@ -5,11 +5,12 @@
 
 #define STRINGIFY(s) #s
 #define STR(s) STRINGIFY(s)
-#define SZ_NAMEBOX 10
+#define SZ_BUFBOX  3
+#define SZ_NAMEBOX 8
 #define SZ_ARGSBOX 8
 #define ST_USRARG() (SZ_NAMEBOX)
 #define ST_ARGBOX(ov) ((ov) - ((SZ_ARGSBOX)-1))
-#define NAME_FMT "%-"STR(SZ_NAMEBOX)"s"
+#define NAME_FMT " %-"STR(SZ_NAMEBOX)"s"
 #define SEPCHAR "╬"
 
 struct Overlay {
@@ -23,6 +24,7 @@ struct Overlay {
 
   String usr_arg;
   String pipe_in;
+  char bufno[SZ_BUFBOX];
   char name[SZ_NAMEBOX];
   char pipe_out[SZ_ARGSBOX];
 
@@ -31,6 +33,7 @@ struct Overlay {
   int color_sep;
   int color_line;
   int color_text;
+  int color_bufno;
 };
 
 Overlay* overlay_new()
@@ -44,7 +47,10 @@ Overlay* overlay_new()
   ov->color_text = attr_color("OverlayLine");
   ov->color_namebox = attr_color("OverlayActive");
   ov->color_argsbox = attr_color("OverlayArgs");
+  ov->color_bufno = attr_color("OverlayBufNo");
   ov->usr_arg = strdup("         ");
+  overlay_bufno(ov, 0);
+
   memset(ov->name,     ' ', SZ_NAMEBOX);
   memset(ov->pipe_out, ' ', SZ_ARGSBOX);
   return ov;
@@ -95,6 +101,7 @@ void overlay_clear(Overlay *ov)
 void overlay_focus(Overlay *ov)
 {
   ov->color_namebox = attr_color("OverlayActive");
+  ov->color_bufno = attr_color("OverlayBufNo");
   ov->color_text = attr_color("OverlayLine");
   overlay_refresh(ov);
 }
@@ -102,6 +109,7 @@ void overlay_focus(Overlay *ov)
 void overlay_unfocus(Overlay *ov)
 {
   ov->color_namebox = attr_color("OverlayInactive");
+  ov->color_bufno = attr_color("OverlayInactiveBufNo");
   ov->color_text = attr_color("OverlayTextInactive");
   overlay_refresh(ov);
 }
@@ -131,6 +139,11 @@ static void set_string(String *from, String to)
   *from = strdup(to);
 }
 
+void overlay_bufno(Overlay *ov, int id)
+{
+  snprintf(ov->bufno, SZ_BUFBOX, "%02d", id);
+}
+
 void overlay_edit(Overlay *ov, String name, String usr, String in, String out)
 {
   set_string(&ov->usr_arg, usr);
@@ -150,7 +163,8 @@ void overlay_draw(void **argv)
   if (overlay_expire(ov)) return;
   ov->queued = false;
 
-  DRAW_STR(ov, nc_st, 0, 0, ov->name, color_namebox);
+  DRAW_STR(ov, nc_st, 0, 0, ov->bufno, color_bufno);
+  DRAW_STR(ov, nc_st, 0, SZ_BUFBOX-1, ov->name, color_namebox);
 
   wattron(ov->nc_st, COLOR_PAIR(ov->color_line));
   mvwhline(ov->nc_st, 0, SZ_NAMEBOX-1, ' ', ov->ov_size.col);
