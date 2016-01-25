@@ -9,10 +9,9 @@
 #include "fnav/event/event.h"
 #include "fnav/log.h"
 
-uv_poll_t poll_handle;
-uv_loop_t loop;
-
-TermKey *tk;
+static uv_poll_t poll_handle;
+static uv_check_t check;
+static TermKey *tk;
 
 typedef unsigned char char_u;
 
@@ -131,7 +130,7 @@ void input_check()
 
   termkey_advisereadable(tk);
 
-  while ((ret = termkey_getkey_force(tk, &key)) == TERMKEY_RES_KEY) {
+  while ((ret = termkey_getkey(tk, &key)) == TERMKEY_RES_KEY) {
     size_t len;
     char buf[64];
     char *bp;

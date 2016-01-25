@@ -79,6 +79,7 @@ static fn_key key_defaults[] = {
 };
 static fn_keytbl key_tbl;
 static short cmd_idx[KEYS_SIZE];
+static void window_update(uv_timer_t *handle);
 
 void sig_resize(int sig)
 {
@@ -86,6 +87,8 @@ void sig_resize(int sig)
   clear();
   layout_refresh(&win.layout);
   refresh();
+  loop_wakeup();
+  window_update(&win.draw_timer);
 }
 
 void window_init(void)
@@ -97,6 +100,7 @@ void window_init(void)
   input_setup_tbl(&key_tbl);
 
   uv_timer_init(eventloop(), &win.draw_timer);
+
   win.ex = false;
   win.dirty = false;
   win.refs = 0;
@@ -290,6 +294,7 @@ void window_draw(void **argv)
 
 static void window_update(uv_timer_t *handle)
 {
+  log_msg("WINDOW", "winup dd");
   if (win.ex)
     cmdline_refresh();
   doupdate();
@@ -302,6 +307,7 @@ static void window_update(uv_timer_t *handle)
 void window_req_draw(void *obj, argv_callback cb)
 {
   log_msg("WINDOW", "req draw");
+  log_msg("WINDOW", "dir %d winref %d", win.dirty, win.refs);
   if (!win.dirty) {
     win.dirty = true;
     uv_timer_start(&win.draw_timer, window_update, RFSH_RATE, RFSH_RATE);

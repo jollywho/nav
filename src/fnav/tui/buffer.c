@@ -392,6 +392,7 @@ static void buf_gomark(Buffer *buf, Cmdarg *ca)
   log_msg("BUFFER", "buf_gomark");
   String path = mark_str(ca->key);
   if (!path) return;
+  //TODO: set return mark "'"
   send_hook_msg("open", buf->plugin, NULL, path);
 }
 

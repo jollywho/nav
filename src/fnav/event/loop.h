@@ -62,6 +62,7 @@ void loop_init();
 void loop_destoy();
 void loop_add(Loop *loop);
 void loop_remove(Loop *loop);
+void loop_wakeup(void);
 
 void queue_push(Queue *queue, Event event);
 void queue_put_event(Queue *queue, Event event);

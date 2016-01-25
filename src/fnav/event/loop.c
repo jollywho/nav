@@ -89,14 +89,22 @@ void queue_process_events(Queue *queue, int ms)
   }
 }
 
+void loop_wakeup(void)
+{
+  prepare_events(&mainloop()->event_prepare);
+}
+
 static void prepare_events(uv_prepare_t *handle)
 {
+  log_msg("WINDOW", "event--");
   if (mainloop()->running) return;
   mainloop()->running = true;
   while (1) {
     queue_process_events(eventq(), TIMEOUT);
     queue_process_events(drawq(),  TIMEOUT);
-    if (queue_empty(eventq()) && queue_empty(drawq())) {
+
+    int empty = queue_empty(eventq()) && queue_empty(drawq());
+    if (empty) {
       uv_prepare_stop(handle);
       break;
     }
