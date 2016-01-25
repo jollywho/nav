@@ -1,10 +1,8 @@
-// shell
 #include "fnav/lib/utarray.h"
 
 #include "fnav/event/shell.h"
 #include "fnav/event/wstream.h"
 #include "fnav/event/event.h"
-#include "fnav/model.h"
 #include "fnav/log.h"
 #include "fnav/option.h"
 
@@ -97,8 +95,8 @@ void shell_start(Shell *sh)
     rstream_init(proc->out, 0);
     rstream_start(proc->out, sh->data_cb);
   }
-  rstream_init(proc->err, 0);
-  rstream_start(proc->err, sh->data_cb);
+  //rstream_init(proc->err, 0);
+  //rstream_start(proc->err, sh->data_cb);
   if (sh->msg)
     shell_write(sh, sh->msg);
 }

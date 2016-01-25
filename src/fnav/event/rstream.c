@@ -16,7 +16,6 @@ static void on_rbuffer_nonfull(RBuffer *buf, void *data);
 static void alloc_cb(uv_handle_t *handle, size_t suggested, uv_buf_t *buf);
 static void read_cb(uv_stream_t *uvstream, ssize_t cnt, const uv_buf_t *buf);
 static void fread_idle_cb(uv_idle_t *handle);
-static void invoke_read_cb(Stream *stream, size_t count, bool eof);
 
 void rstream_init_fd(Loop *loop, Stream *stream, int fd, size_t bufsize,
     void *data)
@@ -176,6 +175,8 @@ static void read_event(void **argv)
 {
   log_msg("RSTREAM", "read event");
   Stream *stream = argv[0];
+  bool eof = argv[3];
+  if (eof) return;
   if (stream->read_cb) {
     size_t count = (uintptr_t)argv[1];
     bool eof = (uintptr_t)argv[2];

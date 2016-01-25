@@ -4,13 +4,13 @@
 #include "fnav/event/loop.h"
 #include "fnav/event/event.h"
 #include "fnav/tui/layout.h"
-#include "fnav/tui/ex_cmd.h"
 #include "fnav/cmd.h"
-#include "fnav/log.h"
+#include "fnav/compl.h"
 #include "fnav/event/hook.h"
 #include "fnav/event/input.h"
-#include "fnav/compl.h"
 #include "fnav/info.h"
+#include "fnav/log.h"
+#include "fnav/tui/ex_cmd.h"
 #include "fnav/plugins/fm/fm.h"
 
 struct Window {

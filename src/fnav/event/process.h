@@ -26,7 +26,6 @@ struct process {
   internal_process_cb internal_exit_cb, internal_close_cb;
   bool closed, term_sent, detach;
   Queue *events;
-  uv_prepare_t uv_check;
   SLIST_ENTRY(process) ent;
 };
 
@@ -59,6 +58,5 @@ void process_close_in(Process *proc);
 void process_close_out(Process *proc);
 void process_close_err(Process *proc);
 void process_stop(Process *proc);
-int process_wait(Process *proc, int ms, Queue *events);
 
 #endif

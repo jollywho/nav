@@ -102,8 +102,6 @@ bool process_spawn(Process *proc)
     proc->refcount++;
   }
 
-  uv_prepare_init(&proc->loop->uv, &proc->uv_check);
-  proc->uv_check.data = proc;
   proc->internal_exit_cb = on_process_exit;
   proc->internal_close_cb = decref;
   proc->refcount++;
@@ -217,11 +215,10 @@ static void children_kill_cb(uv_timer_t *handle)
   }
 }
 
-static void process_close_event(uv_prepare_t *handle)
+static void process_close_event(void **args)
 {
   log_msg("PROCESS", "process_close_event");
-  Process *proc = handle->data;
-  uv_prepare_stop(&proc->uv_check);
+  Process *proc = args[0];
 
   if (proc->type == kProcessTypePty) {
     free(((PtyProcess *)proc)->term_name);
@@ -248,7 +245,7 @@ static void decref(Process *proc)
     }
   }
   SLIST_REMOVE(&loop->children, node, process, ent);
-  uv_prepare_start(&proc->uv_check, process_close_event);
+  CREATE_EVENT(eventq(), process_close_event, 1, proc);
 }
 
 static void process_close(Process *proc)
