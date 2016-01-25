@@ -16,7 +16,7 @@
 #include "fnav/tui/window.h"
 #include "fnav/event/fs.h"
 
-static void refind_line(fn_lis *lis);
+static void refind_line(Model *m, fn_lis *lis);
 static void generate_lines(Model *m);
 
 struct fn_line {
@@ -92,7 +92,7 @@ void model_close(fn_handle *hndl)
   Model *m = hndl->model;
   Buffer *b = hndl->buf;
   m->blocking = true;
-  hndl->model->opened = false;
+  m->opened = true;
   lis_save(m->lis, buf_top(b), buf_line(b));
   utarray_clear(m->lines);
 }
@@ -116,24 +116,35 @@ void model_sort(Model *m, String fld, int flags)
   buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
 }
 
+void model_recv(Model *m)
+{
+  if (m->opened)
+    model_close(m->hndl);
+  fn_handle *h = m->hndl;
+  fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
+  ventry *head = lis_get_val(l, "dir");
+  if (l && head) {
+    if (!l->ent) {
+      l->ent = lis_set_val(l, h->fname);
+    }
+    model_read_entry(h->model, l, head);
+  }
+}
+
 void model_read_entry(Model *m, fn_lis *lis, ventry *head)
 {
   log_msg("MODEL", "model_read_entry");
   fn_handle *h = m->hndl;
-  if (m->opened) return;
-  if (!lis->ent) {
-    lis->ent = lis_set_val(lis, h->fname);
-  }
 
   m->head = head;
   m->cur = lis->ent->next->rec;
   h->model->lis = lis;
   generate_lines(m);
-  refind_line(m->lis);
+  refind_line(m, m->lis);
   buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
   model_sort(m, NULL, 0);
-  m->opened = true;
   m->blocking = false;
+  m->opened = true;
 }
 
 size_t model_read_stream(Model *m, char *output, size_t remaining,
@@ -190,7 +201,7 @@ void model_set_curs(Model *m, int index)
   m->cur = res->rec;
 }
 
-static void refind_line(fn_lis *lis)
+static void refind_line(Model *m, fn_lis *lis)
 {
   log_msg("MODEL", "rewind");
   int count;

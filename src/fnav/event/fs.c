@@ -195,13 +195,7 @@ void fs_signal_handle(void **data)
       it->open_cb(NULL);
     }
     else {
-      //FIXME: key expires without update if two fs share lis.
-      // each user should have unique lis.
-      fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
-      ventry *head = lis_get_val(l, "dir");
-      if (l && head) {
-        model_read_entry(h->model, l, head);
-      }
+      model_recv(h->model);
     }
   }
   ent->running = false;
@@ -332,12 +326,9 @@ static void fs_reopen(fentry *ent)
   uv_timer_stop(&ent->watcher_timer);
   uv_fs_event_stop(&ent->watcher);
 
-  fn_fs *it;
-  for (it = ent->listeners; it != NULL; it = it->hh.next) {
-    if (it->stat_cb) {
-      CREATE_EVENT(eventq(), it->stat_cb, 2, it->data, it->path);
-    }
-  }
+  ent->running = true;
+  uv_fs_stat(eventloop(), &ent->uv_fs, ent->key, stat_cb);
+  uv_fs_event_start(&ent->watcher, watch_cb, ent->key, 1);
 }
 
 static void watch_timer_cb(uv_timer_t *handle)
