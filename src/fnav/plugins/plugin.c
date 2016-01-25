@@ -8,16 +8,18 @@
 #include "fnav/option.h"
 
 #define TABLE_SIZE ARRAY_SIZE(plugin_table)
-struct _plugin_table {
+struct plugin_ent {
   String name;
   plugin_open_cb open_cb;
   plugin_close_cb close_cb;
+  int type_bg;
 } plugin_table[] = {
-  {"fm", fm_new, fm_delete},
-  {"op", op_new},
-  {"img", img_new, img_delete},
+  {"fm", fm_new, fm_delete, 0},
+  {"op", op_new, op_delete, 1},
+  {"img", img_new, img_delete, 0},
 };
 
+typedef struct plugin_ent plugin_ent;
 typedef struct {
   int key;
   Plugin *plugin;
@@ -44,6 +46,17 @@ static int find_plugin(String name)
     }
   }
   return -1;
+}
+
+static Plugin* find_loaded_plugin(String name)
+{
+  Cid *it;
+  for (it = id_table; it != NULL; it = it->hh.next) {
+    if (strcmp(it->plugin->name, name) == 0) {
+      return it->plugin;
+    }
+  }
+  return NULL;
 }
 
 static void set_cid(Plugin *plugin)
@@ -81,13 +94,23 @@ static void unset_cid(Plugin *plugin)
   LIST_INSERT_HEAD(&id_pool, rem, ent);
 }
 
+static Plugin* plugin_in_bkgrnd(plugin_ent *ent)
+{
+  if (!ent->type_bg) return NULL;
+  return find_loaded_plugin(ent->name);
+}
+
 Plugin* plugin_open(String name, Buffer *buf)
 {
   int i = find_plugin(name);
   if (i != -1) {
-    Plugin *plugin = malloc(sizeof(Plugin));
-    set_cid(plugin);
-    plugin_table[i].open_cb(plugin, buf);
+    Plugin *plugin = plugin_in_bkgrnd(&plugin_table[i]);
+    if (!plugin) {
+      plugin = malloc(sizeof(Plugin));
+      set_cid(plugin);
+  log_msg("OP", "ret");
+      plugin_table[i].open_cb(plugin, buf);
+    }
     return plugin;
   }
   return NULL;

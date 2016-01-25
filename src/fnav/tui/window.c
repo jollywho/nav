@@ -307,7 +307,6 @@ static void window_update(uv_timer_t *handle)
 void window_req_draw(void *obj, argv_callback cb)
 {
   log_msg("WINDOW", "req draw");
-  log_msg("WINDOW", "dir %d winref %d", win.dirty, win.refs);
   if (!win.dirty) {
     win.dirty = true;
     uv_timer_start(&win.draw_timer, window_update, RFSH_RATE, RFSH_RATE);

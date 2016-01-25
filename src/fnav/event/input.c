@@ -130,7 +130,7 @@ void input_check()
 
   termkey_advisereadable(tk);
 
-  while ((ret = termkey_getkey(tk, &key)) == TERMKEY_RES_KEY) {
+  while ((ret = termkey_getkey_force(tk, &key)) == TERMKEY_RES_KEY) {
     size_t len;
     char buf[64];
     char *bp;

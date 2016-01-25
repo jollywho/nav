@@ -29,7 +29,7 @@ static void write_mark_info(FILE *f, fn_mark *mrk)
 {
   if (!mrk) return;
   for (; mrk != NULL; mrk = mrk->hh.next) {
-    fprintf(f, "@%s %s\n", mrk->key, mrk->path);
+    fprintf(f, "%s %s\n", mrk->key, mrk->path);
   }
 }
 

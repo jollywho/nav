@@ -13,10 +13,10 @@
 //cleanup on count of 0. this mess can be properly managed when the real
 //cntlr is made.
 
-Op *op;
-int refs = 0;
-uv_process_t proc;
-uv_process_options_t opts;
+static Op *op_default;
+static int refs = 0;
+static uv_process_t proc;
+static uv_process_options_t opts;
 
 static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal) {
   log_msg("OP", "exit_cb");
@@ -112,24 +112,22 @@ static void pipe_attach_cb(Plugin *host, Plugin *caller, void *data)
 void op_new(Plugin *plugin, Buffer *buf)
 {
   log_msg("OP", "INIT");
-  if (!refs) {
-    op = malloc(sizeof(Op));
-    op->base = plugin;
-    plugin->top = op;
-    op->ready = true;
-    if (tbl_mk("op_procs")) {
-      tbl_mk_fld("op_procs", "ext", typSTRING);
-      tbl_mk_fld("op_procs", "file", typSTRING);
-      tbl_mk_fld("op_procs", "single", typSTRING);
-      tbl_mk_fld("op_procs", "ensure", typSTRING);
-      tbl_mk_fld("op_procs", "args", typSTRING);
-      tbl_mk_fld("op_procs", "uv_proc", typVOID);
-      tbl_mk_fld("op_procs", "uv_opts", typVOID);
-    }
-    hook_init(plugin);
+  op_default = malloc(sizeof(Op));
+  op_default->base = plugin;
+  plugin->top = op_default;
+  plugin->name = "op";
+  op_default->ready = true;
+  if (tbl_mk("op_procs")) {
+    tbl_mk_fld("op_procs", "ext", typSTRING);
+    tbl_mk_fld("op_procs", "file", typSTRING);
+    tbl_mk_fld("op_procs", "single", typSTRING);
+    tbl_mk_fld("op_procs", "ensure", typSTRING);
+    tbl_mk_fld("op_procs", "args", typSTRING);
+    tbl_mk_fld("op_procs", "uv_proc", typVOID);
+    tbl_mk_fld("op_procs", "uv_opts", typVOID);
   }
-  refs++;
-  hook_add(plugin, plugin, pipe_attach_cb, "pipe_attach");
+  hook_init(plugin);
+  hook_add(op_default->base, op_default->base, pipe_attach_cb, "pipe_attach");
 }
 
 void op_delete(Plugin *cntlr)
