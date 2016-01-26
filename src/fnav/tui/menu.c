@@ -44,7 +44,7 @@ static void menu_fs_cb(void **args)
 {
   log_msg("MENU", "menu_fs_cb");
   log_msg("MENU", "%s", cur_menu->hndl->key);
-  fs_close(cur_menu->fs);
+  if (!cur_menu->active) return;
   ventry *ent = fnd_val("fm_files", "dir", cur_menu->hndl->key);
   if (!ent) return;
   int count = tbl_ent_count(ent);
@@ -55,19 +55,21 @@ static void menu_fs_cb(void **args)
     compl_set_index(i, rec_fld(rec, "name"), 0, NULL);
     ent = ent->next;
   }
-  // FIXME: should check if cx changed
+
   if (cur_menu->active) {
     compl_update(cur_menu->cx, cur_menu->line_key);
     window_req_draw(cur_menu, menu_queue_draw);
   }
+  fs_close(cur_menu->fs);
 }
 
 void menu_ch_dir(void **args)
 {
   log_msg("MENU", "menu_ch_dir");
+  fs_close(cur_menu->fs);
+  if (!cur_menu->active) return;
   String dir = args[1];
   if (!dir) return;
-  fs_close(cur_menu->fs);
   free(cur_menu->hndl->key);
   cur_menu->hndl->key = strdup(dir);
   fs_open(cur_menu->fs, dir);
@@ -77,10 +79,15 @@ void path_list(List *args)
 {
   log_msg("MENU", "path_list");
   if (!cur_menu) return;
+  if (!args) {
+    log_msg("ERR", "unhandled execution path");
+    abort();
+    return;
+  }
   String dir, val = NULL;
 
   int exec = 0;
-  int pos = ex_cmd_curidx();
+  int pos = ex_cmd_curidx(args);
   Token *tok = tok_arg(args, pos);
 
   if (!tok) {
@@ -91,11 +98,13 @@ void path_list(List *args)
   else {
     log_msg("MENU", "TOK!");
 
+    free(cur_menu->line_key);
     dir = token_val(tok, VAR_STRING);
     cur_menu->line_key = dir;
 
     if (dir[0] == '@') {
       marklbl_list(args);
+      cur_menu->line_key = strdup(dir);
       compl_update(cur_menu->cx, cur_menu->line_key);
       return;
     }
@@ -128,8 +137,10 @@ void path_list(List *args)
 
     log_msg("MENU", "dir: %s", dir);
     log_msg("MENU", "key: %s", cur_menu->line_key);
-    if (exec)
+    cur_menu->line_key = strdup(cur_menu->line_key);
+    if (exec) {
       fs_read(cur_menu->fs, dir);
+    }
   }
 }
 
@@ -137,6 +148,7 @@ Menu* menu_new()
 {
   log_msg("MENU", "menu_new");
   Menu *mnu = malloc(sizeof(Menu));
+  memset(mnu, 0, sizeof(Menu));
   fn_handle *hndl = malloc(sizeof(fn_handle));
   mnu->hndl = hndl;
 
@@ -183,6 +195,7 @@ void menu_start(Menu *mnu)
   mnu->lnum = 0;
   mnu->rebuild = false;
   mnu->active = true;
+  mnu->line_key = strdup("");
 
   menu_restart(mnu);
 }
@@ -195,6 +208,7 @@ void menu_stop(Menu *mnu)
 
   delwin(mnu->nc_win);
   window_shift(ROW_MAX+1);
+  free(mnu->line_key);
   mnu->active = false;
 }
 
@@ -202,6 +216,7 @@ void menu_restart(Menu *mnu)
 {
   mnu->cx = context_start();
   mnu->docmpl = false;
+
   ex_cmd_push(mnu->cx);
   compl_build(mnu->cx, NULL);
   compl_update(mnu->cx, "");
@@ -246,7 +261,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 
   if (mnu->rebuild)
     return rebuild_contexts(mnu, cmd);
-  if (ex_cmd_state() & EX_CYCLE) {
+  if (ex_cmd_state() & (EX_CYCLE|EX_QUIT)) {
     return;
   }
   mnu->lnum = 0;
@@ -267,13 +282,16 @@ void menu_update(Menu *mnu, Cmdline *cmd)
     }
     ex_cmd_push(mnu->cx);
   }
+
   if (mnu->docmpl || compl_isdynamic(mnu->cx))
     compl_build(mnu->cx, ex_cmd_curlist());
 
-  if (!compl_isdynamic(mnu->cx))
-    mnu->line_key = ex_cmd_curstr();
+  String line = ex_cmd_curstr();
+  if (compl_isdynamic(mnu->cx)) {
+    line = mnu->line_key;
+  }
 
-  compl_update(mnu->cx, mnu->line_key);
+  compl_update(mnu->cx, line);
 
   mnu->docmpl = false;
 }

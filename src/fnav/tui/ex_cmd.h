@@ -40,7 +40,7 @@ Token* ex_cmd_curtok();
 String ex_cmd_curstr();
 List* ex_cmd_curlist();
 int ex_cmd_state();
-int ex_cmd_curidx();
+int ex_cmd_curidx(List *list);
 
 void ex_cmd_push(fn_context *cx);
 cmd_part* ex_cmd_pop(int count);

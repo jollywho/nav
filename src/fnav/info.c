@@ -47,6 +47,7 @@ void mark_list(List *args)
 
 void marklbl_list(List *args)
 {
+  log_msg("INFO", "marklbl_list");
   unsigned int count = HASH_COUNT(lbl_marks);
   compl_new(count, COMPL_STATIC);
   fn_mark *it;

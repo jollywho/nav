@@ -152,6 +152,7 @@ static void stat_cleanup(void **args)
   free(args[1]);
   free(fs->readkey);
   uv_fs_req_cleanup(&fs->uv_fs);
+  fs->running = false;
 }
 
 static void stat_read_cb(uv_fs_t *req)
@@ -210,6 +211,8 @@ bool fs_blocking(fn_fs *fs)
 void fs_read(fn_fs *fs, String dir)
 {
   log_msg("FS", "fs read %s", dir);
+  if (fs->running) return;
+  fs->running = true;
   fs->uv_fs.data = fs;
   fs->readkey = strdup(dir);
   uv_fs_stat(eventloop(), &fs->uv_fs, fs->readkey, stat_read_cb);

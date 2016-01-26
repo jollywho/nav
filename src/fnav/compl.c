@@ -217,7 +217,7 @@ void compl_update(fn_context *cx, String line)
   log_msg("COMPL", "compl_update");
   if (!cx || !line) return;
   if (!cx->cmpl) return;
-  log_msg("COMPL", "%s", line);
+  log_msg(":::::::::::::::", "%s", line);
 
   fn_compl *cmpl = cx->cmpl;
   cmpl->matchcount = 0;

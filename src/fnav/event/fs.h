@@ -16,6 +16,7 @@ struct fn_fs {
   fentry *ent;
 
   void *data;
+  bool running;
   argv_callback open_cb;
   argv_callback stat_cb;
   UT_hash_handle hh;
