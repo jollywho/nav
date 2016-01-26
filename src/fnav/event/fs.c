@@ -71,7 +71,7 @@ static void del_ent(uv_handle_t *hndl)
 
 static void fs_demux(fn_fs *fs)
 {
-  log_msg("FS", "open req");
+  log_msg("FS", "fs_demux");
   if (!fs->ent) return;
   fentry *ent = fs->ent;
 
@@ -94,7 +94,7 @@ static void fs_demux(fn_fs *fs)
 
 fn_fs* fs_init(fn_handle *hndl)
 {
-  log_msg("FS", "open req");
+  log_msg("FS", "fs_init");
   fn_fs *fs = malloc(sizeof(fn_fs));
   memset(fs, 0, sizeof(fn_fs));
   fs->hndl = hndl;

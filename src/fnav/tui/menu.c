@@ -45,7 +45,6 @@ static void menu_fs_cb(void **args)
   log_msg("MENU", "menu_fs_cb");
   log_msg("MENU", "%s", cur_menu->hndl->key);
   fs_close(cur_menu->fs);
-  compl_destroy(cur_menu->cx);
   ventry *ent = fnd_val("fm_files", "dir", cur_menu->hndl->key);
   if (!ent) return;
   int count = tbl_ent_count(ent);
@@ -58,7 +57,6 @@ static void menu_fs_cb(void **args)
   }
   // FIXME: should check if cx changed
   if (cur_menu->active) {
-    compl_force_cur(cur_menu->cx);
     compl_update(cur_menu->cx, cur_menu->line_key);
     window_req_draw(cur_menu, menu_queue_draw);
   }
@@ -98,7 +96,6 @@ void path_list(List *args)
 
     if (dir[0] == '@') {
       marklbl_list(args);
-      compl_force_cur(cur_menu->cx);
       compl_update(cur_menu->cx, cur_menu->line_key);
       return;
     }

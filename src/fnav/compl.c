@@ -17,13 +17,13 @@ static compl_entry compl_defaults[] = {
 
 static compl_entry *compl_table;
 static fn_context *cxroot;
-static fn_compl *cur_cmpl;
+static fn_context *cur_cx;
 static int compl_param(fn_context **arg, String param);
 static int count_subgrps(String str, String fnd);
 
 void compl_init()
 {
-  cur_cmpl = NULL;
+  cur_cx = NULL;
   String param = strdup("cmd:string:cmds");
   compl_param(&cxroot, param);
   free(param);
@@ -190,14 +190,6 @@ fn_context* find_context(fn_context *cx, String name)
   }
 }
 
-void compl_force_cur(fn_context *cx)
-{
-  if (cur_cmpl) {
-    cx->cmpl = cur_cmpl;
-  }
-  cur_cmpl = NULL;
-}
-
 void compl_build(fn_context *cx, List *args)
 {
   log_msg("COMPL", "compl_build");
@@ -211,17 +203,8 @@ void compl_build(fn_context *cx, List *args)
     return;
   }
 
+  cur_cx = cx;
   find->gen(args);
-
-  compl_force_cur(cx);
-}
-
-void compl_destroy(fn_context *cx)
-{
-  log_msg("COMPL", "compl_destroy");
-  if (!cx) return;
-  compl_delete(cx->cmpl);
-  cx->cmpl = NULL;
 }
 
 fn_context* context_start()
@@ -253,16 +236,18 @@ void compl_update(fn_context *cx, String line)
 void compl_new(int size, int dynamic)
 {
   log_msg("COMPL", "compl_new");
-  cur_cmpl = malloc(sizeof(fn_compl));
-  cur_cmpl->rows    = malloc(size*sizeof(compl_item));
-  cur_cmpl->matches = malloc(size*sizeof(compl_item));
-  cur_cmpl->rowcount = size;
-  cur_cmpl->matchcount = 0;
-  cur_cmpl->comp_type = dynamic;
+  compl_destroy(cur_cx);
+  cur_cx->cmpl = malloc(sizeof(fn_compl));
+  cur_cx->cmpl->rows    = malloc(size*sizeof(compl_item));
+  cur_cx->cmpl->matches = malloc(size*sizeof(compl_item));
+  cur_cx->cmpl->rowcount = size;
+  cur_cx->cmpl->matchcount = 0;
+  cur_cx->cmpl->comp_type = dynamic;
 }
 
 void compl_delete(fn_compl *cmpl)
 {
+  log_msg("COMPL", "compl_delete");
   if (!cmpl) return;
   for (int i = 0; i < cmpl->rowcount; i++) {
     free(cmpl->rows[i]);
@@ -272,12 +257,21 @@ void compl_delete(fn_compl *cmpl)
   free(cmpl);
 }
 
+void compl_destroy(fn_context *cx)
+{
+  log_msg("COMPL", "compl_destroy");
+  if (!cx) return;
+  compl_delete(cx->cmpl);
+  cx->cmpl = NULL;
+}
+
 void compl_set_index(int idx, String key, int colcount, String cols)
 {
-  cur_cmpl->rows[idx] = malloc(sizeof(compl_item));
-  cur_cmpl->rows[idx]->key = key;
-  cur_cmpl->rows[idx]->colcount = colcount;
-  cur_cmpl->rows[idx]->columns = cols;
+  fn_compl *cmpl = cur_cx->cmpl;
+  cmpl->rows[idx] = malloc(sizeof(compl_item));
+  cmpl->rows[idx]->key = key;
+  cmpl->rows[idx]->colcount = colcount;
+  cmpl->rows[idx]->columns = cols;
 }
 
 static int count_subgrps(String str, String fnd)
