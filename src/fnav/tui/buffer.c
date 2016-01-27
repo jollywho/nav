@@ -149,7 +149,9 @@ void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs)
 
   overlay_set(buf->ov, buf->b_size, buf->b_ofs, sep);
 
-  if ((buf->ldif > 0 && buf->lnum >= buf->b_size.lnum) || (buf->ldif < 0)) {
+  int oob = buf->lnum >= buf->b_size.lnum;
+  int rem = buf->lnum > buf->b_size.lnum * 0.8;
+  if ((buf->ldif > 0 && oob) || (buf->ldif < 0 && oob) || (buf->ldif < 0 && rem)) {
     resize_adjustment(buf);
   }
   buf_refresh(buf);
@@ -237,6 +239,7 @@ void buf_move_invalid(Buffer *buf, int index, int lnum)
   Model *m = buf->hndl->model;
   buf->top = index;
   buf->lnum = lnum;
+  buf->max = model_count(m);
   model_set_curs(m, buf->top + buf->lnum);
   buf_refresh(buf);
 }
