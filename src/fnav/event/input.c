@@ -10,7 +10,6 @@
 #include "fnav/log.h"
 
 static uv_poll_t poll_handle;
-static uv_check_t check;
 static TermKey *tk;
 
 typedef unsigned char char_u;

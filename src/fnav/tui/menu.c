@@ -75,6 +75,50 @@ void menu_ch_dir(void **args)
   fs_open(cur_menu->fs, dir);
 }
 
+static int last_dir_in_path(Token *tok, List *args, int pos, String *path)
+{
+  String val = NULL;
+  int prev = tok->block;
+  int exec = 0;
+  while ((tok = tok_arg(args, ++pos))) {
+    if (prev != tok->block)
+      break;
+    val = token_val(tok, VAR_STRING);
+
+    if (val[0] == '/') {
+      exec = 1;
+      cur_menu->line_key = "";
+      continue;
+    }
+    else {
+      exec = 0;
+      cur_menu->line_key = val;
+      String tmp = conspath(*path, val);
+      free(*path);
+      *path = tmp;
+    }
+  }
+  return exec;
+}
+
+static String expand_path(String path)
+{
+  if (path[0] != '/') {
+    path = conspath(window_active_dir(), path);
+  }
+  String tmp = realpath(path, NULL);
+  if (tmp) {
+    if (strcmp(tmp, path)) {
+      free(path);
+      cur_menu->line_key = "";
+      path = tmp;
+    }
+    else
+      free(tmp);
+  }
+  return path;
+}
+
 void path_list(List *args)
 {
   log_msg("MENU", "path_list");
@@ -84,63 +128,33 @@ void path_list(List *args)
     abort();
     return;
   }
-  String dir, val = NULL;
-
-  int exec = 0;
   int pos = ex_cmd_curidx(args);
   Token *tok = tok_arg(args, pos);
+  free(cur_menu->line_key);
 
   if (!tok) {
-    log_msg("MENU", "!TOK");
-    dir = window_active_dir();
-    fs_read(cur_menu->fs, dir);
+    String path = window_active_dir();
+    cur_menu->line_key = strdup("");
+    fs_read(cur_menu->fs, path);
   }
   else {
-    log_msg("MENU", "TOK!");
+    String path = strdup(token_val(tok, VAR_STRING));
+    cur_menu->line_key = path;
 
-    free(cur_menu->line_key);
-    dir = token_val(tok, VAR_STRING);
-    cur_menu->line_key = dir;
-
-    if (dir[0] == '@') {
+    if (path[0] == '@') {
       marklbl_list(args);
-      cur_menu->line_key = strdup(dir);
       compl_update(cur_menu->cx, cur_menu->line_key);
       return;
     }
 
-    //FIXME: expand path first
-    if (dir[0] != '/') {
-      dir = conspath(window_active_dir(), dir);
-    }
+    path = expand_path(path);
+    int exec = last_dir_in_path(tok, args, pos, &path);
 
-    int prev = tok->block;
-    while ((tok = tok_arg(args, ++pos))) {
-      if (prev != tok->block)
-        break;
-      val = token_val(tok, VAR_STRING);
-
-      if (val[0] == '/') {
-        exec = 1;
-        cur_menu->line_key = "";
-        continue;
-      }
-      else {
-        exec = 0;
-        cur_menu->line_key = val;
-        log_msg("MENU", "%s %s", dir, val);
-        String tmp = conspath(dir, val);
-        free(dir);
-        dir = tmp;
-      }
-    }
-
-    log_msg("MENU", "dir: %s", dir);
-    log_msg("MENU", "key: %s", cur_menu->line_key);
     cur_menu->line_key = strdup(cur_menu->line_key);
     if (exec) {
-      fs_read(cur_menu->fs, dir);
+      fs_read(cur_menu->fs, path);
     }
+    free(path);
   }
 }
 

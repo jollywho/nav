@@ -11,7 +11,6 @@ int fdd;
 void sbuffer_init(Buffer *buf)
 {
   log_msg("SBUFFER", "init");
-  buf->input_cb = on_input_cb;
   buf_set_pass(buf);
 }
 
@@ -20,7 +19,6 @@ void sbuffer_readtest(int fd)
   fdd = fd;
 }
 
-#include <unistd.h>
 void on_input_cb(Buffer *buf, int key)
 {
   log_msg("SBUFFER", "on_input_cb");

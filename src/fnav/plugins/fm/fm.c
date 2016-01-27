@@ -124,14 +124,14 @@ static void fm_ch_dir(void **args)
 static void fm_req_dir(Plugin *plugin, Plugin *caller, void *data)
 {
   log_msg("FM_plugin", "fm_req_dir");
-  String path = data;
+  String path = strdup(data);
 
   if (path[0] == '@') {
-    path = mark_path(path);
+    SWAP_ALLOC_PTR(path, strdup(mark_path(path)));
   }
 
   if (path[0] != '/' && path[0] != '~') {
-    path = conspath(fm_cur_dir(plugin), path);
+    SWAP_ALLOC_PTR(path, conspath(fm_cur_dir(plugin), path));
   }
 
   String newpath = fs_expand_path(path);
@@ -140,6 +140,7 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, void *data)
     fs_read(self->fs, newpath);
     free(newpath);
   }
+  free(path);
 }
 
 static String next_valid_path(String path)
@@ -150,10 +151,9 @@ static String next_valid_path(String path)
   //TODO: increment '_0' if already exists
   struct stat s;
   while (stat(str, &s) == 0) {
-    String tmp;
-    asprintf(&tmp, "%s_0", str);
-    free(str);
-    str = tmp;
+    String next;
+    asprintf(&next, "%s_0", str);
+    SWAP_ALLOC_PTR(str, next);
   }
   return str;
 }

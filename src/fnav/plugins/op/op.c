@@ -14,7 +14,6 @@
 //cntlr is made.
 
 static Op *op_default;
-static int refs = 0;
 static uv_process_t proc;
 static uv_process_options_t opts;
 

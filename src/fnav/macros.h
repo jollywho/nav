@@ -33,4 +33,9 @@
     wattroff((obj)->win, COLOR_PAIR((obj)->color)); \
   } while (0)
 
+#define SWAP_ALLOC_PTR(a,b)   \
+  String _tmp_str = (b);      \
+  free(a);                    \
+  (a) = _tmp_str;             \
+
 #endif
