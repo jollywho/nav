@@ -101,16 +101,17 @@ static int last_dir_in_path(Token *tok, List *args, int pos, String *path)
   return exec;
 }
 
-static String expand_path(String path)
+static String expand_path(String line, String path)
 {
   if (path[0] != '/') {
-    path = conspath(window_active_dir(), path);
+    SWAP_ALLOC_PTR(path, conspath(window_active_dir(), path));
+    cur_menu->line_key = line;
   }
   String tmp = realpath(path, NULL);
   if (tmp) {
     if (strcmp(tmp, path)) {
       free(path);
-      cur_menu->line_key = "";
+      cur_menu->line_key = line;
       path = tmp;
     }
     else
@@ -138,16 +139,17 @@ void path_list(List *args)
     fs_read(cur_menu->fs, path);
   }
   else {
-    String path = strdup(token_val(tok, VAR_STRING));
-    cur_menu->line_key = path;
+    cur_menu->line_key = token_val(tok, VAR_STRING);
+    String path = strdup(cur_menu->line_key);
 
     if (path[0] == '@') {
       marklbl_list(args);
       compl_update(cur_menu->cx, cur_menu->line_key);
+      cur_menu->line_key = path;
       return;
     }
 
-    path = expand_path(path);
+    path = expand_path(cur_menu->line_key, path);
     int exec = last_dir_in_path(tok, args, pos, &path);
 
     cur_menu->line_key = strdup(cur_menu->line_key);
