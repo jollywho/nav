@@ -197,7 +197,9 @@ void* model_fld_line(Model *m, String field, int index)
 void model_set_curs(Model *m, int index)
 {
   log_msg("MODEL", "model_set_curs");
+  if (!m->lines) return;
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
+  if (!res) return;
   m->cur = res->rec;
 }
 

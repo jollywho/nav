@@ -19,7 +19,6 @@ struct Buffer {
 
   int lnum; // cursor
   int top;  // index
-  int max;
 
   int ldif;
 
