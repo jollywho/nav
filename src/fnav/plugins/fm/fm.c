@@ -96,9 +96,9 @@ static int fm_opendir(Plugin *plugin, String path, short arg)
 static void fm_left(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("FM", "cmd left");
-  fn_handle *h = host->hndl;
-  String path = model_curs_value(h->model, "dir");
+  String path = strdup(fm_cur_dir(host));
   fm_opendir(host, path, BACKWARD);
+  free(path);
 }
 
 static void fm_right(Plugin *host, Plugin *caller, void *data)
@@ -107,6 +107,7 @@ static void fm_right(Plugin *host, Plugin *caller, void *data)
   fn_handle *h = host->hndl;
 
   String path = model_curs_value(h->model, "fullpath");
+  if (!path) return;
   if (isdir(path))
     fm_opendir(host, path, FORWARD);
   else

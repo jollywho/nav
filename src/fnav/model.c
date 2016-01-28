@@ -120,15 +120,29 @@ void model_recv(Model *m)
 {
   if (m->opened)
     model_close(m->hndl);
+
   fn_handle *h = m->hndl;
   fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
-  ventry *head = lis_get_val(l, "dir");
-  if (l && head) {
-    if (!l->ent) {
-      l->ent = lis_set_val(l, h->fname);
-    }
-    model_read_entry(h->model, l, head);
+
+  if (!l->rec) {
+    return model_null_entry(m, l);
   }
+
+  ventry *head = lis_get_val(l, "dir");
+  if (!l->ent) {
+    l->ent = lis_set_val(l, h->fname);
+  }
+  model_read_entry(h->model, l, head);
+}
+
+void model_null_entry(Model *m, fn_lis *lis)
+{
+  fn_handle *h = m->hndl;
+  m->head = NULL;
+  m->cur = NULL;
+  buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
+  m->blocking = false;
+  m->opened = true;
 }
 
 void model_read_entry(Model *m, fn_lis *lis, ventry *head)
