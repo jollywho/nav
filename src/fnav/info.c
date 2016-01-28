@@ -2,6 +2,7 @@
 #include "fnav/lib/uthash.h"
 
 #include "fnav/info.h"
+#include "fnav/ascii.h"
 #include "fnav/log.h"
 #include "fnav/compl.h"
 #include "fnav/tui/window.h"
@@ -18,10 +19,19 @@ static fn_mark *chr_marks;
 
 void info_parse(String line)
 {
-  if (line[0] == '@') {
-    String label = strtok(line, " ");
-    String dir = strtok(NULL, " ");
-    mark_label_dir(label, dir);
+  String label;
+  String dir;
+  switch (line[0]) {
+    case '@':
+      label = strtok(line, " ");
+      dir = strtok(NULL, " ");
+      mark_label_dir(label, dir);
+      break;
+    case '\'':
+      label = strtok(line, " ");
+      dir = strtok(NULL, " ");
+      mark_strchr_str(label, dir);
+      break;
   }
 }
 
@@ -36,9 +46,8 @@ static void write_mark_info(FILE *f, fn_mark *mrk)
 void info_write_file(FILE *file)
 {
   log_msg("INFO", "config_write_info");
-  //load each info struct from options
-  //write to file
   write_mark_info(file, lbl_marks);
+  write_mark_info(file, chr_marks);
 }
 
 void mark_list(List *args)
@@ -111,6 +120,12 @@ void mark_label_dir(String label, String dir)
   mrk->key = key;
   mrk->path = tmp;
   HASH_ADD_STR(lbl_marks, key, mrk);
+}
+
+void mark_strchr_str(String str, String dir)
+{
+  if ((strlen(str) == 2))
+    mark_chr_str(str[1], dir);
 }
 
 void mark_chr_str(int chr, String dir)

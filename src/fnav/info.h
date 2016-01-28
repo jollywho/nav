@@ -11,6 +11,7 @@ String mark_path(String key);
 String mark_str(int chr);
 
 void mark_label_dir(String label, String dir);
+void mark_strchr_str(String str, String dir);
 void mark_chr_str(int chr, String dir);
 
 void mark_list(List *args);
