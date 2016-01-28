@@ -126,6 +126,7 @@ static void resize_adjustment(Buffer *buf)
 void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs)
 {
   log_msg("BUFFER", "SET SIZE %d %d", size.lnum, size.col);
+
   size.lnum--;
   if (buf->b_size.lnum > 0) {
     buf->ldif = buf->b_size.lnum - size.lnum;
@@ -149,13 +150,13 @@ void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs)
 
   overlay_set(buf->ov, buf->b_size, buf->b_ofs, sep);
 
-  int rem = 0;
-  if (buf->attached) {
-    int m_max = model_count(buf->hndl->model);
-    rem = buf->top + buf->b_size.lnum > m_max;
-  }
-  int oob = buf->lnum >= buf->b_size.lnum;
-  if ((buf->ldif > 0 && oob) || (buf->ldif < 0 && oob) || (buf->ldif < 0 && rem)) {
+  int m_max = 0;
+  if (buf->attached)
+    m_max = model_count(buf->hndl->model);
+
+  int needs_to_grow = buf->top + buf->b_size.lnum > m_max;
+  int out_of_bounds = buf->lnum >= buf->b_size.lnum;
+  if ((out_of_bounds) || (buf->ldif < 0 && needs_to_grow)) {
     resize_adjustment(buf);
   }
   buf_refresh(buf);
@@ -398,8 +399,10 @@ static void buf_gomark(Buffer *buf, Cmdarg *ca)
   log_msg("BUFFER", "buf_gomark");
   String path = mark_str(ca->key);
   if (!path) return;
-  //TODO: set return mark "'"
+  path = strdup(path);
+  mark_chr_str('\'', buf->hndl->key);
   send_hook_msg("open", buf->plugin, NULL, path);
+  free(path);
 }
 
 static void buf_gen_event(Buffer *buf, Cmdarg *ca)

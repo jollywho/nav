@@ -101,6 +101,7 @@ void mark_label_dir(String label, String dir)
     label = &label[1];
   asprintf(&key, "@%s", label);
 
+  String tmp = strdup(dir);
   fn_mark *mrk;
   HASH_FIND_STR(lbl_marks, key, mrk);
   if (mrk) {
@@ -108,7 +109,7 @@ void mark_label_dir(String label, String dir)
   }
   mrk = malloc(sizeof(fn_mark));
   mrk->key = key;
-  mrk->path = strdup(dir);
+  mrk->path = tmp;
   HASH_ADD_STR(lbl_marks, key, mrk);
 }
 
@@ -118,6 +119,7 @@ void mark_chr_str(int chr, String dir)
   String key;
   asprintf(&key, "'%c", chr);
 
+  String tmp = strdup(dir);
   fn_mark *mrk;
   HASH_FIND_STR(chr_marks, key, mrk);
   if (mrk) {
@@ -125,6 +127,6 @@ void mark_chr_str(int chr, String dir)
   }
   mrk = malloc(sizeof(fn_mark));
   mrk->key = key;
-  mrk->path = strdup(dir);
+  mrk->path = tmp;
   HASH_ADD_STR(chr_marks, key, mrk);
 }
