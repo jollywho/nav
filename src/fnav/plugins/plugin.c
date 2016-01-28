@@ -3,6 +3,7 @@
 #include "fnav/plugins/fm/fm.h"
 #include "fnav/plugins/op/op.h"
 #include "fnav/plugins/img/img.h"
+#include "fnav/plugins/term/term.h"
 #include "fnav/compl.h"
 #include "fnav/log.h"
 #include "fnav/option.h"
@@ -14,9 +15,10 @@ struct plugin_ent {
   plugin_close_cb close_cb;
   int type_bg;
 } plugin_table[] = {
-  {"fm", fm_new, fm_delete, 0},
-  {"op", op_new, op_delete, 1},
-  {"img", img_new, img_delete, 0},
+  {"fm",   fm_new,   fm_delete, 0},
+  {"op",   op_new,   op_delete, 1},
+  {"img",  img_new,  img_delete, 0},
+  {"term", term_new, term_delete, 0},
 };
 
 typedef struct plugin_ent plugin_ent;
@@ -108,7 +110,6 @@ Plugin* plugin_open(String name, Buffer *buf)
     if (!plugin) {
       plugin = malloc(sizeof(Plugin));
       set_cid(plugin);
-  log_msg("OP", "ret");
       plugin_table[i].open_cb(plugin, buf);
     }
     return plugin;

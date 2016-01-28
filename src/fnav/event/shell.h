@@ -31,5 +31,6 @@ void shell_start(Shell *sh);
 void shell_stop(Shell *sh);
 void shell_set_in_buffer(Shell *sh, String msg);
 void shell_exec(String line);
+void shell_write(Shell *sh, String msg);
 
 #endif

@@ -12,7 +12,6 @@
 #include "fnav/table.h"
 #include "fnav/fnav.h"
 #include "fnav/tui/buffer.h"
-#include "fnav/tui/sbuffer.h"
 #include "fnav/tui/window.h"
 #include "fnav/event/fs.h"
 
@@ -167,7 +166,7 @@ size_t model_read_stream(Model *m, char *output, size_t remaining,
   if (!output) {
     return 0;
   }
-  sbuf_write(m->hndl->buf, output, remaining);
+  //sbuf_write(m->hndl->buf, output, remaining);
   // write to sbuffer
   return (size_t)(output);
 }

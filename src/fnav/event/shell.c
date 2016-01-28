@@ -9,7 +9,6 @@
 static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
   bool eof);
 static void shell_write_cb(Stream *stream, void *data, int status);
-static void shell_write(Shell *sh, String msg);
 static void shell_default_stdout_cb(Plugin *plugin, String out);
 
 static UT_array *proctbl;
@@ -115,7 +114,7 @@ void shell_set_in_buffer(Shell *sh, String msg)
   sh->msg = strdup(msg);
 }
 
-static void shell_write(Shell *sh, String msg)
+void shell_write(Shell *sh, String msg)
 {
   log_msg("SHELL", "write_to_stream");
   WBuffer *input_buffer = wstream_new_buffer(msg, strlen(msg), 1, NULL);

@@ -124,7 +124,7 @@ void mark_label_dir(String label, String dir)
 
 void mark_strchr_str(String str, String dir)
 {
-  if ((strlen(str) == 2))
+  if (strlen(str) == 2)
     mark_chr_str(str[1], dir);
 }
 
