@@ -8,7 +8,6 @@
 #include "fnav/config.h"
 #include "fnav/tui/window.h"
 #include "fnav/tui/ex_cmd.h"
-#include "fnav/event/loop.h"
 #include "fnav/event/event.h"
 #include "fnav/event/input.h"
 #include "fnav/table.h"
@@ -16,13 +15,11 @@
 #include "fnav/event/shell.h"
 #include "fnav/vt/vt.h"
 
-static char vt_term[32];
-
 void init(void)
 {
 //  log_set("IMG");
   log_init();
-  log_msg("INIT", "__________INIT_START____________");
+  log_msg("INIT", "INIT_START");
   setlocale(LC_CTYPE, "");
 
   log_msg("INIT", "initscr");
@@ -37,7 +34,6 @@ void init(void)
   option_init();
   config_init();
   config_load_defaults();
-  curs_set(0);
 
   tables_init();
   event_init();
@@ -45,12 +41,12 @@ void init(void)
   compl_init();
   window_init();
   shell_init();
-  log_msg("INIT", "__________INIT_END______________");
+  log_msg("INIT", "INIT_END");
 }
 
 void cleanup(void)
 {
-  log_msg("CLEANUP", "_______CLEANUP_START____________");
+  log_msg("CLEANUP", "CLEANUP_START");
   window_cleanup();
   compl_cleanup();
   input_cleanup();
@@ -58,12 +54,12 @@ void cleanup(void)
   tables_cleanup();
   option_cleanup();
   endwin();
+  log_msg("CLEANUP", "CLEANUP_END");
   //logger
 }
 
 void sig_handler(int sig)
 {
-  printf("Signal received: ***%d(%s)***\n", sig, strsignal(sig));
   endwin();
   exit(0);
 }
@@ -77,5 +73,5 @@ int main(int argc, char **argv)
   start_event_loop();
   config_write_info();
   cleanup();
-  log_msg("INIT", "_______END_OF_EXECUTION_________");
+  log_msg("INIT", "END_OF_EXECUTION");
 }

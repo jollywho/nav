@@ -23,13 +23,13 @@ struct fentry {
   UT_hash_handle hh;
 };
 
-static fentry *ent_tbl;
-
 #define RFSH_RATE 1000
 
-static void fs_close_req(fentry *ent);
-static void stat_cb(uv_fs_t *req);
-static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int status);
+static void fs_close_req(fentry *);
+static void stat_cb(uv_fs_t *);
+static void watch_cb(uv_fs_event_t *, const char *, int, int);
+
+static fentry *ent_tbl;
 
 static fentry* fs_mux(fn_fs *fs)
 {

@@ -2,7 +2,6 @@
 #define FN_EVENT_UV_PROCESS_H
 
 #include <uv.h>
-
 #include "fnav/event/process.h"
 
 typedef struct uv_process {

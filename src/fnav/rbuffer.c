@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "fnav/event/loop.h"
+#include "fnav.h"
 #include "fnav/rbuffer.h"
 #include "fnav/log.h"
 

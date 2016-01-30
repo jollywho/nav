@@ -3,10 +3,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-
 #include <uv.h>
-
-#include "fnav/event/loop.h"
 #include "fnav/event/stream.h"
 
 void rstream_init_fd(Loop *loop, Stream *stream, int fd, size_t bufsize,

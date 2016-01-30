@@ -1,7 +1,7 @@
 #ifndef FN_EVENT_PROCESS_H
 #define FN_EVENT_PROCESS_H
 
-#include "fnav/event/loop.h"
+#include "fnav/event/event.h"
 #include "fnav/event/stream.h"
 
 typedef enum {

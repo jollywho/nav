@@ -11,29 +11,6 @@
 #include "fnav/option.h"
 #include "fnav/event/input.h"
 
-#define STACK_MIN 10
-static cmd_part **cmd_stack;
-static int cur_part;
-static int max_part;
-
-static WINDOW *nc_win;
-static int curpos;
-static int maxpos;
-static Cmdline cmd;
-static String fmt_out;
-static Menu *menu;
-static fn_hist *hist_cmds;
-static fn_hist *hist_regs;
-static LineMatch *lm;
-
-char state_symbol[] = {'/',':'};
-static int ex_state;
-static int col_text;
-static int mflag;
-
-#define CURS_MIN -1
-#define EXCMD_HIST() ((ex_state) ? (hist_cmds) : (hist_regs))
-
 static void cmdline_draw();
 static void ex_esc();
 static void ex_car();
@@ -43,6 +20,10 @@ static void ex_bckspc();
 static void ex_killword();
 static void ex_killline();
 static void ex_hist();
+
+#define STACK_MIN 10
+#define CURS_MIN -1
+#define EXCMD_HIST() ((ex_state) ? (hist_cmds) : (hist_regs))
 
 #define KEYS_SIZE ARRAY_SIZE(key_defaults)
 static fn_key key_defaults[] = {
@@ -59,6 +40,25 @@ static fn_key key_defaults[] = {
 };
 static fn_keytbl key_tbl;
 static short cmd_idx[KEYS_SIZE];
+
+static cmd_part **cmd_stack;
+static int cur_part;
+static int max_part;
+
+static WINDOW *nc_win;
+static int curpos;
+static int maxpos;
+static Cmdline cmd;
+static String fmt_out;
+static Menu *menu;
+static fn_hist *hist_cmds;
+static fn_hist *hist_regs;
+static LineMatch *lm;
+
+static const char state_symbol[] = {'/',':'};
+static int ex_state;
+static int col_text;
+static int mflag;
 
 void ex_cmd_init()
 {
@@ -123,6 +123,7 @@ void stop_ex_cmd()
   wnoutrefresh(nc_win);
   delwin(nc_win);
   curs_set(0);
+  doupdate();
   ex_state = EX_OFF_STATE;
   window_ex_cmd_end();
 }
@@ -151,7 +152,6 @@ static void cmdline_draw()
 {
   log_msg("EXCMD", "cmdline_draw");
   werase(nc_win);
-  curs_set(1);
 
   if (ex_state == EX_CMD_STATE)
     menu_draw(menu);
@@ -163,6 +163,8 @@ static void cmdline_draw()
   wattroff(nc_win, COLOR_PAIR(col_text));
 
   wmove(nc_win, 0, curpos + 2);
+  doupdate();
+  curs_set(1);
   wnoutrefresh(nc_win);
 }
 

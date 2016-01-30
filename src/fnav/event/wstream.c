@@ -2,7 +2,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "fnav/event/loop.h"
 #include "fnav/event/wstream.h"
 #include "fnav/log.h"
 

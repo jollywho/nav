@@ -1,7 +1,7 @@
 #ifndef FN_EVENT_STREAM_H
 #define FN_EVENT_STREAM_H
 
-#include "fnav/event/loop.h"
+#include "fnav/event/event.h"
 #include "fnav/rbuffer.h"
 
 typedef struct stream Stream;

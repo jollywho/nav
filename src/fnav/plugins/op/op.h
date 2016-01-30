@@ -1,6 +1,7 @@
 #ifndef FN_PLUGINS_OP_H
 #define FN_PLUGINS_OP_H
 
+#include "fnav/plugins/plugin.h"
 #include "fnav/event/pty_process.h"
 
 typedef struct Op Op;

@@ -3,6 +3,7 @@
 
 #include "fnav/event/uv_process.h"
 #include "fnav/event/rstream.h"
+#include "fnav/plugins/plugin.h"
 
 typedef void (*shell_stdout_cb)(Plugin *c, String out);
 

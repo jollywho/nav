@@ -1,7 +1,7 @@
 #ifndef FN_EVENT_FS_H
 #define FN_EVENT_FS_H
 
-#include "fnav/event/loop.h"
+#include "fnav/event/event.h"
 #include "fnav/table.h"
 
 typedef struct fentry fentry;

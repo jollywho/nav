@@ -1,6 +1,7 @@
 #ifndef FN_TUI_WINDOW_H
 #define FN_TUI_WINDOW_H
 
+#include "fnav/event/event.h"
 #include "fnav/tui/buffer.h"
 
 void window_init(void);

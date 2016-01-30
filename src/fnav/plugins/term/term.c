@@ -11,10 +11,11 @@
 #include "fnav/tui/window.h"
 #include "fnav/option.h"
 
+#define SCROLL_HISTORY 500
+
 static void readfd_ready(uv_poll_t *, int, int);
 static void plugin_resize(Plugin *, Plugin *, void *);
 static void plugin_focus(Plugin *);
-#define SCROLL_HISTORY 500
 
 void term_new(Plugin *plugin, Buffer *buf)
 {

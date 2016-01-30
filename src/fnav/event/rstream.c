@@ -8,7 +8,6 @@
 #include "fnav/event/rstream.h"
 #include "fnav/ascii.h"
 #include "fnav/log.h"
-#include "fnav/event/loop.h"
 
 static void invoke_read_cb(Stream *stream, size_t count, bool eof);
 static void on_rbuffer_full(RBuffer *buf, void *data);

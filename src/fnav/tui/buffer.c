@@ -21,11 +21,13 @@ static void buf_mark();
 static void buf_gomark();
 static void buf_yank();
 static void buf_gen_event();
+static void buf_draw(void **);
 
 #define EV_PASTE  0
 #define EV_REMOVE 1
 #define EV_LEFT   2
 #define EV_RIGHT  3
+
 #define MAX_EVENTS ARRAY_SIZE(buf_events)
 static String buf_events[] = {
   "paste","remove","left","right",
@@ -57,15 +59,9 @@ static fn_key key_defaults[] = {
   {'h',     buf_gen_event,   0,           EV_LEFT},
   {'l',     buf_gen_event,   0,           EV_RIGHT},
 };
+
 static fn_keytbl key_tbl;
 static short cmd_idx[KEYS_SIZE];
-
-#define INC_POS(pos,x,y)       \
-  (pos.col) += (x);            \
-  (pos.lnum) += (y);           \
-
-void buf_listen(fn_handle *hndl);
-void buf_draw(void **cav);
 
 void buf_init()
 {

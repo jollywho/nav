@@ -1,8 +1,6 @@
 #include <assert.h>
-
 #include <uv.h>
 
-#include "fnav/event/loop.h"
 #include "fnav/event/process.h"
 #include "fnav/event/uv_process.h"
 #include "fnav/log.h"

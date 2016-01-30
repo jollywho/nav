@@ -4,7 +4,6 @@
 #include "fnav/fnav.h"
 #include "fnav/config.h"
 
-typedef void (*argv_callback)(void **argv);
 typedef struct Window Window;
 typedef struct Plugin Plugin;
 typedef struct fn_tbl fn_tbl;

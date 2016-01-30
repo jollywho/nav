@@ -1,7 +1,6 @@
 #include <ncurses.h>
 
 #include "fnav/tui/window.h"
-#include "fnav/event/loop.h"
 #include "fnav/event/event.h"
 #include "fnav/tui/layout.h"
 #include "fnav/cmd.h"
@@ -25,9 +24,6 @@ struct Window {
   Plugin *term;
 };
 
-static const uint64_t RFSH_RATE = 10;
-static Window win;
-
 static void* win_new();
 static void* win_shut();
 static void* win_close();
@@ -39,6 +35,7 @@ static void win_layout();
 static void window_ex_cmd();
 static void wintest();
 static void wintestq();
+static void window_update(uv_timer_t *handle);
 
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
 static const Cmd_T cmdtable[] = {
@@ -80,9 +77,11 @@ static fn_key key_defaults[] = {
   {'v',     wintest,         0,           MOVE_LEFT},
   {'q',     wintestq,        0,           MOVE_LEFT},
 };
+
 static fn_keytbl key_tbl;
 static short cmd_idx[KEYS_SIZE];
-static void window_update(uv_timer_t *handle);
+static const uint64_t RFSH_RATE = 10;
+static Window win;
 
 void sig_resize(int sig)
 {
@@ -90,7 +89,7 @@ void sig_resize(int sig)
   clear();
   layout_refresh(&win.layout);
   refresh();
-  loop_wakeup();
+  event_wakeup();
   window_update(&win.draw_timer);
 }
 
@@ -119,6 +118,7 @@ void window_init(void)
   for (int i = 0; i < (int)COMPL_SIZE; i++) {
     compl_add_context(compl_win[i]);
   }
+  curs_set(0);
   sig_resize(0);
   buf_init();
   fm_init();
