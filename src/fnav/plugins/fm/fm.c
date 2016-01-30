@@ -256,6 +256,12 @@ void fm_delete(Plugin *plugin)
 
 String fm_cur_dir(Plugin *plugin)
 {
+  if (!active_fm)
+    return get_current_dir_name();
+  if (!plugin)
+    return active_fm->cur_dir;
+  if (strcmp(plugin->name, "fm") != 0)
+    return active_fm->cur_dir;
   FM *fm = plugin->top;
   return fm->cur_dir;
 }

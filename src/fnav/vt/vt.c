@@ -1236,17 +1236,17 @@ static void try_interpret_escape_seq(Vt *t)
 
   if (t->elen + 1 >= sizeof(t->ebuf)) {
 cancel:
-#ifndef NDEBUG
-    fprintf(stderr, "cancelled: \\033");
-    for (unsigned int i = 0; i < t->elen; i++) {
-      if (isprint(t->ebuf[i])) {
-        fputc(t->ebuf[i], stderr);
-      } else {
-        fprintf(stderr, "\\%03o", t->ebuf[i]);
-      }
-    }
-    fputc('\n', stderr);
-#endif
+//#ifndef NDEBUG
+//    fprintf(stderr, "cancelled: \\033");
+//    for (unsigned int i = 0; i < t->elen; i++) {
+//      if (isprint(t->ebuf[i])) {
+//        fputc(t->ebuf[i], stderr);
+//      } else {
+//        fprintf(stderr, "\\%03o", t->ebuf[i]);
+//      }
+//    }
+//    fputc('\n', stderr);
+//#endif
 handled:
     cancel_escape_sequence(t);
   }

@@ -18,6 +18,7 @@ int window_focus_attached();
 void window_shift(int lines);
 String window_active_dir();
 
-void window_start_term(Plugin *);
+void window_start_override(Plugin *);
+void window_stop_override();
 
 #endif

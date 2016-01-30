@@ -20,7 +20,7 @@ struct Window {
   bool ex;
   bool dirty;
   int refs;
-  bool termtest;
+  bool input_override;
   Plugin *term;
 };
 
@@ -168,11 +168,11 @@ static void wintestq(Window *_w, Cmdarg *arg)
 void window_input(int key)
 {
   log_msg("WINDOW", "input");
-  if (win.termtest) {
+  win.ca.key = key;
+  if (win.input_override) {
     term_keypress(win.term, key);
     return;
   }
-  win.ca.key = key;
   if (win.ex) {
     ex_input(key);
   }
@@ -186,10 +186,18 @@ void window_input(int key)
   }
 }
 
-void window_start_term(Plugin *term)
+void window_start_override(Plugin *term)
 {
-  win.termtest = true;
+  win.input_override = true;
   win.term = term;
+}
+
+void window_stop_override()
+{
+  log_msg("WINDOW", "window_stop_term");
+	curs_set(0);
+  win.input_override = false;
+  win.term = NULL;
 }
 
 String window_active_dir()
@@ -310,6 +318,8 @@ static void window_update(uv_timer_t *handle)
   log_msg("WINDOW", "winup dd");
   if (win.ex)
     cmdline_refresh();
+  if (win.input_override)
+    term_cursor(win.term);
   doupdate();
   if (win.refs < 1) {
     uv_timer_stop(handle);
