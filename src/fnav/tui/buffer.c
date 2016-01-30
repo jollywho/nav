@@ -215,7 +215,7 @@ void buf_draw(void **argv)
   buf->ldif = 0;
 
   if (buf->nodraw) {
-    wnoutrefresh(buf->nc_win);
+    //wnoutrefresh(buf->nc_win);
     send_hook_msg("window_resize", buf->plugin, NULL, NULL);
     return;
   }

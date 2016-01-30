@@ -14,6 +14,7 @@
 #include "fnav/table.h"
 #include "fnav/compl.h"
 #include "fnav/event/shell.h"
+#include "fnav/vt/vt.h"
 
 void init(void)
 {
@@ -26,6 +27,7 @@ void init(void)
   initscr();
   start_color();
   use_default_colors();
+  vt_init();
 
   option_init();
   config_init();

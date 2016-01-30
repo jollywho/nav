@@ -113,6 +113,7 @@ void hook_clear(Plugin *host)
 void send_hook_msg(String msg, Plugin *host, Plugin *caller, void *data)
 {
   log_msg("HOOK", "(<%s>) msg sent", msg);
+  if (!host) return;
   HookHandler *host_handle = host->event_hooks;
   HookList find = { .msg = msg };
 
