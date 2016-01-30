@@ -4,13 +4,13 @@
 #include "fnav/option.h"
 #include "fnav/cmdline.h"
 #include "fnav/cmd.h"
+#include "fnav/vt/vt.h"
 
 typedef struct {
   fn_color *hi_colors;
   // maps
   // variables
   // setting
-  int max_col_pairs;
 } fn_options;
 
 fn_options *options;
@@ -29,7 +29,6 @@ void option_init()
 {
   options = malloc(sizeof(fn_options));
   memset(options, 0, sizeof(fn_options));
-  options->max_col_pairs = 1;
   init_pair(0, 0, 0);
 }
 
@@ -53,8 +52,8 @@ void set_color(fn_color *color)
     free(find);
   }
 
-  col->pair = ++options->max_col_pairs;
-  init_pair(col->pair, col->fg, col->bg);
+  col->pair = vt_color_get(NULL, col->fg, col->bg);
+  color_set(col->pair, NULL);
   HASH_ADD_STR(options->hi_colors, key, col);
 }
 

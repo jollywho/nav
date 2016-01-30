@@ -9,10 +9,12 @@
 #include "fnav/log.h"
 #include "fnav/ascii.h"
 #include "fnav/tui/window.h"
+#include "fnav/option.h"
 
 static void readfd_ready(uv_poll_t *, int, int);
 static void plugin_resize(Plugin *, Plugin *, void *);
 static void plugin_focus(Plugin *);
+#define SCROLL_HISTORY 500
 
 void term_new(Plugin *plugin, Buffer *buf)
 {
@@ -24,14 +26,12 @@ void term_new(Plugin *plugin, Buffer *buf)
   plugin->fmt_name = "VT";
   plugin->_focus = plugin_focus;
 
-  pos_T sz = buf_size(buf);
-  pos_T ofs = buf_size(buf);
-  term->win = newwin(sz.lnum, sz.col, 0, 0);
+  term->win = newwin(1, 1, 0, 0);
   term->buf = buf;
   buf_set_plugin(buf, plugin);
   buf_set_pass(buf);
 
-  term->vt = vt_create(sz.lnum, sz.col, sz.lnum + 100);
+  term->vt = vt_create(1, 1, SCROLL_HISTORY);
 	const char *shell = getenv("SHELL");
 	const char *pargs[4] = { shell, NULL };
   char *cwd = window_active_dir();
@@ -71,8 +71,23 @@ void term_keypress(Plugin *plugin, int key)
   Term *term = plugin->top;
   if (key == Meta('['))
     window_stop_override();
+  else if (key == Meta('k')) {
+    vt_scroll(term->vt, -1);
+    readfd_ready(&term->readfd, 0, 0);
+  }
+  else if (key == Meta('j')) {
+    vt_scroll(term->vt, 1);
+    readfd_ready(&term->readfd, 0, 0);
+  }
   else
     vt_keypress(term->vt, key);
+}
+
+static void term_draw(Term *term)
+{
+	vt_draw(term->vt, term->win, 0, 0);
+  wnoutrefresh(term->win);
+  doupdate();
 }
 
 static void plugin_resize(Plugin *host, Plugin *none, void *data)
@@ -88,16 +103,12 @@ static void plugin_resize(Plugin *host, Plugin *none, void *data)
   wresize(term->win, sz.lnum, sz.col);
   mvwin(term->win, ofs.lnum, ofs.col);
   vt_resize(term->vt, sz.lnum, sz.col);
-	vt_draw(term->vt, term->win, 0, 0);
-  wnoutrefresh(term->win);
-  doupdate();
+  term_draw(term);
 }
 
 static void readfd_ready(uv_poll_t *handle, int status, int events)
 {
   Term *term = handle->data;
   vt_process(term->vt);
-	vt_draw(term->vt, term->win, 0, 0);
-  wnoutrefresh(term->win);
-  doupdate();
+  term_draw(term);
 }

@@ -1847,7 +1847,7 @@ void vt_init(char *term)
   else if (strstr(term, "-256color"))
     snprintf(vt_term, sizeof vt_term, "%s", term);
   else
-  snprintf(vt_term, sizeof vt_term, "%s%s", term, COLORS >= 256 ? "-256color" : "");
+    snprintf(vt_term, sizeof vt_term, "%s%s", term, COLORS >= 256 ? "-256color" : "");
 }
 
 void vt_keytable_set(const char * const keytable_overlay[], int count)

@@ -11,6 +11,7 @@
 #include "fnav/info.h"
 #include "fnav/log.h"
 #include "fnav/tui/ex_cmd.h"
+#include "fnav/plugins/term/term.h"
 #include "fnav/plugins/fm/fm.h"
 
 struct Window {
@@ -24,8 +25,8 @@ struct Window {
   Plugin *term;
 };
 
-const uint64_t RFSH_RATE = 10;
-Window win;
+static const uint64_t RFSH_RATE = 10;
+static Window win;
 
 static void* win_new();
 static void* win_shut();
@@ -164,26 +165,22 @@ static void wintestq(Window *_w, Cmdarg *arg)
   window_remove_buffer();
 }
 
-#include "fnav/plugins/term/term.h"
 void window_input(int key)
 {
   log_msg("WINDOW", "input");
   win.ca.key = key;
   if (win.input_override) {
-    term_keypress(win.term, key);
-    return;
+    return term_keypress(win.term, key);
   }
   if (win.ex) {
-    ex_input(key);
+    return ex_input(key);
   }
-  else {
-    int ret = 0;
-    if (window_get_focus()) {
-      ret = buf_input(layout_buf(&win.layout), &win.ca);
-    }
-    if (!ret)
-      find_do_cmd(&key_tbl, &win.ca, NULL);
+  int ret = 0;
+  if (window_get_focus()) {
+    ret = buf_input(layout_buf(&win.layout), &win.ca);
   }
+  if (!ret)
+    find_do_cmd(&key_tbl, &win.ca, NULL);
 }
 
 void window_start_override(Plugin *term)
