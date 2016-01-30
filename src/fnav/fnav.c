@@ -16,6 +16,8 @@
 #include "fnav/event/shell.h"
 #include "fnav/vt/vt.h"
 
+static char vt_term[32];
+
 void init(void)
 {
 //  log_set("IMG");
@@ -24,10 +26,13 @@ void init(void)
   setlocale(LC_CTYPE, "");
 
   log_msg("INIT", "initscr");
+
+  char *term = getenv("TERM");
+
   initscr();
   start_color();
   use_default_colors();
-  vt_init();
+  vt_init(term);
 
   option_init();
   config_init();

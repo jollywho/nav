@@ -30,7 +30,7 @@ typedef struct Vt Vt;
 typedef void (*vt_title_handler_t)(Vt*, const char *title);
 typedef void (*vt_urgent_handler_t)(Vt*);
 
-void vt_init(void);
+void vt_init(char *);
 void vt_shutdown(void);
 
 void vt_keytable_set(char const * const keytable_overlay[], int count);

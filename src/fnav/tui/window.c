@@ -20,6 +20,8 @@ struct Window {
   bool ex;
   bool dirty;
   int refs;
+  bool termtest;
+  Plugin *term;
 };
 
 const uint64_t RFSH_RATE = 10;
@@ -162,9 +164,14 @@ static void wintestq(Window *_w, Cmdarg *arg)
   window_remove_buffer();
 }
 
+#include "fnav/plugins/term/term.h"
 void window_input(int key)
 {
   log_msg("WINDOW", "input");
+  if (win.termtest) {
+    term_keypress(win.term, key);
+    return;
+  }
   win.ca.key = key;
   if (win.ex) {
     ex_input(key);
@@ -177,6 +184,12 @@ void window_input(int key)
     if (!ret)
       find_do_cmd(&key_tbl, &win.ca, NULL);
   }
+}
+
+void window_start_term(Plugin *term)
+{
+  win.termtest = true;
+  win.term = term;
 }
 
 String window_active_dir()

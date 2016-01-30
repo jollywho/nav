@@ -16,6 +16,6 @@ struct Term {
 
 void term_new(Plugin *plugin, Buffer *buf);
 void term_delete(Plugin *plugin);
-void term_write(Term *term, String msg);
+void term_keypress(Plugin *plugin, int key);
 
 #endif

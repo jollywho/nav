@@ -7,7 +7,8 @@
 #include "fnav/event/hook.h"
 #include "fnav/tui/buffer.h"
 #include "fnav/log.h"
-#include "fnav/ascii.h"
+
+#include "fnav/tui/window.h"
 
 static void readfd_ready(uv_poll_t *, int, int);
 
@@ -23,7 +24,7 @@ void term_new(Plugin *plugin, Buffer *buf)
   term->win = newwin(sz.lnum, sz.col, 0, 0);
   buf_set_pass(buf);
 
-  term->vt = vt_create(sz.lnum, sz.col, 100);
+  term->vt = vt_create(sz.lnum, sz.col, sz.lnum + 100);
 	const char *shell = "/usr/bin/sh";
 	const char *pargs[4] = { shell, NULL };
 
@@ -32,17 +33,24 @@ void term_new(Plugin *plugin, Buffer *buf)
   uv_poll_init(eventloop(), &term->readfd, vt_pty_get(term->vt));
   uv_poll_start(&term->readfd, UV_READABLE, readfd_ready);
   term->readfd.data = term;
+  window_start_term(plugin);
 }
 
 void term_delete(Plugin *plugin)
 {
 }
 
+void term_keypress(Plugin *plugin, int key)
+{
+  Term *term = plugin->top;
+  vt_keypress(term->vt, key);
+}
+
 static void readfd_ready(uv_poll_t *handle, int status, int events)
 {
-  log_msg("TERM", "ready");
   Term *term = handle->data;
   vt_process(term->vt);
 	vt_draw(term->vt, term->win, 0, 0);
   wnoutrefresh(term->win);
+  doupdate();
 }
