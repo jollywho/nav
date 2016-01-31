@@ -44,9 +44,13 @@ static void menu_fs_cb(void **args)
 {
   log_msg("MENU", "menu_fs_cb");
   log_msg("MENU", "%s", cur_menu->hndl->key);
-  if (!cur_menu->active) return;
+  if (!cur_menu->active)
+    return;
+
   ventry *ent = fnd_val("fm_files", "dir", cur_menu->hndl->key);
-  if (!ent) return;
+  if (!ent)
+    return;
+
   int count = tbl_ent_count(ent);
   compl_new(count, COMPL_DYNAMIC);
 
@@ -67,9 +71,13 @@ void menu_ch_dir(void **args)
 {
   log_msg("MENU", "menu_ch_dir");
   fs_close(cur_menu->fs);
-  if (!cur_menu->active) return;
+  if (!cur_menu->active)
+    return;
+
   String dir = args[1];
-  if (!dir) return;
+  if (!dir)
+    return;
+
   free(cur_menu->hndl->key);
   cur_menu->hndl->key = strdup(dir);
   fs_open(cur_menu->fs, dir);
@@ -108,15 +116,16 @@ static String expand_path(String line, String path)
     cur_menu->line_key = line;
   }
   String tmp = realpath(path, NULL);
-  if (tmp) {
-    if (strcmp(tmp, path)) {
-      free(path);
-      cur_menu->line_key = line;
-      path = tmp;
-    }
-    else
-      free(tmp);
+  if (!tmp)
+    return path;
+
+  if (strcmp(tmp, path)) {
+    free(path);
+    cur_menu->line_key = line;
+    path = tmp;
   }
+  else
+    free(tmp);
   return path;
 }
 
@@ -153,9 +162,9 @@ void path_list(List *args)
     int exec = last_dir_in_path(tok, args, pos, &path);
 
     cur_menu->line_key = strdup(cur_menu->line_key);
-    if (exec) {
+    if (exec)
       fs_read(cur_menu->fs, path);
-    }
+
     free(path);
   }
 }
@@ -250,9 +259,9 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
   while ((word = cmdline_tokindex(cmd, i))) {
     String key = token_val(word, VAR_STRING);
     fn_context *find = find_context(mnu->cx, key);
-    if (find) {
+    if (find)
       mnu->cx = find->params[0];
-    }
+
     pos = word->end;
     ex_cmd_set(pos);
     ex_cmd_push(mnu->cx);
@@ -280,9 +289,9 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 
   if (mnu->rebuild)
     return rebuild_contexts(mnu, cmd);
-  if (ex_cmd_state() & (EX_CYCLE|EX_QUIT)) {
+  if (ex_cmd_state() & (EX_CYCLE|EX_QUIT))
     return;
-  }
+
   mnu->lnum = 0;
 
   if ((ex_cmd_state() & EX_POP) == EX_POP) {
@@ -296,9 +305,9 @@ void menu_update(Menu *mnu, Cmdline *cmd)
       mnu->cx = find->params[0];
       mnu->docmpl = true;
     }
-    else {
+    else
       mnu->cx = NULL;
-    }
+
     ex_cmd_push(mnu->cx);
   }
 
@@ -306,19 +315,18 @@ void menu_update(Menu *mnu, Cmdline *cmd)
     compl_build(mnu->cx, ex_cmd_curlist());
 
   String line = ex_cmd_curstr();
-  if (compl_isdynamic(mnu->cx)) {
+  if (compl_isdynamic(mnu->cx))
     line = mnu->line_key;
-  }
 
   compl_update(mnu->cx, line);
-
   mnu->docmpl = false;
 }
 
 void menu_draw(Menu *mnu)
 {
   log_msg("MENU", "menu_draw");
-  if (!mnu || !mnu->active) return;
+  if (!mnu || !mnu->active)
+    return;
 
   werase(mnu->nc_win);
 
@@ -368,12 +376,13 @@ static String cycle_matches(Menu *mnu, int dir)
 String menu_next(Menu *mnu, int dir)
 {
   log_msg("MENU", "menu_curkey");
-  if (!mnu->cx || !mnu->cx->cmpl) {
+  if (!mnu->cx || !mnu->cx->cmpl)
     return NULL;
-  }
+
   fn_compl *cmpl = mnu->cx->cmpl;
   log_msg("MENU", "%d %d", mnu->lnum, cmpl->matchcount);
-  if (cmpl->matchcount < 1) return NULL;
+  if (cmpl->matchcount < 1)
+    return NULL;
 
   String before = cycle_matches(mnu, dir);
 

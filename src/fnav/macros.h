@@ -34,8 +34,10 @@
   } while (0)
 
 #define SWAP_ALLOC_PTR(a,b)   \
-  String _tmp_str = (b);      \
-  free(a);                    \
-  (a) = _tmp_str;             \
+  do {                        \
+    String _tmp_str = (b);    \
+    free(a);                  \
+    (a) = _tmp_str;           \
+  } while (0)                 \
 
 #endif

@@ -23,21 +23,23 @@ static const Cmd_T cmdtable[] = {
   {"so",     add_source,     0},
   {"source", add_source,     0},
 };
-char *p_sh = "/bin/sh";
-char *p_cp = "cp";
-char *p_mv = "mv";
-char *p_rm = "rm";
 
 static const char *config_paths[] = {
   "$HOME/.fnavrc",
   "$HOME/.fnav/.fnavrc",
   "/etc/fnav/.fnavrc",
 };
+
 static const char *info_paths[] = {
   "$HOME/.fnavinfo",
   "$HOME/.fnav/.fnavinfo",
   "/etc/fnav/.fnavinfo",
 };
+
+char *p_sh = "/bin/sh";
+char *p_cp = "cp";
+char *p_mv = "mv";
+char *p_rm = "rm";
 
 void config_init()
 {
@@ -57,18 +59,22 @@ char* strip_whitespace(char *_str)
 {
   if (*_str == '\0')
     return _str;
+
   char *strold = _str;
-  while (*_str == ' ' || *_str == '\t') {
+  while (*_str == ' ' || *_str == '\t')
     _str++;
-  }
+
   char *str = strdup(_str);
   free(strold);
   int i;
+
+  /* seek forwards */
   for (i = 0; str[i] != '\0'; ++i);
-  do {
+
+  while (i >= 0 && (str[i] == ' ' || str[i] == '\t'))
     i--;
-  } while (i >= 0 && (str[i] == ' ' || str[i] == '\t'));
-  str[i + 1] = '\0';
+
+  str[i] = '\0';
   return str;
 }
 
@@ -96,17 +102,16 @@ static char* read_line(FILE *file)
 {
   int length = 0, size = 128;
   char *string = malloc(size);
-  if (!string) {
+  if (!string)
     return NULL;
-  }
+
   while (1) {
     int c = getc(file);
-    if (c == EOF || c == '\n' || c == '\0') {
+    if (c == EOF || c == '\n' || c == '\0')
       break;
-    }
-    if (c == '\r') {
+    if (c == '\r')
       continue;
-    }
+
     if (length == size) {
       char *new_string = realloc(string, size *= 2);
       if (!new_string) {
@@ -133,13 +138,12 @@ static FILE* config_open(const char *file, const char **defaults, char *mode)
 {
   log_msg("CONFIG", "config_open");
   char *path;
-  if (file != NULL) {
+  if (file)
     path = strdup(file);
-  } else {
+  else
     path = get_config_path(defaults, sizeof(defaults));
-  }
 
-  if (path == NULL) {
+  if (!path) {
     log_msg("CONFIG", "Unable to find a config file!");
     return NULL;
   }
@@ -255,7 +259,8 @@ static void* edit_mapping(List *args)
 static void* add_source(List *args)
 {
   String file = list_arg(args, 1, VAR_STRING);
-  if (!file) return 0;
+  if (!file)
+    return 0;
 
   wordexp_t p;
   char *path;

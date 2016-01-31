@@ -34,6 +34,9 @@ void cmd_remove(String name)
 Cmd_T* cmd_find(String name)
 {
   Cmd_T *cmd;
+  if (!name)
+    return NULL;
+
   HASH_FIND_STR(cmd_table, name, cmd);
   return cmd;
 }
@@ -44,12 +47,14 @@ void cmd_run(Cmdstr *cmdstr)
   Token *word = NULL;
 
   List *args = token_val(&cmdstr->args, VAR_LIST);
-  if (utarray_len(args->items) < 1) return;
+  if (utarray_len(args->items) < 1)
+    return;
 
   word = (Token*)utarray_front(args->items);
 
   Cmd_T *fun = cmd_find(token_val(word, VAR_STRING));
-  if (!fun) return; // :'(
+  if (!fun)
+    return; // :'(
 
   cmdstr->ret_t = PLUGIN;
   cmdstr->ret = fun->cmd_func(args, fun->flags);

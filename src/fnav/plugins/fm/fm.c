@@ -44,12 +44,11 @@ void fm_cleanup()
 
 static void fm_active_dir(FM *fm)
 {
-  if (!active_fm) {
+  if (!active_fm)
     fm->cur_dir = get_current_dir_name();
-  }
-  else {
+  else
     fm->cur_dir = strdup(active_fm->cur_dir);
-  }
+
   active_fm = fm;
 }
 
@@ -76,21 +75,23 @@ static int fm_opendir(Plugin *plugin, String path, short arg)
   fn_handle *h = plugin->hndl;
   String cur_dir = self->cur_dir;
 
-  if (!fs_blocking(self->fs)) {
-    model_close(h);
-    free(cur_dir);
-    cur_dir = strdup(path);
-    if (arg == BACKWARD)
-      cur_dir = fs_parent_dir(cur_dir);
-    h->key = cur_dir;
-    model_open(h);
-    buf_set_status(h->buf, 0, h->key, 0, 0);
-    fs_close(self->fs);
-    fs_open(self->fs, cur_dir);
-    self->cur_dir = cur_dir;
-    return 1;
-  }
-  return 0;
+  if (fs_blocking(self->fs))
+    return 0;
+
+  model_close(h);
+  free(cur_dir);
+  cur_dir = strdup(path);
+
+  if (arg == BACKWARD)
+    cur_dir = fs_parent_dir(cur_dir);
+
+  h->key = cur_dir;
+  model_open(h);
+  buf_set_status(h->buf, 0, h->key, 0, 0);
+  fs_close(self->fs);
+  fs_open(self->fs, cur_dir);
+  self->cur_dir = cur_dir;
+  return 1;
 }
 
 static void fm_left(Plugin *host, Plugin *caller, void *data)
@@ -107,7 +108,9 @@ static void fm_right(Plugin *host, Plugin *caller, void *data)
   fn_handle *h = host->hndl;
 
   String path = model_curs_value(h->model, "fullpath");
-  if (!path) return;
+  if (!path)
+    return;
+
   if (isdir(path))
     fm_opendir(host, path, FORWARD);
   else
@@ -127,13 +130,11 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, void *data)
   log_msg("FM_plugin", "fm_req_dir");
   String path = strdup(data);
 
-  if (path[0] == '@') {
+  if (path[0] == '@')
     SWAP_ALLOC_PTR(path, strdup(mark_path(path)));
-  }
 
-  if (path[0] != '/' && path[0] != '~') {
+  if (path[0] != '/' && path[0] != '~')
     SWAP_ALLOC_PTR(path, conspath(fm_cur_dir(plugin), path));
-  }
 
   String newpath = fs_expand_path(path);
   if (newpath) {
@@ -164,7 +165,8 @@ static void fm_paste(Plugin *host, Plugin *caller, void *data)
   log_msg("FM_plugin", "fm_paste");
   FM *self = (FM*)host->top;
   fn_reg *reg = reg_get(host->hndl, "0");
-  if (!reg) return;
+  if (!reg)
+    return;
 
   //FIXME: handle deleted records
   String src = rec_fld(reg->rec, "fullpath");

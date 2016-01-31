@@ -4,14 +4,11 @@
 #include <ncurses.h>
 #include "fnav/regex.h"
 
-typedef void (*buffer_input_cb)(Buffer *buf, Cmdarg *ca);
-
 struct Buffer {
   WINDOW *nc_win;
   Plugin *plugin;
   Overlay *ov;
 
-  buffer_input_cb input_cb;
   LineMatch *matches;
 
   pos_T b_size;
@@ -41,7 +38,10 @@ enum move_dir {
   MOVE_LEFT,
   MOVE_RIGHT,
 };
-enum dir_type { L_HORIZ, L_VERT };
+enum dir_type {
+  L_HORIZ,
+  L_VERT
+};
 
 void buf_init();
 void buf_cleanup();

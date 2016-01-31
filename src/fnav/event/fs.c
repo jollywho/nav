@@ -10,9 +10,14 @@
 #include "fnav/table.h"
 #include "fnav/tui/buffer.h"
 
+static void fs_close_req(fentry *);
+static void stat_cb(uv_fs_t *);
+static void watch_cb(uv_fs_event_t *, const char *, int, int);
+
+#define RFSH_RATE 1000
+
 struct fentry {
   String key;
-
   uv_fs_event_t watcher;
   uv_fs_t uv_fs; //data->req_handle
   uv_timer_t watcher_timer;
@@ -22,12 +27,6 @@ struct fentry {
   fn_fs *listeners;
   UT_hash_handle hh;
 };
-
-#define RFSH_RATE 1000
-
-static void fs_close_req(fentry *);
-static void stat_cb(uv_fs_t *);
-static void watch_cb(uv_fs_event_t *, const char *, int, int);
 
 static fentry *ent_tbl;
 
@@ -52,9 +51,9 @@ static fentry* fs_mux(fn_fs *fs)
 
   fn_fs *find = NULL;
   HASH_FIND_PTR(ent->listeners, fs->path, find);
-  if (!find) {
+  if (!find)
     HASH_ADD_STR(ent->listeners, path, fs);
-  }
+
   fs->ent = ent;
   return ent;
 }
@@ -72,7 +71,8 @@ static void del_ent(uv_handle_t *hndl)
 static void fs_demux(fn_fs *fs)
 {
   log_msg("FS", "fs_demux");
-  if (!fs->ent) return;
+  if (!fs->ent)
+    return;
   fentry *ent = fs->ent;
 
   HASH_DEL(ent->listeners, fs);
@@ -128,9 +128,9 @@ String fs_expand_path(String path)
 {
   wordexp_t p;
   String newpath = NULL;
-  if (wordexp(path, &p, 0) == 0) {
+  if (wordexp(path, &p, 0) == 0)
     newpath = strdup(p.we_wordv[0]);
-  }
+
   wordfree(&p);
   return newpath;
 }
@@ -192,19 +192,18 @@ void fs_signal_handle(void **data)
   for (it = ent->listeners; it != NULL; it = it->hh.next) {
     fn_handle *h = it->hndl;
 
-    if (it->open_cb) {
+    if (it->open_cb)
       it->open_cb(NULL);
-    }
-    else {
+    else
       model_recv(h->model);
-    }
   }
   ent->running = false;
 }
 
 bool fs_blocking(fn_fs *fs)
 {
-  if (!fs->ent) return false;
+  if (!fs->ent)
+    return false;
   return fs->ent->running;
 }
 
@@ -301,20 +300,24 @@ static void stat_cb(uv_fs_t *req)
 
   ventry *vent = fnd_val("fm_files", "dir", ent->key);
 
-  if (vent) {
-    vent = fnd_val("fm_stat", "fullpath", ent->key);
-    if (vent) {
-      char *upd = (char*)rec_fld(vent->rec, "update");
-      if (*upd) {
-        struct stat *st = (struct stat*)rec_fld(vent->rec, "stat");
-        if (stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
-          log_msg("FS", "STAT:NOP");
-          return fs_close_req(ent);
-        }
-      }
-    }
+  if (!vent)
+    goto scandir;
+
+  vent = fnd_val("fm_stat", "fullpath", ent->key);
+  if (!vent)
+    goto scandir;
+
+  char *upd = (char*)rec_fld(vent->rec, "update");
+  if (!*upd)
+    goto scandir;
+
+  struct stat *st = (struct stat*)rec_fld(vent->rec, "stat");
+  if (stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
+    log_msg("FS", "STAT:NOP");
+    return fs_close_req(ent);
   }
 
+scandir:
   if (S_ISDIR(stat.st_mode)) {
     uv_fs_req_cleanup(&ent->uv_fs);
     uv_fs_scandir(eventloop(), &ent->uv_fs, ent->key, 0, scan_cb);
@@ -338,9 +341,8 @@ static void watch_timer_cb(uv_timer_t *handle)
 {
   log_msg("FS", "--watch_timer--");
   fentry *ent = handle->data;
-  if (!ent->running) {
+  if (!ent->running)
     fs_reopen(ent);
-  }
 }
 
 static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int status)

@@ -67,9 +67,8 @@ void hist_save(fn_hist *hst)
 
   //TODO:
   // discard if line matches the one above it
-  if (hst->cmd->tokens)
-    if (utarray_len(hst->cmd->tokens) < 1)
-      return hist_pop(hst);
+  if (hst->cmd->tokens && utarray_len(hst->cmd->tokens) < 1)
+    return hist_pop(hst);
 
   free(last->line);
   last->line = strdup(hst->cmd->line);

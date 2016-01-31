@@ -8,17 +8,18 @@
 #include "fnav/tui/layout.h"
 #include "fnav/event/shell.h"
 
-String img_exts[] = {"png","jpeg","jpg","gif","bmp"};
 #define EXT_ARR_SIZE ARRAY_SIZE(img_exts)
-//FORMAT:             0;1;{x};{y};{w};{h};;;;;{filename}\n4;\n3;\n
-static const char *DR_ARG = "0;1;%d;%d;%d;%d;;;;;%s\n4;\n3;\n";
-//FORMAT:             6;{x};{y};{w};{h}\n4;\n3;\n
-static const char *CL_ARG = "6;%d;%d;%d;%d\n4;\n3;\n";
-//FORMAT              5;filename
-static const char *SZ_ARG = "5;%s\n";
 #define WM_IMG "/usr/lib/w3m/w3mimgdisplay"
+
+//FORMAT:                    0;1;{x};{y};{w};{h};;;;;{filename}\n4;\n3;\n
+static const char *DR_ARG = "0;1;%d;%d;%d;%d;;;;;%s\n4;\n3;\n";
+//FORMAT:                    6;{x};{y};{w};{h}\n4;\n3;\n
+static const char *CL_ARG = "6;%d;%d;%d;%d\n4;\n3;\n";
+//FORMAT:                    5;filename
+static const char *SZ_ARG = "5;%s\n";
 static const char * const args[]   = {WM_IMG, NULL};
 static const char * const t_args[] = {WM_IMG, "-test", NULL};
+static const String img_exts[] = {"png","jpeg","jpg","gif","bmp"};
 
 static void img_draw(Plugin *plugin)
 {
@@ -113,7 +114,8 @@ static int create_msg(Plugin *host, Plugin *caller, void *data)
   String path = model_curs_value(host->hndl->model, "fullpath");
   String name = model_curs_value(host->hndl->model, "name");
 
-  if (!valid_ext(path)) return 0;
+  if (!valid_ext(path))
+    return 0;
 
   img->path = path;
   h->key = name;
@@ -131,7 +133,8 @@ static void cursor_change_cb(Plugin *host, Plugin *caller, void *data)
   log_msg("IMG", "cursor_change_cb");
   Img *img = (Img*)caller->top;
 
-  if (img->disabled) return;
+  if (img->disabled)
+    return;
 
   if (create_msg(host, caller, NULL)) {
     shell_set_in_buffer(img->sh_size, img->sz_msg);
@@ -142,7 +145,8 @@ static void cursor_change_cb(Plugin *host, Plugin *caller, void *data)
 static void try_refresh(Plugin *host, Plugin *none, void *data)
 {
   Img *img = (Img*)host->top;
-  if (!img->img_set) return;
+  if (!img->img_set)
+    return;
   shell_set_in_buffer(img->sh_clear, img->cl_msg);
   shell_start(img->sh_clear);
 

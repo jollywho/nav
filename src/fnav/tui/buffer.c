@@ -90,14 +90,14 @@ Buffer* buf_new()
 
 static int buf_expire(Buffer *buf)
 {
-  if (buf->del) {
-    werase(buf->nc_win);
-    wnoutrefresh(buf->nc_win);
-    delwin(buf->nc_win);
-    free(buf);
-    return 1;
-  }
-  return 0;
+  if (!buf->del)
+    return 0;
+
+  werase(buf->nc_win);
+  wnoutrefresh(buf->nc_win);
+  delwin(buf->nc_win);
+  free(buf);
+  return 1;
 }
 
 void buf_delete(Buffer *buf)
@@ -113,7 +113,9 @@ static void resize_adjustment(Buffer *buf)
   log_msg("BUFFER", "resize_adjustment");
   log_msg("BUFFER", "%d %d", buf->top, buf->ldif);
   int diff = buf->top + buf->ldif;
-  if (diff < 0) diff = 0;
+  if (diff < 0)
+    diff = 0;
+
   int line = (buf->top + buf->lnum) - diff;
   buf->top = diff;
   buf->lnum = line;
@@ -124,25 +126,21 @@ void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs)
   log_msg("BUFFER", "SET SIZE %d %d", size.lnum, size.col);
 
   size.lnum--;
-  if (buf->b_size.lnum > 0) {
+  if (buf->b_size.lnum > 0)
     buf->ldif = buf->b_size.lnum - size.lnum;
-  }
 
-  int sep;
-  if (ofs.col == 0) {
-    sep = 0;
-  }
-  else {
+  int sep = 0;
+  if (ofs.col != 0) {
     sep = 1;
     ofs.col++;
     size.col--;
   }
+
   buf->b_size = size;
   buf->b_ofs = ofs;
 
   delwin(buf->nc_win);
-  buf->nc_win = newwin(buf->b_size.lnum, buf->b_size.col,
-                       buf->b_ofs.lnum,  buf->b_ofs.col);
+  buf->nc_win = newwin(size.lnum, size.col, ofs.lnum, ofs.col);
 
   overlay_set(buf->ov, buf->b_size, buf->b_ofs, sep);
 
@@ -152,9 +150,9 @@ void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs)
 
   int needs_to_grow = buf->top + buf->b_size.lnum > m_max;
   int out_of_bounds = buf->lnum >= buf->b_size.lnum;
-  if ((out_of_bounds) || (buf->ldif < 0 && needs_to_grow)) {
+  if ((out_of_bounds) || (buf->ldif < 0 && needs_to_grow))
     resize_adjustment(buf);
-  }
+
   buf_refresh(buf);
 }
 
@@ -182,10 +180,13 @@ void buf_set_status(Buffer *buf, String name, String usr, String in, String out)
 void buf_toggle_focus(Buffer *buf, int focus)
 {
   log_msg("BUFFER", "buf_toggle_focus %d", focus);
-  if (!buf) return;
+  if (!buf)
+    return;
+
   buf->focused = focus;
   if (buf->plugin && buf->plugin->_focus && focus)
     buf->plugin->_focus(buf->plugin);
+
   buf_refresh(buf);
 }
 
@@ -202,36 +203,37 @@ void buf_draw(void **argv)
 {
   log_msg("BUFFER", "draw");
   Buffer *buf = (Buffer*)argv[0];
-  if (buf_expire(buf)) return;
-
-  werase(buf->nc_win);
+  if (buf_expire(buf))
+    return;
 
   buf->dirty = false;
   buf->queued = false;
   buf->ldif = 0;
+  werase(buf->nc_win);
 
-  if (buf->nodraw) {
+  if (buf->nodraw || !buf->attached) {
     wnoutrefresh(buf->nc_win);
     send_hook_msg("window_resize", buf->plugin, NULL, NULL);
     return;
   }
-  if (buf->attached) {
-    Model *m = buf->hndl->model;
-    for (int i = 0; i < buf->b_size.lnum; ++i) {
-      String it = model_str_line(m, buf->top + i);
-      if (!it) break;
-      String path = model_fld_line(m, "fullpath", buf->top + i);
-      if (isdir(path))
-        DRAW_STR(buf, nc_win, i, 0, it, col_dir);
-      else
-        DRAW_STR(buf, nc_win, i, 0, it, col_text);
-    }
-    String it = model_str_line(m, buf->top + buf->lnum);
 
-    TOGGLE_ATTR(!buf->focused, buf->nc_win, A_REVERSE);
-    DRAW_STR(buf, nc_win, buf->lnum, 0, it, col_select);
-    wattroff(buf->nc_win, A_REVERSE);
+  Model *m = buf->hndl->model;
+  for (int i = 0; i < buf->b_size.lnum; ++i) {
+    String it = model_str_line(m, buf->top + i);
+    if (!it) break;
+    String path = model_fld_line(m, "fullpath", buf->top + i);
+    if (isdir(path))
+      DRAW_STR(buf, nc_win, i, 0, it, col_dir);
+    else
+      DRAW_STR(buf, nc_win, i, 0, it, col_text);
   }
+
+  /* draw current line */
+  String it = model_str_line(m, buf->top + buf->lnum);
+  TOGGLE_ATTR(!buf->focused, buf->nc_win, A_REVERSE);
+  DRAW_STR(buf, nc_win, buf->lnum, 0, it, col_select);
+  wattroff(buf->nc_win, A_REVERSE);
+
   wnoutrefresh(buf->nc_win);
 }
 
@@ -246,9 +248,9 @@ void buf_move_invalid(Buffer *buf, int index, int lnum)
 
 void buf_full_invalidate(Buffer *buf, int index, int lnum)
 {
-  // buffer reset and reentrance
   log_msg("BUFFER", "buf_full_invalidate");
-  if (!buf->attached) return;
+  if (!buf->attached)
+    return;
   regex_del_matches(buf->matches);
   buf_move_invalid(buf, index, lnum);
 }
@@ -258,12 +260,12 @@ void buf_scroll(Buffer *buf, int y, int max)
   log_msg("BUFFER", "scroll %d %d", buf->lnum, y);
   int prev = buf->top;
   buf->top += y;
-  if (buf->top + buf->b_size.lnum > max) {
+
+  if (buf->top + buf->b_size.lnum > max)
     buf->top = max - buf->b_size.lnum;
-  }
-  if (buf->top < 0) {
+  if (buf->top < 0)
     buf->top = 0;
-  }
+
   int diff = prev - buf->top;
   buf->lnum += diff;
 }
@@ -287,26 +289,23 @@ void buf_move(Buffer *buf, int y, int x)
 static void buf_mv(Buffer *buf, Cmdarg *ca)
 {
   log_msg("BUFFER", "buf_mv %d", ca->arg);
-  // move cursor N times in a dimension.
-  // scroll if located on an edge.
+  /* move cursor N times in a dimension;
+   * scroll if cursor is on an edge. */
   Model *m = buf->hndl->model;
   int y = ca->arg;
   int m_max = model_count(buf->hndl->model);
   buf->lnum += y;
 
-  if (y < 0 && buf->lnum < buf->b_size.lnum * 0.2) {
+  if (y < 0 && buf->lnum < buf->b_size.lnum * 0.2)
     buf_scroll(buf, ca->arg, m_max);
-  }
-  else if (y > 0 && buf->lnum > buf->b_size.lnum * 0.8) {
+  else if (y > 0 && buf->lnum > buf->b_size.lnum * 0.8)
     buf_scroll(buf, ca->arg, m_max);
-  }
 
-  if (buf->lnum < 0) {
+  if (buf->lnum < 0)
     buf->lnum = 0;
-  }
-  else if (buf->lnum > buf->b_size.lnum) {
+  else if (buf->lnum > buf->b_size.lnum)
     buf->lnum = buf->b_size.lnum;
-  }
+
   if (buf->lnum + buf->top > m_max - 1) {
     int count = m_max - buf->top;
     buf->lnum = count - 1;
@@ -316,43 +315,22 @@ static void buf_mv(Buffer *buf, Cmdarg *ca)
   buf_refresh(buf);
 }
 
-int buf_line(Buffer *buf)
-{return buf->lnum;}
-int buf_top(Buffer *buf)
-{return buf->top;}
-pos_T buf_size(Buffer *buf)
-{return buf->b_size;}
-pos_T buf_ofs(Buffer *buf)
-{return buf->b_ofs;}
-Plugin* buf_plugin(Buffer *buf)
-{return buf->plugin;}
-pos_T buf_pos(Buffer *buf)
-{return (pos_T){buf->lnum+1,0};}
-int buf_attached(Buffer *buf)
-{return buf->attached;}
-void buf_set_overlay(Buffer *buf, Overlay *ov)
-{buf->ov = ov;}
-WINDOW* buf_ncwin(Buffer *buf)
-{return buf->nc_win;}
-
 int buf_input(Buffer *buf, Cmdarg *ca)
 {
   log_msg("BUFFER", "input");
-  if (buf->input_cb) {
-    buf->input_cb(buf, ca);
-    return 1;
-  }
   if (!buf->attached)
     return 0;
   if (model_blocking(buf->hndl))
     return 0;
-  if (buf->plugin) {
 
-    int ret = find_do_cmd(&key_tbl, ca, buf);
-    if (!ret)
-      ret = find_do_op(key_operators, ca, buf);
-  }
-  return 0;
+  if (!buf->plugin)
+    return 0;
+
+  int ret = find_do_cmd(&key_tbl, ca, buf);
+  if (!ret)
+    ret = find_do_op(key_operators, ca, buf);
+
+  return ret;
 }
 
 static void buf_oper(Buffer *buf, Cmdarg *ca)
@@ -363,6 +341,7 @@ static void buf_oper(Buffer *buf, Cmdarg *ca)
     ca->oap.key = OP_G;
   else
     ca->oap.key = ca->arg;
+
   ca->nkey = ca->key;
 }
 
@@ -396,7 +375,8 @@ static void buf_gomark(Buffer *buf, Cmdarg *ca)
 {
   log_msg("BUFFER", "buf_gomark");
   String path = mark_str(ca->key);
-  if (!path) return;
+  if (!path)
+    return;
   path = strdup(path);
   mark_chr_str('\'', buf->hndl->key);
   send_hook_msg("open", buf->plugin, NULL, path);
@@ -405,12 +385,34 @@ static void buf_gomark(Buffer *buf, Cmdarg *ca)
 
 static void buf_gen_event(Buffer *buf, Cmdarg *ca)
 {
-  if (ca->arg > MAX_EVENTS || ca->arg < 0) return;
+  if (ca->arg > MAX_EVENTS || ca->arg < 0)
+    return;
   send_hook_msg(buf_events[ca->arg], buf->plugin, NULL, NULL);
 }
 
 void buf_sort(Buffer *buf, String fld, int flags)
 {
-  if (!buf->hndl) return;
+  if (!buf->hndl)
+    return;
   model_sort(buf->hndl->model, fld, flags);
 }
+
+/* public fields */
+int buf_line(Buffer *buf)
+{return buf->lnum;}
+int buf_top(Buffer *buf)
+{return buf->top;}
+pos_T buf_size(Buffer *buf)
+{return buf->b_size;}
+pos_T buf_ofs(Buffer *buf)
+{return buf->b_ofs;}
+Plugin* buf_plugin(Buffer *buf)
+{return buf->plugin;}
+pos_T buf_pos(Buffer *buf)
+{return (pos_T){buf->lnum+1,0};}
+int buf_attached(Buffer *buf)
+{return buf->attached;}
+void buf_set_overlay(Buffer *buf, Overlay *ov)
+{buf->ov = ov;}
+WINDOW* buf_ncwin(Buffer *buf)
+{return buf->nc_win;}

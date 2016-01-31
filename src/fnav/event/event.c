@@ -127,7 +127,9 @@ void queue_process_events(Queue *queue, int ms)
 static void prepare_events(uv_prepare_t *handle)
 {
   log_msg("WINDOW", "--event--");
-  if (mainloop()->running) return;
+  if (mainloop()->running)
+    return;
+
   mainloop()->running = true;
   while (1) {
     queue_process_events(eventq(), TIMEOUT);

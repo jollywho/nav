@@ -16,8 +16,6 @@ void model_recv(Model *m);
 
 void model_read_entry(Model *m, fn_lis *lis, ventry *head);
 void model_null_entry(Model *m, fn_lis *lis);
-size_t model_read_stream(Model *m, char *output, size_t remaining,
-    bool to_buffer, bool eof);
 
 String model_str_line(Model *m, int index);
 void* model_fld_line(Model *m, String field, int index);

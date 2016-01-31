@@ -142,19 +142,18 @@ static void chld_handler(uv_signal_t *handle, int signum)
     pid = waitpid(-1, &stat, WNOHANG);
   } while (pid < 0 && errno == EINTR);
 
-  if (pid <= 0) {
+  if (pid <= 0)
     return;
-  }
 
   Term *it;
   SLIST_FOREACH(it, &mainloop()->subterms, ent) {
     Term *proc = it;
     if (proc->pid == pid) {
-      if (WIFEXITED(stat)) {
+      if (WIFEXITED(stat))
         proc->status = WEXITSTATUS(stat);
-      } else if (WIFSIGNALED(stat)) {
+      else if (WIFSIGNALED(stat))
         proc->status = WTERMSIG(stat);
-      }
+
       term_close(it);
       break;
     }

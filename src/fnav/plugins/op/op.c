@@ -35,9 +35,8 @@ static void chld_handler(uv_signal_t *handle, int signum)
     pid = waitpid(-1, &stat, WNOHANG);
   } while (pid < 0 && errno == EINTR);
 
-  if (pid <= 0) {
+  if (pid <= 0)
     return;
-  }
 }
 
 static void create_proc(Op *op, String path)
@@ -55,21 +54,25 @@ static void create_proc(Op *op, String path)
     uv_kill(proc.pid, SIGKILL);
     uv_close((uv_handle_t*)&proc, NULL);
   }
+
   log_msg("OP", "spawn");
   uv_signal_start(&mainloop()->children_watcher, chld_handler, SIGCHLD);
   uv_disable_stdio_inheritance();
   int ret = uv_spawn(eventloop(), &proc, &opts);
   op->ready = false;
-  if (ret < 0) {
+
+  if (ret < 0)
     log_msg("?", "file: |%s|, %s", path, uv_strerror(ret));
-  }
+
   uv_unref((uv_handle_t*) &proc);
 }
 
-const char *file_ext(const char *filename) {
-    const char *dot = strrchr(filename, '.');
-    if(!dot || dot == filename) return "";
-    return dot + 1;
+const char* file_ext(const char *filename)
+{
+  const char *dot = strrchr(filename, '.');
+  if (!dot || dot == filename)
+    return "";
+  return dot + 1;
 }
 
 static void fileopen_cb(Plugin *host, Plugin *caller, void *data)

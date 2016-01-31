@@ -30,8 +30,10 @@ pos_T layout_size()
 static void create_container(Container *c, enum move_dir dir)
 {
   memset(c, 0, sizeof(Container));
-  if (dir == MOVE_UP   || dir == MOVE_DOWN ) c->dir = L_HORIZ;
-  if (dir == MOVE_LEFT || dir == MOVE_RIGHT) c->dir = L_VERT;
+  if (dir == MOVE_UP   || dir == MOVE_DOWN )
+    c->dir = L_HORIZ;
+  if (dir == MOVE_LEFT || dir == MOVE_RIGHT)
+    c->dir = L_VERT;
   TAILQ_INIT(&c->p);
   c->ov = overlay_new();
 }
@@ -66,7 +68,6 @@ static void resize_container(Container *c)
   int i = 0;
   Container *it = TAILQ_FIRST(&c->p);
   while (++i, it) {
-    log_msg("LAYOUT", "********container*********");
     if (it->dir == L_HORIZ) { s_y = c->count ; os_y = 1; }
     if (it->dir == L_VERT ) { s_x = c->count ; os_x = 1; }
 
@@ -82,7 +83,8 @@ static void resize_container(Container *c)
     int c_w = 1;
     Container *prev = TAILQ_PREV(it, cont, ent);
     if (!prev) {
-      prev = c; c_w = 0;
+      prev = c;
+      c_w = 0;
     }
     it->size = (pos_T){ new_lnum , new_col  };
 
@@ -107,9 +109,9 @@ static void update_sub_items(Container *c)
   Container *it = TAILQ_FIRST(&c->p);
   while (it) {
     it->parent = c;
-    if (!TAILQ_EMPTY(&it->p)) {
+    if (!TAILQ_EMPTY(&it->p))
       update_sub_items(it);
-    }
+
     it = TAILQ_NEXT(it, ent);
   }
 }
@@ -134,9 +136,9 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
   Container *hc = focus->parent;
 
   Container *c = malloc(sizeof(Container));
-  if (focus->root) {
+  if (focus->root)
     dir = MOVE_UP;
-  }
+
   create_container(c, dir);
   c->buf = next;
 
@@ -180,7 +182,8 @@ void layout_remove_buffer(Layout *layout)
   log_msg("LAYOUT", "layout_remove_buffer");
   Container *c = layout->focus;
   Container *hc = c->parent;
-  if (!hc) return;
+  if (!hc)
+    return;
 
   Container *next = next_or_prev(c);
   TAILQ_REMOVE(&hc->p, c, ent);
@@ -200,13 +203,10 @@ void layout_remove_buffer(Layout *layout)
     next = hc;
     update_sub_items(hc);
   }
+
   if (next) {
-    while (1) {
-      if (!TAILQ_EMPTY(&next->p)) {
-        next = TAILQ_FIRST(&next->p);
-      }
-      else
-        break;
+    while (!TAILQ_EMPTY(&next->p)) {
+      next = TAILQ_FIRST(&next->p);
     }
   }
 
@@ -215,7 +215,9 @@ void layout_remove_buffer(Layout *layout)
 }
 
 static pos_T cur_line(Container *c)
-{return c->buf ? buf_pos(c->buf) : c->ofs;}
+{
+  return c->buf ? buf_pos(c->buf) : c->ofs;
+}
 
 static pos_T pos_shift(Container *c, enum move_dir dir)
 {
@@ -252,7 +254,9 @@ Container* find_intersect(Container *c, Container *pp, pos_T pos)
 
     int isint = intersects(pos, it->ofs, it_pos);
     if (isint && it != c) {
-      if (TAILQ_EMPTY(&it->p)) return it;
+      if (TAILQ_EMPTY(&it->p))
+        return it;
+
       return find_intersect(c, TAILQ_FIRST(&it->p), pos);
     }
     it = TAILQ_NEXT(it, ent);

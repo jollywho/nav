@@ -50,7 +50,7 @@ struct fn_tbl {
   UT_hash_handle hh;
 };
 
-fn_tbl *FN_MASTER;
+static fn_tbl *FN_MASTER;
 
 void tables_init()
 {
@@ -71,22 +71,24 @@ void tables_cleanup()
 bool tbl_mk(String name)
 {
   fn_tbl *t = get_tbl(name);
-  if (!t) {
-    log_msg("TABLE", "making table {%s} ...", name);
-    fn_tbl *t = malloc(sizeof(fn_tbl));
-    memset(t, 0, sizeof(fn_tbl));
-    t->key = strdup(name);
-    HASH_ADD_STR(FN_MASTER, key, t);
-    return true;
-  }
-  return false;
+  if (t)
+    return false;
+
+  log_msg("TABLE", "making table {%s} ...", name);
+  t = malloc(sizeof(fn_tbl));
+  memset(t, 0, sizeof(fn_tbl));
+  t->key = strdup(name);
+  HASH_ADD_STR(FN_MASTER, key, t);
+  return true;
 }
 
 void tbl_del(String name)
 {
   log_msg("CLEANUP", "deleting table {%s} ...", name);
   fn_tbl *t = get_tbl(name);
-  if (!t) return;
+  if (!t)
+    return;
+
   fn_fld *f, *ftmp;
   HASH_ITER(hh, t->fields, f, ftmp) {
     HASH_DEL(t->fields, f);
@@ -156,13 +158,14 @@ ventry* fnd_val(String tn, String fname, String val)
   fn_tbl *t = get_tbl(tn);
   fn_fld *f;
   HASH_FIND_STR(t->fields, fname, f);
-  if (f) {
-    fn_val *v;
-    HASH_FIND_STR(f->vals, val, v);
-    if (v) {
-      return v->rlist;
-    }
-  }
+  if (!f)
+    return NULL;
+
+  fn_val *v;
+  HASH_FIND_STR(f->vals, val, v);
+  if (v)
+    return v->rlist;
+
   return NULL;
 }
 
@@ -172,14 +175,12 @@ fn_lis* fnd_lis(String tn, String key_fld, String key)
   fn_tbl *t = get_tbl(tn);
   fn_fld *f;
   HASH_FIND_STR(t->fields, key_fld, f);
-  if (f) {
-    fn_lis *l;
-    HASH_FIND_STR(f->lis, key, l);
-    if (l) {
-      return l;
-    }
-  }
-  return NULL;
+  if (!f)
+    return NULL;
+
+  fn_lis *l;
+  HASH_FIND_STR(f->lis, key, l);
+  return l;
 }
 
 ventry* lis_set_val(fn_lis *lis, String fname)
@@ -187,14 +188,15 @@ ventry* lis_set_val(fn_lis *lis, String fname)
   log_msg("TABLE", "lis_set_val");
   for(int i = 0; i < lis->rec->fld_count; i++) {
     ventry *it = lis->rec->vlist[i];
-    if (it) {
-      fn_val *val = it->val;
-      if (strcmp(val->fld->key, fname) == 0) {
-        lis->ent = it;
-        lis->fname = val->fld;
-        lis->fval = val->key;
-        return it;
-      }
+    if (!it)
+      continue;
+
+    fn_val *val = it->val;
+    if (strcmp(val->fld->key, fname) == 0) {
+      lis->ent = it;
+      lis->fname = val->fld;
+      lis->fval = val->key;
+      return it;
     }
   }
   return NULL;
@@ -205,11 +207,11 @@ ventry* lis_get_val(fn_lis *lis, String fname)
   log_msg("TABLE", "lis_get_val");
   for(int i = 0; i < lis->rec->fld_count; i++) {
     ventry *it = lis->rec->vlist[i];
-    if (it) {
-      if (strcmp(it->val->fld->key, fname) == 0) {
-        return it;
-      }
-    }
+    if (!it)
+      continue;
+
+    if (strcmp(it->val->fld->key, fname) == 0)
+      return it;
   }
   return NULL;
 }
@@ -222,17 +224,18 @@ void lis_save(fn_lis *lis, int index, int lnum)
 
 void* rec_fld(fn_rec *rec, String fname)
 {
-  if (!rec) return NULL;
+  if (!rec)
+    return NULL;
+
   for(int i = 0; i < rec->fld_count; i++) {
     fn_val *val = rec->vals[i];
-    if (strcmp(val->fld->key, fname) == 0) {
-      if (val->fld->type == typSTRING) {
-        return val->key;
-      }
-      else {
-        return val->data;
-      }
-    }
+    if (strcmp(val->fld->key, fname) != 0)
+      continue;
+
+    if (val->fld->type == typSTRING)
+      return val->key;
+    else
+      return val->data;
   }
   return NULL;
 }
@@ -271,16 +274,18 @@ void tbl_del_val(String tn, String fname, String val)
   fn_tbl *t = get_tbl(tn);
   fn_fld *f;
   HASH_FIND_STR(t->fields, fname, f);
-  if (f) {
-    fn_val *v;
-    HASH_FIND_STR(f->vals, val, v);
-    if (v) {
-      /* iterate entries of val. */
-      ventry *it = v->rlist;
-      while (it) {
-        it = tbl_del_rec(it->rec, it);
-      }
-    }
+  if (!f)
+    return;
+
+  fn_val *v;
+  HASH_FIND_STR(f->vals, val, v);
+  if (!v)
+    return;
+
+  /* iterate entries of val. */
+  ventry *it = v->rlist;
+  while (it) {
+    it = tbl_del_rec(it->rec, it);
   }
 }
 
@@ -292,25 +297,27 @@ void tbl_add_lis(String tn, String key_fld, String key)
   fn_tbl *t = get_tbl(tn);
   fn_fld *ff;
   HASH_FIND_STR(t->fields, key_fld, ff);
-  if (ff) {
-    fn_lis *ll;
-    HASH_FIND_STR(ff->lis, key, ll);
-    if (!ll) {
-      log_msg("TABLE", "new lis");
-      /* create new listener */
-      ll = malloc(sizeof(fn_lis));
-      memset(ll, 0, sizeof(fn_lis));
-      ll->key = strdup(key);
-      ll->key_fld = ff;
-      HASH_ADD_STR(ff->lis, key, ll);
-      /* check if value exists and attach */
-      fn_val *val;
-      HASH_FIND_STR(ff->vals, key, val);
-      if (val) {
-        ll->rec = val->rlist->rec;
-      }
-    }
-  }
+  if (!ff)
+    return;
+
+  fn_lis *ll;
+  HASH_FIND_STR(ff->lis, key, ll);
+  if (ll)
+    return;
+
+  /* create new listener */
+  log_msg("TABLE", "new lis");
+  ll = malloc(sizeof(fn_lis));
+  memset(ll, 0, sizeof(fn_lis));
+  ll->key = strdup(key);
+  ll->key_fld = ff;
+  HASH_ADD_STR(ff->lis, key, ll);
+
+  /* check if value exists and attach */
+  fn_val *val;
+  HASH_FIND_STR(ff->vals, key, val);
+  if (val)
+    ll->rec = val->rlist->rec;
 }
 
 void commit(void **data)
@@ -368,17 +375,17 @@ static void add_entry(fn_rec *rec, fn_fld *fld, fn_val *v, int typ, int indx)
 static void check_set_lis(fn_fld *f, String key, fn_rec *rec)
 {
   /* check if field has lis. */
-  if (HASH_COUNT(f->lis) > 0) {
-    fn_lis *ll;
-    HASH_FIND_STR(f->lis, key, ll);
-    if (ll) {
-      /* if lis hasn't obtained a rec, set it now. */
-      if (!ll->ent) {
-        ll->rec = rec;
-        log_msg("TABLE", "SET LIS");
-      }
-    }
-  }
+  if (HASH_COUNT(f->lis) < 1)
+    return;
+
+  fn_lis *ll;
+  HASH_FIND_STR(f->lis, key, ll);
+  if (!ll || ll->ent)
+    return;
+
+  /* if lis hasn't obtained a rec, set it now. */
+  log_msg("TABLE", "SET LIS");
+  ll->rec = rec;
 }
 
 static void tbl_insert(fn_tbl *t, trans_rec *trec)
@@ -408,9 +415,9 @@ static void tbl_insert(fn_tbl *t, trans_rec *trec)
       log_msg("TABLE", "new stub");
       new_entry(rec, f, data, 0, i);
     }
-    else {
+    else
       add_entry(rec, f, v, 0, i);
-    }
+
     check_set_lis(f, rec->vals[i]->key, rec);
   }
 }
@@ -421,12 +428,12 @@ static ventry* tbl_del_rec(fn_rec *rec, ventry *cur)
   for(int i = 0; i < rec->fld_count; i++) {
     ventry *it = rec->vlist[i];
     if (!it) {
-      if (rec->vals[i]->fld == typVOID) {
+      if (rec->vals[i]->fld == typVOID)
         free(rec->vals[i]->data);
-      }
+
       free(rec->vals[i]);
     }
-    if (it) {
+    else {
       fn_val *val = it->val;
       it->val->count--;
 
@@ -439,29 +446,32 @@ static ventry* tbl_del_rec(fn_rec *rec, ventry *cur)
           log_msg("TABLE", "rem ");
           HASH_DEL(fld->vals, val);
         }
+
         fn_lis *ll;
         HASH_FIND_STR(fld->lis, val->key, ll);
         if (ll) {
           log_msg("TABLE", "CLEAR LIS");
           ll->ent = NULL;
         }
+
         free(val->key);
         val->rlist = NULL;
         free(rec->vals[i]);
-        if (cur == it) {
+
+        if (cur == it)
           cur = NULL;
-        }
+
         free(it);
       }
       else {
-        if (it == val->rlist) {
+        if (it == val->rlist)
           val->rlist = it->next;
-        }
+
         it->next->prev = it->prev;
         it->prev->next = it->next;
-        if (cur == it) {
+        if (cur == it)
           cur = it->next;
-        }
+
         free(it);
         it = NULL;
       }
@@ -487,13 +497,13 @@ trans_rec* mk_trans_rec(int fld_count)
 void edit_trans(trans_rec *r, String fname, String val, void *data)
 {
   r->flds[r->count] = fname;
-  if (!val) {
-    r->data[r->count] = data;
-    r->type[r->count] = 0;
-  }
-  else {
+  if (val) {
     r->data[r->count] = strdup(val);
     r->type[r->count] = 1;
+  }
+  else {
+    r->data[r->count] = data;
+    r->type[r->count] = 0;
   }
   r->count++;
 }
@@ -501,9 +511,8 @@ void edit_trans(trans_rec *r, String fname, String val, void *data)
 void clear_trans(trans_rec *r, int flush)
 {
   for (int i = 0; i < r->count; i++) {
-    if (r->type[i] == 1 || flush) {
+    if (r->type[i] == 1 || flush)
       free(r->data[i]);
-    }
   }
   free(r->type);
   free(r->flds);

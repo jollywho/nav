@@ -113,12 +113,14 @@ void hook_clear(Plugin *host)
 void send_hook_msg(String msg, Plugin *host, Plugin *caller, void *data)
 {
   log_msg("HOOK", "(<%s>) msg sent", msg);
-  if (!host) return;
+  if (!host)
+    return;
   HookHandler *host_handle = host->event_hooks;
   HookList find = { .msg = msg };
 
   HookList *hl = (HookList*)utarray_find(host_handle->hosted, &find, hook_cmp);
-  if (!hl) return;
+  if (!hl)
+    return;
 
   Hook *it = (Hook*)utarray_front(hl->hooks);
   while (it) {

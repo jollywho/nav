@@ -72,8 +72,11 @@ void overlay_delete(Overlay *ov)
   log_msg("overlay", "delete");
   if (ov->del)
     return;
-  if (ov->usr_arg) free(ov->usr_arg);
-  if (ov->pipe_in) free(ov->pipe_in);
+
+  if (ov->usr_arg)
+    free(ov->usr_arg);
+  if (ov->pipe_in)
+    free(ov->pipe_in);
 
   ov->del = true;
   if (!ov->queued)
@@ -134,8 +137,11 @@ void overlay_set(Overlay *ov, pos_T size, pos_T ofs, int sep)
 
 static void set_string(String *from, String to)
 {
-  if (!to) return;
-  if (*from) free(*from);
+  if (!to)
+    return;
+  if (*from)
+    free(*from);
+
   *from = strdup(to);
 }
 
@@ -159,8 +165,10 @@ void overlay_draw(void **argv)
 {
   log_msg("OVERLAY", "draw");
   Overlay *ov = argv[0];
-  if (!ov) return;
-  if (overlay_expire(ov)) return;
+  if (!ov)
+    return;
+  if (overlay_expire(ov))
+    return;
   ov->queued = false;
 
   DRAW_STR(ov, nc_st, 0, 0, ov->bufno, color_bufno);

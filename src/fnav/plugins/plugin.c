@@ -8,19 +8,6 @@
 #include "fnav/log.h"
 #include "fnav/option.h"
 
-#define TABLE_SIZE ARRAY_SIZE(plugin_table)
-struct plugin_ent {
-  String name;
-  plugin_open_cb open_cb;
-  plugin_close_cb close_cb;
-  int type_bg;
-} plugin_table[] = {
-  {"fm",   fm_new,   fm_delete, 0},
-  {"op",   op_new,   op_delete, 1},
-  {"img",  img_new,  img_delete, 0},
-  {"term", term_new, term_delete, 0},
-};
-
 typedef struct plugin_ent plugin_ent;
 typedef struct {
   int key;
@@ -34,18 +21,28 @@ struct _Cid {
   LIST_ENTRY(_Cid) ent;
 };
 
-int max_id;
-LIST_HEAD(ci, _Cid) id_pool;
-Cid *id_table;
+#define TABLE_SIZE ARRAY_SIZE(plugin_table)
+static struct plugin_ent {
+  String name;
+  plugin_open_cb open_cb;
+  plugin_close_cb close_cb;
+  int type_bg;
+} plugin_table[] = {
+  {"fm",   fm_new,   fm_delete, 0},
+  {"op",   op_new,   op_delete, 1},
+  {"img",  img_new,  img_delete, 0},
+  {"term", term_new, term_delete, 0},
+};
 
-void plugin_load(String name, plugin_open_cb open_cb, plugin_close_cb close_cb);
+static int max_id;
+static LIST_HEAD(ci, _Cid) id_pool;
+static Cid *id_table;
 
 static int find_plugin(String name)
 {
   for (int i = 0; i < (int)TABLE_SIZE; i++) {
-    if (strcmp(plugin_table[i].name, name) == 0) {
+    if (strcmp(plugin_table[i].name, name) == 0)
       return i;
-    }
   }
   return -1;
 }
@@ -54,9 +51,8 @@ static Plugin* find_loaded_plugin(String name)
 {
   Cid *it;
   for (it = id_table; it != NULL; it = it->hh.next) {
-    if (strcmp(it->plugin->name, name) == 0) {
+    if (strcmp(it->plugin->name, name) == 0)
       return it->plugin;
-    }
   }
   return NULL;
 }
@@ -98,41 +94,42 @@ static void unset_cid(Plugin *plugin)
 
 static Plugin* plugin_in_bkgrnd(plugin_ent *ent)
 {
-  if (!ent->type_bg) return NULL;
+  if (!ent->type_bg)
+    return NULL;
   return find_loaded_plugin(ent->name);
 }
 
 Plugin* plugin_open(String name, Buffer *buf)
 {
   int i = find_plugin(name);
-  if (i != -1) {
-    Plugin *plugin = plugin_in_bkgrnd(&plugin_table[i]);
-    if (!plugin) {
-      plugin = malloc(sizeof(Plugin));
-      set_cid(plugin);
-      plugin_table[i].open_cb(plugin, buf);
-    }
-    return plugin;
+  if (i == -1)
+    return NULL;
+
+  Plugin *plugin = plugin_in_bkgrnd(&plugin_table[i]);
+  if (!plugin) {
+    plugin = calloc(1, sizeof(Plugin));
+    set_cid(plugin);
+    plugin_table[i].open_cb(plugin, buf);
   }
-  return NULL;
+  return plugin;
 }
 
 void plugin_close(Plugin *plugin)
 {
-  if (!plugin) return;
+  if (!plugin)
+    return;
+
   int i = find_plugin(plugin->name);
-  if (i != -1) {
-    unset_cid(plugin);
-    return plugin_table[i].close_cb(plugin);
-  }
+  if (i == -1)
+    return;
+
+  unset_cid(plugin);
+  return plugin_table[i].close_cb(plugin);
 }
 
 int plugin_isloaded(String name)
 {
-  if (find_plugin(name)) {
-    return 1;
-  }
-  return 0;
+  return find_plugin(name) + 1;
 }
 
 Plugin* focus_plugin()

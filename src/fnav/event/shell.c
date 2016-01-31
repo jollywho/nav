@@ -29,16 +29,17 @@ static void process_exit(Process *proc, int status, void *data)
 {
   log_msg("SHELL", "fin");
   Shell *sh = data;
-  if (!sh) return;
+  if (!sh)
+    return;
+
   sh->blocking = false;
   if (sh->again) {
     log_msg("SHELL", "again");
     sh->again = false;
     shell_start(sh);
   }
-  if (sh->reg) {
+  if (sh->reg)
     utarray_erase(proctbl, sh->tbl_idx, 1);
-  }
 }
 
 Shell* shell_new(Plugin *plugin)
@@ -74,7 +75,8 @@ void shell_args(Shell *sh, String *args, shell_stdout_cb readout)
 void shell_delete(Shell *sh)
 {
   log_msg("SHELL", "shell_free");
-  if (sh->msg)  free(sh->msg);
+  if (sh->msg)
+    free(sh->msg);
   free(sh);
 }
 
@@ -115,7 +117,8 @@ void shell_stop(Shell *sh)
 void shell_set_in_buffer(Shell *sh, String msg)
 {
   log_msg("SHELL", "shell_write");
-  if (sh->msg) free(sh->msg);
+  if (sh->msg)
+    free(sh->msg);
   sh->msg = strdup(msg);
 }
 
@@ -142,9 +145,8 @@ static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
   size_t cnt;
   char *ptr = rbuffer_read_ptr(buf, &cnt);
 
-  if (!cnt) {
+  if (!cnt)
     return;
-  }
 
   ptr[count] = '\0';
   Shell *sh = (Shell*)data;
@@ -152,12 +154,10 @@ static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
 
   size_t written = count;
   // No output written, force emptying the Rbuffer if it is full.
-  if (!written && rbuffer_size(buf) == rbuffer_capacity(buf)) {
+  if (!written && rbuffer_size(buf) == rbuffer_capacity(buf))
     written = cnt;
-  }
-  if (written) {
+  if (written)
     rbuffer_consumed(buf, count);
-  }
 }
 
 static void shell_write_cb(Stream *stream, void *data, int status)
@@ -174,7 +174,8 @@ void shell_exec(String line)
 {
   log_msg("SHELL", "shell_exec");
   log_msg("SHELL", "%s", line);
-  if (strlen(line) < 2) return;
+  if (strlen(line) < 2)
+    return;
 
   Shell shnew;
   utarray_push_back(proctbl, &shnew);

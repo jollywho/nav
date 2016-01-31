@@ -37,10 +37,11 @@ void info_parse(String line)
 
 static void write_mark_info(FILE *f, fn_mark *mrk)
 {
-  if (!mrk) return;
-  for (; mrk != NULL; mrk = mrk->hh.next) {
+  if (!mrk)
+    return;
+
+  for (; mrk != NULL; mrk = mrk->hh.next)
     fprintf(f, "%s %s\n", mrk->key, mrk->path);
-  }
 }
 
 void info_write_file(FILE *file)
@@ -79,12 +80,11 @@ static void mark_del(fn_mark **mrk, fn_mark **tbl)
 String mark_path(String key)
 {
   fn_mark *mrk;
-  String ret = NULL;
   HASH_FIND_STR(lbl_marks, key, mrk);
-  if (mrk) {
-    ret = mrk->path;
-  }
-  return ret;
+  if (mrk)
+    return mrk->path;
+
+  return NULL;
 }
 
 String mark_str(int chr)
@@ -93,13 +93,12 @@ String mark_str(int chr)
   String key;
   asprintf(&key, "'%c", chr);
 
-  String ret = NULL;
   HASH_FIND_STR(chr_marks, key, mrk);
-  if (mrk) {
-    ret = mrk->path;
-  }
   free(key);
-  return ret;
+  if (mrk)
+    return mrk->path;
+
+  return NULL;
 }
 
 void mark_label_dir(String label, String dir)
@@ -113,9 +112,9 @@ void mark_label_dir(String label, String dir)
   String tmp = strdup(dir);
   fn_mark *mrk;
   HASH_FIND_STR(lbl_marks, key, mrk);
-  if (mrk) {
+  if (mrk)
     mark_del(&mrk, &lbl_marks);
-  }
+
   mrk = malloc(sizeof(fn_mark));
   mrk->key = key;
   mrk->path = tmp;
@@ -137,9 +136,9 @@ void mark_chr_str(int chr, String dir)
   String tmp = strdup(dir);
   fn_mark *mrk;
   HASH_FIND_STR(chr_marks, key, mrk);
-  if (mrk) {
+  if (mrk)
     mark_del(&mrk, &chr_marks);
-  }
+
   mrk = malloc(sizeof(fn_mark));
   mrk->key = key;
   mrk->path = tmp;

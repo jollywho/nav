@@ -34,10 +34,10 @@ struct Model {
   UT_array *lines;
 };
 
-static fn_reg *registers;
-
-static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
 #define REV_FN(cond,fn,a,b) ((cond) > 0 ? (fn((a),(b))) : (fn((b),(a))))
+
+static fn_reg *registers;
+static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
 
 static int date_sort(const void *a, const void *b, void *arg)
 {
@@ -97,7 +97,9 @@ void model_close(fn_handle *hndl)
 }
 
 int model_blocking(fn_handle *hndl)
-{return hndl->model->blocking;}
+{
+  return hndl->model->blocking;
+}
 
 void model_sort(Model *m, String fld, int flags)
 {
@@ -107,7 +109,9 @@ void model_sort(Model *m, String fld, int flags)
     free(m->sort_type);
     m->sort_type = strdup(fld);
   }
-  if (flags != 0) m->sort_rev = flags;
+  if (flags != 0)
+    m->sort_rev = flags;
+
   if (strcmp(m->sort_type, "mtime") == 0)
     utarray_sort(m->lines, date_sort, &m->sort_rev);
   else
@@ -123,14 +127,13 @@ void model_recv(Model *m)
   fn_handle *h = m->hndl;
   fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
 
-  if (!l->rec) {
+  if (!l->rec)
     return model_null_entry(m, l);
-  }
 
   ventry *head = lis_get_val(l, "dir");
-  if (!l->ent) {
+  if (!l->ent)
     l->ent = lis_set_val(l, h->fname);
-  }
+
   model_read_entry(h->model, l, head);
 }
 
@@ -160,17 +163,6 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   m->opened = true;
 }
 
-size_t model_read_stream(Model *m, char *output, size_t remaining,
-    bool to_buffer, bool eof)
-{
-  if (!output) {
-    return 0;
-  }
-  //sbuf_write(m->hndl->buf, output, remaining);
-  // write to sbuffer
-  return (size_t)(output);
-}
-
 static void generate_lines(Model *m)
 {
   /* generate hash set of index,line. */
@@ -185,8 +177,9 @@ static void generate_lines(Model *m)
 
 String model_str_line(Model *m, int index)
 {
-  if (!m->lines) return NULL;
-  if (index > utarray_len(m->lines)) return NULL;
+  if (!m->lines || utarray_len(m->lines) < index)
+    return NULL;
+
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
   return res ? rec_fld(res->rec, m->hndl->fname) : NULL;
 }
@@ -210,10 +203,12 @@ void* model_fld_line(Model *m, String field, int index)
 void model_set_curs(Model *m, int index)
 {
   log_msg("MODEL", "model_set_curs");
-  if (!m->lines) return;
+  if (!m->lines)
+    return;
+
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
-  if (!res) return;
-  m->cur = res->rec;
+  if (res)
+    m->cur = res->rec;
 }
 
 static void refind_line(Model *m, fn_lis *lis)
@@ -221,7 +216,8 @@ static void refind_line(Model *m, fn_lis *lis)
   log_msg("MODEL", "rewind");
   int count;
   for(count = lis->lnum; count > 0; --count) {
-    if (lis->ent->head) break;
+    if (lis->ent->head)
+      break;
     lis->ent = lis->ent->prev;
   }
   lis->lnum = count;
@@ -230,8 +226,9 @@ static void refind_line(Model *m, fn_lis *lis)
 String model_str_expansion(String val)
 {
   Buffer *buf = window_get_focus();
-  if (!buf) return NULL;
-  if (!buf_attached(buf)) return NULL;
+  if (!buf || !buf_attached(buf))
+    return NULL;
+
   Model *m = buf->hndl->model;
   return rec_fld(m->cur, val);
 }

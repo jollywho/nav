@@ -33,8 +33,6 @@ static void* win_cd();
 static void* win_mark();
 static void win_layout();
 static void window_ex_cmd();
-static void wintest();
-static void wintestq();
 static void window_update(uv_timer_t *handle);
 
 #define CMDS_SIZE ARRAY_SIZE(cmdtable)
@@ -73,9 +71,6 @@ static fn_key key_defaults[] = {
   {'J',     win_layout,      0,           MOVE_DOWN},
   {'K',     win_layout,      0,           MOVE_UP},
   {'L',     win_layout,      0,           MOVE_RIGHT},
-  {'s',     wintest,         0,           MOVE_UP},
-  {'v',     wintest,         0,           MOVE_LEFT},
-  {'q',     wintestq,        0,           MOVE_LEFT},
 };
 
 static fn_keytbl key_tbl;
@@ -115,9 +110,9 @@ void window_init(void)
     memmove(cmd, &cmdtable[i], sizeof(Cmd_T));
     cmd_add(cmd);
   }
-  for (int i = 0; i < (int)COMPL_SIZE; i++) {
+  for (int i = 0; i < (int)COMPL_SIZE; i++)
     compl_add_context(compl_win[i]);
-  }
+
   curs_set(0);
   sig_resize(0);
   buf_init();
@@ -147,38 +142,18 @@ static void win_layout(Window *_w, Cmdarg *arg)
   layout_movement(&win.layout, dir);
 }
 
-static void wintest(Window *_w, Cmdarg *arg)
-{
-  log_msg("WINDOW", "win_new");
-  enum move_dir dir = arg->arg;
-  layout_movement(&win.layout, dir);
-  window_add_buffer(dir);
-}
-
-static void wintestq(Window *_w, Cmdarg *arg)
-{
-  log_msg("WINDOW", "win_close");
-  //Buffer *buf = layout_buf(&win.layout);
-  //if (buf) {
-  //  plugin_close(buf_plugin(buf));
-  //}
-  window_remove_buffer();
-}
-
 void window_input(int key)
 {
   log_msg("WINDOW", "input");
   win.ca.key = key;
-  if (win.input_override) {
+  if (win.input_override)
     return term_keypress(win.term, key);
-  }
-  if (win.ex) {
+  if (win.ex)
     return ex_input(key);
-  }
+
   int ret = 0;
-  if (window_get_focus()) {
+  if (window_get_focus())
     ret = buf_input(layout_buf(&win.layout), &win.ca);
-  }
   if (!ret)
     find_do_cmd(&key_tbl, &win.ca, NULL);
 }
@@ -220,9 +195,10 @@ int window_focus_attached()
 static void* win_pipe(List *args, enum move_dir flags)
 {
   log_msg("WINDOW", "win_pipe");
-  if (utarray_len(args->items) < 2) return 0;
-  Buffer *buf = layout_buf(&win.layout);
+  if (utarray_len(args->items) < 2)
+    return 0;
 
+  Buffer *buf = layout_buf(&win.layout);
   int *wnum = list_arg(args, 1, VAR_NUMBER);
 
   if (buf && wnum) {
@@ -238,11 +214,12 @@ static void* win_cd(List *args, int flags)
   log_msg("WINDOW", "win_cd");
 
   String path = list_arg(args, 1, VAR_STRING);
-  if (!path) path = "~";
+  if (!path)
+    path = "~";
+
   Plugin *plugin = buf_plugin(layout_buf(&win.layout));
-  if (plugin) {
+  if (plugin)
     send_hook_msg("open", plugin, NULL, path);
-  }
   return 0;
 }
 
@@ -251,11 +228,12 @@ static void* win_mark(List *args, int flags)
   log_msg("WINDOW", "win_mark");
 
   String label = list_arg(args, 1, VAR_STRING);
-  if (!label) return 0;
+  if (!label)
+    return 0;
+
   Plugin *plugin = buf_plugin(layout_buf(&win.layout));
-  if (plugin) {
+  if (plugin)
     mark_label_dir(label, window_active_dir());
-  }
   return 0;
 }
 
@@ -283,9 +261,9 @@ static void* win_close(List *args, int cmd_flags)
 {
   log_msg("WINDOW", "win_close");
   Buffer *buf = layout_buf(&win.layout);
-  if (buf) {
+  if (buf)
     plugin_close(buf_plugin(buf));
-  }
+
   window_remove_buffer();
   return NULL;
 }
@@ -317,13 +295,14 @@ void window_draw(void **argv)
 
 static void window_update(uv_timer_t *handle)
 {
-  log_msg("WINDOW", "winup dd");
+  log_msg("WINDOW", "win update");
   if (win.ex)
     cmdline_refresh();
   if (win.input_override)
     term_cursor(win.term);
 
   doupdate();
+
   if (win.refs < 1) {
     uv_timer_stop(handle);
     win.dirty = false;
@@ -347,9 +326,9 @@ void window_remove_buffer()
 {
   log_msg("WINDOW", "BUFFER +CLOSE+");
   Buffer *buf = window_get_focus();
-  if (buf) {
+  if (buf)
     buf_delete(buf);
-  }
+
   layout_remove_buffer(&win.layout);
 }
 
