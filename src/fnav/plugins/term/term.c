@@ -38,7 +38,7 @@ void term_new(Plugin *plugin, Buffer *buf)
   term->vt = vt_create(1, 1, SCROLL_HISTORY);
 	const char *shell = getenv("SHELL");
 	const char *pargs[4] = { shell, NULL };
-  char *cwd = window_active_dir();
+  char *cwd = window_cur_dir();
 
   SLIST_INSERT_HEAD(&mainloop()->subterms, term, ent);
   uv_signal_start(&mainloop()->children_watcher, chld_handler, SIGCHLD);

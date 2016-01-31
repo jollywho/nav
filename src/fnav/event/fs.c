@@ -2,6 +2,7 @@
 #include <sys/time.h>
 #include <libgen.h>
 #include <wordexp.h>
+#include <unistd.h>
 
 #include "fnav/event/fs.h"
 #include "fnav/model.h"
@@ -133,6 +134,11 @@ String fs_expand_path(String path)
 
   wordfree(&p);
   return newpath;
+}
+
+String fs_current_dir()
+{
+  return get_current_dir_name();
 }
 
 bool isdir(String path)

@@ -19,6 +19,4 @@ void fm_cleanup();
 void fm_new(Plugin *plugin, Buffer *buf);
 void fm_delete(Plugin *plugin);
 
-String fm_cur_dir(Plugin *plugin);
-
 #endif

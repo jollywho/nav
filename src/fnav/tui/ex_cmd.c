@@ -25,7 +25,6 @@ static void ex_hist();
 #define CURS_MIN -1
 #define EXCMD_HIST() ((ex_state) ? (hist_cmds) : (hist_regs))
 
-#define KEYS_SIZE ARRAY_SIZE(key_defaults)
 static fn_key key_defaults[] = {
   {ESC,      ex_esc,           0,       0},
   {TAB,      ex_tab,           0,       FORWARD},
@@ -39,7 +38,7 @@ static fn_key key_defaults[] = {
   {Ctrl_U,   ex_killline,      0,       0},
 };
 static fn_keytbl key_tbl;
-static short cmd_idx[KEYS_SIZE];
+static short cmd_idx[LENGTH(key_defaults)];
 
 static cmd_part **cmd_stack;
 static int cur_part;
@@ -64,7 +63,7 @@ void ex_cmd_init()
 {
   key_tbl.tbl = key_defaults;
   key_tbl.cmd_idx = cmd_idx;
-  key_tbl.maxsize = KEYS_SIZE;
+  key_tbl.maxsize = LENGTH(key_defaults);
   input_setup_tbl(&key_tbl);
   hist_cmds = hist_new();
   hist_regs = hist_new();

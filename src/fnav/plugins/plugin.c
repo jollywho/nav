@@ -21,26 +21,34 @@ struct _Cid {
   LIST_ENTRY(_Cid) ent;
 };
 
-#define TABLE_SIZE ARRAY_SIZE(plugin_table)
 static struct plugin_ent {
   String name;
+  plugin_init_cb init_cb;
   plugin_open_cb open_cb;
   plugin_close_cb close_cb;
   int type_bg;
 } plugin_table[] = {
-  {"fm",   fm_new,   fm_delete, 0},
-  {"op",   op_new,   op_delete, 1},
-  {"img",  img_new,  img_delete, 0},
-  {"term", term_new, term_delete, 0},
+  {"fm",   fm_init, fm_new,   fm_delete,   0},
+  {"op",   NULL,    op_new,   op_delete,   1},
+  {"img",  NULL,    img_new,  img_delete,  0},
+  {"term", NULL,    term_new, term_delete, 0},
 };
 
 static int max_id;
 static LIST_HEAD(ci, _Cid) id_pool;
 static Cid *id_table;
 
+void plugin_init()
+{
+  for (int i = 0; i < LENGTH(plugin_table); i++) {
+    if (plugin_table[i].init_cb)
+      plugin_table[i].init_cb();
+  }
+}
+
 static int find_plugin(String name)
 {
-  for (int i = 0; i < (int)TABLE_SIZE; i++) {
+  for (int i = 0; i < LENGTH(plugin_table); i++) {
     if (strcmp(plugin_table[i].name, name) == 0)
       return i;
   }
@@ -155,8 +163,8 @@ Plugin* plugin_from_id(int id)
 
 void plugin_list(List *args)
 {
-  compl_new(TABLE_SIZE, COMPL_STATIC);
-  for (int i = 0; i < (int)TABLE_SIZE; i++) {
+  compl_new(LENGTH(plugin_table), COMPL_STATIC);
+  for (int i = 0; i < LENGTH(plugin_table); i++) {
     compl_set_index(i, plugin_table[i].name, 0, NULL);
   }
 }

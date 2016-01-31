@@ -8,7 +8,6 @@
 #include "fnav/tui/layout.h"
 #include "fnav/event/shell.h"
 
-#define EXT_ARR_SIZE ARRAY_SIZE(img_exts)
 #define WM_IMG "/usr/lib/w3m/w3mimgdisplay"
 
 //FORMAT:                    0;1;{x};{y};{w};{h};;;;;{filename}\n4;\n3;\n
@@ -99,7 +98,7 @@ static const char *get_path_ext(const char *fspec)
 
 static int valid_ext(const char *path)
 {
-  for (int i = 0; i < (int)EXT_ARR_SIZE; i++) {
+  for (int i = 0; i < LENGTH(img_exts); i++) {
     if (strcmp(get_path_ext(path), img_exts[i]) == 0)
       return 1;
   }

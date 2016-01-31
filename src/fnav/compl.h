@@ -24,7 +24,6 @@ typedef struct {
 typedef struct fn_context fn_context;
 struct fn_context {
   String key;
-  fn_context *sub;
   String comp;
   String type;
   fn_compl *cmpl;
@@ -43,6 +42,7 @@ typedef struct {
 void compl_init();
 void compl_cleanup();
 void compl_add_context(String fmt_compl);
+void compl_add_arg(String name, String fmt_compl);
 
 fn_context* context_start();
 void compl_update(fn_context *cx, String line);

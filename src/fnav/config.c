@@ -14,7 +14,6 @@ static void* edit_variable();
 static void* edit_mapping();
 static void* add_source();
 
-#define CMDS_SIZE ARRAY_SIZE(cmdtable)
 static const Cmd_T cmdtable[] = {
   {"set",    edit_setting,   0},
   {"hi",     edit_color,     0},
@@ -43,7 +42,7 @@ char *p_rm = "rm";
 
 void config_init()
 {
-  for (int i = 0; i < (int)CMDS_SIZE; i++) {
+  for (int i = 0; i < LENGTH(cmdtable); i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
     cmd = memmove(cmd, &cmdtable[i], sizeof(Cmd_T));
     cmd_add(cmd);
@@ -192,7 +191,6 @@ bool info_read(FILE *file)
       free(line);
       continue;
     }
-    log_msg("CONFIG", "info: %s", line);
     info_parse(line);
     free(line);
   }
@@ -211,7 +209,6 @@ bool config_read(FILE *file)
       free(line);
       continue;
     }
-    log_msg("CONFIG", "conf: %s", line);
     Cmdline cmd;
     cmdline_init_config(&cmd, line);
     cmdline_build(&cmd);

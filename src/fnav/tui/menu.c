@@ -112,7 +112,7 @@ static int last_dir_in_path(Token *tok, List *args, int pos, String *path)
 static String expand_path(String line, String path)
 {
   if (path[0] != '/') {
-    SWAP_ALLOC_PTR(path, conspath(window_active_dir(), path));
+    SWAP_ALLOC_PTR(path, conspath(window_cur_dir(), path));
     cur_menu->line_key = line;
   }
   String tmp = realpath(path, NULL);
@@ -143,7 +143,7 @@ void path_list(List *args)
   free(cur_menu->line_key);
 
   if (!tok) {
-    String path = window_active_dir();
+    String path = window_cur_dir();
     cur_menu->line_key = strdup("");
     fs_read(cur_menu->fs, path);
   }

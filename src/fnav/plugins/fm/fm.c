@@ -17,12 +17,10 @@
 #include "fnav/compl.h"
 #include "fnav/event/shell.h"
 #include "fnav/info.h"
-
-static FM *active_fm;
+#include "fnav/tui/window.h"
 
 void fm_init()
 {
-  active_fm = NULL;
   if (tbl_mk("fm_files")) {
     tbl_mk_fld("fm_files", "name", typSTRING);
     tbl_mk_fld("fm_files", "dir", typSTRING);
@@ -42,16 +40,6 @@ void fm_cleanup()
   // remove tables
 }
 
-static void fm_active_dir(FM *fm)
-{
-  if (!active_fm)
-    fm->cur_dir = get_current_dir_name();
-  else
-    fm->cur_dir = strdup(active_fm->cur_dir);
-
-  active_fm = fm;
-}
-
 void plugin_cancel(Plugin *plugin)
 {
   log_msg("FM", "<|_CANCEL_|>");
@@ -64,7 +52,7 @@ void plugin_focus(Plugin *plugin)
 {
   log_msg("FM", "plugin_focus");
   FM *self = (FM*)plugin->top;
-  active_fm = self;
+  window_ch_dir(self->cur_dir);
   buf_refresh(plugin->hndl->buf);
 }
 
@@ -91,13 +79,15 @@ static int fm_opendir(Plugin *plugin, String path, short arg)
   fs_close(self->fs);
   fs_open(self->fs, cur_dir);
   self->cur_dir = cur_dir;
+  window_ch_dir(self->cur_dir);
   return 1;
 }
 
 static void fm_left(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("FM", "cmd left");
-  String path = strdup(fm_cur_dir(host));
+  FM *self = host->top;
+  String path = strdup(self->cur_dir);
   fm_opendir(host, path, BACKWARD);
   free(path);
 }
@@ -128,17 +118,17 @@ static void fm_ch_dir(void **args)
 static void fm_req_dir(Plugin *plugin, Plugin *caller, void *data)
 {
   log_msg("FM_plugin", "fm_req_dir");
+  FM *self = plugin->top;
   String path = strdup(data);
 
   if (path[0] == '@')
     SWAP_ALLOC_PTR(path, strdup(mark_path(path)));
 
   if (path[0] != '/' && path[0] != '~')
-    SWAP_ALLOC_PTR(path, conspath(fm_cur_dir(plugin), path));
+    SWAP_ALLOC_PTR(path, conspath(self->cur_dir, path));
 
   String newpath = fs_expand_path(path);
   if (newpath) {
-    FM *self = (FM*)plugin->top;
     fs_read(self->fs, newpath);
     free(newpath);
   }
@@ -221,7 +211,7 @@ void fm_new(Plugin *plugin, Buffer *buf)
   fm->op_count = 1;
   fm->mo_count = 1;
 
-  fm_active_dir(fm);
+  fm->cur_dir = strdup(window_cur_dir());
 
   init_fm_hndl(fm, buf, plugin, fm->cur_dir);
   model_init(plugin->hndl);
@@ -254,16 +244,4 @@ void fm_delete(Plugin *plugin)
   fs_cleanup(fm->fs);
   free(h);
   free(fm);
-}
-
-String fm_cur_dir(Plugin *plugin)
-{
-  if (!active_fm)
-    return get_current_dir_name();
-  if (!plugin)
-    return active_fm->cur_dir;
-  if (strcmp(plugin->name, "fm") != 0)
-    return active_fm->cur_dir;
-  FM *fm = plugin->top;
-  return fm->cur_dir;
 }

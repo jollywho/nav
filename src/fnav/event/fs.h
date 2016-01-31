@@ -36,4 +36,6 @@ String fs_parent_dir(const String path);
 void* fs_vt_stat_resolv(fn_rec *rec, String key);
 String conspath(const char *str1, const char *str2);
 
+String fs_current_dir();
+
 #endif

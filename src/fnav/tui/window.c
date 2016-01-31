@@ -11,7 +11,7 @@
 #include "fnav/log.h"
 #include "fnav/tui/ex_cmd.h"
 #include "fnav/plugins/term/term.h"
-#include "fnav/plugins/fm/fm.h"
+#include "fnav/event/fs.h"
 
 struct Window {
   Layout layout;
@@ -35,7 +35,6 @@ static void win_layout();
 static void window_ex_cmd();
 static void window_update(uv_timer_t *handle);
 
-#define CMDS_SIZE ARRAY_SIZE(cmdtable)
 static const Cmd_T cmdtable[] = {
   {"qa",     win_shut,    0},
   {"q",      win_close,   0},
@@ -49,21 +48,22 @@ static const Cmd_T cmdtable[] = {
   {"mark",   win_mark,    0},
 };
 
-#define COMPL_SIZE ARRAY_SIZE(compl_win)
-static String compl_win[] = {
-  "cmd:q;window:string:wins",
-  "cmd:close;window:string:wins",
-  "cmd:vnew;plugin:string:plugins",
-  "cmd:new;plugin:string:plugins",
-  "cmd:pipe;window:number:wins",
-  "cmd:sort;field:string:fields",
-  "cmd:sort!;field:string:fields",
-  "cmd:*:plugin:fm;path:string:paths",
-  "cmd:cd;path:string:paths",
-  "cmd:mark;label:string:marklbls",
+static String compl_cmds[] = {
+  "q;window:string:wins",
+  "close;window:string:wins",
+  "vnew;plugin:string:plugins",
+  "new;plugin:string:plugins",
+  "pipe;window:number:wins",
+  "sort;field:string:fields",
+  "sort!;field:string:fields",
+  "cd;path:string:paths",
+  "mark;label:string:marklbls",
+};
+static String compl_args[][2] = {
+  {"plugin", "fm;path:string:paths"},
+  {"plugin", "img;window:number:wins"},
 };
 
-#define KEYS_SIZE ARRAY_SIZE(key_defaults)
 static fn_key key_defaults[] = {
   {';',     window_ex_cmd,   0,           EX_CMD_STATE},
   {'/',     window_ex_cmd,   0,           EX_REG_STATE},
@@ -74,9 +74,10 @@ static fn_key key_defaults[] = {
 };
 
 static fn_keytbl key_tbl;
-static short cmd_idx[KEYS_SIZE];
+static short cmd_idx[LENGTH(key_defaults)];
 static const uint64_t RFSH_RATE = 10;
 static Window win;
+static String cur_dir;
 
 void sig_resize(int sig)
 {
@@ -93,11 +94,12 @@ void window_init(void)
   log_msg("INIT", "window");
   key_tbl.tbl = key_defaults;
   key_tbl.cmd_idx = cmd_idx;
-  key_tbl.maxsize = KEYS_SIZE;
+  key_tbl.maxsize = LENGTH(key_defaults);
   input_setup_tbl(&key_tbl);
 
   uv_timer_init(eventloop(), &win.draw_timer);
 
+  cur_dir = fs_current_dir();
   win.ex = false;
   win.dirty = false;
   win.refs = 0;
@@ -105,18 +107,20 @@ void window_init(void)
   signal(SIGWINCH, sig_resize);
   layout_init(&win.layout);
 
-  for (int i = 0; i < (int)CMDS_SIZE; i++) {
+  for (int i = 0; i < LENGTH(cmdtable); i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
     memmove(cmd, &cmdtable[i], sizeof(Cmd_T));
     cmd_add(cmd);
   }
-  for (int i = 0; i < (int)COMPL_SIZE; i++)
-    compl_add_context(compl_win[i]);
+  for (int i = 0; i < LENGTH(compl_cmds); i++)
+    compl_add_context(compl_cmds[i]);
+  for (int i = 0; i < LENGTH(compl_args); i++)
+    compl_add_arg(compl_args[i][0], compl_args[i][1]);
 
   curs_set(0);
   sig_resize(0);
+  plugin_init();
   buf_init();
-  fm_init();
   ex_cmd_init();
 }
 
@@ -127,7 +131,6 @@ void window_cleanup(void)
   cmd_clearall();
   layout_cleanup(&win.layout);
   buf_cleanup();
-  fm_cleanup();
 }
 
 static void* win_shut()
@@ -172,9 +175,14 @@ void window_stop_override()
   win.term = NULL;
 }
 
-String window_active_dir()
+void window_ch_dir(String dir)
 {
-  return fm_cur_dir(window_get_plugin());
+  SWAP_ALLOC_PTR(cur_dir, strdup(dir));
+}
+
+String window_cur_dir()
+{
+  return cur_dir;
 }
 
 Buffer* window_get_focus()
@@ -233,7 +241,7 @@ static void* win_mark(List *args, int flags)
 
   Plugin *plugin = buf_plugin(layout_buf(&win.layout));
   if (plugin)
-    mark_label_dir(label, window_active_dir());
+    mark_label_dir(label, window_cur_dir());
   return 0;
 }
 

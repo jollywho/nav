@@ -15,6 +15,7 @@ typedef struct Overlay Overlay;
 typedef struct fn_reg fn_reg;
 typedef struct Cmdarg Cmdarg;
 
+typedef void (*plugin_init_cb)(void);
 typedef void (*plugin_open_cb)(Plugin *base, Buffer *b);
 typedef void (*plugin_close_cb)(Plugin *plugin);
 
@@ -44,6 +45,7 @@ typedef struct {
   int col;     /* column number */
 } pos_T;
 
+void plugin_init();
 void plugin_load(String name, plugin_open_cb open_cb, plugin_close_cb close_cb);
 int plugin_isloaded(String name);
 

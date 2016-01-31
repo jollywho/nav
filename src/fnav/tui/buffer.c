@@ -28,7 +28,6 @@ static void buf_draw(void **);
 #define EV_LEFT   2
 #define EV_RIGHT  3
 
-#define MAX_EVENTS ARRAY_SIZE(buf_events)
 static String buf_events[] = {
   "paste","remove","left","right",
 };
@@ -41,7 +40,6 @@ static fn_oper key_operators[] = {
   {'g',      NUL,    buf_g},
 };
 
-#define KEYS_SIZE ARRAY_SIZE(key_defaults)
 static fn_key key_defaults[] = {
   {Ctrl_J,  buf_mv_page,     0,           FORWARD},
   {Ctrl_K,  buf_mv_page,     0,           BACKWARD},
@@ -61,14 +59,14 @@ static fn_key key_defaults[] = {
 };
 
 static fn_keytbl key_tbl;
-static short cmd_idx[KEYS_SIZE];
+static short cmd_idx[LENGTH(key_defaults)];
 
 void buf_init()
 {
   log_msg("BUFFER", "init");
   key_tbl.tbl = key_defaults;
   key_tbl.cmd_idx = cmd_idx;
-  key_tbl.maxsize = KEYS_SIZE;
+  key_tbl.maxsize = LENGTH(key_defaults);
   input_setup_tbl(&key_tbl);
 }
 
@@ -396,7 +394,7 @@ static void buf_gomark(Buffer *buf, Cmdarg *ca)
 
 static void buf_gen_event(Buffer *buf, Cmdarg *ca)
 {
-  if (ca->arg > MAX_EVENTS || ca->arg < 0)
+  if (ca->arg > LENGTH(buf_events) || ca->arg < 0)
     return;
   send_hook_msg(buf_events[ca->arg], buf->plugin, NULL, NULL);
 }

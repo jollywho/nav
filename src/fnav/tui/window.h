@@ -18,7 +18,9 @@ Buffer* window_get_focus();
 Plugin* window_get_plugin();
 int window_focus_attached();
 void window_shift(int lines);
-String window_active_dir();
+
+String window_cur_dir();
+void window_ch_dir(String dir);
 
 void window_start_override(Plugin *);
 void window_stop_override();
