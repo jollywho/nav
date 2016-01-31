@@ -25,6 +25,7 @@ struct Shell {
 };
 
 void shell_init();
+void shell_cleanup();
 Shell* shell_new(Plugin *plugin);
 void shell_delete(Shell *sh);
 void shell_args(Shell *sh, String *args, shell_stdout_cb readout);

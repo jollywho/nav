@@ -20,6 +20,11 @@ void shell_init()
   utarray_new(proctbl, &sh_icd);
 }
 
+void shell_cleanup()
+{
+  utarray_free(proctbl);
+}
+
 static void process_exit(Process *proc, int status, void *data)
 {
   log_msg("SHELL", "fin");

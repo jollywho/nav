@@ -290,6 +290,11 @@ static void* win_close(List *args, int cmd_flags)
   return NULL;
 }
 
+void window_close_focus()
+{
+  win_close(NULL, 0);
+}
+
 static void window_ex_cmd(Window *_w, Cmdarg *arg)
 {
   win.ex = true;
@@ -317,6 +322,7 @@ static void window_update(uv_timer_t *handle)
     cmdline_refresh();
   if (win.input_override)
     term_cursor(win.term);
+
   doupdate();
   if (win.refs < 1) {
     uv_timer_stop(handle);

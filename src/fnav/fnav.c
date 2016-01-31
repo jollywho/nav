@@ -47,12 +47,14 @@ void init(void)
 void cleanup(void)
 {
   log_msg("CLEANUP", "CLEANUP_START");
+  shell_cleanup();
   window_cleanup();
   compl_cleanup();
   input_cleanup();
   event_cleanup();
   tables_cleanup();
   option_cleanup();
+  vt_shutdown();
   endwin();
   log_msg("CLEANUP", "CLEANUP_END");
   //logger

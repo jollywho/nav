@@ -38,22 +38,6 @@ static void chld_handler(uv_signal_t *handle, int signum)
   if (pid <= 0) {
     return;
   }
-
-  //Loop *loop = handle->loop->data;
-
-  //Process *it;
-  //SLIST_FOREACH(it, &loop->children, ent) {
-  //  Process *proc = it;
-  //  if (proc->pid == pid) {
-  //    if (WIFEXITED(stat)) {
-  //      proc->status = WEXITSTATUS(stat);
-  //    } else if (WIFSIGNALED(stat)) {
-  //      proc->status = WTERMSIG(stat);
-  //    }
-  //    proc->internal_exit_cb(proc);
-  //    break;
-  //  }
-  //}
 }
 
 static void create_proc(Op *op, String path)
@@ -70,7 +54,6 @@ static void create_proc(Op *op, String path)
     log_msg("OP", "kill");
     uv_kill(proc.pid, SIGKILL);
     uv_close((uv_handle_t*)&proc, NULL);
-    uv_run(eventloop(), UV_RUN_NOWAIT);
   }
   log_msg("OP", "spawn");
   uv_signal_start(&mainloop()->children_watcher, chld_handler, SIGCHLD);

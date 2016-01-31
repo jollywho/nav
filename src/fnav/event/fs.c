@@ -94,7 +94,7 @@ static void fs_demux(fn_fs *fs)
 
 fn_fs* fs_init(fn_handle *hndl)
 {
-  log_msg("FS", "fs_init");
+  log_msg("FS", "init");
   fn_fs *fs = malloc(sizeof(fn_fs));
   memset(fs, 0, sizeof(fn_fs));
   fs->hndl = hndl;
@@ -104,8 +104,8 @@ fn_fs* fs_init(fn_handle *hndl)
 void fs_cleanup(fn_fs *fs)
 {
   log_msg("FS", "cleanup");
-
-  // iterate tbl and delete each ent and its subparts
+  fs_close(fs);
+  free(fs);
 }
 
 String conspath(const char *str1, const char *str2)

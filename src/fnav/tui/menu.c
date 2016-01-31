@@ -189,6 +189,9 @@ Menu* menu_new()
 
 void menu_delete(Menu *mnu)
 {
+  log_msg("MENU", "menu_delete");
+  fs_cleanup(mnu->fs);
+  free(mnu->hndl);
   free(mnu);
   cur_menu = NULL;
 }

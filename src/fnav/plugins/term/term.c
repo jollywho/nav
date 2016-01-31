@@ -1,3 +1,5 @@
+#include <sys/wait.h>
+
 #include "fnav/lib/utarray.h"
 
 #include "fnav/plugins/term/term.h"
@@ -16,6 +18,8 @@
 static void readfd_ready(uv_poll_t *, int, int);
 static void plugin_resize(Plugin *, Plugin *, void *);
 static void plugin_focus(Plugin *);
+static void chld_handler(uv_signal_t *, int);
+static void term_close_event(void **args);
 
 void term_new(Plugin *plugin, Buffer *buf)
 {
@@ -27,7 +31,6 @@ void term_new(Plugin *plugin, Buffer *buf)
   plugin->fmt_name = "VT";
   plugin->_focus = plugin_focus;
 
-  term->win = newwin(1, 1, 0, 0);
   term->buf = buf;
   buf_set_plugin(buf, plugin);
   buf_set_pass(buf);
@@ -37,7 +40,10 @@ void term_new(Plugin *plugin, Buffer *buf)
 	const char *pargs[4] = { shell, NULL };
   char *cwd = window_active_dir();
 
-	vt_forkpty(term->vt, shell, pargs, cwd, NULL, NULL, NULL);
+  SLIST_INSERT_HEAD(&mainloop()->subterms, term, ent);
+  uv_signal_start(&mainloop()->children_watcher, chld_handler, SIGCHLD);
+
+	term->pid = vt_forkpty(term->vt, shell, pargs, cwd, NULL, NULL, NULL);
 
   uv_poll_init(eventloop(), &term->readfd, vt_pty_get(term->vt));
   uv_poll_start(&term->readfd, UV_READABLE, readfd_ready);
@@ -48,6 +54,19 @@ void term_new(Plugin *plugin, Buffer *buf)
   hook_add(plugin, plugin, plugin_resize, "window_resize");
 }
 
+void term_delete(Plugin *plugin)
+{
+  log_msg("TERM", "term_delete");
+  Term *term = plugin->top;
+  //TODO: close if running
+  SLIST_REMOVE(&mainloop()->subterms, term, term, ent);
+  uv_poll_stop(&term->readfd);
+  window_stop_override();
+  vt_destroy(term->vt);
+  hook_cleanup(term->base);
+  CREATE_EVENT(eventq(), term_close_event, 1, term);
+}
+
 static void plugin_focus(Plugin *plugin)
 {
   Term *term = plugin->top;
@@ -55,15 +74,11 @@ static void plugin_focus(Plugin *plugin)
   readfd_ready(&term->readfd, 0, 0);
 }
 
-void term_delete(Plugin *plugin)
-{
-}
-
 void term_cursor(Plugin *plugin)
 {
   Term *term = plugin->top;
 	curs_set(vt_cursor_visible(term->vt));
-  wnoutrefresh(term->win);
+  wnoutrefresh(buf_ncwin(term->buf));
   doupdate();
 }
 
@@ -86,8 +101,8 @@ void term_keypress(Plugin *plugin, int key)
 
 static void term_draw(Term *term)
 {
-	vt_draw(term->vt, term->win, 0, 0);
-  wnoutrefresh(term->win);
+	vt_draw(term->vt, buf_ncwin(term->buf), 0, 0);
+  wnoutrefresh(buf_ncwin(term->buf));
   doupdate();
 }
 
@@ -96,13 +111,11 @@ static void plugin_resize(Plugin *host, Plugin *none, void *data)
   log_msg("TERM", "plugin_resize");
   Term *term = host->top;
   vt_dirty(term->vt);
-  wclear(term->win);
-  wnoutrefresh(term->win);
 
   pos_T sz = buf_size(term->buf);
   pos_T ofs = buf_ofs(term->buf);
-  wresize(term->win, sz.lnum, sz.col);
-  mvwin(term->win, ofs.lnum, ofs.col);
+  wresize(buf_ncwin(term->buf), sz.lnum, sz.col);
+  mvwin(buf_ncwin(term->buf), ofs.lnum, ofs.col);
   vt_resize(term->vt, sz.lnum, sz.col);
   term_draw(term);
 }
@@ -112,4 +125,44 @@ static void readfd_ready(uv_poll_t *handle, int status, int events)
   Term *term = handle->data;
   vt_process(term->vt);
   term_draw(term);
+}
+
+static void term_close(Term *term)
+{
+  log_msg("TERM", "term_close");
+  window_close_focus();
+}
+
+static void chld_handler(uv_signal_t *handle, int signum)
+{
+  int stat = 0;
+  int pid;
+
+  do {
+    pid = waitpid(-1, &stat, WNOHANG);
+  } while (pid < 0 && errno == EINTR);
+
+  if (pid <= 0) {
+    return;
+  }
+
+  Term *it;
+  SLIST_FOREACH(it, &mainloop()->subterms, ent) {
+    Term *proc = it;
+    if (proc->pid == pid) {
+      if (WIFEXITED(stat)) {
+        proc->status = WEXITSTATUS(stat);
+      } else if (WIFSIGNALED(stat)) {
+        proc->status = WTERMSIG(stat);
+      }
+      term_close(it);
+      break;
+    }
+  }
+}
+
+static void term_close_event(void **args)
+{
+  Term *term = args[0];
+  free(term);
 }

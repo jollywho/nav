@@ -10,6 +10,7 @@ void window_req_draw(void *obj, argv_callback cb);
 void window_input(int key);
 
 void window_add_buffer(enum move_dir dir);
+void window_close_focus();
 void window_remove_buffer();
 void window_ex_cmd_end();
 void window_draw_all();

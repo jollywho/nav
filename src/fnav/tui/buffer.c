@@ -332,6 +332,8 @@ int buf_attached(Buffer *buf)
 {return buf->attached;}
 void buf_set_overlay(Buffer *buf, Overlay *ov)
 {buf->ov = ov;}
+WINDOW* buf_ncwin(Buffer *buf)
+{return buf->nc_win;}
 
 int buf_input(Buffer *buf, Cmdarg *ca)
 {

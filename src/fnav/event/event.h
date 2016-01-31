@@ -19,6 +19,7 @@ struct loop {
   Queue eventq;
   Queue drawq;
   SLIST_HEAD(WatcherPtr, process) children;
+  SLIST_HEAD(WatcherTerm, term) subterms;
   uv_signal_t children_watcher;
   uv_prepare_t event_prepare;
   uv_timer_t children_kill_timer;

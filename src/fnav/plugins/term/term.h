@@ -2,17 +2,20 @@
 #define FN_PLUGINS_TERM_H
 
 #include <uv.h>
+#include "fnav/lib/sys_queue.h"
 #include "fnav/plugins/plugin.h"
 #include "fnav/vt/vt.h"
 
-typedef struct Term Term;
+typedef struct term Term;
 
-struct Term {
+struct term {
   Plugin *base;
   Vt *vt;
   uv_poll_t readfd;
-  WINDOW *win;
   Buffer *buf;
+  SLIST_ENTRY(term) ent;
+  int pid;
+  int status;
 };
 
 void term_new(Plugin *plugin, Buffer *buf);
