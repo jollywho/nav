@@ -187,6 +187,24 @@ static void fm_remove(Plugin *host, Plugin *caller, void *data)
   free(cmdstr);
 }
 
+static String valid_full_path(String base, String path)
+{
+  if (!path)
+    return strdup(base);
+
+  String dir = fs_expand_path(path);
+  if (dir[0] != '/')
+    SWAP_ALLOC_PTR(dir, conspath(window_cur_dir(), dir));
+
+  String valid = realpath(dir, NULL);
+  if (!valid) {
+    free(dir);
+    return strdup(base);
+  }
+  SWAP_ALLOC_PTR(dir, valid);
+  return dir;
+}
+
 static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, String val)
 {
   fn_handle *hndl = malloc(sizeof(fn_handle));
@@ -201,7 +219,7 @@ static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, String val)
   c->top = fm;
 }
 
-void fm_new(Plugin *plugin, Buffer *buf)
+void fm_new(Plugin *plugin, Buffer *buf, void *arg)
 {
   log_msg("FM_plugin", "init");
   FM *fm = malloc(sizeof(FM));
@@ -211,7 +229,9 @@ void fm_new(Plugin *plugin, Buffer *buf)
   fm->op_count = 1;
   fm->mo_count = 1;
 
-  fm->cur_dir = strdup(window_cur_dir());
+  log_msg("FM_plugin", "-------------%s", arg);
+  fm->cur_dir = valid_full_path(window_cur_dir(), arg);
+  log_msg("FM_plugin", "-------------%s", fm->cur_dir);
 
   init_fm_hndl(fm, buf, plugin, fm->cur_dir);
   model_init(plugin->hndl);

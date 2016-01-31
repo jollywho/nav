@@ -229,14 +229,15 @@ static void* edit_color(List *args)
 {
   log_msg("CONFIG", "edit_color");
   if (utarray_len(args->items) < 3) return 0;
-  Token *word = (Token*)utarray_eltptr(args->items, 1);
-  Token *arg1 = (Token*)utarray_eltptr(args->items, 2);
-  Token *arg2 = (Token*)utarray_eltptr(args->items, 3);
+  int *fg = (int*)list_arg(args, 2, VAR_NUMBER);
+  int *bg = (int*)list_arg(args, 3, VAR_NUMBER);
+  if (!fg || !bg)
+    return 0;
 
   fn_color col = {
-    .key = strdup(token_val(word, VAR_STRING)),
-    .fg = TOKEN_NUM(arg1->var),
-    .bg = TOKEN_NUM(arg2->var),
+    .key = strdup(list_arg(args, 1, VAR_STRING)),
+    .fg = *fg,
+    .bg = *bg,
   };
   set_color(&col);
   return 0;

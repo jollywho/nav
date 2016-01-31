@@ -16,7 +16,7 @@ typedef struct fn_reg fn_reg;
 typedef struct Cmdarg Cmdarg;
 
 typedef void (*plugin_init_cb)(void);
-typedef void (*plugin_open_cb)(Plugin *base, Buffer *b);
+typedef void (*plugin_open_cb)(Plugin *base, Buffer *b, void *arg);
 typedef void (*plugin_close_cb)(Plugin *plugin);
 
 struct fn_handle {
@@ -49,7 +49,7 @@ void plugin_init();
 void plugin_load(String name, plugin_open_cb open_cb, plugin_close_cb close_cb);
 int plugin_isloaded(String name);
 
-Plugin* plugin_open(String name, Buffer *buf);
+Plugin* plugin_open(String name, Buffer *buf, List *args);
 void plugin_close(Plugin *plugin);
 
 Plugin* focus_plugin();

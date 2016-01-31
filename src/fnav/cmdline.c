@@ -29,14 +29,30 @@ static UT_icd dict_icd = { sizeof(Pair),   NULL };
 static UT_icd list_icd = { sizeof(Token),  NULL };
 static UT_icd cmd_icd  = { sizeof(Cmdstr), NULL };
 
+static int* try_number_conversion(Token *token)
+{
+  int temp;
+  if (sscanf(token->var.vval.v_string, "%d", &temp)) {
+    free(token->var.vval.v_string);
+    token->var.v_type = VAR_NUMBER;
+    token->var.vval.v_number = temp;
+    return &token->var.vval.v_number;
+  }
+  return NULL;
+}
+
 void* token_val(Token *token, char v_type)
 {
   if (!token)
     return NULL;
-  if (token->var.v_type != v_type)
+
+  char t_type = token->var.v_type;
+  if (t_type == VAR_STRING && v_type == VAR_NUMBER)
+    return try_number_conversion(token);
+  if (t_type != v_type)
     return NULL;
 
-  switch (token->var.v_type) {
+  switch (t_type) {
     case VAR_LIST:
       return token->var.vval.v_list;
     case VAR_DICT:
@@ -363,14 +379,6 @@ static void pop(QUEUE *stack)
 static void push(Token token, QUEUE *stack)
 {
   log_msg("CMDLINE", "push %d", token.var.v_type);
-  if (token.var.v_type == VAR_STRING) {
-    int temp;
-    if (sscanf(token_val(&token, VAR_STRING), "%d", &temp)) {
-      free(token_val(&token, VAR_STRING));
-      token.var.v_type = VAR_NUMBER;
-      token.var.vval.v_number = temp;
-    }
-  }
   stack_push(stack, token);
 }
 
@@ -526,7 +534,7 @@ void cmdline_req_run(Cmdline *cmdline)
       if (!plugin_isloaded(arg))
         log_msg("ERROR", "plugin %s not valid", arg);
 
-      rhs = plugin_open(arg, NULL);
+      rhs = plugin_open(arg, NULL, args);
 
       if (cmd->ret_t == PLUGIN)
         lhs = cmd->ret;

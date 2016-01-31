@@ -16,7 +16,7 @@ struct FM {
 
 void fm_init();
 void fm_cleanup();
-void fm_new(Plugin *plugin, Buffer *buf);
+void fm_new(Plugin *plugin, Buffer *buf, void *arg);
 void fm_delete(Plugin *plugin);
 
 #endif

@@ -21,7 +21,7 @@ static void plugin_focus(Plugin *);
 static void chld_handler(uv_signal_t *, int);
 static void term_close_event(void **args);
 
-void term_new(Plugin *plugin, Buffer *buf)
+void term_new(Plugin *plugin, Buffer *buf, void *arg)
 {
   log_msg("TERM", "term_new");
   Term *term = malloc(sizeof(Term));

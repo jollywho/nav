@@ -159,7 +159,7 @@ static void pipe_attach_cb(Plugin *host, Plugin *caller, void *data)
   hook_add(caller, host, cursor_change_cb, "cursor_change");
 }
 
-void img_new(Plugin *plugin, Buffer *buf)
+void img_new(Plugin *plugin, Buffer *buf, void *arg)
 {
   log_msg("IMG", "INIT");
   Img *img = malloc(sizeof(Img));

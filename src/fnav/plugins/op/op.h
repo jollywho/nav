@@ -12,7 +12,7 @@ struct Op {
   bool ready;
 };
 
-void op_new(Plugin *plugin, Buffer *buf);
+void op_new(Plugin *plugin, Buffer *buf, void *arg);
 void op_delete(Plugin *plugin);
 
 #endif

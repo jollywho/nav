@@ -107,7 +107,7 @@ static Plugin* plugin_in_bkgrnd(plugin_ent *ent)
   return find_loaded_plugin(ent->name);
 }
 
-Plugin* plugin_open(String name, Buffer *buf)
+Plugin* plugin_open(String name, Buffer *buf, List *args)
 {
   int i = find_plugin(name);
   if (i == -1)
@@ -117,7 +117,7 @@ Plugin* plugin_open(String name, Buffer *buf)
   if (!plugin) {
     plugin = calloc(1, sizeof(Plugin));
     set_cid(plugin);
-    plugin_table[i].open_cb(plugin, buf);
+    plugin_table[i].open_cb(plugin, buf, list_arg(args, 2, VAR_STRING));
   }
   return plugin;
 }

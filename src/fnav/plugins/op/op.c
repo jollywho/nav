@@ -94,7 +94,7 @@ static void pipe_attach_cb(Plugin *host, Plugin *caller, void *data)
   hook_add(caller, host, fileopen_cb, "fileopen");
 }
 
-void op_new(Plugin *plugin, Buffer *buf)
+void op_new(Plugin *plugin, Buffer *buf, void *arg)
 {
   log_msg("OP", "INIT");
   op_default = malloc(sizeof(Op));

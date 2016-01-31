@@ -91,6 +91,7 @@ static int last_dir_in_path(Token *tok, List *args, int pos, String *path)
   while ((tok = tok_arg(args, ++pos))) {
     if (prev != tok->block)
       break;
+
     val = token_val(tok, VAR_STRING);
 
     if (val[0] == '/') {

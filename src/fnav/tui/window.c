@@ -261,7 +261,7 @@ static void* win_new(List *args, enum move_dir flags)
 
   String cmd = list_arg(args, 1, VAR_STRING);
   if (cmd)
-    return plugin_open(cmd, layout_buf(&win.layout));
+    return plugin_open(cmd, layout_buf(&win.layout), args);
   return NULL;
 }
 

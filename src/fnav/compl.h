@@ -18,9 +18,6 @@ typedef struct {
   compl_item **matches;
 } fn_compl;
 
-#define COMPL_STATIC  0
-#define COMPL_DYNAMIC 1
-
 typedef struct fn_context fn_context;
 struct fn_context {
   String key;
@@ -33,11 +30,15 @@ struct fn_context {
 };
 
 typedef void (*compl_genfn)(List* args);
+
 typedef struct {
   String key;
   compl_genfn gen;
   UT_hash_handle hh;
 } compl_entry;
+
+#define COMPL_STATIC  0
+#define COMPL_DYNAMIC 1
 
 void compl_init();
 void compl_cleanup();
