@@ -68,8 +68,14 @@ static void resize_container(Container *c)
   int i = 0;
   Container *it = TAILQ_FIRST(&c->p);
   while (++i, it) {
-    if (it->dir == L_HORIZ) { s_y = c->count ; os_y = 1; }
-    if (it->dir == L_VERT ) { s_x = c->count ; os_x = 1; }
+    if (it->dir == L_HORIZ) {
+      s_y = c->count;
+      os_y = 1;
+    }
+    if (it->dir == L_VERT ) {
+      s_x = c->count;
+      os_x = 1;
+    }
 
     int new_lnum = c->size.lnum / s_y;
     int new_col  = c->size.col  / s_x;
@@ -86,11 +92,12 @@ static void resize_container(Container *c)
       prev = c;
       c_w = 0;
     }
-    it->size = (pos_T){ new_lnum , new_col  };
+    it->size = (pos_T) { new_lnum, new_col };
 
-    it->ofs  = (pos_T){
+    it->ofs  = (pos_T) {
       prev->ofs.lnum + (prev->size.lnum * os_y * c_w),
-      prev->ofs.col  + (prev->size.col  * os_x * c_w)};
+      prev->ofs.col  + (prev->size.col  * os_x * c_w)
+    };
 
     if (TAILQ_EMPTY(&it->p)) {
       buf_set_overlay(it->buf, it->ov);
@@ -144,7 +151,6 @@ void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
 
   /* copy container and leave the old inplace as the parent of subitems */
   if (c->dir != focus->dir) {
-    log_msg("LAYOUT", "/|/split/|/");
     Container *sub = malloc(sizeof(Container));
     create_container(sub, dir);
     overlay_delete(sub->ov);

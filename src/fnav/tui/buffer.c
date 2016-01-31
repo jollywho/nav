@@ -199,6 +199,30 @@ void buf_refresh(Buffer *buf)
   window_req_draw(buf, buf_draw);
 }
 
+static void draw_cur_line(Buffer *buf, Model *m)
+{
+  String it = model_str_line(m, buf->top + buf->lnum);
+  TOGGLE_ATTR(!buf->focused, buf->nc_win, A_REVERSE);
+  DRAW_STR(buf, nc_win, buf->lnum, 0, it, col_select);
+  wattroff(buf->nc_win, A_REVERSE);
+}
+
+static void draw_lines(Buffer *buf, Model *m)
+{
+  for (int i = 0; i < buf->b_size.lnum; ++i) {
+    String it = model_str_line(m, buf->top + i);
+    if (!it)
+      break;
+
+    // TODO: plugin CB to filter string
+    String path = model_fld_line(m, "fullpath", buf->top + i);
+    if (isdir(path))
+      DRAW_STR(buf, nc_win, i, 0, it, col_dir);
+    else
+      DRAW_STR(buf, nc_win, i, 0, it, col_text);
+  }
+}
+
 void buf_draw(void **argv)
 {
   log_msg("BUFFER", "draw");
@@ -218,21 +242,8 @@ void buf_draw(void **argv)
   }
 
   Model *m = buf->hndl->model;
-  for (int i = 0; i < buf->b_size.lnum; ++i) {
-    String it = model_str_line(m, buf->top + i);
-    if (!it) break;
-    String path = model_fld_line(m, "fullpath", buf->top + i);
-    if (isdir(path))
-      DRAW_STR(buf, nc_win, i, 0, it, col_dir);
-    else
-      DRAW_STR(buf, nc_win, i, 0, it, col_text);
-  }
-
-  /* draw current line */
-  String it = model_str_line(m, buf->top + buf->lnum);
-  TOGGLE_ATTR(!buf->focused, buf->nc_win, A_REVERSE);
-  DRAW_STR(buf, nc_win, buf->lnum, 0, it, col_select);
-  wattroff(buf->nc_win, A_REVERSE);
+  draw_lines(buf, m);
+  draw_cur_line(buf, m);
 
   wnoutrefresh(buf->nc_win);
 }

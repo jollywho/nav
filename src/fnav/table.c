@@ -284,9 +284,8 @@ void tbl_del_val(String tn, String fname, String val)
 
   /* iterate entries of val. */
   ventry *it = v->rlist;
-  while (it) {
+  while (it)
     it = tbl_del_rec(it->rec, it);
-  }
 }
 
 void tbl_add_lis(String tn, String key_fld, String key)
@@ -411,15 +410,43 @@ static void tbl_insert(fn_tbl *t, trans_rec *trec)
     HASH_FIND_STR(f->vals, data, v);
 
     /* create header entry. */
-    if (!v) {
-      log_msg("TABLE", "new stub");
+    if (!v)
       new_entry(rec, f, data, 0, i);
-    }
     else
       add_entry(rec, f, v, 0, i);
 
     check_set_lis(f, rec->vals[i]->key, rec);
   }
+}
+
+static void del_fldval(fn_fld *fld, fn_val *val)
+{
+  fn_val *fnd;
+  HASH_FIND_STR(fld->vals, val->key, fnd);
+  if (fnd)
+    HASH_DEL(fld->vals, val);
+
+  fn_lis *ll;
+  HASH_FIND_STR(fld->lis, val->key, ll);
+  if (ll)
+    ll->ent = NULL;
+
+  free(val->key);
+  val->rlist = NULL;
+}
+
+static void pop_ventry(ventry *it, fn_val *val, ventry **cur)
+{
+  if (it == val->rlist)
+    val->rlist = it->next;
+
+  it->next->prev = it->prev;
+  it->prev->next = it->next;
+  if (*cur == it)
+    *cur = it->next;
+
+  free(it);
+  it = NULL;
 }
 
 static ventry* tbl_del_rec(fn_rec *rec, ventry *cur)
@@ -437,43 +464,18 @@ static ventry* tbl_del_rec(fn_rec *rec, ventry *cur)
       fn_val *val = it->val;
       it->val->count--;
 
-      if (val->count < 1 ) {
+      if (val->count > 1)
+        pop_ventry(it, val, &cur);
+      else {
         fn_fld *fld = val->fld;
-        fn_val *fnd;
-        HASH_FIND_STR(fld->vals, val->key, fnd);
-        log_msg("TABLE", "key %s ", val->key);
-        if (fnd) {
-          log_msg("TABLE", "rem ");
-          HASH_DEL(fld->vals, val);
-        }
 
-        fn_lis *ll;
-        HASH_FIND_STR(fld->lis, val->key, ll);
-        if (ll) {
-          log_msg("TABLE", "CLEAR LIS");
-          ll->ent = NULL;
-        }
-
-        free(val->key);
-        val->rlist = NULL;
+        del_fldval(fld, val);
         free(rec->vals[i]);
 
         if (cur == it)
           cur = NULL;
 
         free(it);
-      }
-      else {
-        if (it == val->rlist)
-          val->rlist = it->next;
-
-        it->next->prev = it->prev;
-        it->prev->next = it->next;
-        if (cur == it)
-          cur = it->next;
-
-        free(it);
-        it = NULL;
       }
     }
   }

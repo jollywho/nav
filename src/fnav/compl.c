@@ -193,7 +193,8 @@ fn_context* find_context(fn_context *cx, String name)
 void compl_build(fn_context *cx, List *args)
 {
   log_msg("COMPL", "compl_build");
-  if (!cx) return;
+  if (!cx)
+    return;
   String key = cx->comp;
   log_msg("COMPL", "%s", key);
   compl_entry *find;
@@ -215,8 +216,8 @@ fn_context* context_start()
 void compl_update(fn_context *cx, String line)
 {
   log_msg("COMPL", "compl_update");
-  if (!cx || !line) return;
-  if (!cx->cmpl) return;
+  if (!cx || !line || !cx->cmpl)
+    return;
 
   fn_compl *cmpl = cx->cmpl;
   cmpl->matchcount = 0;
@@ -247,10 +248,11 @@ void compl_new(int size, int dynamic)
 void compl_delete(fn_compl *cmpl)
 {
   log_msg("COMPL", "compl_delete");
-  if (!cmpl) return;
-  for (int i = 0; i < cmpl->rowcount; i++) {
+  if (!cmpl)
+    return;
+  for (int i = 0; i < cmpl->rowcount; i++)
     free(cmpl->rows[i]);
-  }
+
   free(cmpl->rows);
   free(cmpl->matches);
   free(cmpl);
@@ -259,7 +261,8 @@ void compl_delete(fn_compl *cmpl)
 void compl_destroy(fn_context *cx)
 {
   log_msg("COMPL", "compl_destroy");
-  if (!cx) return;
+  if (!cx)
+    return;
   compl_delete(cx->cmpl);
   cx->cmpl = NULL;
 }
@@ -278,16 +281,16 @@ static int count_subgrps(String str, String fnd)
   int count = 0;
   const char *tmp = str;
   while((tmp = strstr(tmp, fnd))) {
-    count++; tmp++;
+    count++;
+    tmp++;
   }
+
   return count;
 }
 
 bool compl_isdynamic(fn_context *cx)
 {
-  if (!cx || !cx->cmpl) return false;
-  if (cx->cmpl->comp_type == COMPL_STATIC)
+  if (!cx || !cx->cmpl)
     return false;
-  else
-    return true;
+  return cx->cmpl->comp_type == COMPL_DYNAMIC;
 }
