@@ -16,6 +16,7 @@ struct term {
   SLIST_ENTRY(term) ent;
   int pid;
   int status;
+  bool closed;
 };
 
 void term_new(Plugin *plugin, Buffer *buf, void *arg);

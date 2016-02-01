@@ -26,6 +26,7 @@ void term_new(Plugin *plugin, Buffer *buf, void *arg)
   log_msg("TERM", "term_new");
   Term *term = malloc(sizeof(Term));
   term->base = plugin;
+  term->closed = false;
   plugin->top = term;
   plugin->name = "term";
   plugin->fmt_name = "VT";
@@ -36,14 +37,24 @@ void term_new(Plugin *plugin, Buffer *buf, void *arg)
   buf_set_pass(buf);
 
   term->vt = vt_create(1, 1, SCROLL_HISTORY);
-	const char *shell = getenv("SHELL");
-	const char *pargs[4] = { shell, NULL };
+  const char *shell = getenv("SHELL");
+  const char *pargs[4] = { shell, NULL };
   char *cwd = window_cur_dir();
+
+  String args = arg;
+  if (args && args[0]) {
+    pargs[1] = "-c";
+    pargs[2] = args;
+    pargs[3] = NULL;
+  }
 
   SLIST_INSERT_HEAD(&mainloop()->subterms, term, ent);
   uv_signal_start(&mainloop()->children_watcher, chld_handler, SIGCHLD);
 
-	term->pid = vt_forkpty(term->vt, shell, pargs, cwd, NULL, NULL, NULL);
+  term->pid = vt_forkpty(term->vt, shell, pargs, cwd, NULL, NULL, NULL);
+  if (term->closed) {
+    return;
+  }
 
   uv_poll_init(eventloop(), &term->readfd, vt_pty_get(term->vt));
   uv_poll_start(&term->readfd, UV_READABLE, readfd_ready);
@@ -54,6 +65,13 @@ void term_new(Plugin *plugin, Buffer *buf, void *arg)
   hook_add(plugin, plugin, plugin_resize, "window_resize");
 }
 
+static void term_close_poll(uv_handle_t *hndl)
+{
+  Term *term = hndl->data;
+  vt_destroy(term->vt);
+  free(term);
+}
+
 void term_delete(Plugin *plugin)
 {
   log_msg("TERM", "term_delete");
@@ -62,9 +80,9 @@ void term_delete(Plugin *plugin)
   SLIST_REMOVE(&mainloop()->subterms, term, term, ent);
   uv_poll_stop(&term->readfd);
   window_stop_override();
-  vt_destroy(term->vt);
   hook_cleanup(term->base);
-  CREATE_EVENT(eventq(), term_close_event, 1, term);
+  uv_handle_t *hp = (uv_handle_t*)&term->readfd;
+  uv_close(hp, term_close_poll);
 }
 
 static void plugin_focus(Plugin *plugin)
@@ -77,7 +95,7 @@ static void plugin_focus(Plugin *plugin)
 void term_cursor(Plugin *plugin)
 {
   Term *term = plugin->top;
-	curs_set(vt_cursor_visible(term->vt));
+  curs_set(vt_cursor_visible(term->vt));
   wnoutrefresh(buf_ncwin(term->buf));
   doupdate();
 }
@@ -101,7 +119,7 @@ void term_keypress(Plugin *plugin, int key)
 
 static void term_draw(Term *term)
 {
-	vt_draw(term->vt, buf_ncwin(term->buf), 0, 0);
+  vt_draw(term->vt, buf_ncwin(term->buf), 0, 0);
   wnoutrefresh(buf_ncwin(term->buf));
   doupdate();
 }
@@ -130,6 +148,7 @@ static void readfd_ready(uv_poll_t *handle, int status, int events)
 static void term_close(Term *term)
 {
   log_msg("TERM", "term_close");
+  term->closed = true;
   window_close_focus();
 }
 
@@ -147,21 +166,15 @@ static void chld_handler(uv_signal_t *handle, int signum)
 
   Term *it;
   SLIST_FOREACH(it, &mainloop()->subterms, ent) {
-    Term *proc = it;
-    if (proc->pid == pid) {
+    Term *term = it;
+    if (term->pid == pid) {
       if (WIFEXITED(stat))
-        proc->status = WEXITSTATUS(stat);
+        term->status = WEXITSTATUS(stat);
       else if (WIFSIGNALED(stat))
-        proc->status = WTERMSIG(stat);
+        term->status = WTERMSIG(stat);
 
       term_close(it);
       break;
     }
   }
-}
-
-static void term_close_event(void **args)
-{
-  Term *term = args[0];
-  free(term);
 }

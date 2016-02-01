@@ -29,6 +29,8 @@ void init(void)
   initscr();
   start_color();
   use_default_colors();
+  noecho();
+  nonl();
   raw();
   vt_init(term);
 

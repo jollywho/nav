@@ -135,6 +135,7 @@ void window_cleanup(void)
 
 static void* win_shut()
 {
+  exit(0); // debug
   stop_event_loop();
   return 0;
 }
@@ -170,7 +171,7 @@ void window_start_override(Plugin *term)
 void window_stop_override()
 {
   log_msg("WINDOW", "window_stop_term");
-	curs_set(0);
+  curs_set(0);
   win.input_override = false;
   win.term = NULL;
 }
