@@ -63,7 +63,7 @@ void marklbl_list(List *args)
   fn_mark *it;
   int i = 0;
   for (it = lbl_marks; it != NULL; it = it->hh.next) {
-    compl_set_index(i, it->key, 1, it->path);
+    compl_set_index(i, 1, it->path, "%s", it->key);
     i++;
   }
 }

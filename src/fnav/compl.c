@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include "fnav/compl.h"
 #include "fnav/plugins/plugin.h"
 #include "fnav/log.h"
@@ -12,12 +13,13 @@ typedef struct {
 } fn_context_arg;
 
 static compl_entry compl_defaults[] = {
-  { "cmds",    cmd_list      },
-  { "plugins", plugin_list   },
-  { "fields",  field_list    },
-  { "paths",   path_list     },
-  { "marks",   mark_list     },
-  { "marklbls",marklbl_list  },
+  { "cmds",      cmd_list      },
+  { "plugins",   plugin_list   },
+  { "fields",    field_list    },
+  { "wins",      win_list      },
+  { "paths",     path_list     },
+  { "marks",     mark_list     },
+  { "marklbls",  marklbl_list  },
 };
 
 static compl_entry *compl_table;
@@ -257,8 +259,10 @@ void compl_delete(fn_compl *cmpl)
   log_msg("COMPL", "compl_delete");
   if (!cmpl)
     return;
-  for (int i = 0; i < cmpl->rowcount; i++)
+  for (int i = 0; i < cmpl->rowcount; i++) {
+    free(cmpl->rows[i]->key);
     free(cmpl->rows[i]);
+  }
 
   free(cmpl->rows);
   free(cmpl->matches);
@@ -274,12 +278,16 @@ void compl_destroy(fn_context *cx)
   cx->cmpl = NULL;
 }
 
-void compl_set_index(int idx, String key, int colcount, String cols)
+void compl_set_index(int idx, int count, String cols, String fmt, ...)
 {
   fn_compl *cmpl = cur_cx->cmpl;
   cmpl->rows[idx] = malloc(sizeof(compl_item));
-  cmpl->rows[idx]->key = key;
-  cmpl->rows[idx]->colcount = colcount;
+
+  va_list args;
+  va_start(args, fmt);
+  vasprintf(&cmpl->rows[idx]->key, fmt, args);
+  va_end(args);
+  cmpl->rows[idx]->colcount = count;
   cmpl->rows[idx]->columns = cols;
 }
 

@@ -43,9 +43,6 @@ void fm_cleanup()
 void plugin_cancel(Plugin *plugin)
 {
   log_msg("FM", "<|_CANCEL_|>");
-  FM *self = (FM*)plugin->top;
-  self->op_count = 1;
-  self->mo_count = 1;
 }
 
 void plugin_focus(Plugin *plugin)
@@ -223,8 +220,6 @@ void fm_new(Plugin *plugin, Buffer *buf, void *arg)
   fm->base = plugin;
   plugin->name = "fm";
   plugin->fmt_name = "FM";
-  fm->op_count = 1;
-  fm->mo_count = 1;
 
   log_msg("FM_plugin", "-------------%s", arg);
   fm->cur_dir = valid_full_path(window_cur_dir(), arg);

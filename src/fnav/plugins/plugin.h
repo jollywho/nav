@@ -57,6 +57,7 @@ Plugin* plugin_from_id(int id);
 void plugin_pipe(Plugin *plugin);
 
 void plugin_list(List *args);
+void win_list(List *args);
 
 void fm_mark_dir(Plugin *plugin, String label);
 void mark_list(List *args);

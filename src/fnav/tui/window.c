@@ -41,7 +41,7 @@ static const Cmd_T cmdtable[] = {
   {"close",  win_close,   0},
   {"new",    win_new,     MOVE_UP},
   {"vnew",   win_new,     MOVE_LEFT},
-  {"pipe",   win_pipe,    0},
+  {"<|",     win_pipe,    0},
   {"sort",   win_sort,    1},
   {"sort!",  win_sort,    -1},
   {"cd",     win_cd,      0},

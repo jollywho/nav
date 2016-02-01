@@ -164,7 +164,17 @@ Plugin* plugin_from_id(int id)
 void plugin_list(List *args)
 {
   compl_new(LENGTH(plugin_table), COMPL_STATIC);
-  for (int i = 0; i < LENGTH(plugin_table); i++) {
-    compl_set_index(i, plugin_table[i].name, 0, NULL);
+  for (int i = 0; i < LENGTH(plugin_table); i++)
+    compl_set_index(i, 0, NULL, "%s", plugin_table[i].name);
+}
+
+void win_list(List *args)
+{
+  int i = 0;
+  Cid *it;
+  compl_new(HASH_COUNT(id_table), COMPL_STATIC);
+  for (it = id_table; it != NULL; it = it->hh.next) {
+    compl_set_index(i, 1, it->plugin->name, "%d", it->key);
+    i++;
   }
 }

@@ -53,6 +53,7 @@ static void create_proc(Op *op, String path)
     log_msg("OP", "kill");
     uv_kill(proc.pid, SIGKILL);
     uv_close((uv_handle_t*)&proc, NULL);
+    uv_run(eventloop(), UV_RUN_NOWAIT);
   }
 
   log_msg("OP", "spawn");

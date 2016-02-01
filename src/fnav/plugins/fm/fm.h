@@ -8,8 +8,6 @@ typedef struct FM FM;
 
 struct FM {
   Plugin *base;
-  int op_count;
-  int mo_count;
   String cur_dir;
   fn_fs *fs;
 };

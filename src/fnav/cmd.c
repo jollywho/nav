@@ -63,12 +63,11 @@ void cmd_run(Cmdstr *cmdstr)
 void cmd_list(List *args)
 {
   log_msg("CMD", "compl cmd_list");
-  unsigned int count = HASH_COUNT(cmd_table);
-  compl_new(count, COMPL_STATIC);
-  Cmd_T *it;
   int i = 0;
+  Cmd_T *it;
+  compl_new(HASH_COUNT(cmd_table), COMPL_STATIC);
   for (it = cmd_table; it != NULL; it = it->hh.next) {
-    compl_set_index(i, it->name, 0, NULL);
+    compl_set_index(i, 0, NULL, "%s", it->name);
     i++;
   }
 }

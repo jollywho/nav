@@ -56,7 +56,7 @@ static void menu_fs_cb(void **args)
 
   for (int i = 0; i < count; i++) {
     fn_rec *rec = ent->rec;
-    compl_set_index(i, rec_fld(rec, "name"), 0, NULL);
+    compl_set_index(i, 0, NULL, "%s", rec_fld(rec, "name"));
     ent = ent->next;
   }
 
