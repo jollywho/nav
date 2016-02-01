@@ -243,18 +243,21 @@ void fs_close(fn_fs *fs)
   fs_demux(fs);
 }
 
-static int send_stat(fentry *ent, const char *dir, char *upd)
+static int send_stat(fentry *ent, const char *dir, int upd)
 {
-  struct stat *s = malloc(sizeof(struct stat));
-  if (stat(dir, s) == -1) {
-    free(s);
+  struct stat s;
+  if (stat(dir, &s) == -1)
     return 1;
-  }
+
+  struct stat *cstat = malloc(sizeof(struct stat));
+  *cstat = s;
+  int *cupd = malloc(sizeof(int));
+  *cupd = upd;
 
   trans_rec *r = mk_trans_rec(tbl_fld_count("fm_stat"));
   edit_trans(r, "fullpath", (String)dir, NULL);
-  edit_trans(r, "update",   NULL,        upd);
-  edit_trans(r, "stat",     NULL,        s);
+  edit_trans(r, "update",   NULL,        cupd);
+  edit_trans(r, "stat",     NULL,        cstat);
   CREATE_EVENT(eventq(), commit, 2, "fm_stat", r);
   return 0;
 }
@@ -270,8 +273,7 @@ static void scan_cb(uv_fs_t *req)
   tbl_del_val("fm_files", "dir",      (String)req->path);
   tbl_del_val("fm_stat",  "fullpath", (String)req->path);
 
-  /* add stat. TODO: should reuse uvstat in stat_cb */
-  send_stat(ent, ent->key, "yes");
+  send_stat(ent, ent->key, 1);
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
     int err = 0;
@@ -283,7 +285,7 @@ static void scan_cb(uv_fs_t *req)
     ventry *vent = fnd_val("fm_stat", "fullpath", full);
     if (!vent) {
       log_msg("FS", "--fresh stat-- %s", full);
-      err = send_stat(ent, full, "no");
+      err = send_stat(ent, full, 0);
     }
 
     edit_trans(r, "fullpath", (String)full,   NULL);
@@ -313,7 +315,7 @@ static void stat_cb(uv_fs_t *req)
   if (!vent)
     goto scandir;
 
-  char *upd = (char*)rec_fld(vent->rec, "update");
+  int *upd = (int*)rec_fld(vent->rec, "update");
   if (!*upd)
     goto scandir;
 

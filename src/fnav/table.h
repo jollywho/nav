@@ -67,7 +67,7 @@ typedef struct {
   int count;
   int max;
   String *flds;
-  bool *type;
+  int *type;
   void **data;
 } trans_rec;
 

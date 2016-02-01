@@ -29,6 +29,7 @@ void init(void)
   initscr();
   start_color();
   use_default_colors();
+  raw();
   vt_init(term);
 
   option_init();
@@ -60,17 +61,8 @@ void cleanup(void)
   //logger
 }
 
-void sig_handler(int sig)
-{
-  endwin();
-  exit(0);
-}
-
 int main(int argc, char **argv)
 {
-  signal(SIGINT, sig_handler);
-  signal(SIGSEGV, sig_handler);
-
   init();
   start_event_loop();
   config_write_info();

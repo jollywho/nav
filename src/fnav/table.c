@@ -334,6 +334,7 @@ static fn_val* new_entry(fn_rec *rec, fn_fld *fld, void *data, int typ, int indx
   if (typ) {
     val->count = 1;
     val->data = data;
+    rec->vals[indx] = val;
   }
   else {
     log_msg("TABLE", "trepush");
@@ -431,6 +432,8 @@ static void del_fldval(fn_fld *fld, fn_val *val)
   if (ll)
     ll->ent = NULL;
 
+  if (fld->type == typVOID)
+    free(val->data);
   free(val->key);
   val->rlist = NULL;
 }
@@ -455,9 +458,8 @@ static ventry* tbl_del_rec(fn_rec *rec, ventry *cur)
   for(int i = 0; i < rec->fld_count; i++) {
     ventry *it = rec->vlist[i];
     if (!it) {
-      if (rec->vals[i]->fld == typVOID)
+      if (rec->vals[i]->fld->type == typVOID)
         free(rec->vals[i]->data);
-
       free(rec->vals[i]);
     }
     else {
@@ -491,7 +493,7 @@ trans_rec* mk_trans_rec(int fld_count)
   r->max = fld_count;
   r->flds = malloc(r->max * sizeof(String));
   r->data = malloc(r->max * sizeof(void*));
-  r->type = malloc(r->max * sizeof(bool));
+  r->type = malloc(r->max * sizeof(int));
   r->count = 0;
   return r;
 }
