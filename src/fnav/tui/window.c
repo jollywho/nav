@@ -222,9 +222,6 @@ static void* win_cd(List *args, int flags)
   log_msg("WINDOW", "win_cd");
 
   String path = list_arg(args, 1, VAR_STRING);
-  if (!path)
-    path = "~";
-
   Plugin *plugin = buf_plugin(layout_buf(&win.layout));
   if (plugin)
     send_hook_msg("open", plugin, NULL, path);

@@ -115,23 +115,38 @@ static void fm_ch_dir(void **args)
   fm_opendir(plugin, path, FORWARD);
 }
 
+static String valid_full_path(String base, String path)
+{
+  if (!path)
+    return strdup(base);
+
+  String dir = fs_expand_path(path);
+  if (path[0] == '@')
+    SWAP_ALLOC_PTR(dir, strdup(mark_path(dir)));
+  if (dir[0] != '/')
+    SWAP_ALLOC_PTR(dir, conspath(window_cur_dir(), dir));
+
+  String valid = realpath(dir, NULL);
+  if (!valid) {
+    free(dir);
+    return strdup(base);
+  }
+  SWAP_ALLOC_PTR(dir, valid);
+  return dir;
+}
+
 static void fm_req_dir(Plugin *plugin, Plugin *caller, void *data)
 {
   log_msg("FM_plugin", "fm_req_dir");
   FM *self = plugin->top;
-  String path = strdup(data);
+  if (!data)
+    data = "~";
 
-  if (path[0] == '@')
-    SWAP_ALLOC_PTR(path, strdup(mark_path(path)));
+  String path = valid_full_path(window_cur_dir(), data);
 
-  if (path[0] != '/' && path[0] != '~')
-    SWAP_ALLOC_PTR(path, conspath(self->cur_dir, path));
+  if (path)
+    fs_read(self->fs, path);
 
-  String newpath = fs_expand_path(path);
-  if (newpath) {
-    fs_read(self->fs, newpath);
-    free(newpath);
-  }
   free(path);
 }
 
@@ -185,24 +200,6 @@ static void fm_remove(Plugin *host, Plugin *caller, void *data)
   log_msg("BUFFER", "%s", cmdstr);
   shell_exec(cmdstr);
   free(cmdstr);
-}
-
-static String valid_full_path(String base, String path)
-{
-  if (!path)
-    return strdup(base);
-
-  String dir = fs_expand_path(path);
-  if (dir[0] != '/')
-    SWAP_ALLOC_PTR(dir, conspath(window_cur_dir(), dir));
-
-  String valid = realpath(dir, NULL);
-  if (!valid) {
-    free(dir);
-    return strdup(base);
-  }
-  SWAP_ALLOC_PTR(dir, valid);
-  return dir;
 }
 
 static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, String val)
