@@ -1,6 +1,7 @@
 #include <string.h>
 #include <curses.h>
 #include <locale.h>
+#include <unistd.h>
 
 #include "fnav/log.h"
 #include "fnav/fnav.h"
@@ -63,8 +64,18 @@ void cleanup(void)
   //logger
 }
 
+void sig_handler(int sig)
+{
+  endwin();
+  signal(sig, SIG_DFL);
+  kill(getpid(), sig);
+}
+
 int main(int argc, char **argv)
 {
+#ifdef DEBUG
+  signal(SIGSEGV, sig_handler);
+#endif
   init();
   start_event_loop();
   config_write_info();

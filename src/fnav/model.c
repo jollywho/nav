@@ -130,7 +130,7 @@ void model_recv(Model *m)
   if (!l->rec)
     return model_null_entry(m, l);
 
-  ventry *head = lis_get_val(l, "dir");
+  ventry *head = lis_get_val(l, h->key_fld);
   if (!l->ent)
     l->ent = lis_set_val(l, h->fname);
 

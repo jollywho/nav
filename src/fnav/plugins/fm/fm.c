@@ -185,11 +185,13 @@ static void fm_paste(Plugin *host, Plugin *caller, void *data)
   shell_exec(cmdstr);
   free(dest);
   free(cmdstr);
+  fs_fastreq(self->fs);
 }
 
 static void fm_remove(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("FM_plugin", "fm_remove");
+  FM *self = (FM*)host->top;
   String src = model_curs_value(host->hndl->model, "fullpath");
 
   String cmdstr;
@@ -197,6 +199,7 @@ static void fm_remove(Plugin *host, Plugin *caller, void *data)
   log_msg("BUFFER", "%s", cmdstr);
   shell_exec(cmdstr);
   free(cmdstr);
+  fs_fastreq(self->fs);
 }
 
 static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, String val)

@@ -24,6 +24,7 @@ struct fentry {
   uv_timer_t watcher_timer;
   bool cancel;
   bool running;
+  bool fastreq;
   int refs;
   fn_fs *listeners;
   UT_hash_handle hh;
@@ -39,6 +40,7 @@ static fentry* fs_mux(fn_fs *fs)
     ent = malloc(sizeof(fentry));
     ent->running = false;
     ent->cancel = false;
+    ent->fastreq = false;
     ent->listeners = NULL;
     ent->key = strdup(fs->path);
     ent->refs = 2;
@@ -232,6 +234,7 @@ void fs_open(fn_fs *fs, String dir)
   //TODO: if timer is running, reopen immediately
   if (!ent->running) {
     ent->running = true;
+    ent->fastreq = false;
 
     uv_fs_stat(eventloop(), &ent->uv_fs, ent->key, stat_cb);
     uv_fs_event_start(&ent->watcher, watch_cb, ent->key, 1);
@@ -341,8 +344,15 @@ static void fs_reopen(fentry *ent)
   uv_fs_event_stop(&ent->watcher);
 
   ent->running = true;
+  ent->fastreq = false;
   uv_fs_stat(eventloop(), &ent->uv_fs, ent->key, stat_cb);
   uv_fs_event_start(&ent->watcher, watch_cb, ent->key, 1);
+}
+
+void fs_fastreq(fn_fs *fs)
+{
+  log_msg("FS", "fs_fastreq");
+  fs->ent->fastreq = true;
 }
 
 static void watch_timer_cb(uv_timer_t *handle)
@@ -359,7 +369,10 @@ static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int sta
   fentry *ent = hndl->data;
 
   uv_fs_event_stop(&ent->watcher);
-  uv_timer_start(&ent->watcher_timer, watch_timer_cb, RFSH_RATE, RFSH_RATE);
+  if (ent->fastreq)
+    watch_timer_cb(&ent->watcher_timer);
+  else
+    uv_timer_start(&ent->watcher_timer, watch_timer_cb, RFSH_RATE, RFSH_RATE);
 }
 
 static void fs_close_req(fentry *ent)

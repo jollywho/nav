@@ -28,6 +28,7 @@ void fs_open(fn_fs *fs, String dir);
 void fs_close(fn_fs *fs);
 void fs_read(fn_fs *fs, String dir);
 
+void fs_fastreq(fn_fs *fs);
 bool fs_blocking(fn_fs *fs);
 
 bool isdir(String path);

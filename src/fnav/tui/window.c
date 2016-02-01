@@ -33,7 +33,7 @@ static void* win_cd();
 static void* win_mark();
 static void win_layout();
 static void window_ex_cmd();
-static void window_update(uv_timer_t *handle);
+static void window_update(uv_timer_t *);
 
 static const Cmd_T cmdtable[] = {
   {"qa",     win_shut,    0},
@@ -135,7 +135,10 @@ void window_cleanup(void)
 
 static void* win_shut()
 {
-  exit(0); // debug
+#ifndef DEBUG
+  endwin();
+  exit(0);
+#endif
   stop_event_loop();
   return 0;
 }
