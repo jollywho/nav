@@ -63,7 +63,6 @@ static int fm_opendir(Plugin *plugin, String path, short arg)
   if (fs_blocking(self->fs))
     return 0;
 
-  model_close(h);
   free(cur_dir);
   cur_dir = strdup(path);
 

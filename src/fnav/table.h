@@ -25,15 +25,13 @@ struct ventry {
   ventry *next;
   fn_rec *rec;
   fn_val *val;
-  unsigned int head;
 };
 
 struct fn_lis {
   String key;       // listening value
   fn_fld *key_fld;  // listening field
-  fn_fld *fname;    // filter field
+  String fname;     // filter field
   String fval;      // filter val
-  ventry *ent;      // filter val entry
   fn_rec *rec;      // record for both listening & filter
   int lnum;
   int index;
@@ -51,12 +49,12 @@ void commit(void **data);
 
 ventry* fnd_val(String tn, String fname, String val);
 fn_lis* fnd_lis(String tn, String key_fld, String key);
-ventry* lis_set_val(fn_lis *lis, String fname);
 ventry* lis_get_val(fn_lis *lis, String fname);
 void lis_save(fn_lis *lis, int index, int lnum);
 void* rec_fld(fn_rec *rec, String fname);
 String ent_str(ventry *ent);
 ventry* ent_head(ventry *ent);
+ventry* ent_rec(fn_rec *rec, String fname);
 
 void tbl_del_val(String tn, String fname, String val);
 

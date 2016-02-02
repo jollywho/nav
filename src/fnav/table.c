@@ -183,25 +183,6 @@ fn_lis* fnd_lis(String tn, String key_fld, String key)
   return l;
 }
 
-ventry* lis_set_val(fn_lis *lis, String fname)
-{
-  log_msg("TABLE", "lis_set_val");
-  for(int i = 0; i < lis->rec->fld_count; i++) {
-    ventry *it = lis->rec->vlist[i];
-    if (!it)
-      continue;
-
-    fn_val *val = it->val;
-    if (strcmp(val->fld->key, fname) == 0) {
-      lis->ent = it;
-      lis->fname = val->fld;
-      lis->fval = val->key;
-      return it;
-    }
-  }
-  return NULL;
-}
-
 ventry* lis_get_val(fn_lis *lis, String fname)
 {
   log_msg("TABLE", "lis_get_val");
@@ -306,10 +287,10 @@ void tbl_add_lis(String tn, String key_fld, String key)
 
   /* create new listener */
   log_msg("TABLE", "new lis");
-  ll = malloc(sizeof(fn_lis));
-  memset(ll, 0, sizeof(fn_lis));
+  ll = calloc(1, sizeof(fn_lis));
   ll->key = strdup(key);
   ll->key_fld = ff;
+  ll->fval = strdup("");
   HASH_ADD_STR(ff->lis, key, ll);
 
   /* check if value exists and attach */
@@ -317,6 +298,18 @@ void tbl_add_lis(String tn, String key_fld, String key)
   HASH_FIND_STR(ff->vals, key, val);
   if (val)
     ll->rec = val->rlist->rec;
+}
+
+ventry* ent_rec(fn_rec *rec, String fname)
+{
+  for(int i = 0; i < rec->fld_count; i++) {
+    fn_val *val = rec->vals[i];
+    if (strcmp(val->fld->key, fname) != 0)
+      continue;
+
+    return rec->vlist[i];
+  }
+  return NULL;
 }
 
 void commit(void **data)
@@ -340,7 +333,6 @@ static fn_val* new_entry(fn_rec *rec, fn_fld *fld, void *data, int typ, int indx
     log_msg("TABLE", "trepush");
     ventry *ent = malloc(sizeof(ventry));
     val->count = 1;
-    ent->head = 1;
     ent->next = ent;
     ent->prev = ent;
 
@@ -361,7 +353,6 @@ static void add_entry(fn_rec *rec, fn_fld *fld, fn_val *v, int typ, int indx)
   /* attach record to an entry. */
   ventry *ent = malloc(sizeof(ventry));
   v->count++;
-  ent->head = 0;
   ent->rec = rec;
   ent->val = v;
   ent->prev = v->rlist->prev;
@@ -380,7 +371,7 @@ static void check_set_lis(fn_fld *f, String key, fn_rec *rec)
 
   fn_lis *ll;
   HASH_FIND_STR(f->lis, key, ll);
-  if (!ll || ll->ent)
+  if (!ll || ll->rec)
     return;
 
   /* if lis hasn't obtained a rec, set it now. */
@@ -430,7 +421,7 @@ static void del_fldval(fn_fld *fld, fn_val *val)
   fn_lis *ll;
   HASH_FIND_STR(fld->lis, val->key, ll);
   if (ll)
-    ll->ent = NULL;
+    ll->rec = NULL;
 
   if (fld->type == typVOID)
     free(val->data);

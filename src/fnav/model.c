@@ -131,14 +131,13 @@ void model_recv(Model *m)
     return model_null_entry(m, l);
 
   ventry *head = lis_get_val(l, h->key_fld);
-  if (!l->ent)
-    l->ent = lis_set_val(l, h->fname);
 
   model_read_entry(h->model, l, head);
 }
 
 void model_null_entry(Model *m, fn_lis *lis)
 {
+  log_msg("MODEL", "model_null_entry");
   fn_handle *h = m->hndl;
   m->head = NULL;
   m->cur = NULL;
@@ -152,8 +151,8 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   log_msg("MODEL", "model_read_entry");
   fn_handle *h = m->hndl;
 
-  m->head = head;
-  m->cur = lis->ent->next->rec;
+  m->head = ent_head(head);
+  m->cur = head->rec;
   h->model->lis = lis;
   generate_lines(m);
   refind_line(m, m->lis);
@@ -207,20 +206,34 @@ void model_set_curs(Model *m, int index)
     return;
 
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
-  if (res)
+  if (res) {
     m->cur = res->rec;
+    String curval = model_curs_value(m, m->hndl->fname);
+    SWAP_ALLOC_PTR(m->lis->fval, strdup(curval));
+  }
 }
 
 static void refind_line(Model *m, fn_lis *lis)
 {
-  log_msg("MODEL", "rewind");
-  int count;
-  for(count = lis->lnum; count > 0; --count) {
-    if (lis->ent->head)
+  log_msg("MODEL", "refind_line");
+  fn_handle *h = m->hndl;
+
+  ventry *it = fnd_val(h->tn, h->fname, lis->fval);
+  if (!it || !it->rec)
+    return;
+
+  it = ent_rec(it->rec, "dir");
+
+  int i = 0;
+  while (1) {
+    if (it == ent_head(it))
       break;
-    lis->ent = lis->ent->prev;
+    if (i > lis->lnum)
+      break;
+    it = it->prev;
+    i++;
   }
-  lis->lnum = count;
+  lis->lnum = i;
 }
 
 String model_str_expansion(String val)
