@@ -213,23 +213,33 @@ void model_set_curs(Model *m, int index)
   }
 }
 
+static ventry* ventry_at(Model *m, int index)
+{
+  fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
+  if (!res)
+    return NULL;
+  return ent_rec(res->rec, "dir");
+}
+
 static void refind_line(Model *m, fn_lis *lis)
 {
   log_msg("MODEL", "refind_line");
   fn_handle *h = m->hndl;
 
   ventry *it = fnd_val(h->tn, h->fname, lis->fval);
-  if (!it || !it->rec)
+  ventry *fst = ventry_at(m, lis->index);
+  if (!it || !it->rec || !fst)
     return;
 
   it = ent_rec(it->rec, "dir");
 
-  int i = 0;
-  while (1) {
-    if (it == ent_head(it))
-      break;
-    if (i > lis->lnum)
-      break;
+  if (it == ent_head(it)) {
+    lis->lnum = 0;
+    return;
+  }
+
+  int i = 1;
+  while (it != fst) {
     it = it->prev;
     i++;
   }
