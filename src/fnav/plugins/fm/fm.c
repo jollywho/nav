@@ -191,13 +191,14 @@ static void fm_remove(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("FM_plugin", "fm_remove");
   FM *self = (FM*)host->top;
-  String src = model_curs_value(host->hndl->model, "fullpath");
+  if (fs_blocking(self->fs))
+    return;
 
-  String cmdstr;
-  asprintf(&cmdstr, "%s %s", p_rm, src);
-  log_msg("BUFFER", "%s", cmdstr);
-  system(cmdstr);
-  free(cmdstr);
+  String src = model_curs_value(host->hndl->model, "fullpath");
+  log_msg("BUFFER", "%s", src);
+  if (!src)
+    return;
+  remove(src);
   fs_fastreq(self->fs);
 }
 

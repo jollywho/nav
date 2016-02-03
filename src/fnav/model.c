@@ -103,6 +103,11 @@ int model_blocking(fn_handle *hndl)
 static void refit(Model *m, fn_lis *lis, Buffer *buf)
 {
   int pos = lis->index + lis->lnum;
+  if (buf_size(m->hndl->buf).lnum > model_count(m)) {
+    int dif = lis->index;
+    lis->index = 0;
+    lis->lnum += dif;
+  }
   if (pos >= model_count(m))
     lis->lnum = model_count(m) - lis->index - 1;
 }
@@ -149,7 +154,8 @@ void refind_line(Model *m)
   if (try_old_pos(m, lis, lis->index + lis->lnum))
     return;
 
-  //TODO: use one struct and one comparison fn
+  //FIXME: use one struct and one comparison fn
+  //atm, similar timestamps produce incorrect results
   try_old_val(m, lis, it);
 }
 
