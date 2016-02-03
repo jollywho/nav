@@ -208,7 +208,7 @@ void model_set_curs(Model *m, int index)
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
   if (res) {
     m->cur = res->rec;
-    String curval = model_curs_value(m, m->hndl->fname);
+    String curval = model_curs_value(m, "fullpath");
     SWAP_ALLOC_PTR(m->lis->fval, strdup(curval));
   }
 }
@@ -226,10 +226,13 @@ static void refind_line(Model *m, fn_lis *lis)
   log_msg("MODEL", "refind_line");
   fn_handle *h = m->hndl;
 
-  ventry *it = fnd_val(h->tn, h->fname, lis->fval);
+  ventry *it = fnd_val(h->tn, "fullpath", lis->fval);
   ventry *fst = ventry_at(m, lis->index);
-  if (!it || !it->rec || !fst)
+  if (!it || !it->rec || !fst) {
+    if (lis->lnum >= model_count(m))
+      lis->lnum = model_count(m) - 1;
     return;
+  }
 
   it = ent_rec(it->rec, "dir");
 
@@ -240,6 +243,8 @@ static void refind_line(Model *m, fn_lis *lis)
 
   int i = 1;
   while (it != fst) {
+    if (i > model_count(m) * 2)
+      abort();
     it = it->prev;
     i++;
   }

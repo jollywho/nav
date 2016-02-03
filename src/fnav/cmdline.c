@@ -512,7 +512,7 @@ void cmdline_req_run(Cmdline *cmdline)
     //TODO cleanup this area
     if (cmd->exec) {
       String ret = do_expansion(cmdline->line);
-      shell_exec(ret);
+      shell_exec(ret, NULL, NULL);
       free(ret);
       continue;
     }

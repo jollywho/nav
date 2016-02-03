@@ -407,6 +407,8 @@ void buf_sort(Buffer *buf, String fld, int flags)
 }
 
 /* public fields */
+int buf_index(Buffer *buf)
+{return buf->lnum+buf->top;}
 int buf_line(Buffer *buf)
 {return buf->lnum;}
 int buf_top(Buffer *buf)

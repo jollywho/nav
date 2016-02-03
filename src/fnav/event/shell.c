@@ -25,6 +25,13 @@ void shell_cleanup()
   utarray_free(proctbl);
 }
 
+static void process_early_exit(Process *proc, int status, void *data)
+{
+  log_msg("SHELL", "retcb fin");
+  Shell *sh = data;
+  sh->retcb(sh->caller, status);
+}
+
 static void process_exit(Process *proc, int status, void *data)
 {
   log_msg("SHELL", "fin");
@@ -89,8 +96,9 @@ void shell_start(Shell *sh)
     sh->again = true;
     return;
   }
-  if (!process_spawn(proc)) {
-    log_msg("PROC", "cannot execute");
+  int succ = process_spawn(proc);
+  if (!succ) {
+    log_msg("PROC", "cannot execute %d", succ);
     if (sh->reg)
       process_exit(&sh->uvproc.process, 0, 0);
     return;
@@ -170,7 +178,7 @@ static void shell_default_stdout_cb(Plugin *plugin, String out)
   log_msg("SHELL", "stdout: %s", out);
 }
 
-void shell_exec(String line)
+void shell_exec(String line, shell_status_cb cb, Plugin *caller)
 {
   log_msg("SHELL", "shell_exec");
   log_msg("SHELL", "%s", line);
@@ -187,8 +195,9 @@ void shell_exec(String line)
   sh->again = false;
   sh->reg = true;
   sh->data_cb = out_data_cb;
+  sh->retcb = cb;
 
-  sh->caller = NULL;
+  sh->caller = caller;
   sh->uvproc = uv_process_init(mainloop(), sh);
   Process *proc = &sh->uvproc.process;
   proc->events = eventq();
@@ -197,6 +206,9 @@ void shell_exec(String line)
   proc->out = &sh->out;
   proc->err = &sh->err;
   proc->cb = process_exit;
+
+  if (cb)
+    proc->fast_output = process_early_exit;
 
   String rv = strdup(&line[1]);
   args[0] = p_sh;

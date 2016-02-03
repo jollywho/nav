@@ -12,6 +12,7 @@
 #include "fnav/tui/buffer.h"
 
 static void fs_close_req(fentry *);
+static void fs_reopen(fentry *);
 static void stat_cb(uv_fs_t *);
 static void watch_cb(uv_fs_event_t *, const char *, int, int);
 
@@ -25,6 +26,7 @@ struct fentry {
   bool cancel;
   bool running;
   bool fastreq;
+  bool flush;
   int refs;
   fn_fs *listeners;
   UT_hash_handle hh;
@@ -41,6 +43,7 @@ static fentry* fs_mux(fn_fs *fs)
     ent->running = false;
     ent->cancel = false;
     ent->fastreq = false;
+    ent->flush = false;
     ent->listeners = NULL;
     ent->key = strdup(fs->path);
     ent->refs = 2;
@@ -206,6 +209,7 @@ void fs_signal_handle(void **data)
       model_recv(h->model);
   }
   ent->running = false;
+  ent->flush = false;
 }
 
 bool fs_blocking(fn_fs *fs)
@@ -311,7 +315,7 @@ static void stat_cb(uv_fs_t *req)
 
   ventry *vent = fnd_val("fm_files", "dir", ent->key);
 
-  if (!vent)
+  if (!vent || ent->flush)
     goto scandir;
 
   vent = fnd_val("fm_stat", "fullpath", ent->key);
@@ -353,6 +357,10 @@ void fs_fastreq(fn_fs *fs)
 {
   log_msg("FS", "fs_fastreq");
   fs->ent->fastreq = true;
+  if (!fs->ent->running) {
+    fs->ent->flush = true;
+    fs_reopen(fs->ent);
+  }
 }
 
 static void watch_timer_cb(uv_timer_t *handle)
@@ -363,7 +371,7 @@ static void watch_timer_cb(uv_timer_t *handle)
     fs_reopen(ent);
 }
 
-static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int status)
+static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int s)
 {
   log_msg("FS", "--watch--");
   fentry *ent = hndl->data;

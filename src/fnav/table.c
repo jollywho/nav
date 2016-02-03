@@ -221,6 +221,20 @@ void* rec_fld(fn_rec *rec, String fname)
   return NULL;
 }
 
+ventry* ent_rec(fn_rec *rec, String fname)
+{
+  for(int i = 0; i < rec->fld_count; i++) {
+    fn_val *val = rec->vals[i];
+    if (!val)
+      continue;
+    if (strcmp(val->fld->key, fname) != 0)
+      continue;
+
+    return rec->vlist[i];
+  }
+  return NULL;
+}
+
 void* rec_vt_fld(String tn, fn_rec *rec, String fname)
 {
   fn_tbl *t = get_tbl(tn);
@@ -265,8 +279,10 @@ void tbl_del_val(String tn, String fname, String val)
 
   /* iterate entries of val. */
   ventry *it = v->rlist;
-  while (it)
+  int count = v->count;
+  for (int i = 0; i < count; i++) {
     it = tbl_del_rec(it->rec, it);
+  }
 }
 
 void tbl_add_lis(String tn, String key_fld, String key)
@@ -300,18 +316,6 @@ void tbl_add_lis(String tn, String key_fld, String key)
     ll->rec = val->rlist->rec;
 }
 
-ventry* ent_rec(fn_rec *rec, String fname)
-{
-  for(int i = 0; i < rec->fld_count; i++) {
-    fn_val *val = rec->vals[i];
-    if (strcmp(val->fld->key, fname) != 0)
-      continue;
-
-    return rec->vlist[i];
-  }
-  return NULL;
-}
-
 void commit(void **data)
 {
   log_msg("TABLE", "commit");
@@ -330,7 +334,6 @@ static fn_val* new_entry(fn_rec *rec, fn_fld *fld, void *data, int typ, int indx
     rec->vals[indx] = val;
   }
   else {
-    log_msg("TABLE", "trepush");
     ventry *ent = malloc(sizeof(ventry));
     val->count = 1;
     ent->next = ent;
@@ -381,7 +384,6 @@ static void check_set_lis(fn_fld *f, String key, fn_rec *rec)
 
 static void tbl_insert(fn_tbl *t, trans_rec *trec)
 {
-  log_msg("TABLE", "rec");
   t->rec_count++;
   fn_rec *rec = mk_rec(t);
 
@@ -392,7 +394,6 @@ static void tbl_insert(fn_tbl *t, trans_rec *trec)
     HASH_FIND_STR(t->fields, trec->flds[i], f);
 
     if (f->type == typVOID) {
-      log_msg("TABLE", "void insert");
       rec->vals[i] = new_entry(rec, f, data, 1, i);
       rec->vlist[i] = NULL;
       continue;
@@ -415,8 +416,14 @@ static void del_fldval(fn_fld *fld, fn_val *val)
 {
   fn_val *fnd;
   HASH_FIND_STR(fld->vals, val->key, fnd);
-  if (fnd)
+  if (fnd) {
+    log_msg("DEL", "%s", val->key);
     HASH_DEL(fld->vals, val);
+    HASH_FIND_STR(fld->vals, val->key, fnd);
+    if (fnd) {
+      log_msg("HASH NOT DEL", "");
+    }
+  }
 
   fn_lis *ll;
   HASH_FIND_STR(fld->lis, val->key, ll);
@@ -431,13 +438,14 @@ static void del_fldval(fn_fld *fld, fn_val *val)
 
 static void pop_ventry(ventry *it, fn_val *val, ventry **cur)
 {
+  log_msg("TABLE", "popped");
   if (it == val->rlist)
     val->rlist = it->next;
+  if (*cur == it)
+    *cur = val->rlist;
 
   it->next->prev = it->prev;
   it->prev->next = it->next;
-  if (*cur == it)
-    *cur = it->next;
 
   free(it);
   it = NULL;
@@ -446,6 +454,7 @@ static void pop_ventry(ventry *it, fn_val *val, ventry **cur)
 static ventry* tbl_del_rec(fn_rec *rec, ventry *cur)
 {
   log_msg("TABLE", "delete_rec()");
+    log_msg("@@@@@", "");
   for(int i = 0; i < rec->fld_count; i++) {
     ventry *it = rec->vlist[i];
     if (!it) {
@@ -454,22 +463,23 @@ static ventry* tbl_del_rec(fn_rec *rec, ventry *cur)
       free(rec->vals[i]);
     }
     else {
-      fn_val *val = it->val;
+      fn_val *val = rec->vals[i];
       it->val->count--;
 
-      if (val->count > 1)
-        pop_ventry(it, val, &cur);
-      else {
+      if (val->count < 1) {
         fn_fld *fld = val->fld;
 
         del_fldval(fld, val);
         free(rec->vals[i]);
+        rec->vals[i] = NULL;
 
         if (cur == it)
           cur = NULL;
 
         free(it);
       }
+      else
+        pop_ventry(it, val, &cur);
     }
   }
   free(rec->vals);

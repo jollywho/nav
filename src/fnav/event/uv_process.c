@@ -70,5 +70,7 @@ static void exit_cb(uv_process_t *handle, int64_t status, int term_signal)
   log_msg("UV_PROCESS", "exit_cb");
   Process *proc = handle->data;
   proc->status = (int)status;
+  if (proc->fast_output)
+    proc->fast_output(proc, status, proc->data);
   proc->internal_exit_cb(proc);
 }

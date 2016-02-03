@@ -181,7 +181,7 @@ static void fm_paste(Plugin *host, Plugin *caller, void *data)
   asprintf(&cmdstr, "!%s %s %s", p_cp, src, dest);
 
   log_msg("BUFFER", "%s", cmdstr);
-  shell_exec(cmdstr);
+  shell_exec(cmdstr, NULL, NULL);
   free(dest);
   free(cmdstr);
   fs_fastreq(self->fs);
@@ -194,9 +194,9 @@ static void fm_remove(Plugin *host, Plugin *caller, void *data)
   String src = model_curs_value(host->hndl->model, "fullpath");
 
   String cmdstr;
-  asprintf(&cmdstr, "!%s %s", p_rm, src);
+  asprintf(&cmdstr, "%s %s", p_rm, src);
   log_msg("BUFFER", "%s", cmdstr);
-  shell_exec(cmdstr);
+  system(cmdstr);
   free(cmdstr);
   fs_fastreq(self->fs);
 }
