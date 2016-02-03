@@ -415,14 +415,8 @@ static void del_fldval(fn_fld *fld, fn_val *val)
 {
   fn_val *fnd;
   HASH_FIND_STR(fld->vals, val->key, fnd);
-  if (fnd) {
-    log_msg("DEL", "%s", val->key);
+  if (fnd)
     HASH_DEL(fld->vals, val);
-    HASH_FIND_STR(fld->vals, val->key, fnd);
-    if (fnd) {
-      log_msg("HASH NOT DEL", "");
-    }
-  }
 
   fn_lis *ll;
   HASH_FIND_STR(fld->lis, val->key, ll);
@@ -453,7 +447,6 @@ static void pop_ventry(ventry *it, fn_val *val, ventry **cur)
 static ventry* tbl_del_rec(fn_rec *rec, ventry *cur)
 {
   log_msg("TABLE", "delete_rec()");
-    log_msg("@@@@@", "");
   for(int i = 0; i < rec->fld_count; i++) {
     ventry *it = rec->vlist[i];
     if (!it) {

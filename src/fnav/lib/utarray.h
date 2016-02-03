@@ -38,6 +38,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>  /* memset, etc */
 #include <stdlib.h>  /* exit */
 
+#include "fnav/lib/bsearch.h"
+
 #define oom() exit(-1)
 
 typedef void (ctor_f)(void *dst, const void *src);
@@ -207,7 +209,7 @@ typedef struct {
   qsort_r((a)->d, (a)->i, (a)->icd.sz, cmp, arg);                             \
 } while(0)
 
-#define utarray_find(a,v,cmp) bsearch((v),(a)->d,(a)->i,(a)->icd.sz,cmp)
+#define utarray_find(a,v,cmp,arg) bsearch_r((v),(a)->d,(a)->i,(a)->icd.sz,cmp, arg)
 
 #define utarray_front(a) (((a)->i) ? (_utarray_eltptr(a,0)) : NULL)
 #define utarray_next(a,e) (((e)==NULL) ? utarray_front(a) : ((((a)->i) > (utarray_eltidx(a,e)+1)) ? _utarray_eltptr(a,utarray_eltidx(a,e)+1) : NULL))

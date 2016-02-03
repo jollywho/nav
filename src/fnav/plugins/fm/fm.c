@@ -223,9 +223,7 @@ void fm_new(Plugin *plugin, Buffer *buf, void *arg)
   plugin->name = "fm";
   plugin->fmt_name = "FM";
 
-  log_msg("FM_plugin", "-------------%s", arg);
   fm->cur_dir = valid_full_path(window_cur_dir(), arg);
-  log_msg("FM_plugin", "-------------%s", fm->cur_dir);
 
   init_fm_hndl(fm, buf, plugin, fm->cur_dir);
   model_init(plugin->hndl);

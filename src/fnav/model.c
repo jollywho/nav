@@ -38,7 +38,7 @@ struct Model {
 static fn_reg *registers;
 static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
 
-static int date_sort(const void *a, const void *b, void *arg)
+static int date_cmp(const void *a, const void *b, void *arg)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
@@ -48,23 +48,7 @@ static int date_sort(const void *a, const void *b, void *arg)
   return REV_FN(*(int*)arg, difftime, *t2, *t1);
 }
 
-static int str_cmp(const void *a, const void *b)
-{
-  fn_line l1 = *(fn_line*)a;
-  fn_line l2 = *(fn_line*)b;
-  return strcmp(rec_fld(l1.rec, "name"), rec_fld(l2.rec, "name"));
-}
-
-static int date_cmp(const void *a, const void *b)
-{
-  fn_line l1 = *(fn_line*)a;
-  fn_line l2 = *(fn_line*)b;
-  time_t *t1 = fs_vt_stat_resolv(l1.rec, "mtime");
-  time_t *t2 = fs_vt_stat_resolv(l2.rec, "mtime");
-  return difftime(*t2, *t1);
-}
-
-static int str_sort(const void *a, const void *b, void *arg)
+static int str_cmp(const void *a, const void *b, void *arg)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
@@ -116,6 +100,42 @@ int model_blocking(fn_handle *hndl)
   return hndl->model->blocking;
 }
 
+static void refit(Model *m, fn_lis *lis, Buffer *buf)
+{
+  int pos = lis->index + lis->lnum;
+  if (pos >= model_count(m))
+    lis->lnum = model_count(m) - lis->index - 1;
+}
+
+static int try_old_pos(Model *m, fn_lis *lis, int pos)
+{
+  fn_line *ln;
+  ln = (fn_line*)utarray_eltptr(m->lines, pos);
+  if (!ln)
+    return 0;
+  return (strcmp(lis->fval, rec_fld(ln->rec, "fullpath")) == 0);
+}
+
+static void try_old_val(Model *m, fn_lis *lis, ventry *it)
+{
+  int pos = lis->index + lis->lnum;
+  fn_line *find;
+  it = ent_rec(it->rec, "dir");
+  fn_line ln = { .rec = it->rec };
+
+  if (strcmp(m->sort_type, "mtime") == 0)
+    find = (fn_line*)utarray_find(m->lines, &ln, date_cmp, &m->sort_rev);
+  else
+    find = (fn_line*)utarray_find(m->lines, &ln, str_cmp, &m->sort_rev);
+
+  if (!find)
+    return;
+
+  int foundpos = utarray_eltidx(m->lines, find);
+  lis->index = MAX(0, lis->index + (foundpos - pos));
+  lis->lnum = MAX(0, foundpos - lis->index);
+}
+
 void refind_line(Model *m)
 {
   log_msg("MODEL", "refind_line");
@@ -124,24 +144,13 @@ void refind_line(Model *m)
 
   ventry *it = fnd_val(h->tn, "fullpath", lis->fval);
   if (!it)
-    goto refit;
-  it = ent_rec(it->rec, "dir");
-
-  fn_line ln = { .rec = it->rec };
-  fn_line *find;
-  if (strcmp(m->sort_type, "mtime") == 0)
-    find = (fn_line*)utarray_find(m->lines, &ln, date_cmp);
-  else
-    find = (fn_line*)utarray_find(m->lines, &ln, str_cmp);
-
-  if (find) {
-    lis->lnum = utarray_eltidx(m->lines, find);
     return;
-  }
 
-refit:
-  if (lis->index + lis->lnum >= model_count(m))
-    lis->lnum = model_count(m) - lis->index - 1;
+  if (try_old_pos(m, lis, lis->index + lis->lnum))
+    return;
+
+  //TODO: use one struct and one comparison fn
+  try_old_val(m, lis, it);
 }
 
 void model_sort(Model *m, String fld, int flags)
@@ -155,10 +164,11 @@ void model_sort(Model *m, String fld, int flags)
     m->sort_rev = flags;
 
   if (strcmp(m->sort_type, "mtime") == 0)
-    utarray_sort(m->lines, date_sort, &m->sort_rev);
+    utarray_sort(m->lines, date_cmp, &m->sort_rev);
   else
-    utarray_sort(m->lines, str_sort, &m->sort_rev);
+    utarray_sort(m->lines, str_cmp, &m->sort_rev);
   refind_line(m);
+  refit(m, m->lis, m->hndl->buf);
   buf_full_invalidate(m->hndl->buf, m->lis->index, m->lis->lnum);
 }
 

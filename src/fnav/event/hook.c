@@ -32,13 +32,7 @@ static void hook_dtor(void *_elt)
 static UT_icd hook_icd = { sizeof(Hook),NULL,hook_copy,hook_dtor };
 static UT_icd list_icd = { sizeof(HookList),NULL,NULL,NULL };
 
-static int hook_cmp(const void *_a, const void *_b)
-{
-  HookList *a = (HookList*)_a, *b = (HookList*)_b;
-  return strcmp(a->msg, b->msg);
-}
-
-static int hook_cmp_arg(const void *_a, const void *_b, void *arg)
+static int hook_cmp(const void *_a, const void *_b, void *arg)
 {
   HookList *a = (HookList*)_a, *b = (HookList*)_b;
   return strcmp(a->msg, b->msg);
@@ -66,7 +60,7 @@ void hook_add(Plugin *host, Plugin *caller, hook_cb fn, String msg)
   HookHandler *host_handle = host->event_hooks;
   HookList find = {.msg = msg, .hooks = NULL};
 
-  HookList *hl = (HookList*)utarray_find(host_handle->hosted, &find, hook_cmp);
+  HookList *hl = (HookList*)utarray_find(host_handle->hosted, &find, hook_cmp, 0);
   if (!hl) {
     //TODO add hook to caller's owner list
     Hook hook = {fn,caller,host, msg};
@@ -74,7 +68,7 @@ void hook_add(Plugin *host, Plugin *caller, hook_cb fn, String msg)
     utarray_push_back(find.hooks, &hook);
 
     utarray_push_back(host_handle->hosted, &find);
-    utarray_sort(host_handle->hosted, hook_cmp_arg, 0);
+    utarray_sort(host_handle->hosted, hook_cmp, 0);
   }
   else {
     Hook hook = {fn,caller,host, msg};
@@ -118,7 +112,7 @@ void send_hook_msg(String msg, Plugin *host, Plugin *caller, void *data)
   HookHandler *host_handle = host->event_hooks;
   HookList find = { .msg = msg };
 
-  HookList *hl = (HookList*)utarray_find(host_handle->hosted, &find, hook_cmp);
+  HookList *hl = (HookList*)utarray_find(host_handle->hosted, &find, hook_cmp, 0);
   if (!hl)
     return;
 
