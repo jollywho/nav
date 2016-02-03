@@ -280,9 +280,8 @@ void tbl_del_val(String tn, String fname, String val)
   /* iterate entries of val. */
   ventry *it = v->rlist;
   int count = v->count;
-  for (int i = 0; i < count; i++) {
+  for (int i = 0; i < count; i++)
     it = tbl_del_rec(it->rec, it);
-  }
 }
 
 void tbl_add_lis(String tn, String key_fld, String key)

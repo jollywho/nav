@@ -15,7 +15,6 @@
 #include "fnav/tui/window.h"
 #include "fnav/event/fs.h"
 
-static void refind_line(Model *m, fn_lis *lis);
 static void generate_lines(Model *m);
 
 struct fn_line {
@@ -47,6 +46,22 @@ static int date_sort(const void *a, const void *b, void *arg)
   time_t *t1 = fs_vt_stat_resolv(l1.rec, "mtime");
   time_t *t2 = fs_vt_stat_resolv(l2.rec, "mtime");
   return REV_FN(*(int*)arg, difftime, *t2, *t1);
+}
+
+static int str_cmp(const void *a, const void *b)
+{
+  fn_line l1 = *(fn_line*)a;
+  fn_line l2 = *(fn_line*)b;
+  return strcmp(rec_fld(l1.rec, "name"), rec_fld(l2.rec, "name"));
+}
+
+static int date_cmp(const void *a, const void *b)
+{
+  fn_line l1 = *(fn_line*)a;
+  fn_line l2 = *(fn_line*)b;
+  time_t *t1 = fs_vt_stat_resolv(l1.rec, "mtime");
+  time_t *t2 = fs_vt_stat_resolv(l2.rec, "mtime");
+  return difftime(*t2, *t1);
 }
 
 static int str_sort(const void *a, const void *b, void *arg)
@@ -101,10 +116,37 @@ int model_blocking(fn_handle *hndl)
   return hndl->model->blocking;
 }
 
+void refind_line(Model *m)
+{
+  log_msg("MODEL", "refind_line");
+  fn_handle *h = m->hndl;
+  fn_lis *lis = m->lis;
+
+  ventry *it = fnd_val(h->tn, "fullpath", lis->fval);
+  if (!it)
+    goto refit;
+  it = ent_rec(it->rec, "dir");
+
+  fn_line ln = { .rec = it->rec };
+  fn_line *find;
+  if (strcmp(m->sort_type, "mtime") == 0)
+    find = (fn_line*)utarray_find(m->lines, &ln, date_cmp);
+  else
+    find = (fn_line*)utarray_find(m->lines, &ln, str_cmp);
+
+  if (find) {
+    lis->lnum = utarray_eltidx(m->lines, find);
+    return;
+  }
+
+refit:
+  if (lis->index + lis->lnum >= model_count(m))
+    lis->lnum = model_count(m) - lis->index - 1;
+}
+
 void model_sort(Model *m, String fld, int flags)
 {
   log_msg("MODEL", "model_sort");
-  fn_handle *h = m->hndl;
   if (fld) {
     free(m->sort_type);
     m->sort_type = strdup(fld);
@@ -116,7 +158,8 @@ void model_sort(Model *m, String fld, int flags)
     utarray_sort(m->lines, date_sort, &m->sort_rev);
   else
     utarray_sort(m->lines, str_sort, &m->sort_rev);
-  buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
+  refind_line(m);
+  buf_full_invalidate(m->hndl->buf, m->lis->index, m->lis->lnum);
 }
 
 void model_recv(Model *m)
@@ -155,8 +198,6 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   m->cur = head->rec;
   h->model->lis = lis;
   generate_lines(m);
-  refind_line(m, m->lis);
-  buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
   model_sort(m, NULL, 0);
   m->blocking = false;
   m->opened = true;
@@ -211,44 +252,6 @@ void model_set_curs(Model *m, int index)
     String curval = model_curs_value(m, "fullpath");
     SWAP_ALLOC_PTR(m->lis->fval, strdup(curval));
   }
-}
-
-static ventry* ventry_at(Model *m, int index)
-{
-  fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
-  if (!res)
-    return NULL;
-  return ent_rec(res->rec, "dir");
-}
-
-static void refind_line(Model *m, fn_lis *lis)
-{
-  log_msg("MODEL", "refind_line");
-  fn_handle *h = m->hndl;
-
-  ventry *it = fnd_val(h->tn, "fullpath", lis->fval);
-  ventry *fst = ventry_at(m, lis->index);
-  if (!it || !it->rec || !fst) {
-    if (lis->lnum >= model_count(m))
-      lis->lnum = model_count(m) - 1;
-    return;
-  }
-
-  it = ent_rec(it->rec, "dir");
-
-  if (it == ent_head(it)) {
-    lis->lnum = 0;
-    return;
-  }
-
-  int i = 1;
-  while (it != fst) {
-    if (i > model_count(m) * 2)
-      abort();
-    it = it->prev;
-    i++;
-  }
-  lis->lnum = i;
 }
 
 String model_str_expansion(String val)

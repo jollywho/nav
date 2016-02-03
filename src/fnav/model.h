@@ -13,6 +13,7 @@ int model_blocking(fn_handle *hndl);
 
 void model_sort(Model *m, String fld, int flags);
 void model_recv(Model *m);
+void refind_line(Model *m);
 
 void model_read_entry(Model *m, fn_lis *lis, ventry *head);
 void model_null_entry(Model *m, fn_lis *lis);
