@@ -79,7 +79,9 @@ void term_delete(Plugin *plugin)
   SLIST_REMOVE(&mainloop()->subterms, term, term, ent);
   uv_poll_stop(&term->readfd);
   window_stop_override();
+  hook_clear(term->base);
   hook_cleanup(term->base);
+
   uv_handle_t *hp = (uv_handle_t*)&term->readfd;
   uv_close(hp, term_close_poll);
 }

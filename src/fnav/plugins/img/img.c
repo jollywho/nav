@@ -199,10 +199,20 @@ void img_new(Plugin *plugin, Buffer *buf, void *arg)
 void img_delete(Plugin *plugin)
 {
   log_msg("IMG", "img_cleanup");
-  Img *img = (Img*)plugin->top;
-  shell_set_in_buffer(img->sh_clear, img->cl_msg);
-  shell_start(img->sh_clear);
+  Img *img = plugin->top;
+  fn_handle *h = img->base->hndl;
+  //TODO: delay cleanup until clear has run, like term
+  //shell_set_in_buffer(img->sh_clear, img->cl_msg);
+  //shell_start(img->sh_clear);
   img->disabled = true;
-  // hook remove
-  // free(img);
+  hook_clear(img->base);
+  hook_cleanup(img->base);
+  shell_delete(img->sh_draw);
+  shell_delete(img->sh_size);
+  shell_delete(img->sh_clear);
+  free(h);
+  free(img->sz_msg);
+  free(img->cl_msg);
+  free(img->img_msg);
+  free(img);
 }

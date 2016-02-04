@@ -132,7 +132,8 @@ void plugin_close(Plugin *plugin)
     return;
 
   unset_cid(plugin);
-  return plugin_table[i].close_cb(plugin);
+  plugin_table[i].close_cb(plugin);
+  free(plugin);
 }
 
 int plugin_isloaded(String name)

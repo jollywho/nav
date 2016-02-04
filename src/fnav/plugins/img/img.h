@@ -16,9 +16,9 @@ struct Img {
   String sz_msg;
   String cl_msg;
   String img_msg;
+  String path;
   int fontw; int fonth;
   int maxw; int maxh;
-  String path;
   int width; int height;
 };
 

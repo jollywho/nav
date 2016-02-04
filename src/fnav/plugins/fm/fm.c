@@ -252,9 +252,10 @@ void fm_delete(Plugin *plugin)
   model_close(h);
   model_cleanup(h);
   //hook remove_caller
-  //hook clear
+  hook_clear(fm->base);
   hook_cleanup(fm->base);
   fs_cleanup(fm->fs);
+  free(fm->cur_dir);
   free(h);
   free(fm);
 }

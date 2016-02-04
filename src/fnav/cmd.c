@@ -23,7 +23,7 @@ int name_sort(Cmd_T *a, Cmd_T *b)
 
 void cmd_add(Cmd_T *cmd)
 {
-  HASH_ADD_KEYPTR(hh, cmd_table, cmd->name, strlen(cmd->name), cmd);
+  HASH_ADD_STR(cmd_table, name, cmd);
   HASH_SORT(cmd_table, name_sort);
 }
 

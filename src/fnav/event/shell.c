@@ -6,10 +6,9 @@
 #include "fnav/log.h"
 #include "fnav/option.h"
 
-static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
-  bool eof);
-static void shell_write_cb(Stream *stream, void *data, int status);
-static void shell_default_stdout_cb(Plugin *plugin, String out);
+static void out_data_cb(Stream *, RBuffer *, size_t, void *,  bool);
+static void shell_write_cb(Stream *, void *, int);
+static void shell_default_stdout_cb(Plugin *, String);
 
 static UT_array *proctbl;
 static char* args[4];
