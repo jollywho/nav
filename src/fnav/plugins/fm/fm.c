@@ -251,7 +251,6 @@ void fm_delete(Plugin *plugin)
   fn_handle *h = fm->base->hndl;
   model_close(h);
   model_cleanup(h);
-  //hook remove_caller
   hook_clear(fm->base);
   hook_cleanup(fm->base);
   fs_cleanup(fm->fs);

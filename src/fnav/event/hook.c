@@ -68,14 +68,15 @@ void hook_remove(Plugin *host, Plugin *caller, String msg)
   if (!find)
     return;
 
-  // TODO
-  //Hook *it = (Hook*)utarray_front(find->hooks);
-  //while (it) {
-  //  if (it->caller == caller)
-  //    break;
-  //}
-
-  //HASH_DEL(host_handle->hosted, find);
+  Hook *it = (Hook*)utarray_front(find->hooks);
+  for (int i = 0; i < utarray_len(find->hooks); i++) {
+    if (it->caller == caller) {
+      int idx = utarray_eltidx(find->hooks, it);
+      idx = utarray_eltidx(find->hooks, it);
+      break;
+    }
+    it = (Hook*)utarray_next(find->hooks, it);
+  }
 }
 
 void hook_clear(Plugin *host)
