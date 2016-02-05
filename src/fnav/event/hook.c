@@ -79,6 +79,7 @@ void hook_remove(Plugin *host, Plugin *caller, String msg)
   }
 }
 
+//TODO: find+remove hooks from their own list
 void hook_clear(Plugin *host)
 {
   log_msg("HOOK", "clear");

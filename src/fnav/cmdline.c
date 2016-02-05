@@ -13,14 +13,22 @@
 #include "fnav/log.h"
 #include "fnav/macros.h"
 
-/* FIXME: skip tree traversal using flat array dtor
- * and type switch */
-static void pair_delete(Token *token);
-
 typedef struct {
   Token item;
   QUEUE node;
 } queue_item;
+
+typedef struct {
+  char v_type;
+  void *ref;
+} ref_item;
+
+typedef struct {
+  ref_item item;
+  QUEUE node;
+} queue_ref_item;
+
+static void ref_pop(QUEUE *refs);
 
 #define NEXT_CMD(cl,c) \
   (c = (Cmdstr*)utarray_next(cl->cmds, c))
@@ -29,16 +37,9 @@ static UT_icd dict_icd = { sizeof(Pair),   NULL };
 static UT_icd list_icd = { sizeof(Token),  NULL };
 static UT_icd cmd_icd  = { sizeof(Cmdstr), NULL };
 
-static int* try_number_conversion(Token *token)
+int str_num(String str, int *tmp)
 {
-  int temp;
-  if (sscanf(token->var.vval.v_string, "%d", &temp)) {
-    free(token->var.vval.v_string);
-    token->var.v_type = VAR_NUMBER;
-    token->var.vval.v_number = temp;
-    return &token->var.vval.v_number;
-  }
-  return NULL;
+  return sscanf(str, "%d", tmp);
 }
 
 void* token_val(Token *token, char v_type)
@@ -47,8 +48,6 @@ void* token_val(Token *token, char v_type)
     return NULL;
 
   char t_type = token->var.v_type;
-  if (t_type == VAR_STRING && v_type == VAR_NUMBER)
-    return try_number_conversion(token);
   if (t_type != v_type)
     return NULL;
 
@@ -59,8 +58,6 @@ void* token_val(Token *token, char v_type)
       return token->var.vval.v_dict;
     case VAR_PAIR:
       return token->var.vval.v_pair;
-    case VAR_NUMBER:
-      return &token->var.vval.v_number;
     case VAR_STRING:
       return token->var.vval.v_string;
     default:
@@ -84,61 +81,12 @@ void* tok_arg(List *lst, int argc)
   return word;
 }
 
-static void list_delete(Token *token)
-{
-  log_msg("CMDLINE", "list_delete");
-  List *list = token_val(token, VAR_LIST);
-  UT_array *arr = list->items;
-
-  Token *word = NULL;
-  while ((word = (Token*)utarray_next(arr, word))) {
-    switch(word->var.v_type) {
-      case VAR_LIST:
-        list_delete(word);
-        break;
-      case VAR_DICT:
-        //list_delete(word);
-        break;
-      case VAR_PAIR:
-        pair_delete(word);
-        break;
-      case VAR_STRING:
-        free(token_val(word, VAR_STRING));
-      default:
-        break;
-    }
-  }
-  utarray_free(arr);
-  free(list);
-}
-
-static void pair_delete(Token *token)
-{
-  log_msg("CMDLINE", "pair_delete");
-  Pair *pair = token_val(token, VAR_PAIR);
-  //Token *key = pair->key;
-  Token *value = pair->value;
-  switch(value->var.v_type) {
-    case VAR_LIST:
-      list_delete(value);
-      break;
-    case VAR_DICT:
-      list_delete(value);
-      break;
-    case VAR_PAIR:
-      pair_delete(value);
-      break;
-    default:
-      free(token_val(value, VAR_STRING));
-  }
-  free(pair);
-}
-
 void cmdline_init_config(Cmdline *cmdline, char *line)
 {
   cmdline->line = line;
   cmdline->cmds = NULL;
   cmdline->tokens = NULL;
+  QUEUE_INIT(&cmdline->refs);
 }
 
 void cmdline_init(Cmdline *cmdline, int size)
@@ -147,6 +95,7 @@ void cmdline_init(Cmdline *cmdline, int size)
   memset(cmdline->line, '\0', size);
   cmdline->cmds = NULL;
   cmdline->tokens = NULL;
+  QUEUE_INIT(&cmdline->refs);
 }
 
 void cmdline_cleanup(Cmdline *cmdline)
@@ -154,10 +103,13 @@ void cmdline_cleanup(Cmdline *cmdline)
   log_msg("CMDLINE", "cmdline_cleanup");
   if (!cmdline->cmds)
     return;
-  Cmdstr *cmd = NULL;
-  while (NEXT_CMD(cmdline, cmd)) {
-    list_delete(&cmd->args);
-  }
+  Token *word = NULL;
+  while ((word = (Token*)utarray_next(cmdline->tokens, word)))
+    free(word->var.vval.v_string);
+  while (!QUEUE_EMPTY(&cmdline->refs))
+    ref_pop(&cmdline->refs);
+  utarray_clear(cmdline->cmds);
+  utarray_clear(cmdline->tokens);
   utarray_free(cmdline->cmds);
   utarray_free(cmdline->tokens);
 }
@@ -169,6 +121,35 @@ static void stack_push(QUEUE *queue, Token token)
   item->item = token;
   QUEUE_INIT(&item->node);
   QUEUE_INSERT_HEAD(queue, &item->node);
+}
+
+static void ref_push(QUEUE *queue, void *ref, char v_type)
+{
+  log_msg("CMDLINE", "ref_push");
+  queue_ref_item *item = malloc(sizeof(queue_item));
+  item->item.v_type = v_type;
+  item->item.ref = ref;
+  QUEUE_INIT(&item->node);
+  QUEUE_INSERT_HEAD(queue, &item->node);
+}
+
+static void ref_pop(QUEUE *refs)
+{
+  log_msg("CMDLINE", "ref_pop");
+  QUEUE *h = QUEUE_HEAD(refs);
+  queue_ref_item *item = QUEUE_DATA(h, queue_ref_item, node);
+  QUEUE_REMOVE(&item->node);
+  void *ref = item->item.ref;
+  if (item->item.v_type == VAR_LIST) {
+    List *l = ref;
+    utarray_free(l->items);
+  }
+  if (item->item.v_type == VAR_DICT) {
+    Dict *d = ref;
+    utarray_free(d->items);
+  }
+  free(item);
+  free(ref);
 }
 
 static queue_item *queue_node_data(QUEUE *queue)
@@ -203,32 +184,35 @@ static Token stack_head(QUEUE *stack)
   return token;
 }
 
-static Token pair_new()
+static Token pair_new(Cmdline *cmdline)
 {
   Token token;
   memset(&token, 0, sizeof(Token));
   Pair *p = malloc(sizeof(Pair));
+  ref_push(&cmdline->refs, p, VAR_PAIR);
   token.var.v_type = VAR_PAIR;
   token.var.vval.v_pair = p;
   return token;
 }
 
-static Token list_new()
+static Token list_new(Cmdline *cmdline)
 {
   Token token;
   memset(&token, 0, sizeof(Token));
   List *l = malloc(sizeof(List));
+  ref_push(&cmdline->refs, l, VAR_LIST);
   token.var.v_type = VAR_LIST;
   utarray_new(l->items, &list_icd);
   token.var.vval.v_list = l;
   return token;
 }
 
-static Token dict_new()
+static Token dict_new(Cmdline *cmdline)
 {
   Token token;
   memset(&token, 0, sizeof(Token));
   Dict *d = malloc(sizeof(Dict));
+  ref_push(&cmdline->refs, d, VAR_DICT);
   token.var.v_type = VAR_DICT;
   utarray_new(d->items, &dict_icd);
   token.var.vval.v_dict = d;
@@ -299,12 +283,15 @@ static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)
   Token *nword = (Token*)utarray_next(cmdline->tokens, word);
   if (!nword)
     return word;
+  // prev or next == < >
 
   char ch = nword->var.vval.v_string[0];
-  if (ch == '>')
-    (*cmd).pipet = PIPE_PLUGIN;
+  if (ch == '>' || ch == '<')
+    (*cmd).flag |= PIPE_LEFT;
   else
-    (*cmd).pipet = PIPE_CMD;
+    (*cmd).flag |= PIPE;
+
+  //FIXME: pipe char needs to be pushed somewhere or it wont be freed
   return nword;
 }
 
@@ -388,7 +375,7 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
   if (next) {
     String str = token_val(next, VAR_STRING);
     if (str && str[0] == ':') {
-      push(pair_new(), stack);
+      push(pair_new(cmdline), stack);
       return true;
     }
   }
@@ -400,12 +387,12 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
   log_msg("CMDLINE", "cmdline_parse");
   char ch;
   bool seek;
-  Cmdstr cmd = {.pipet = 0};
+  Cmdstr cmd = {.flag = 0};
 
   QUEUE *stack = &cmd.stack;
   QUEUE_INIT(stack);
 
-  cmd.args = list_new();
+  cmd.args = list_new(cmdline);
   stack_push(stack, cmd.args);
   Token head = stack_head(stack);
 
@@ -431,11 +418,11 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
         break;
         //
       case '{':
-        push(dict_new(), stack);
+        push(dict_new(cmdline), stack);
         head.start = word->start;
         break;
       case '[':
-        push(list_new(), stack);
+        push(list_new(cmdline), stack);
         head.start = word->start;
         break;
       default:
@@ -502,6 +489,46 @@ static String do_expansion(String line)
   return out;
 }
 
+static int exec_line(String line, Cmdstr *cmd)
+{
+  if (!cmd->exec)
+    return 0;
+  String ret = do_expansion(line);
+  shell_exec(ret, NULL, NULL);
+  free(ret);
+  return 1;
+}
+
+static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd)
+{
+  Plugin *lhs, *rhs;
+  lhs = rhs = NULL;
+
+  // search for rhs in next cmd.
+  Cmdstr *tmp = cmd;
+  NEXT_CMD(cmdline, tmp);
+
+  List *args = token_val(&tmp->args, VAR_LIST);
+  Token *word = (Token*)utarray_front(args->items);
+  String arg = token_val(word, VAR_STRING);
+
+  if (!plugin_isloaded(arg))
+    log_msg("ERROR", "plugin %s not valid", arg);
+
+  rhs = plugin_open(arg, NULL, args);
+
+  if (cmd->ret_t == PLUGIN)
+    lhs = cmd->ret;
+  if (!lhs)
+    lhs = focus_plugin();
+
+  if (lhs && rhs) {
+    send_hook_msg("pipe_attach", rhs, lhs, NULL);
+    plugin_pipe(lhs);
+    cmd = tmp;
+  }
+}
+
 void cmdline_req_run(Cmdline *cmdline)
 {
   log_msg("CMDLINE", "cmdline_req_run");
@@ -509,43 +536,12 @@ void cmdline_req_run(Cmdline *cmdline)
   cmd = NULL;
 
   while (NEXT_CMD(cmdline, cmd)) {
-    //TODO cleanup this area
-    if (cmd->exec) {
-      String ret = do_expansion(cmdline->line);
-      shell_exec(ret, NULL, NULL);
-      free(ret);
+    if (exec_line(cmdline->line, cmd))
       continue;
-    }
 
     cmd_run(cmd);
 
-    if (cmd->pipet == PIPE_PLUGIN) {
-      Plugin *lhs, *rhs;
-      lhs = rhs = NULL;
-
-      // search for rhs in next cmd.
-      Cmdstr *tmp = cmd;
-      NEXT_CMD(cmdline, tmp);
-
-      List *args = token_val(&tmp->args, VAR_LIST);
-      Token *word = (Token*)utarray_front(args->items);
-      String arg = token_val(word, VAR_STRING);
-
-      if (!plugin_isloaded(arg))
-        log_msg("ERROR", "plugin %s not valid", arg);
-
-      rhs = plugin_open(arg, NULL, args);
-
-      if (cmd->ret_t == PLUGIN)
-        lhs = cmd->ret;
-      if (!lhs)
-        lhs = focus_plugin();
-
-      if (lhs && rhs) {
-        send_hook_msg("pipe_attach", rhs, lhs, NULL);
-        plugin_pipe(lhs);
-        cmd = tmp;
-      }
-    }
+    if (cmd->flag & PIPE)
+      exec_pipe(cmdline, cmd);
   }
 }

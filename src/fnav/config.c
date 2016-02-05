@@ -228,16 +228,20 @@ static void* edit_setting(List *args)
 static void* edit_color(List *args)
 {
   log_msg("CONFIG", "edit_color");
-  if (utarray_len(args->items) < 3) return 0;
-  int *fg = (int*)list_arg(args, 2, VAR_NUMBER);
-  int *bg = (int*)list_arg(args, 3, VAR_NUMBER);
-  if (!fg || !bg)
+  if (utarray_len(args->items) < 3)
+    return 0;
+
+  int fg, bg;
+  int err = 0;
+  err += str_num(list_arg(args, 2, VAR_STRING), &fg);
+  err += str_num(list_arg(args, 3, VAR_STRING), &bg);
+  if (!err)
     return 0;
 
   fn_color col = {
     .key = strdup(list_arg(args, 1, VAR_STRING)),
-    .fg = *fg,
-    .bg = *bg,
+    .fg = fg,
+    .bg = bg,
   };
   set_color(&col);
   return 0;

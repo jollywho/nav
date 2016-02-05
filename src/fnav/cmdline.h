@@ -9,7 +9,6 @@
 typedef struct {
   char v_type;              /* see below: VAR_NUMBER, VAR_STRING, etc. */
   union {
-    int      v_number;      /* number value                */
     char    *v_string;      /* string value (can be NULL!) */
     Pair    *v_pair;        /* pair value (can be NULL!)   */
     List    *v_list;        /* list value (can be NULL!)   */
@@ -31,9 +30,6 @@ struct Token {
   typ_T var;
 };
 
-#define TOKEN_NUM(var) \
-  var.vval.v_number
-
 struct Pair {
   Token *key;
   Token *value;
@@ -48,7 +44,7 @@ struct Dict {
 };
 
 struct Cmdstr {
-  int pipet;               /* pipe flag types */
+  int flag;               /* pipe flag types */
   QUEUE stack;
   Token args;
   int ret_t;
@@ -56,12 +52,14 @@ struct Cmdstr {
   void *ret;
 };
 
-#define PIPE_CMD     1
-#define PIPE_PLUGIN  2
+#define PIPE         1
+#define PIPE_LEFT    2
+#define PIPE_RIGHT   4
 
 struct Cmdline {
   UT_array *cmds;
   UT_array *tokens;
+  QUEUE refs;
   String line;
 };
 
@@ -78,5 +76,6 @@ Token* cmdline_last(Cmdline *cmdline);
 void* token_val(Token *token, char v_type);
 void* list_arg(List *lst, int argc, char v_type);
 void* tok_arg(List *lst, int argc);
+int str_num(String str, int *tmp);
 
 #endif

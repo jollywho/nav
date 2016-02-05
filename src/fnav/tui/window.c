@@ -41,7 +41,7 @@ static const Cmd_T cmdtable[] = {
   {"close",  win_close,   0},
   {"new",    win_new,     MOVE_UP},
   {"vnew",   win_new,     MOVE_LEFT},
-  {"pipe",   win_pipe,    0},
+  {"<|",     win_pipe,    0},
   {"sort",   win_sort,    1},
   {"sort!",  win_sort,    -1},
   {"cd",     win_cd,      0},
@@ -53,7 +53,7 @@ static String compl_cmds[] = {
   "close;window:string:wins",
   "vnew;plugin:string:plugins",
   "new;plugin:string:plugins",
-  "pipe;window:number:wins",
+  "<|;window:number:wins",
   "sort;field:string:fields",
   "sort!;field:string:fields",
   "cd;path:string:paths",
@@ -136,7 +136,9 @@ void window_cleanup(void)
 static void* win_shut()
 {
 #ifndef DEBUG
+  stop_ex_cmd();
   endwin();
+  uv_run(eventloop(), UV_RUN_NOWAIT);
   exit(0);
 #endif
   stop_event_loop();
@@ -211,13 +213,15 @@ static void* win_pipe(List *args, enum move_dir flags)
     return 0;
 
   Buffer *buf = layout_buf(&win.layout);
-  int *wnum = list_arg(args, 1, VAR_NUMBER);
+  int wnum;
+  if (str_num(list_arg(args, 1, VAR_STRING), &wnum))
+    return 0;
+  if (!buf)
+    return 0;
 
-  if (buf && wnum) {
-    Plugin *rhs = plugin_from_id(*wnum);
-    //TODO: replace pipe if already set
-    send_hook_msg("pipe_attach", buf_plugin(buf), rhs, NULL);
-  }
+  Plugin *rhs = plugin_from_id(wnum);
+  //TODO: replace pipe if already set
+  send_hook_msg("pipe_attach", buf_plugin(buf), rhs, NULL);
   return 0;
 }
 
