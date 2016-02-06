@@ -76,6 +76,7 @@ static int fm_opendir(Plugin *plugin, String path, short arg)
   fs_open(self->fs, cur_dir);
   self->cur_dir = cur_dir;
   window_ch_dir(self->cur_dir);
+  send_hook_msg("diropen", plugin, NULL, self->cur_dir);
   return 1;
 }
 
@@ -202,6 +203,45 @@ static void fm_remove(Plugin *host, Plugin *caller, void *data)
   fs_fastreq(self->fs);
 }
 
+static void fm_diropen_cb(Plugin *host, Plugin *caller, void *data)
+{
+  log_msg("FM_plugin", "fm_diropen_cb");
+  FM *self = (FM*)caller->top;
+  fs_close(self->fs);
+  String path = strdup(data);
+  fm_opendir(caller, path, BACKWARD);
+  free(path);
+}
+
+static void fm_cursor_change_cb(Plugin *host, Plugin *caller, void *data)
+{
+  log_msg("FM_plugin", "fm_cursor_change_cb");
+  FM *self = (FM*)caller->top;
+  fn_handle *h = host->hndl;
+
+  String path = model_curs_value(h->model, "fullpath");
+  if (!path)
+    return;
+
+  if (isdir(path)) {
+    fs_close(self->fs);
+    fm_opendir(caller, path, FORWARD);
+  }
+}
+
+static void fm_pipe_left(Plugin *host, Plugin *caller, void *data)
+{
+  log_msg("FM_plugin", "fm_pipe_left");
+  //TODO: check if host is fm
+  hook_add(caller, host, fm_diropen_cb, "diropen");
+}
+
+static void fm_pipe_right(Plugin *host, Plugin *caller, void *data)
+{
+  log_msg("FM_plugin", "fm_pipe_right");
+  hook_add(caller, host, fm_cursor_change_cb, "cursor_change");
+}
+
 static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, String val)
 {
   fn_handle *hndl = malloc(sizeof(fn_handle));
@@ -232,11 +272,13 @@ void fm_new(Plugin *plugin, Buffer *buf, void *arg)
   buf_set_plugin(buf, plugin);
   buf_set_status(buf, 0, fm->cur_dir, 0, 0);
   hook_init(plugin);
-  hook_add(plugin, plugin, fm_paste,   "paste");
-  hook_add(plugin, plugin, fm_remove,  "remove");
-  hook_add(plugin, plugin, fm_left,    "left");
-  hook_add(plugin, plugin, fm_right,   "right");
-  hook_add(plugin, plugin, fm_req_dir, "open");
+  hook_add(plugin, plugin, fm_paste,      "paste");
+  hook_add(plugin, plugin, fm_remove,     "remove");
+  hook_add(plugin, plugin, fm_left,       "left");
+  hook_add(plugin, plugin, fm_right,      "right");
+  hook_add(plugin, plugin, fm_req_dir,    "open");
+  hook_add(plugin, plugin, fm_pipe_left,  "pipe_left");
+  hook_add(plugin, plugin, fm_pipe_right, "pipe_right");
 
   fm->fs = fs_init(plugin->hndl);
   fm->fs->stat_cb = fm_ch_dir;
