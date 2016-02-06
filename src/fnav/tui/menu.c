@@ -243,6 +243,7 @@ void menu_stop(Menu *mnu)
 
 void menu_restart(Menu *mnu)
 {
+  log_msg("MENU", "menu_restart");
   mnu->cx = context_start();
   mnu->docmpl = false;
 

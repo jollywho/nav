@@ -54,7 +54,7 @@ struct Cmdstr {
 
 #define PIPE         1
 #define PIPE_LEFT    2
-#define PIPE_RIGHT   4
+#define PIPE_RIGHT   3
 
 struct Cmdline {
   UT_array *cmds;

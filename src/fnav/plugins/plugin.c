@@ -48,6 +48,9 @@ void plugin_init()
 
 static int find_plugin(String name)
 {
+  if (!name)
+    return -1;
+
   for (int i = 0; i < LENGTH(plugin_table); i++) {
     if (strcmp(plugin_table[i].name, name) == 0)
       return i;
@@ -113,6 +116,7 @@ Plugin* plugin_open(String name, Buffer *buf, List *args)
   if (i == -1)
     return NULL;
 
+  log_msg("PLUG", "%s", plugin_table[i].name);
   Plugin *plugin = plugin_in_bkgrnd(&plugin_table[i]);
   if (!plugin) {
     plugin = calloc(1, sizeof(Plugin));

@@ -303,10 +303,26 @@ static void ex_killline()
   mflag = 0;
 }
 
+static void ex_check_pipe()
+{
+  char pch = ex_cmd_prevstr()[0];
+  char ch = ex_cmd_curstr()[0];
+  log_msg("::::::::", "prev: %c cur: %c", pch, ch);
+  if (pch == '<' && ch == '|')
+    menu_restart(menu);
+  else if (pch == '|' && ch == '>')
+    menu_restart(menu);
+  else if (ch == '|') {
+    menu_restart(menu);
+    mflag = EX_PUSH;
+  }
+}
+
 static void check_new_state()
 {
   if ((mflag & (EX_FRESH|EX_HIST)))
     return;
+  ex_check_pipe();
 
   Token *tok = cmdline_last(&cmd);
   if (!tok)
@@ -337,7 +353,6 @@ static void ex_onkey()
 void ex_input(int key)
 {
   log_msg("EXCMD", "input");
-
   Cmdarg ca;
   int idx = find_command(&key_tbl, key);
   ca.arg = key_defaults[idx].cmd_arg;
@@ -427,8 +442,19 @@ String ex_cmd_curstr()
   Token *tok = ex_cmd_curtok();
   if (tok)
     return token_val(tok, VAR_STRING);
-  else
+  return "";
+}
+
+String ex_cmd_prevstr()
+{
+  if (cur_part < 1)
     return "";
+  int st = cmd_stack[cur_part-1]->st;
+  int ed = curpos;
+  Token *tok = cmdline_tokbtwn(&cmd, st, ed);
+  if (tok)
+    return token_val(tok, VAR_STRING);
+  return "";
 }
 
 int ex_cmd_state()

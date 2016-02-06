@@ -44,15 +44,11 @@ Cmd_T* cmd_find(String name)
 void cmd_run(Cmdstr *cmdstr)
 {
   log_msg("CMD", "cmd_run");
-  Token *word = NULL;
-
   List *args = token_val(&cmdstr->args, VAR_LIST);
   if (utarray_len(args->items) < 1)
     return;
 
-  word = (Token*)utarray_front(args->items);
-
-  Cmd_T *fun = cmd_find(token_val(word, VAR_STRING));
+  Cmd_T *fun = cmd_find(list_arg(args, 0, VAR_STRING));
   if (!fun)
     return;
 

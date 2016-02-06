@@ -41,7 +41,6 @@ static const Cmd_T cmdtable[] = {
   {"close",  win_close,   0},
   {"new",    win_new,     MOVE_UP},
   {"vnew",   win_new,     MOVE_LEFT},
-  {"<|",     win_pipe,    0},
   {"sort",   win_sort,    1},
   {"sort!",  win_sort,    -1},
   {"cd",     win_cd,      0},
@@ -53,7 +52,6 @@ static String compl_cmds[] = {
   "close;window:string:wins",
   "vnew;plugin:string:plugins",
   "new;plugin:string:plugins",
-  "<|;window:number:wins",
   "sort;field:string:fields",
   "sort!;field:string:fields",
   "cd;path:string:paths",
@@ -137,8 +135,8 @@ static void* win_shut()
 {
 #ifndef DEBUG
   stop_ex_cmd();
-  endwin();
   uv_run(eventloop(), UV_RUN_NOWAIT);
+  endwin();
   exit(0);
 #endif
   stop_event_loop();
@@ -262,11 +260,12 @@ static void* win_sort(List *args, int flags)
 static void* win_new(List *args, enum move_dir flags)
 {
   log_msg("WINDOW", "win_new");
+  //TODO: check if plugin_in_bkgrnd before making buffer
   window_add_buffer(flags);
 
-  String cmd = list_arg(args, 1, VAR_STRING);
-  if (cmd)
-    return plugin_open(cmd, layout_buf(&win.layout), args);
+  String name = list_arg(args, 1, VAR_STRING);
+  if (name)
+    return plugin_open(name, layout_buf(&win.layout), args);
   return NULL;
 }
 

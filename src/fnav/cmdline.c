@@ -167,7 +167,6 @@ static Token stack_prevprev(QUEUE *stack)
 
 static Token stack_pop(QUEUE *stack)
 {
-  log_msg("CMDLINE", "stack_pop");
   QUEUE *h = QUEUE_HEAD(stack);
   queue_item *item = queue_node_data(h);
   QUEUE_REMOVE(&item->node);
@@ -281,33 +280,35 @@ static void cmdline_tokenize(Cmdline *cmdline)
 static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)
 {
   Token *nword = (Token*)utarray_next(cmdline->tokens, word);
-  if (!nword)
-    return word;
-  // prev or next == < >
-
-  char ch = nword->var.vval.v_string[0];
-  if (ch == '>' || ch == '<')
-    (*cmd).flag |= PIPE_LEFT;
-  else
-    (*cmd).flag |= PIPE;
-
-  //FIXME: pipe char needs to be pushed somewhere or it wont be freed
-  return nword;
+  Token *bword = (Token*)utarray_prev(cmdline->tokens, word);
+  if (nword) {
+    char n_ch = nword->var.vval.v_string[0];
+    if (n_ch == '>') {
+      (*cmd).flag = PIPE_RIGHT;
+      return nword;
+    }
+  }
+  if (bword) {
+    char b_ch = bword->var.vval.v_string[0];
+    if (b_ch == '<') {
+      Token parent = stack_head(&cmd->stack);
+      List *l = token_val(&parent, VAR_LIST);
+      utarray_pop_back(l->items);
+      (*cmd).flag = PIPE_LEFT;
+      return word;
+    }
+  }
+  (*cmd).flag = PIPE;
+  return word;
 }
 
 Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
 {
-  if (!cmdline->cmds)
+  if (!cmdline->tokens)
     return NULL;
 
-  Cmdstr *cmd = NULL;
-  NEXT_CMD(cmdline, cmd);
-
-  List *list = token_val(&cmd->args, VAR_LIST);
-  UT_array *arr = list->items;
-
   Token *word = NULL;
-  while ((word = (Token*)utarray_next(arr, word))) {
+  while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
     if (MAX(0, MIN(ed, word->end) - MAX(st, word->start)) > 0)
       return word;
   }
@@ -341,7 +342,6 @@ static void pop(QUEUE *stack)
 {
   Token token = stack_pop(stack);
   Token parent = stack_head(stack);
-  log_msg("CMDLINE", "pop %d", token.var.v_type);
 
   if (parent.var.v_type == VAR_LIST) {
     utarray_push_back(parent.var.vval.v_list->items, &token);
@@ -365,20 +365,21 @@ static void pop(QUEUE *stack)
 
 static void push(Token token, QUEUE *stack)
 {
-  log_msg("CMDLINE", "push %d", token.var.v_type);
   stack_push(stack, token);
 }
 
 static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
 {
   Token *next = (Token*)utarray_next(cmdline->tokens, token);
-  if (next) {
-    String str = token_val(next, VAR_STRING);
-    if (str && str[0] == ':') {
-      push(pair_new(cmdline), stack);
-      return true;
-    }
+  if (!next)
+    return false;
+
+  String str = token_val(next, VAR_STRING);
+  if (str && str[0] == ':') {
+    push(pair_new(cmdline), stack);
+    return true;
   }
+
   return false;
 }
 
@@ -512,8 +513,10 @@ static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd)
   Token *word = (Token*)utarray_front(args->items);
   String arg = token_val(word, VAR_STRING);
 
-  if (!plugin_isloaded(arg))
+  if (!plugin_isloaded(arg)) {
     log_msg("ERROR", "plugin %s not valid", arg);
+    return;
+  }
 
   rhs = plugin_open(arg, NULL, args);
 
@@ -541,7 +544,8 @@ void cmdline_req_run(Cmdline *cmdline)
 
     cmd_run(cmd);
 
-    if (cmd->flag & PIPE)
+    log_msg("PIPE", "%d %d", cmd->flag, cmd->flag & (PIPE_LEFT|PIPE_RIGHT));
+    if (cmd->flag & PIPE_LEFT)
       exec_pipe(cmdline, cmd);
   }
 }
