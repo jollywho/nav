@@ -192,7 +192,7 @@ void img_new(Plugin *plugin, Buffer *buf, void *arg)
   shell_args(img->sh_clear, (String*)args, NULL);
 
   hook_init(plugin);
-  hook_add(plugin, plugin, pipe_attach_cb, "pipe_attach");
+  hook_add(plugin, plugin, pipe_attach_cb, "pipe_left");
   hook_add(plugin, plugin, try_refresh, "window_resize");
 }
 

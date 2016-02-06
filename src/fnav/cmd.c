@@ -49,8 +49,11 @@ void cmd_run(Cmdstr *cmdstr)
     return;
 
   Cmd_T *fun = cmd_find(list_arg(args, 0, VAR_STRING));
-  if (!fun)
+  if (!fun) {
+    cmdstr->ret_t = 0;
+    cmdstr->ret = NULL;
     return;
+  }
 
   cmdstr->ret_t = PLUGIN;
   cmdstr->ret = fun->cmd_func(args, fun->flags);

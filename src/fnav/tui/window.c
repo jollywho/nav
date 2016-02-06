@@ -27,7 +27,6 @@ struct Window {
 static void* win_new();
 static void* win_shut();
 static void* win_close();
-static void* win_pipe();
 static void* win_sort();
 static void* win_cd();
 static void* win_mark();
@@ -202,25 +201,6 @@ Plugin* window_get_plugin()
 int window_focus_attached()
 {
   return buf_attached(layout_buf(&win.layout));
-}
-
-static void* win_pipe(List *args, enum move_dir flags)
-{
-  log_msg("WINDOW", "win_pipe");
-  if (utarray_len(args->items) < 2)
-    return 0;
-
-  Buffer *buf = layout_buf(&win.layout);
-  int wnum;
-  if (str_num(list_arg(args, 1, VAR_STRING), &wnum))
-    return 0;
-  if (!buf)
-    return 0;
-
-  Plugin *rhs = plugin_from_id(wnum);
-  //TODO: replace pipe if already set
-  send_hook_msg("pipe_attach", buf_plugin(buf), rhs, NULL);
-  return 0;
 }
 
 static void* win_cd(List *args, int flags)

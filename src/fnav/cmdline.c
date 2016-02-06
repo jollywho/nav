@@ -500,43 +500,59 @@ static int exec_line(String line, Cmdstr *cmd)
   return 1;
 }
 
-static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd)
+static void do_pipe(Cmdstr *lhs, Cmdstr *rhs)
 {
-  Plugin *lhs, *rhs;
-  lhs = rhs = NULL;
+  log_msg("CMDLINE", "do_pipe");
+  if ((lhs)->flag == PIPE_LEFT)
+    send_hook_msg("pipe_left", lhs->ret, rhs->ret, NULL);
+  if ((lhs)->flag == PIPE_RIGHT)
+    send_hook_msg("pipe_right", rhs->ret, lhs->ret, NULL);
 
-  // search for rhs in next cmd.
-  Cmdstr *tmp = cmd;
-  NEXT_CMD(cmdline, tmp);
+  plugin_pipe(lhs->ret);
+}
 
-  List *args = token_val(&tmp->args, VAR_LIST);
-  Token *word = (Token*)utarray_front(args->items);
-  String arg = token_val(word, VAR_STRING);
+static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd, Cmdstr *prev)
+{
+  log_msg("CMDLINE", "exec_pipe");
+  List *args = token_val(&cmd->args, VAR_LIST);
+  String arg = list_arg(args, 0, VAR_STRING);
 
-  if (!plugin_isloaded(arg)) {
-    log_msg("ERROR", "plugin %s not valid", arg);
-    return;
+  if (!prev->ret) {
+    prev->ret = focus_plugin();
+    prev->ret_t = PLUGIN;
   }
 
-  rhs = plugin_open(arg, NULL, args);
+  if (prev->ret_t == PLUGIN && cmd->ret_t == PLUGIN)
+    return do_pipe(prev, cmd);
 
-  if (cmd->ret_t == PLUGIN)
-    lhs = cmd->ret;
-  if (!lhs)
-    lhs = focus_plugin();
+  cmd->ret = plugin_open(arg, NULL, args);
+  log_msg("CMDLINE", "%p %d %p %d",
+      prev->ret,
+      prev->ret_t,
+      cmd->ret,
+      cmd->ret_t);
 
-  if (lhs && rhs) {
-    send_hook_msg("pipe_attach", rhs, lhs, NULL);
-    plugin_pipe(lhs);
-    cmd = tmp;
+  if (cmd->ret) {
+    cmd->ret_t = PLUGIN;
+    return do_pipe(prev, cmd);
+  }
+
+  int wnum;
+  if (!str_num(arg, &wnum))
+    return;
+
+  cmd->ret = plugin_from_id(wnum);
+  if (cmd->ret) {
+    cmd->ret_t = PLUGIN;
+    return do_pipe(prev, cmd);
   }
 }
 
 void cmdline_req_run(Cmdline *cmdline)
 {
   log_msg("CMDLINE", "cmdline_req_run");
-  Cmdstr *cmd;
-  cmd = NULL;
+  Cmdstr *cmd = NULL;
+  Cmdstr *prev = NULL;
 
   while (NEXT_CMD(cmdline, cmd)) {
     if (exec_line(cmdline->line, cmd))
@@ -544,8 +560,9 @@ void cmdline_req_run(Cmdline *cmdline)
 
     cmd_run(cmd);
 
-    log_msg("PIPE", "%d %d", cmd->flag, cmd->flag & (PIPE_LEFT|PIPE_RIGHT));
-    if (cmd->flag & PIPE_LEFT)
-      exec_pipe(cmdline, cmd);
+    if (prev && (prev->flag & (PIPE_LEFT|PIPE_RIGHT)))
+      exec_pipe(cmdline, cmd, prev);
+
+    prev = cmd;
   }
 }

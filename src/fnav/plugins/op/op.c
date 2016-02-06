@@ -113,7 +113,7 @@ void op_new(Plugin *plugin, Buffer *buf, void *arg)
     tbl_mk_fld("op_procs", "uv_opts", typVOID);
   }
   hook_init(plugin);
-  hook_add(op_default->base, op_default->base, pipe_attach_cb, "pipe_attach");
+  hook_add(op_default->base, op_default->base, pipe_attach_cb, "pipe_right");
 }
 
 void op_delete(Plugin *cntlr)

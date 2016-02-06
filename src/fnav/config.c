@@ -232,10 +232,10 @@ static void* edit_color(List *args)
     return 0;
 
   int fg, bg;
-  int err = 0;
-  err += str_num(list_arg(args, 2, VAR_STRING), &fg);
-  err += str_num(list_arg(args, 3, VAR_STRING), &bg);
-  if (!err)
+  int ret = 0;
+  ret += str_num(list_arg(args, 2, VAR_STRING), &fg);
+  ret += str_num(list_arg(args, 3, VAR_STRING), &bg);
+  if (!ret)
     return 0;
 
   fn_color col = {
