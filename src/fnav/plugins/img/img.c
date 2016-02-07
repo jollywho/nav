@@ -156,7 +156,7 @@ static void try_refresh(Plugin *host, Plugin *none, void *data)
 static void pipe_attach_cb(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("IMG", "pipe_attach_cb");
-  hook_add(caller, host, cursor_change_cb, "cursor_change");
+  hook_add(caller, host, cursor_change_cb, "cursor_change", 0);
 }
 
 void img_new(Plugin *plugin, Buffer *buf, void *arg)
@@ -192,8 +192,8 @@ void img_new(Plugin *plugin, Buffer *buf, void *arg)
   shell_args(img->sh_clear, (String*)args, NULL);
 
   hook_init(plugin);
-  hook_add(plugin, NULL, pipe_attach_cb, "pipe_left");
-  hook_add(plugin, plugin, try_refresh, "window_resize");
+  hook_add(plugin, NULL, pipe_attach_cb, "pipe_left", 0);
+  hook_add(plugin, plugin, try_refresh, "window_resize", 0);
 }
 
 void img_delete(Plugin *plugin)

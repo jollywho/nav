@@ -61,7 +61,7 @@ void term_new(Plugin *plugin, Buffer *buf, void *arg)
   window_start_override(plugin);
 
   hook_init(plugin);
-  hook_add(plugin, plugin, plugin_resize, "window_resize");
+  hook_add(plugin, plugin, plugin_resize, "window_resize", 0);
 }
 
 static void term_close_poll(uv_handle_t *hndl)

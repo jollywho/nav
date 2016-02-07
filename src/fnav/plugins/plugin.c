@@ -34,15 +34,21 @@ static struct plugin_ent {
   {"term", NULL,    term_new, term_delete, 0},
 };
 
+static int max_callable;
 static int max_id;
 static LIST_HEAD(ci, _Cid) id_pool;
 static Cid *id_table;
 
 void plugin_init()
 {
+  max_callable = LENGTH(plugin_table);
   for (int i = 0; i < LENGTH(plugin_table); i++) {
     if (plugin_table[i].init_cb)
       plugin_table[i].init_cb();
+    if (plugin_table[i].type_bg) {
+      plugin_open(plugin_table[i].name, 0, 0);
+      max_callable--;
+    }
   }
 }
 
@@ -151,12 +157,6 @@ Plugin* focus_plugin()
   return buf->plugin;
 }
 
-void plugin_pipe(Plugin *plugin)
-{
-  Buffer *buf = window_get_focus();
-  buf_set_status(buf, 0, 0, 0, "op");
-}
-
 Plugin* plugin_from_id(int id)
 {
   Cid *cid;
@@ -168,9 +168,14 @@ Plugin* plugin_from_id(int id)
 
 void plugin_list(List *args)
 {
-  compl_new(LENGTH(plugin_table), COMPL_STATIC);
-  for (int i = 0; i < LENGTH(plugin_table); i++)
-    compl_set_index(i, 0, NULL, "%s", plugin_table[i].name);
+  compl_new(max_callable, COMPL_STATIC);
+  int k = 0;
+  for (int i = 0; i < LENGTH(plugin_table); i++) {
+    if (plugin_table[i].type_bg)
+      continue;
+    compl_set_index(k, 0, NULL, "%s", plugin_table[i].name);
+    k++;
+  }
 }
 
 void win_list(List *args)

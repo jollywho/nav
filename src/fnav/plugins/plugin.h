@@ -54,7 +54,6 @@ void plugin_close(Plugin *plugin);
 
 Plugin* focus_plugin();
 Plugin* plugin_from_id(int id);
-void plugin_pipe(Plugin *plugin);
 
 void plugin_list(List *args);
 void win_list(List *args);

@@ -89,12 +89,6 @@ static void fileopen_cb(Plugin *host, Plugin *caller, void *data)
   system("mpv_i");
 }
 
-static void pipe_attach_cb(Plugin *host, Plugin *caller, void *data)
-{
-  log_msg("OP", "pipe_attach_cb");
-  hook_add(caller, host, fileopen_cb, "fileopen");
-}
-
 void op_new(Plugin *plugin, Buffer *buf, void *arg)
 {
   log_msg("OP", "INIT");
@@ -113,7 +107,7 @@ void op_new(Plugin *plugin, Buffer *buf, void *arg)
     tbl_mk_fld("op_procs", "uv_opts", typVOID);
   }
   hook_init(plugin);
-  hook_add(op_default->base, op_default->base, pipe_attach_cb, "pipe_right");
+  hook_add(plugin, plugin, fileopen_cb, "fileopen", 1);
 }
 
 void op_delete(Plugin *cntlr)

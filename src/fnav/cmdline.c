@@ -304,11 +304,17 @@ static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)
 
 Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
 {
-  if (!cmdline->tokens)
+  if (!cmdline->cmds)
     return NULL;
 
+  Cmdstr *cmd = NULL;
+  NEXT_CMD(cmdline, cmd);
+
+  List *list = token_val(&cmd->args, VAR_LIST);
+  UT_array *arr = list->items;
+
   Token *word = NULL;
-  while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
+  while ((word = (Token*)utarray_next(arr, word))) {
     if (MAX(0, MIN(ed, word->end) - MAX(st, word->start)) > 0)
       return word;
   }
@@ -507,8 +513,6 @@ static void do_pipe(Cmdstr *lhs, Cmdstr *rhs)
     send_hook_msg("pipe_left", lhs->ret, rhs->ret, NULL);
   if ((lhs)->flag == PIPE_RIGHT)
     send_hook_msg("pipe_right", rhs->ret, lhs->ret, NULL);
-
-  plugin_pipe(lhs->ret);
 }
 
 static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd, Cmdstr *prev)

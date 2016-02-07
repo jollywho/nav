@@ -284,6 +284,39 @@ void menu_rebuild(Menu *mnu)
   mnu->rebuild = true;
 }
 
+static String cycle_matches(Menu *mnu, int dir)
+{
+  fn_compl *cmpl = mnu->cx->cmpl;
+
+  String before = cmpl->matches[mnu->lnum]->key;
+  mnu->lnum += dir;
+
+  if (mnu->lnum < 0)
+    mnu->lnum = cmpl->matchcount - 1;
+  if (mnu->lnum > cmpl->matchcount - 1)
+    mnu->lnum = 0;
+  return before;
+}
+
+String menu_next(Menu *mnu, int dir)
+{
+  log_msg("MENU", "menu_curkey");
+  if (!mnu->cx || !mnu->cx->cmpl)
+    return NULL;
+
+  fn_compl *cmpl = mnu->cx->cmpl;
+  log_msg("MENU", "%d %d", mnu->lnum, cmpl->matchcount);
+  if (cmpl->matchcount < 1)
+    return NULL;
+
+  String before = cycle_matches(mnu, dir);
+
+  if (strcmp(ex_cmd_curstr(), before) == 0)
+    before = cycle_matches(mnu, dir);
+
+  return before;
+}
+
 void menu_update(Menu *mnu, Cmdline *cmd)
 {
   log_msg("MENU", "menu_update");
@@ -359,37 +392,4 @@ void menu_draw(Menu *mnu)
   DRAW_STR(mnu, nc_win, ROW_MAX, 1, key, col_line);
 
   wnoutrefresh(mnu->nc_win);
-}
-
-static String cycle_matches(Menu *mnu, int dir)
-{
-  fn_compl *cmpl = mnu->cx->cmpl;
-
-  String before = cmpl->matches[mnu->lnum]->key;
-  mnu->lnum += dir;
-
-  if (mnu->lnum < 0)
-    mnu->lnum = cmpl->matchcount - 1;
-  if (mnu->lnum > cmpl->matchcount - 1)
-    mnu->lnum = 0;
-  return before;
-}
-
-String menu_next(Menu *mnu, int dir)
-{
-  log_msg("MENU", "menu_curkey");
-  if (!mnu->cx || !mnu->cx->cmpl)
-    return NULL;
-
-  fn_compl *cmpl = mnu->cx->cmpl;
-  log_msg("MENU", "%d %d", mnu->lnum, cmpl->matchcount);
-  if (cmpl->matchcount < 1)
-    return NULL;
-
-  String before = cycle_matches(mnu, dir);
-
-  if (strcmp(ex_cmd_curstr(), before) == 0)
-    before = cycle_matches(mnu, dir);
-
-  return before;
 }
