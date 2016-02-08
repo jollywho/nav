@@ -287,10 +287,9 @@ Buffer* layout_buf(Layout *layout)
   return layout->focus->buf;
 }
 
-void layout_set_status(Layout *layout, String name, String usr,
-    String in, String out)
+void layout_set_status(Layout *layout, String name, String usr, String in)
 {
-  overlay_edit(layout->focus->ov, name, usr, in, out);
+  overlay_edit(layout->focus->ov, name, usr, in);
 }
 
 void layout_refresh(Layout *layout)

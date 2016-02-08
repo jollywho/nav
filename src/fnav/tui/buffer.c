@@ -167,12 +167,12 @@ void buf_set_plugin(Buffer *buf, Plugin *plugin)
   buf->hndl = plugin->hndl;
   buf->attached = true;
   overlay_bufno(buf->ov, plugin->id);
-  overlay_edit(buf->ov, plugin->fmt_name, 0, 0, 0);
+  overlay_edit(buf->ov, plugin->fmt_name, 0, 0);
 }
 
-void buf_set_status(Buffer *buf, String name, String usr, String in, String out)
+void buf_set_status(Buffer *buf, String name, String usr, String in)
 {
-  overlay_edit(buf->ov, name, usr, in, out);
+  overlay_edit(buf->ov, name, usr, in);
 }
 
 void buf_toggle_focus(Buffer *buf, int focus)
@@ -228,6 +228,7 @@ void buf_draw(void **argv)
   if (buf_expire(buf))
     return;
 
+  overlay_lnum(buf->ov, buf_index(buf), model_count(buf->hndl->model));
   buf->dirty = false;
   buf->queued = false;
   buf->ldif = 0;

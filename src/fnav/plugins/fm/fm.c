@@ -71,7 +71,7 @@ static int fm_opendir(Plugin *plugin, String path, short arg)
 
   h->key = cur_dir;
   model_open(h);
-  buf_set_status(h->buf, 0, h->key, 0, 0);
+  buf_set_status(h->buf, 0, h->key, 0);
   fs_close(self->fs);
   fs_open(self->fs, cur_dir);
   self->cur_dir = cur_dir;
@@ -270,7 +270,7 @@ void fm_new(Plugin *plugin, Buffer *buf, void *arg)
   model_init(plugin->hndl);
   model_open(plugin->hndl);
   buf_set_plugin(buf, plugin);
-  buf_set_status(buf, 0, fm->cur_dir, 0, 0);
+  buf_set_status(buf, 0, fm->cur_dir, 0);
   hook_init(plugin);
   hook_add(plugin, plugin, fm_paste,      "paste", 0);
   hook_add(plugin, plugin, fm_remove,     "remove", 0);

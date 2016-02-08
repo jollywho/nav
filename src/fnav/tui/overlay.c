@@ -8,6 +8,7 @@
 #define SZ_BUFBOX  3
 #define SZ_NAMEBOX 8
 #define SZ_ARGSBOX 8
+#define SZ_LNUMBOX 10
 #define ST_USRARG() (SZ_NAMEBOX)
 #define ST_ARGBOX(ov) ((ov) - ((SZ_ARGSBOX)-1))
 #define NAME_FMT " %-"STR(SZ_NAMEBOX)"s"
@@ -26,7 +27,7 @@ struct Overlay {
   String pipe_in;
   char bufno[SZ_BUFBOX];
   char name[SZ_NAMEBOX];
-  char pipe_out[SZ_ARGSBOX];
+  char lineno[SZ_LNUMBOX];
 
   int color_namebox;
   int color_argsbox;
@@ -51,8 +52,8 @@ Overlay* overlay_new()
   ov->usr_arg = strdup("         ");
   overlay_bufno(ov, 0);
 
-  memset(ov->name,     ' ', SZ_NAMEBOX);
-  memset(ov->pipe_out, ' ', SZ_ARGSBOX);
+  memset(ov->name,   ' ', SZ_NAMEBOX);
+  memset(ov->lineno, ' ', SZ_LNUMBOX);
   return ov;
 }
 
@@ -150,14 +151,20 @@ void overlay_bufno(Overlay *ov, int id)
   snprintf(ov->bufno, SZ_BUFBOX, "%02d", id);
 }
 
-void overlay_edit(Overlay *ov, String name, String usr, String in, String out)
+void overlay_lnum(Overlay *ov, int lnum, int max)
+{
+  snprintf(ov->lineno, SZ_LNUMBOX, " %*d:%-*d ", 3, lnum+1, 3, max);
+  int pos = ST_ARGBOX(ov->ov_size.col) - 2;
+  DRAW_STR(ov, nc_st, 0, pos, ov->lineno, color_namebox);
+  wnoutrefresh(ov->nc_st);
+}
+
+void overlay_edit(Overlay *ov, String name, String usr, String in)
 {
   set_string(&ov->usr_arg, usr);
   set_string(&ov->pipe_in, in);
   if (name)
     snprintf(ov->name, SZ_NAMEBOX, NAME_FMT, name);
-  if (out)
-    snprintf(ov->pipe_out, SZ_ARGSBOX, "   |>%-2s", out);
   overlay_refresh(ov);
 }
 
@@ -189,7 +196,8 @@ void overlay_draw(void **argv)
   }
 
   DRAW_STR(ov, nc_st, 0, ST_USRARG(), ov->usr_arg, color_text);
-  DRAW_STR(ov, nc_st, 0, ST_ARGBOX(ov->ov_size.col), ov->pipe_out, color_argsbox);
+  int pos = ST_ARGBOX(ov->ov_size.col) - 2;
+  DRAW_STR(ov, nc_st, 0, pos, ov->lineno, color_namebox);
 
   wnoutrefresh(ov->nc_st);
   if (ov->separator)

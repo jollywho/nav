@@ -23,9 +23,7 @@ struct HookHandler {
 };
 
 static UT_icd hook_icd = { sizeof(Hook),NULL,NULL,NULL };
-
 static HookList *global_hooks;
-// hook_add(NULL,NULL,msg)
 
 void hook_init(Plugin *host)
 {

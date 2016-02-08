@@ -118,7 +118,7 @@ static int create_msg(Plugin *host, Plugin *caller, void *data)
 
   img->path = path;
   h->key = name;
-  buf_set_status(h->buf, 0, h->key, 0, 0);
+  buf_set_status(h->buf, 0, h->key, 0);
   h->buf->attached = false; // override
 
   free(img->sz_msg);

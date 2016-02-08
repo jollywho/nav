@@ -126,7 +126,8 @@ Plugin* plugin_open(String name, Buffer *buf, List *args)
   Plugin *plugin = plugin_in_bkgrnd(&plugin_table[i]);
   if (!plugin) {
     plugin = calloc(1, sizeof(Plugin));
-    set_cid(plugin);
+    if (buf)
+      set_cid(plugin);
     plugin_table[i].open_cb(plugin, buf, list_arg(args, 2, VAR_STRING));
   }
   return plugin;
