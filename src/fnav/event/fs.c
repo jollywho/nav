@@ -235,7 +235,6 @@ void fs_open(fn_fs *fs, String dir)
   fs->path = strdup(dir);
   fentry *ent = fs_mux(fs);
 
-  //TODO: if timer is running, reopen immediately
   if (!ent->running) {
     ent->running = true;
     ent->fastreq = false;

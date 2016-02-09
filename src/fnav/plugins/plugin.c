@@ -109,6 +109,14 @@ static void unset_cid(Plugin *plugin)
   LIST_INSERT_HEAD(&id_pool, rem, ent);
 }
 
+int plugin_requires_buf(String name)
+{
+  int ret = find_plugin(name);
+  if (ret == -1)
+    return 0;
+  return !plugin_table[ret].type_bg;
+}
+
 static Plugin* plugin_in_bkgrnd(plugin_ent *ent)
 {
   if (!ent->type_bg)

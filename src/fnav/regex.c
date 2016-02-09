@@ -14,6 +14,8 @@
   l = (int*)utarray_prev(match, l); \
   l = l ? l : (int*)utarray_prev(match, l);
 
+//TODO: LineMatch store only pos and lines.
+//      LineMatch: ptr->singleton with pcre
 struct LineMatch {
   UT_array *lines;
   fn_handle *hndl;

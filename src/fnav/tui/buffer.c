@@ -228,7 +228,6 @@ void buf_draw(void **argv)
   if (buf_expire(buf))
     return;
 
-  overlay_lnum(buf->ov, buf_index(buf), model_count(buf->hndl->model));
   buf->dirty = false;
   buf->queued = false;
   buf->ldif = 0;
@@ -239,6 +238,7 @@ void buf_draw(void **argv)
     send_hook_msg("window_resize", buf->plugin, NULL, NULL);
     return;
   }
+  overlay_lnum(buf->ov, buf_index(buf), model_count(buf->hndl->model));
 
   Model *m = buf->hndl->model;
   draw_lines(buf, m);

@@ -272,12 +272,12 @@ void fm_new(Plugin *plugin, Buffer *buf, void *arg)
   buf_set_plugin(buf, plugin);
   buf_set_status(buf, 0, fm->cur_dir, 0);
   hook_init(plugin);
-  hook_add(plugin, plugin, fm_paste,      "paste", 0);
-  hook_add(plugin, plugin, fm_remove,     "remove", 0);
-  hook_add(plugin, plugin, fm_left,       "left", 0);
-  hook_add(plugin, plugin, fm_right,      "right", 0);
-  hook_add(plugin, plugin, fm_req_dir,    "open", 0);
-  hook_add(plugin, plugin, fm_pipe_left,  "pipe_left", 0);
+  hook_add(plugin, plugin, fm_paste,      "paste",      0);
+  hook_add(plugin, plugin, fm_remove,     "remove",     0);
+  hook_add(plugin, plugin, fm_left,       "left",       0);
+  hook_add(plugin, plugin, fm_right,      "right",      0);
+  hook_add(plugin, plugin, fm_req_dir,    "open",       0);
+  hook_add(plugin, plugin, fm_pipe_left,  "pipe_left",  0);
   hook_add(plugin, plugin, fm_pipe_right, "pipe_right", 0);
 
   fm->fs = fs_init(plugin->hndl);

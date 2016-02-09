@@ -92,6 +92,7 @@ static void fileopen_cb(Plugin *host, Plugin *caller, void *data)
 void op_new(Plugin *plugin, Buffer *buf, void *arg)
 {
   log_msg("OP", "INIT");
+  log_msg("OP", "%p", buf);
   op_default = malloc(sizeof(Op));
   op_default->base = plugin;
   plugin->top = op_default;

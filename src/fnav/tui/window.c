@@ -249,13 +249,13 @@ static void* win_sort(List *args, int flags)
 static void* win_new(List *args, enum move_dir flags)
 {
   log_msg("WINDOW", "win_new");
-  //TODO: check if plugin_in_bkgrnd before making buffer
-  window_add_buffer(flags);
 
   String name = list_arg(args, 1, VAR_STRING);
-  if (name)
-    return plugin_open(name, layout_buf(&win.layout), args);
-  return NULL;
+  if (!plugin_requires_buf(name))
+    return 0;
+
+  window_add_buffer(flags);
+  return plugin_open(name, layout_buf(&win.layout), args);
 }
 
 static void* win_close(List *args, int cmd_flags)

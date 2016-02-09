@@ -192,8 +192,8 @@ void img_new(Plugin *plugin, Buffer *buf, void *arg)
   shell_args(img->sh_clear, (String*)args, NULL);
 
   hook_init(plugin);
-  hook_add(plugin, NULL, pipe_attach_cb, "pipe_left", 0);
-  hook_add(plugin, plugin, try_refresh, "window_resize", 0);
+  hook_add(plugin, NULL,   pipe_attach_cb, "pipe_left",     0);
+  hook_add(plugin, plugin, try_refresh,    "window_resize", 0);
 }
 
 void img_delete(Plugin *plugin)

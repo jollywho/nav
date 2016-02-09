@@ -5,6 +5,7 @@
 #include "fnav/cmd.h"
 #include "fnav/tui/menu.h"
 #include "fnav/table.h"
+#include "fnav/info.h"
 
 typedef struct {
   String key;

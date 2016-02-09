@@ -244,6 +244,7 @@ static void* edit_color(List *args)
     .bg = bg,
   };
   set_color(&col);
+  //TODO: refresh cached colors
   return 0;
 }
 

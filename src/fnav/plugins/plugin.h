@@ -54,13 +54,9 @@ void plugin_close(Plugin *plugin);
 
 Plugin* focus_plugin();
 Plugin* plugin_from_id(int id);
+int plugin_requires_buf(String name);
 
 void plugin_list(List *args);
 void win_list(List *args);
-
-void fm_mark_dir(Plugin *plugin, String label);
-void mark_list(List *args);
-void marklbl_list(List *args);
-String* mark_info_save();
 
 #endif
