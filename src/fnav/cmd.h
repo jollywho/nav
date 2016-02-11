@@ -13,15 +13,19 @@
 #define PLUGIN    0x40
 
 typedef struct Cmd_T Cmd_T;
-typedef struct Cmd_Arg_T Cmd_Arg_T;
-typedef struct Cmd_Param_T Cmd_Param_T;
-typedef void* (*Cmd_Func_T)(List *args, int flags);
+typedef struct Cmdarg Cmdarg;
+typedef void* (*Cmd_Func_T)(List *, Cmdarg *);
 
 struct Cmd_T {
   String name;
   Cmd_Func_T cmd_func;
   int flags;
   UT_hash_handle hh;
+};
+
+struct Cmdarg {
+  int flags;
+  Cmdstr *cmdstr;
 };
 
 void cmd_add(Cmd_T *cmd);

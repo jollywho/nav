@@ -262,7 +262,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
         st = end;
       }
     }
-    else if (strpbrk(ch, "/:|<>,[]{} ")) {
+    else if (strpbrk(ch, "!/:|<>,[]{} ")) {
       cmdline_create_token(cmdline->tokens, str, st, ed, block);
       if (*ch == ' ')
         block++;
@@ -300,6 +300,18 @@ static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)
   }
   (*cmd).flag = PIPE;
   return word;
+}
+
+void check_if_exec(Cmdline *cmdline, Cmdstr *cmd, Token *word)
+{
+  if (!word)
+    word = (Token*)utarray_front(cmdline->tokens);
+  if (!word)
+    return;
+
+  char *str = token_val(word, VAR_STRING);
+  if (str[0] == '!')
+    cmd->exec = 1;
 }
 
 Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
@@ -403,15 +415,18 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
   stack_push(stack, cmd.args);
   Token head = stack_head(stack);
 
+  check_if_exec(cmdline, &cmd, word);
+
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
     char *str = token_val(word, VAR_STRING);
-    if (str[0] == '!')
-      cmd.exec = 1;
 
     switch(ch = str[0]) {
       case '|':
         word = pipe_type(cmdline, word, &cmd);
         goto breakout;
+      case '!':
+        cmd.rev = 1;
+        break;
       case '"':
         break;
       case ':':
@@ -498,11 +513,13 @@ static String do_expansion(String line)
 
 static int exec_line(String line, Cmdstr *cmd)
 {
-  if (!cmd->exec)
+  if (!cmd->exec || strlen(line) < 2)
     return 0;
-  String ret = do_expansion(line);
-  shell_exec(ret, NULL, NULL);
-  free(ret);
+  String str = strstr(line, "!");
+  ++str;
+  str = do_expansion(str);
+  shell_exec(str, NULL, NULL);
+  free(str);
   return 1;
 }
 

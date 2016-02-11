@@ -16,7 +16,7 @@
 struct Window {
   Layout layout;
   uv_timer_t draw_timer;
-  Cmdarg ca;
+  Keyarg ca;
   bool ex;
   bool dirty;
   int refs;
@@ -57,7 +57,6 @@ static String compl_cmds[] = {
   "vnew;plugin:string:plugins",
   "new;plugin:string:plugins",
   "sort;field:string:fields",
-  "sort!;field:string:fields",
   "cd;path:string:paths",
   "mark;label:string:marklbls",
 };
@@ -147,7 +146,7 @@ static void* win_shut()
   return 0;
 }
 
-static void win_layout(Window *_w, Cmdarg *arg)
+static void win_layout(Window *_w, Keyarg *arg)
 {
   enum move_dir dir = arg->arg;
   layout_movement(&win.layout, dir);
@@ -208,7 +207,7 @@ int window_focus_attached()
   return buf_attached(layout_buf(&win.layout));
 }
 
-static void* win_cd(List *args, int flags)
+static void* win_cd(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_cd");
 
@@ -219,7 +218,7 @@ static void* win_cd(List *args, int flags)
   return 0;
 }
 
-static void* win_mark(List *args, int flags)
+static void* win_mark(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_mark");
 
@@ -233,7 +232,7 @@ static void* win_mark(List *args, int flags)
   return 0;
 }
 
-static void* win_autocmd(List *args, int flags)
+static void* win_autocmd(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_autocmd");
   String event = list_arg(args, 1, VAR_STRING);
@@ -243,28 +242,30 @@ static void* win_autocmd(List *args, int flags)
   return 0;
 }
 
-static void* win_sort(List *args, int flags)
+static void* win_sort(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_sort");
 
   String fld = list_arg(args, 1, VAR_STRING);
-  buf_sort(layout_buf(&win.layout), fld, flags);
+  buf_sort(layout_buf(&win.layout), fld, ca->cmdstr->rev);
   return 0;
 }
 
-static void* win_new(List *args, enum move_dir flags)
+static void* win_new(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_new");
 
   String name = list_arg(args, 1, VAR_STRING);
+  if (!name)
+    window_add_buffer(ca->flags);
   if (!plugin_requires_buf(name))
     return 0;
 
-  window_add_buffer(flags);
+  window_add_buffer(ca->flags);
   return plugin_open(name, layout_buf(&win.layout), args);
 }
 
-static void* win_close(List *args, int cmd_flags)
+static void* win_close(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_close");
   Buffer *buf = layout_buf(&win.layout);
@@ -280,7 +281,7 @@ void window_close_focus()
   win_close(NULL, 0);
 }
 
-static void window_ex_cmd(Window *_w, Cmdarg *arg)
+static void window_ex_cmd(Window *_w, Keyarg *arg)
 {
   win.ex = true;
   start_ex_cmd(arg->arg);

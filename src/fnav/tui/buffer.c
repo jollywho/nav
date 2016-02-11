@@ -280,7 +280,7 @@ void buf_scroll(Buffer *buf, int y, int max)
   buf->lnum += diff;
 }
 
-static void buf_search(Buffer *buf, Cmdarg *ca)
+static void buf_search(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_search");
   if (ca->arg == FORWARD)
@@ -292,11 +292,11 @@ static void buf_search(Buffer *buf, Cmdarg *ca)
 void buf_move(Buffer *buf, int y, int x)
 {
   log_msg("BUFFER", "buf_move");
-  Cmdarg arg = {.arg = y};
+  Keyarg arg = {.arg = y};
   buf_mv(buf, &arg);
 }
 
-static void buf_mv(Buffer *buf, Cmdarg *ca)
+static void buf_mv(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_mv %d", ca->arg);
   /* move cursor N times in a dimension;
@@ -325,7 +325,7 @@ static void buf_mv(Buffer *buf, Cmdarg *ca)
   buf_refresh(buf);
 }
 
-int buf_input(Buffer *buf, Cmdarg *ca)
+int buf_input(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "input");
   if (!buf->attached)
@@ -343,7 +343,7 @@ int buf_input(Buffer *buf, Cmdarg *ca)
   return ret;
 }
 
-static void buf_oper(Buffer *buf, Cmdarg *ca)
+static void buf_oper(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_oper");
   clearop(ca);
@@ -355,7 +355,7 @@ static void buf_oper(Buffer *buf, Cmdarg *ca)
   ca->nkey = ca->key;
 }
 
-static void buf_mv_page(Buffer *buf, Cmdarg *ca)
+static void buf_mv_page(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_mv_page");
   int dir = ca->arg;
@@ -363,25 +363,25 @@ static void buf_mv_page(Buffer *buf, Cmdarg *ca)
   buf_move(buf, y, 0);
 }
 
-static void buf_g(Buffer *buf, Cmdarg *ca)
+static void buf_g(Buffer *buf, Keyarg *ca)
 {
   int dir = ca->arg;
   int y = model_count(buf->hndl->model) * dir;
   buf_move(buf, y, 0);
 }
 
-static void buf_yank(Buffer *buf, Cmdarg *ca)
+static void buf_yank(Buffer *buf, Keyarg *ca)
 {
   reg_set(buf->hndl, "0", "fullpath");
 }
 
-static void buf_mark(Buffer *buf, Cmdarg *ca)
+static void buf_mark(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_mark");
   mark_chr_str(ca->key, buf->hndl->key);
 }
 
-static void buf_gomark(Buffer *buf, Cmdarg *ca)
+static void buf_gomark(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_gomark");
   String path = mark_str(ca->key);
@@ -393,7 +393,7 @@ static void buf_gomark(Buffer *buf, Cmdarg *ca)
   free(path);
 }
 
-static void buf_gen_event(Buffer *buf, Cmdarg *ca)
+static void buf_gen_event(Buffer *buf, Keyarg *ca)
 {
   if (ca->arg > LENGTH(buf_events) || ca->arg < 0)
     return;

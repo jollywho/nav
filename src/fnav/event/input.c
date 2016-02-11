@@ -245,7 +245,7 @@ int find_command(fn_keytbl *kt, int cmdchar)
   return idx;
 }
 
-int find_do_cmd(fn_keytbl *kt, Cmdarg *ca, void *obj)
+int find_do_cmd(fn_keytbl *kt, Keyarg *ca, void *obj)
 {
   if (ca->key == ESC) {
     clearop(ca);
@@ -263,14 +263,14 @@ int find_do_cmd(fn_keytbl *kt, Cmdarg *ca, void *obj)
   return 0;
 }
 
-static int do_op(fn_oper *kt, Cmdarg *ca, void *obj)
+static int do_op(fn_oper *kt, Keyarg *ca, void *obj)
 {
   kt[ca->oap.key].cmd_func(obj, ca);
   clearop(ca);
   return 1;
 }
 
-int find_do_op(fn_oper *kt, Cmdarg *ca, void *obj)
+int find_do_op(fn_oper *kt, Keyarg *ca, void *obj)
 {
   if (!op_pending(ca)) return 0;
   log_msg("BUFFER", "do_op");
@@ -295,7 +295,7 @@ int find_do_op(fn_oper *kt, Cmdarg *ca, void *obj)
   return 0;
 }
 
-void clearop(Cmdarg *ca)
+void clearop(Keyarg *ca)
 {
   log_msg("BUFFER", "clear_oparg");
   memset(&ca->oap, 0, sizeof(Oparg));
@@ -303,7 +303,7 @@ void clearop(Cmdarg *ca)
   ca->mkey = OP_NOP;
 }
 
-bool op_pending(Cmdarg *arg)
+bool op_pending(Keyarg *arg)
 {
   return (arg->oap.key != OP_NOP);
 }

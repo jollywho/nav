@@ -185,7 +185,7 @@ static void ex_esc()
   mflag = EX_QUIT;
 }
 
-static void ex_tab(void *none, Cmdarg *arg)
+static void ex_tab(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "TAB");
   String key = menu_next(menu, arg->arg);
@@ -214,7 +214,7 @@ static void ex_tab(void *none, Cmdarg *arg)
   mflag = EX_CYCLE;
 }
 
-static void ex_hist(void *none, Cmdarg *arg)
+static void ex_hist(void *none, Keyarg *arg)
 {
   String ret = NULL;
 
@@ -353,7 +353,7 @@ static void ex_onkey()
 void ex_input(int key)
 {
   log_msg("EXCMD", "input");
-  Cmdarg ca;
+  Keyarg ca;
   int idx = find_command(&key_tbl, key);
   ca.arg = key_defaults[idx].cmd_arg;
   if (idx >= 0)

@@ -181,8 +181,6 @@ void shell_exec(String line, shell_status_cb cb, Plugin *caller)
 {
   log_msg("SHELL", "shell_exec");
   log_msg("SHELL", "%s", line);
-  if (strlen(line) < 2)
-    return;
 
   Shell shnew;
   utarray_push_back(proctbl, &shnew);
@@ -209,7 +207,7 @@ void shell_exec(String line, shell_status_cb cb, Plugin *caller)
   if (cb)
     proc->fast_output = process_early_exit;
 
-  String rv = strdup(&line[1]);
+  String rv = strdup(line);
   args[0] = p_sh;
   args[1] = "-c";
   args[2] = rv;

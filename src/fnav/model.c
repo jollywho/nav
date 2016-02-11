@@ -33,7 +33,7 @@ struct Model {
   UT_array *lines;
 };
 
-#define REV_FN(cond,fn,a,b) ((cond) > 0 ? (fn((a),(b))) : (fn((b),(a))))
+#define REV_FN(cond,fn,a,b) ((cond) ? (fn((b),(a))) : (fn((a),(b))))
 
 static fn_reg *registers;
 static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
@@ -166,8 +166,7 @@ void model_sort(Model *m, String fld, int flags)
     free(m->sort_type);
     m->sort_type = strdup(fld);
   }
-  if (flags != 0)
-    m->sort_rev = flags;
+  m->sort_rev = flags;
 
   if (strcmp(m->sort_type, "mtime") == 0)
     utarray_sort(m->lines, date_cmp, &m->sort_rev);

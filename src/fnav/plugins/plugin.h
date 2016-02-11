@@ -13,7 +13,7 @@ typedef struct Model Model;
 typedef struct HookHandler HookHandler;
 typedef struct Overlay Overlay;
 typedef struct fn_reg fn_reg;
-typedef struct Cmdarg Cmdarg;
+typedef struct Keyarg Keyarg;
 
 typedef void (*plugin_init_cb)(void);
 typedef void (*plugin_open_cb)(Plugin *base, Buffer *b, void *arg);

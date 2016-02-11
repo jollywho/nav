@@ -26,7 +26,7 @@ typedef struct {
   bool is_VIsual;               // operator on Visual area
 } Oparg;
 
-struct Cmdarg {
+struct Keyarg {
   Oparg oap;                    /* Operator arguments */
   pos_T start;                  /* start of the operator */
   pos_T end;                    /* end of the operator */
@@ -38,7 +38,7 @@ struct Cmdarg {
   short arg;
 };
 
-typedef void (*key_func)(void *obj, Cmdarg *arg);
+typedef void (*key_func)(void *obj, Keyarg *arg);
 
 typedef struct {
   int cmd_char;                 /* (first) command character */
@@ -64,10 +64,10 @@ void input_init(void);
 void input_cleanup(void);
 void input_setup_tbl(fn_keytbl *kt);
 int find_command(fn_keytbl *kt, int cmdchar);
-int find_do_cmd(fn_keytbl *kt, Cmdarg *ca, void *obj);
-int find_do_op(fn_oper *kt, Cmdarg *ca, void *obj);
+int find_do_cmd(fn_keytbl *kt, Keyarg *ca, void *obj);
+int find_do_op(fn_oper *kt, Keyarg *ca, void *obj);
 void input_check();
-void clearop(Cmdarg *ca);
-bool op_pending(Cmdarg *arg);
+void clearop(Keyarg *ca);
+bool op_pending(Keyarg *arg);
 
 #endif

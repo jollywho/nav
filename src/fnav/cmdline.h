@@ -45,6 +45,7 @@ struct Dict {
 
 struct Cmdstr {
   int flag;               /* pipe flag types */
+  char rev;               /* reverse flag TODO :merge with pipe flags */
   QUEUE stack;
   Token args;
   int ret_t;
