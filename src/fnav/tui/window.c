@@ -338,6 +338,11 @@ void window_remove_buffer()
     buf_delete(buf);
 
   layout_remove_buffer(&win.layout);
+
+  if (layout_is_root(&win.layout)) {
+    clear();
+    refresh();
+  }
 }
 
 void window_add_buffer(enum move_dir dir)

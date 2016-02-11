@@ -24,4 +24,6 @@ void layout_shift(Layout *layout, int lines);
 
 pos_T layout_size();
 
+int layout_is_root(Layout *layout);
+
 #endif

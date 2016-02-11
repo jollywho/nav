@@ -126,6 +126,10 @@ static void update_sub_items(Container *c)
 static void swap_focus(Layout *layout, Container *c)
 {
   log_msg("LAYOUT", "swap_focus");
+  if (!c) {
+    layout->focus = layout->root;
+    return;
+  }
   if (layout->focus) {
     buf_toggle_focus(layout->focus->buf, 0);
     overlay_unfocus(layout->focus->ov);
@@ -199,7 +203,6 @@ void layout_remove_buffer(Layout *layout)
   hc->count--;
 
   if (hc->count == 1 && !hc->root) {
-    log_msg("LAYOUT", "swap");
     hc->buf = next->buf;
     hc->ov = next->ov;
     hc->count = next->count;
@@ -290,6 +293,11 @@ Buffer* layout_buf(Layout *layout)
 void layout_set_status(Layout *layout, String name, String usr, String in)
 {
   overlay_edit(layout->focus->ov, name, usr, in);
+}
+
+int layout_is_root(Layout *layout)
+{
+  return layout->focus == layout->root;
 }
 
 void layout_refresh(Layout *layout)
