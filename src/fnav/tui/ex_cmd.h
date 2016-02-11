@@ -17,6 +17,7 @@
 #define EX_QUIT   32
 #define EX_CYCLE  64
 #define EX_HIST   128
+#define EX_EXEC   256
 #define EX_POP    (EX_LEFT|EX_EMPTY)
 #define EX_PUSH   (EX_RIGHT|EX_NEW)
 #define EX_CLEAR  (EX_LEFT|EX_RIGHT|EX_EMPTY|EX_CYCLE|EX_HIST)
@@ -36,6 +37,7 @@ void cmdline_refresh();
 
 char ex_cmd_curch();
 int ex_cmd_curpos();
+Cmdstr* ex_cmd_curcmd();
 Token* ex_cmd_curtok();
 String ex_cmd_curstr();
 String ex_cmd_prevstr();

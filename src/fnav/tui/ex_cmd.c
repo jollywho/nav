@@ -305,6 +305,15 @@ static void ex_killline()
 
 static void ex_check_pipe()
 {
+  if (ex_cmd_curcmd()->exec) {
+    mflag = EX_EXEC;
+    return;
+  }
+  if (mflag & EX_EXEC) {
+    ex_cmd_pop(-1);
+    menu_restart(menu);
+    mflag = 0;
+  }
   char pch = ex_cmd_prevstr()[0];
   char ch = ex_cmd_curstr()[0];
   log_msg("::::::::", "prev: %c cur: %c", pch, ch);
@@ -479,6 +488,14 @@ List* ex_cmd_curlist()
     cmdstr = (Cmdstr*)utarray_front(cmd.cmds);
   List *list = token_val(&cmdstr->args, VAR_LIST);
   return list;
+}
+
+Cmdstr* ex_cmd_curcmd()
+{
+  if (!cmd.cmds)
+    return NULL;
+  Cmdstr *cmdstr = (Cmdstr*)utarray_next(cmd.cmds, ex_cmd_curtok());
+  return cmdstr;
 }
 
 int ex_cmd_curidx(List *list)

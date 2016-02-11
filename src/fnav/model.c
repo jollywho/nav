@@ -172,6 +172,7 @@ void model_sort(Model *m, String fld, int flags)
     utarray_sort(m->lines, date_cmp, &m->sort_rev);
   else
     utarray_sort(m->lines, str_cmp, &m->sort_rev);
+
   refind_line(m);
   refit(m, m->lis, m->hndl->buf);
   buf_full_invalidate(m->hndl->buf, m->lis->index, m->lis->lnum);

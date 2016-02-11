@@ -324,7 +324,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 
   if (mnu->rebuild)
     return rebuild_contexts(mnu, cmd);
-  if (ex_cmd_state() & (EX_CYCLE|EX_QUIT))
+  if (ex_cmd_state() & (EX_CYCLE|EX_QUIT|EX_EXEC))
     return;
 
   mnu->lnum = 0;
@@ -369,7 +369,7 @@ void menu_draw(Menu *mnu)
   mvwhline(mnu->nc_win, ROW_MAX, 0, ' ', mnu->size.col);
   wattroff(mnu->nc_win, COLOR_PAIR(mnu->col_line));
 
-  if (!mnu->cx || !mnu->cx->cmpl) {
+  if (!mnu->cx || !mnu->cx->cmpl || ex_cmd_state() & EX_EXEC) {
     wnoutrefresh(mnu->nc_win);
     return;
   }
