@@ -6,6 +6,7 @@
 #include "fnav/tui/menu.h"
 #include "fnav/table.h"
 #include "fnav/info.h"
+#include "fnav/event/hook.h"
 
 typedef struct {
   String key;
@@ -21,6 +22,7 @@ static compl_entry compl_defaults[] = {
   { "paths",     path_list     },
   { "marks",     mark_list     },
   { "marklbls",  marklbl_list  },
+  { "events",    event_list    },
 };
 
 static compl_entry *compl_table;

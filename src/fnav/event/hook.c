@@ -5,6 +5,10 @@
 #include "fnav/log.h"
 #include "fnav/event/hook.h"
 #include "fnav/cmdline.h"
+#include "fnav/compl.h"
+
+// Array of supported events
+// "au left cd 1:%fullpath"
 
 #define HK_INTL 1
 #define HK_CMD  2
@@ -31,7 +35,7 @@ struct HookHandler {
   UT_array *own;     /* Hook */
 };
 
-static const String event_list[] = {
+static const String events_list[] = {
   "open", "fileopen", "cursor_change", "window_resize", "diropen",
   "pipe_left", "pipe_right", "left", "right", "paste", "remove",
 };
@@ -41,9 +45,9 @@ static EventHandler *events_tbl;
 
 void hook_init()
 {
-  for (int i = 0; i < LENGTH(event_list); i++) {
+  for (int i = 0; i < LENGTH(events_list); i++) {
     EventHandler *evh = malloc(sizeof(EventHandler));
-    evh->msg = strdup(event_list[i]);
+    evh->msg = strdup(events_list[i]);
     utarray_new(evh->hooks, &hook_icd);
     HASH_ADD_STR(events_tbl, msg, evh);
   }
@@ -72,6 +76,15 @@ void hook_cleanup_host(Plugin *host)
 
 void hook_add(String msg, String cmd)
 {
+  log_msg("HOOK", "ADD");
+  log_msg("HOOK", "%s %s", msg, cmd);
+  EventHandler *evh;
+  HASH_FIND_STR(events_tbl, msg, evh);
+  if (!evh)
+    return;
+  log_msg("HOOK", "added");
+  Hook hook = { HK_CMD, NULL, NULL, .data.cmd = strdup(cmd) };
+  utarray_push_back(evh->hooks, &hook);
 }
 
 void hook_remove(String msg, String cmd)
@@ -80,7 +93,7 @@ void hook_remove(String msg, String cmd)
 
 void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, String msg)
 {
-  log_msg("HOOK", "ADD");
+  log_msg("HOOK", "ADD_INTL");
   EventHandler *evh;
   HASH_FIND_STR(events_tbl, msg, evh);
   if (!evh)
@@ -122,6 +135,7 @@ void call_intl_hook(Hook *hook, Plugin *host, Plugin *caller, void *data)
 
 void call_cmd_hook(Hook *hook)
 {
+  log_msg("HOOK", "call_cmd_hook");
   Cmdline cmd;
   cmdline_init_config(&cmd, hook->data.cmd);
   cmdline_build(&cmd);
@@ -136,13 +150,15 @@ void call_hooks(EventHandler *evh, Plugin *host, Plugin *caller, void *data)
 
   Hook *it = NULL;
   while ((it = (Hook*)utarray_next(evh->hooks, it))) {
+
+    if (it->type == HK_CMD) {
+      call_cmd_hook(it);
+      continue;
+    }
     if (it->host != host)
       continue;
 
-    if (it->type == HK_INTL)
-      call_intl_hook(it, host, caller, data);
-    else
-      call_cmd_hook(it);
+    call_intl_hook(it, host, caller, data);
   }
 }
 
@@ -153,4 +169,12 @@ void send_hook_msg(String msg, Plugin *host, Plugin *caller, void *data)
 
   if (!host)
     return;
+}
+
+void event_list(List *args)
+{
+  compl_new(LENGTH(events_list), COMPL_STATIC);
+  for (int i = 0; i < LENGTH(events_list); i++) {
+    compl_set_index(i, 0, NULL, "%s", events_list[i]);
+  }
 }

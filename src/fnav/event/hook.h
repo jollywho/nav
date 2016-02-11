@@ -18,4 +18,6 @@ void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, String msg);
 void hook_clear_msg(Plugin *host, String msg);
 void hook_clear_host(Plugin *host);
 
+void event_list(List *args);
+
 #endif

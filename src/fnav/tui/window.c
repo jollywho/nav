@@ -38,9 +38,9 @@ static void window_update(uv_timer_t *);
 static const Cmd_T cmdtable[] = {
   {"qa",      win_shut,    0},
   {"q",       win_close,   0},
+  {"close",   win_close,   0},
   {"au",      win_autocmd, 0},
   {"autocmd", win_autocmd, 0},
-  {"close",   win_close,   0},
   {"new",     win_new,     MOVE_UP},
   {"vnew",    win_new,     MOVE_LEFT},
   {"sort",    win_sort,    1},
@@ -52,6 +52,8 @@ static const Cmd_T cmdtable[] = {
 static String compl_cmds[] = {
   "q;window:string:wins",
   "close;window:string:wins",
+  "au;event:string:events",
+  "autocmd;event:string:events",
   "vnew;plugin:string:plugins",
   "new;plugin:string:plugins",
   "sort;field:string:fields",
@@ -234,6 +236,10 @@ static void* win_mark(List *args, int flags)
 static void* win_autocmd(List *args, int flags)
 {
   log_msg("WINDOW", "win_autocmd");
+  String event = list_arg(args, 1, VAR_STRING);
+  String msg = list_arg(args, 2, VAR_STRING);
+  if (event && msg)
+    hook_add(event, msg);
   return 0;
 }
 
