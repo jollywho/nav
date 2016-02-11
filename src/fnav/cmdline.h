@@ -73,6 +73,7 @@ void cmdline_req_run(Cmdline *cmdline);
 Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed);
 Token* cmdline_tokindex(Cmdline *cmdline, int idx);
 Token* cmdline_last(Cmdline *cmdline);
+String cmdline_line_from(Cmdline *cmdline, int idx);
 
 void* token_val(Token *token, char v_type);
 void* list_arg(List *lst, int argc, char v_type);

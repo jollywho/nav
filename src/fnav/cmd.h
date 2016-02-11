@@ -26,12 +26,13 @@ struct Cmd_T {
 struct Cmdarg {
   int flags;
   Cmdstr *cmdstr;
+  Cmdline *cmdline;
 };
 
 void cmd_add(Cmd_T *cmd);
 void cmd_remove(String name);
 void cmd_clearall();
-void cmd_run(Cmdstr *cmdstr);
+void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline);
 Cmd_T* cmd_find(String name);
 void cmd_list(List *args);
 

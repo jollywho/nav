@@ -356,6 +356,14 @@ Token* cmdline_last(Cmdline *cmdline)
   return word;
 }
 
+String cmdline_line_from(Cmdline *cmdline, int idx)
+{
+  Token *word = cmdline_tokindex(cmdline, idx);
+  if (!word)
+    return NULL;
+  return &cmdline->line[word->start];
+}
+
 static void pop(QUEUE *stack)
 {
   Token token = stack_pop(stack);
@@ -579,7 +587,7 @@ void cmdline_req_run(Cmdline *cmdline)
     if (exec_line(cmdline->line, cmd))
       continue;
 
-    cmd_run(cmd);
+    cmd_run(cmd, cmdline);
 
     if (prev && (prev->flag & (PIPE_LEFT|PIPE_RIGHT)))
       exec_pipe(cmdline, cmd, prev);

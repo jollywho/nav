@@ -77,7 +77,7 @@ void hook_cleanup_host(Plugin *host)
 void hook_add(String msg, String cmd)
 {
   log_msg("HOOK", "ADD");
-  log_msg("HOOK", "%s %s", msg, cmd);
+  log_msg("HOOK", "<%s> `%s`", msg, cmd);
   EventHandler *evh;
   HASH_FIND_STR(events_tbl, msg, evh);
   if (!evh)

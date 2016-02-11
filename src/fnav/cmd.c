@@ -41,7 +41,7 @@ Cmd_T* cmd_find(String name)
   return cmd;
 }
 
-void cmd_run(Cmdstr *cmdstr)
+void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
 {
   log_msg("CMD", "cmd_run");
   List *args = token_val(&cmdstr->args, VAR_LIST);
@@ -56,7 +56,7 @@ void cmd_run(Cmdstr *cmdstr)
   }
 
   cmdstr->ret_t = PLUGIN;
-  Cmdarg flags = {fun->flags, cmdstr};
+  Cmdarg flags = {fun->flags, cmdstr, cmdline};
   cmdstr->ret = fun->cmd_func(args, &flags);
 }
 

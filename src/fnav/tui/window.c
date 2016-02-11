@@ -235,10 +235,12 @@ static void* win_mark(List *args, Cmdarg *ca)
 static void* win_autocmd(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_autocmd");
+
   String event = list_arg(args, 1, VAR_STRING);
-  String msg = list_arg(args, 2, VAR_STRING);
-  if (event && msg)
-    hook_add(event, msg);
+  String cur = cmdline_line_from(ca->cmdline, 2);
+  //TODO: handle rev flag
+  if (event && cur)
+    hook_add(event, cur);
   return 0;
 }
 
