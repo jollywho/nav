@@ -30,23 +30,23 @@ static void* win_close();
 static void* win_sort();
 static void* win_cd();
 static void* win_mark();
-static void* win_hook();
+static void* win_autocmd();
 static void win_layout();
 static void window_ex_cmd();
 static void window_update(uv_timer_t *);
 
 static const Cmd_T cmdtable[] = {
-  {"qa",     win_shut,    0},
-  {"q",      win_close,   0},
-  {"close",  win_close,   0},
-  {"new",    win_new,     MOVE_UP},
-  {"vnew",   win_new,     MOVE_LEFT},
-  {"sort",   win_sort,    1},
-  {"sort!",  win_sort,    -1},
-  {"cd",     win_cd,      0},
-  {"mark",   win_mark,    0},
-  {"delm",   win_mark,    1},
-  {"delhk",  win_hook,    1},
+  {"qa",      win_shut,    0},
+  {"q",       win_close,   0},
+  {"au",      win_autocmd, 0},
+  {"autocmd", win_autocmd, 0},
+  {"close",   win_close,   0},
+  {"new",     win_new,     MOVE_UP},
+  {"vnew",    win_new,     MOVE_LEFT},
+  {"sort",    win_sort,    1},
+  {"cd",      win_cd,      0},
+  {"mark",    win_mark,    0},
+  {"delm",    win_mark,    1},
 };
 
 static String compl_cmds[] = {
@@ -231,9 +231,9 @@ static void* win_mark(List *args, int flags)
   return 0;
 }
 
-static void* win_hook(List *args, int flags)
+static void* win_autocmd(List *args, int flags)
 {
-  log_msg("WINDOW", "win_hook");
+  log_msg("WINDOW", "win_autocmd");
   return 0;
 }
 

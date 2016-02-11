@@ -4,130 +4,153 @@
 #include "fnav/lib/utarray.h"
 #include "fnav/log.h"
 #include "fnav/event/hook.h"
+#include "fnav/cmdline.h"
+
+#define HK_INTL 1
+#define HK_CMD  2
 
 typedef struct {
-  hook_cb fn;
+  char type;
   Plugin *caller;
   Plugin *host;
+  union {
+    hook_cb fn;
+    String cmd;
+  } data;
 } Hook;
 
+//TODO: group name for namespace
 typedef struct {
   String msg;
   UT_hash_handle hh;
-  UT_array *hooks;
-} HookList;
+  UT_array *hooks;   /* Hook */
+} EventHandler;
 
 struct HookHandler {
-  HookList *hosted;
-  UT_array *own;
+  UT_array *hosting; /* Hook */
+  UT_array *own;     /* Hook */
+};
+
+static const String event_list[] = {
+  "open", "fileopen", "cursor_change", "window_resize", "diropen",
+  "pipe_left", "pipe_right", "left", "right", "paste", "remove",
 };
 
 static UT_icd hook_icd = { sizeof(Hook),NULL,NULL,NULL };
-static HookList *global_hooks;
+static EventHandler *events_tbl;
 
-void hook_init(Plugin *host)
+void hook_init()
+{
+  for (int i = 0; i < LENGTH(event_list); i++) {
+    EventHandler *evh = malloc(sizeof(EventHandler));
+    evh->msg = strdup(event_list[i]);
+    utarray_new(evh->hooks, &hook_icd);
+    HASH_ADD_STR(events_tbl, msg, evh);
+  }
+}
+
+void hook_cleanup()
+{
+  //TODO: hook_remove each entry in events_tbl
+}
+
+void hook_init_host(Plugin *host)
 {
   log_msg("HOOK", "INIT");
   host->event_hooks = calloc(1, sizeof(HookHandler));
+  utarray_new(host->event_hooks->hosting, &hook_icd);
   utarray_new(host->event_hooks->own, &hook_icd);
 }
 
-void hook_cleanup(Plugin *host)
+void hook_cleanup_host(Plugin *host)
 {
   log_msg("HOOK", "CLEANUP");
+  utarray_free(host->event_hooks->hosting);
   utarray_free(host->event_hooks->own);
   free(host->event_hooks);
 }
 
-void hook_add(Plugin *host, Plugin *caller, hook_cb fn, String msg, int gbl)
+void hook_add(String msg, String cmd)
+{
+}
+
+void hook_remove(String msg, String cmd)
+{
+}
+
+void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, String msg)
 {
   log_msg("HOOK", "ADD");
-  HookHandler *host_handle = host->event_hooks;
-  HookList **hl_cont = &host_handle->hosted;
-
-  Hook hook = { fn, caller, host };
-  if (gbl) {
-    hook.host = NULL;
-    hl_cont = &global_hooks;
-  }
-
-  HookList *find;
-  HASH_FIND_STR(*hl_cont, msg, find);
-  if (!find) {
-    find = calloc(1, sizeof(HookList));
-    find->msg = strdup(msg);
-    utarray_new(find->hooks, &hook_icd);
-    HASH_ADD_STR(*hl_cont, msg, find);
-  }
-  utarray_push_back(find->hooks, &hook);
-  utarray_push_back(host_handle->own, &hook);
-}
-
-void hook_remove(Plugin *host, Plugin *caller, String msg)
-{
-  log_msg("HOOK", "remove");
-  HookHandler *host_handle = host->event_hooks;
-  HookList *find;
-  HASH_FIND_STR(host_handle->hosted, msg, find);
-  if (!find)
+  EventHandler *evh;
+  HASH_FIND_STR(events_tbl, msg, evh);
+  if (!evh)
     return;
 
-  Hook *it = (Hook*)utarray_front(find->hooks);
-  for (int i = 0; i < utarray_len(find->hooks); i++) {
-    if (it->caller == caller) {
-      int idx = utarray_eltidx(find->hooks, it);
-      utarray_erase(find->hooks, idx, 1);
-      break;
-    }
-    it = (Hook*)utarray_next(find->hooks, it);
-  }
+  Hook hook = { HK_INTL, caller, host, .data.fn = fn };
+
+  utarray_push_back(evh->hooks, &hook);
+
+  HookHandler *hkh = host->event_hooks;
+  utarray_push_back(hkh->hosting, &hook);
+  utarray_push_back(hkh->own, &hook);
 }
 
-//TODO: find+remove hooks from their own list
-void hook_clear(Plugin *host)
+void hook_clear_host(Plugin *host)
 {
   log_msg("HOOK", "clear");
-  HookHandler *host_handle = host->event_hooks;
-  HookList *hosted = host_handle->hosted;
-  HookList *it, *tmp;
-  HASH_ITER(hh, hosted, it, tmp) {
-    utarray_clear(it->hooks);
-    utarray_free(it->hooks);
-    HASH_DEL(hosted, it);
-    free(it->msg);
-    free(it);
-  }
+  HookHandler *hkh = host->event_hooks;
+
+  //TODO: workaround to store actual pointers to hook in events_tbl
+  utarray_clear(hkh->own);
+  utarray_clear(hkh->hosting);
 }
 
-HookList* find_hl(HookList *hl, String msg)
+EventHandler* find_evh(String msg)
 {
-  HookList *find;
-  HASH_FIND_STR(hl, msg, find);
-  return find;
+  EventHandler *evh;
+  HASH_FIND_STR(events_tbl, msg, evh);
+  return evh;
 }
 
-void call_hooks(HookList *hl, Plugin *host, Plugin *caller, void *data)
+void call_intl_hook(Hook *hook, Plugin *host, Plugin *caller, void *data)
 {
-  if (!hl)
+  if (caller)
+    hook->data.fn(host, caller, data);
+  else
+    hook->data.fn(host, hook->caller, data);
+}
+
+void call_cmd_hook(Hook *hook)
+{
+  Cmdline cmd;
+  cmdline_init_config(&cmd, hook->data.cmd);
+  cmdline_build(&cmd);
+  cmdline_req_run(&cmd);
+  cmdline_cleanup(&cmd);
+}
+
+void call_hooks(EventHandler *evh, Plugin *host, Plugin *caller, void *data)
+{
+  if (!evh)
     return;
 
-  Hook *it = (Hook*)utarray_front(hl->hooks);
-  while (it) {
-    if (caller)
-      it->fn(host, caller, data);
+  Hook *it = NULL;
+  while ((it = (Hook*)utarray_next(evh->hooks, it))) {
+    if (it->host != host)
+      continue;
+
+    if (it->type == HK_INTL)
+      call_intl_hook(it, host, caller, data);
     else
-      it->fn(host, it->caller, data);
-    it = (Hook*)utarray_next(hl->hooks, it);
+      call_cmd_hook(it);
   }
 }
 
 void send_hook_msg(String msg, Plugin *host, Plugin *caller, void *data)
 {
   log_msg("HOOK", "(<%s>) msg sent", msg);
-  call_hooks(find_hl(global_hooks, msg), host, caller, data);
+  call_hooks(find_evh(msg), host, caller, data);
 
   if (!host)
     return;
-  HookHandler *host_handle = host->event_hooks;
-  call_hooks(find_hl(host_handle->hosted, msg), host, caller, data);
 }

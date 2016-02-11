@@ -107,8 +107,8 @@ void op_new(Plugin *plugin, Buffer *buf, void *arg)
     tbl_mk_fld("op_procs", "uv_proc", typVOID);
     tbl_mk_fld("op_procs", "uv_opts", typVOID);
   }
-  hook_init(plugin);
-  hook_add(plugin, plugin, fileopen_cb, "fileopen", 1);
+  hook_init_host(plugin);
+  hook_add_intl(plugin, plugin, fileopen_cb, "fileopen");
 }
 
 void op_delete(Plugin *cntlr)

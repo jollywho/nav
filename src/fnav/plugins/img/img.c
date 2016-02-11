@@ -156,7 +156,7 @@ static void try_refresh(Plugin *host, Plugin *none, void *data)
 static void pipe_attach_cb(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("IMG", "pipe_attach_cb");
-  hook_add(caller, host, cursor_change_cb, "cursor_change", 0);
+  hook_add_intl(caller, host, cursor_change_cb, "cursor_change");
 }
 
 void img_new(Plugin *plugin, Buffer *buf, void *arg)
@@ -191,9 +191,9 @@ void img_new(Plugin *plugin, Buffer *buf, void *arg)
   img->sh_clear = shell_new(plugin);
   shell_args(img->sh_clear, (String*)args, NULL);
 
-  hook_init(plugin);
-  hook_add(plugin, NULL,   pipe_attach_cb, "pipe_left",     0);
-  hook_add(plugin, plugin, try_refresh,    "window_resize", 0);
+  hook_init_host(plugin);
+  hook_add_intl(plugin, NULL,   pipe_attach_cb, "pipe_left");
+  hook_add_intl(plugin, plugin, try_refresh,    "window_resize");
 }
 
 void img_delete(Plugin *plugin)
@@ -205,8 +205,8 @@ void img_delete(Plugin *plugin)
   //shell_set_in_buffer(img->sh_clear, img->cl_msg);
   //shell_start(img->sh_clear);
   img->disabled = true;
-  hook_clear(img->base);
-  hook_cleanup(img->base);
+  hook_clear_host(img->base);
+  hook_cleanup_host(img->base);
   shell_delete(img->sh_draw);
   shell_delete(img->sh_size);
   shell_delete(img->sh_clear);

@@ -13,6 +13,7 @@
 #include "fnav/event/input.h"
 #include "fnav/table.h"
 #include "fnav/compl.h"
+#include "fnav/event/hook.h"
 #include "fnav/event/shell.h"
 #include "fnav/vt/vt.h"
 
@@ -43,6 +44,7 @@ void init(void)
   event_init();
   input_init();
   compl_init();
+  hook_init();
   window_init();
   shell_init();
   log_msg("INIT", "INIT_END");

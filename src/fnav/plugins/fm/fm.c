@@ -233,13 +233,13 @@ static void fm_pipe_left(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("FM_plugin", "fm_pipe_left");
   //TODO: check if host is fm
-  hook_add(caller, host, fm_cursor_change_cb, "cursor_change", 0);
+  hook_add_intl(caller, host, fm_cursor_change_cb, "cursor_change");
 }
 
 static void fm_pipe_right(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("FM_plugin", "fm_pipe_right");
-  hook_add(caller, host, fm_diropen_cb, "diropen", 0);
+  hook_add_intl(caller, host, fm_diropen_cb, "diropen");
 }
 
 static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, String val)
@@ -271,14 +271,14 @@ void fm_new(Plugin *plugin, Buffer *buf, void *arg)
   model_open(plugin->hndl);
   buf_set_plugin(buf, plugin);
   buf_set_status(buf, 0, fm->cur_dir, 0);
-  hook_init(plugin);
-  hook_add(plugin, plugin, fm_paste,      "paste",      0);
-  hook_add(plugin, plugin, fm_remove,     "remove",     0);
-  hook_add(plugin, plugin, fm_left,       "left",       0);
-  hook_add(plugin, plugin, fm_right,      "right",      0);
-  hook_add(plugin, plugin, fm_req_dir,    "open",       0);
-  hook_add(plugin, plugin, fm_pipe_left,  "pipe_left",  0);
-  hook_add(plugin, plugin, fm_pipe_right, "pipe_right", 0);
+  hook_init_host(plugin);
+  hook_add_intl(plugin, plugin, fm_paste,      "paste"     );
+  hook_add_intl(plugin, plugin, fm_remove,     "remove"    );
+  hook_add_intl(plugin, plugin, fm_left,       "left"      );
+  hook_add_intl(plugin, plugin, fm_right,      "right"     );
+  hook_add_intl(plugin, plugin, fm_req_dir,    "open"      );
+  hook_add_intl(plugin, plugin, fm_pipe_left,  "pipe_left" );
+  hook_add_intl(plugin, plugin, fm_pipe_right, "pipe_right");
 
   fm->fs = fs_init(plugin->hndl);
   fm->fs->stat_cb = fm_ch_dir;
@@ -293,8 +293,8 @@ void fm_delete(Plugin *plugin)
   fn_handle *h = fm->base->hndl;
   model_close(h);
   model_cleanup(h);
-  hook_clear(fm->base);
-  hook_cleanup(fm->base);
+  hook_clear_host(fm->base);
+  hook_cleanup_host(fm->base);
   fs_cleanup(fm->fs);
   free(fm->cur_dir);
   free(h);
