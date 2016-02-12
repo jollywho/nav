@@ -300,4 +300,8 @@ void reg_set(fn_handle *hndl, String reg_ch, String fld)
   reg->rec = hndl->model->cur;
   reg->key = strdup(reg_ch);
   HASH_ADD_STR(registers, key, reg);
+  String cpy = rec_fld(reg->rec, fld);
+  asprintf(&cpy, "echo -n %s | xclip", cpy);
+  system(cpy);
+  free(cpy);
 }
