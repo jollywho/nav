@@ -28,6 +28,8 @@ static void* win_new();
 static void* win_shut();
 static void* win_close();
 static void* win_sort();
+static void* win_buf();
+static void* win_bdel();
 static void* win_cd();
 static void* win_mark();
 static void* win_autocmd();
@@ -41,6 +43,10 @@ static const Cmd_T cmdtable[] = {
   {"close",   win_close,   0},
   {"au",      win_autocmd, 0},
   {"autocmd", win_autocmd, 0},
+  {"bu",      win_buf,     0},
+  {"buffer",  win_buf,     0},
+  {"bd"    ,  win_bdel,    0},
+  {"bdelete", win_bdel,    0},
   {"new",     win_new,     MOVE_UP},
   {"vnew",    win_new,     MOVE_LEFT},
   {"sort",    win_sort,    1},
@@ -256,14 +262,14 @@ static void* win_sort(List *args, Cmdarg *ca)
 static void* win_new(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_new");
-
   String name = list_arg(args, 1, VAR_STRING);
   if (!name)
     window_add_buffer(ca->flags);
   if (!plugin_requires_buf(name))
     return 0;
 
-  window_add_buffer(ca->flags);
+  if (!(ca->pflag & BUFFER))
+    window_add_buffer(ca->flags);
   return plugin_open(name, layout_buf(&win.layout), args);
 }
 
@@ -274,8 +280,28 @@ static void* win_close(List *args, Cmdarg *ca)
   if (buf)
     plugin_close(buf_plugin(buf));
 
-  window_remove_buffer();
+  if (!(ca->pflag & BUFFER))
+    window_remove_buffer();
   return NULL;
+}
+
+static void* win_buf(List *args, Cmdarg *ca)
+{
+  log_msg("WINDOW", "win_buf");
+  String name = list_arg(args, 1, VAR_STRING);
+  if (!name || layout_is_root(&win.layout))
+    return 0;
+
+  ca->pflag = BUFFER;
+  win_close(args, ca);
+  win_new(args, ca);
+  return 0;
+}
+
+static void* win_bdel(List *args, Cmdarg *ca)
+{
+  log_msg("WINDOW", "win_bdel");
+  return 0;
 }
 
 void window_close_focus()

@@ -56,7 +56,7 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
   }
 
   cmdstr->ret_t = PLUGIN;
-  Cmdarg flags = {fun->flags, cmdstr, cmdline};
+  Cmdarg flags = {fun->flags, 0, cmdstr, cmdline};
   cmdstr->ret = fun->cmd_func(args, &flags);
 }
 

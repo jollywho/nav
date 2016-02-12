@@ -25,6 +25,7 @@ struct Cmd_T {
 
 struct Cmdarg {
   int flags;
+  int pflag;
   Cmdstr *cmdstr;
   Cmdline *cmdline;
 };
