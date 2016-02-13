@@ -303,6 +303,7 @@ static void scan_cb(uv_fs_t *req)
       CREATE_EVENT(eventq(), commit, 2, "fm_files", r);
     }
   }
+  uv_fs_req_cleanup(&ent->uv_fs);
   fs_close_req(ent);
 }
 
@@ -311,6 +312,7 @@ static void stat_cb(uv_fs_t *req)
   log_msg("FS", "stat cb");
   fentry *ent = req->data;
   uv_stat_t stat = req->statbuf;
+  int nop = 0;
 
   ventry *vent = fnd_val("fm_files", "dir", ent->key);
 
@@ -328,14 +330,13 @@ static void stat_cb(uv_fs_t *req)
   struct stat *st = (struct stat*)rec_fld(vent->rec, "stat");
   if (stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
     log_msg("FS", "STAT:NOP");
-    return fs_close_req(ent);
+    nop = 1;
   }
 
 scandir:
-  if (S_ISDIR(stat.st_mode)) {
-    uv_fs_req_cleanup(&ent->uv_fs);
+  uv_fs_req_cleanup(&ent->uv_fs);
+  if (S_ISDIR(stat.st_mode) && !nop)
     uv_fs_scandir(eventloop(), &ent->uv_fs, ent->key, 0, scan_cb);
-  }
   else
     fs_close_req(ent);
 }
@@ -347,14 +348,13 @@ static void fs_reopen(fentry *ent)
   uv_fs_event_stop(&ent->watcher);
 
   ent->running = true;
-  ent->fastreq = false;
   uv_fs_stat(eventloop(), &ent->uv_fs, ent->key, stat_cb);
   uv_fs_event_start(&ent->watcher, watch_cb, ent->key, 1);
 }
 
 void fs_fastreq(fn_fs *fs)
 {
-  log_msg("FS", "fs_fastreq");
+  log_msg("FS", "fs_fastreq %d", fs->ent->running);
   fs->ent->fastreq = true;
   if (!fs->ent->running) {
     fs->ent->flush = true;
@@ -366,6 +366,7 @@ static void watch_timer_cb(uv_timer_t *handle)
 {
   log_msg("FS", "--watch_timer--");
   fentry *ent = handle->data;
+  ent->fastreq = false;
   if (!ent->running)
     fs_reopen(ent);
 }
@@ -375,6 +376,7 @@ static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int s)
   log_msg("FS", "--watch--");
   fentry *ent = hndl->data;
 
+  //TODO: convert to waiting if run too quickly
   uv_fs_event_stop(&ent->watcher);
   if (ent->fastreq)
     watch_timer_cb(&ent->watcher_timer);
@@ -386,5 +388,4 @@ static void fs_close_req(fentry *ent)
 {
   log_msg("FS", "reset %s", ent->key);
   CREATE_EVENT(eventq(), fs_signal_handle, 1, ent);
-  uv_fs_req_cleanup(&ent->uv_fs);
 }

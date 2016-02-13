@@ -46,14 +46,12 @@ void init(void)
   compl_init();
   hook_init();
   window_init();
-  shell_init();
   log_msg("INIT", "INIT_END");
 }
 
 void cleanup(void)
 {
   log_msg("CLEANUP", "CLEANUP_START");
-  shell_cleanup();
   window_cleanup();
   compl_cleanup();
   input_cleanup();

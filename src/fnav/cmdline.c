@@ -526,7 +526,7 @@ static int exec_line(String line, Cmdstr *cmd)
   String str = strstr(line, "!");
   ++str;
   str = do_expansion(str);
-  shell_exec(str, NULL, NULL);
+  shell_exec(str, NULL, focus_dir(), NULL);
   free(str);
   return 1;
 }

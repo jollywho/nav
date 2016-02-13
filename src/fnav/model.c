@@ -294,14 +294,16 @@ void reg_set(fn_handle *hndl, String reg_ch, String fld)
   if (find) {
     HASH_DEL(registers, find);
     free(find->key);
+    free(find->value);
     free(find);
   }
   fn_reg *reg = malloc(sizeof(fn_reg));
-  reg->rec = hndl->model->cur;
+  reg->value = strdup(rec_fld(hndl->model->cur, fld));
   reg->key = strdup(reg_ch);
   HASH_ADD_STR(registers, key, reg);
-  String cpy = rec_fld(reg->rec, fld);
-  asprintf(&cpy, "echo -n %s | xclip", cpy);
+
+  String cpy;
+  asprintf(&cpy, "echo -n %s | xclip", reg->value);
   system(cpy);
   free(cpy);
 }

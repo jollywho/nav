@@ -29,7 +29,7 @@ String model_str_expansion(String val);
 
 struct fn_reg {
   String key;
-  fn_rec *rec;
+  String value;
   UT_hash_handle hh;
 };
 

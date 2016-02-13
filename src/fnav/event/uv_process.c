@@ -16,7 +16,7 @@ bool uv_process_spawn(UvProcess *uvproc)
   uvproc->uvopts.args = proc->argv;
   uvproc->uvopts.flags = UV_PROCESS_DETACHED;
   uvproc->uvopts.exit_cb = exit_cb;
-  uvproc->uvopts.cwd = NULL;
+  uvproc->uvopts.cwd = proc->cwd;
   uvproc->uvopts.env = NULL;
   uvproc->uvopts.stdio = uvproc->uvstdio;
   uvproc->uvopts.stdio_count = 3;

@@ -166,6 +166,11 @@ Plugin* focus_plugin()
   return buf->plugin;
 }
 
+String focus_dir()
+{
+  return window_cur_dir();
+}
+
 Plugin* plugin_from_id(int id)
 {
   Cid *cid;

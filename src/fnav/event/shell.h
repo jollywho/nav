@@ -22,19 +22,16 @@ struct Shell {
   bool blocking;
   bool again;
   bool reg;
-  int tbl_idx;
   String msg;
 };
 
-void shell_init();
-void shell_cleanup();
 Shell* shell_new(Plugin *plugin);
 void shell_delete(Shell *sh);
 void shell_args(Shell *sh, String *args, shell_stdout_cb readout);
 void shell_start(Shell *sh);
 void shell_stop(Shell *sh);
 void shell_set_in_buffer(Shell *sh, String msg);
-void shell_exec(String line, shell_status_cb cb, Plugin *caller);
+void shell_exec(String line, shell_status_cb cb, String cwd, Plugin *caller);
 void shell_write(Shell *sh, String msg);
 
 #endif

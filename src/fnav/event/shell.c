@@ -1,5 +1,3 @@
-#include "fnav/lib/utarray.h"
-
 #include "fnav/event/shell.h"
 #include "fnav/event/wstream.h"
 #include "fnav/event/event.h"
@@ -10,19 +8,7 @@ static void out_data_cb(Stream *, RBuffer *, size_t, void *,  bool);
 static void shell_write_cb(Stream *, void *, int);
 static void shell_default_stdout_cb(Plugin *, String);
 
-static UT_array *proctbl;
 static char* args[4];
-static UT_icd sh_icd = { sizeof(Shell),   NULL };
-
-void shell_init()
-{
-  utarray_new(proctbl, &sh_icd);
-}
-
-void shell_cleanup()
-{
-  utarray_free(proctbl);
-}
 
 static void process_early_exit(Process *proc, int status, void *data)
 {
@@ -45,7 +31,7 @@ static void process_exit(Process *proc, int status, void *data)
     shell_start(sh);
   }
   if (sh->reg)
-    utarray_erase(proctbl, sh->tbl_idx, 1);
+    free(sh);
 }
 
 Shell* shell_new(Plugin *plugin)
@@ -177,15 +163,12 @@ static void shell_default_stdout_cb(Plugin *plugin, String out)
   log_msg("SHELL", "stdout: %s", out);
 }
 
-void shell_exec(String line, shell_status_cb cb, Plugin *caller)
+void shell_exec(String line, shell_status_cb cb, String cwd, Plugin *caller)
 {
   log_msg("SHELL", "shell_exec");
   log_msg("SHELL", "%s", line);
 
-  Shell shnew;
-  utarray_push_back(proctbl, &shnew);
-  Shell *sh = (Shell*)utarray_back(proctbl);
-  sh->tbl_idx = utarray_eltidx(proctbl, sh);
+  Shell *sh = malloc(sizeof(Shell));
   sh->msg = NULL;
   sh->readout = NULL;
   sh->blocking = false;
@@ -203,6 +186,7 @@ void shell_exec(String line, shell_status_cb cb, Plugin *caller)
   proc->out = &sh->out;
   proc->err = &sh->err;
   proc->cb = process_exit;
+  proc->cwd = cwd;
 
   if (cb)
     proc->fast_output = process_early_exit;

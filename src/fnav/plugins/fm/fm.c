@@ -170,19 +170,18 @@ static void fm_paste(Plugin *host, Plugin *caller, void *data)
   if (!reg)
     return;
 
-  //FIXME: handle deleted records
-  String src = rec_fld(reg->rec, "fullpath");
-  String name = rec_fld(reg->rec, "name");
-  log_msg("BUFFER", "{%s} |%s|", reg->key, src);
+  String name = basename(reg->value);
+  log_msg("BUFFER", "{%s} |%s|", reg->key, reg->value);
+
   String dest;
   asprintf(&dest, "%s/%s", self->cur_dir, name);
   dest = next_valid_path(dest);
 
   String cmdstr;
-  asprintf(&cmdstr, "!%s %s %s", p_cp, src, dest);
+  asprintf(&cmdstr, "%s %s %s", p_cp, reg->value, dest);
 
   log_msg("BUFFER", "%s", cmdstr);
-  shell_exec(cmdstr, NULL, NULL);
+  shell_exec(cmdstr, NULL, self->cur_dir, NULL);
   free(dest);
   free(cmdstr);
   fs_fastreq(self->fs);
