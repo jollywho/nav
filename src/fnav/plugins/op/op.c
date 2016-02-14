@@ -82,8 +82,6 @@ static void fileopen_cb(Plugin *host, Plugin *caller, void *data)
   Op *op = (Op*)caller->top;
 
   String path = model_curs_value(host->hndl->model, "fullpath");
-  //const char* ext = file_ext(path);
-  //ventry *head = fnd_val("op_procs", "ext", (char*)ext);
 
   create_proc(op, path);
   system("mpv_i");
@@ -92,23 +90,14 @@ static void fileopen_cb(Plugin *host, Plugin *caller, void *data)
 void op_new(Plugin *plugin, Buffer *buf, void *arg)
 {
   log_msg("OP", "INIT");
-  log_msg("OP", "%p", buf);
   op_default = malloc(sizeof(Op));
   op_default->base = plugin;
   plugin->top = op_default;
   plugin->name = "op";
   op_default->ready = true;
-  if (tbl_mk("op_procs")) {
-    tbl_mk_fld("op_procs", "ext", typSTRING);
-    tbl_mk_fld("op_procs", "file", typSTRING);
-    tbl_mk_fld("op_procs", "single", typSTRING);
-    tbl_mk_fld("op_procs", "ensure", typSTRING);
-    tbl_mk_fld("op_procs", "args", typSTRING);
-    tbl_mk_fld("op_procs", "uv_proc", typVOID);
-    tbl_mk_fld("op_procs", "uv_opts", typVOID);
-  }
   hook_init_host(plugin);
   hook_add_intl(plugin, plugin, fileopen_cb, "fileopen");
+  hook_set_tmp("fileopen");
 }
 
 void op_delete(Plugin *cntlr)

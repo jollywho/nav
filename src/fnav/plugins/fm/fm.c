@@ -178,9 +178,8 @@ static void fm_paste(Plugin *host, Plugin *caller, void *data)
   dest = next_valid_path(dest);
 
   String cmdstr;
-  asprintf(&cmdstr, "%s %s %s", p_cp, reg->value, dest);
+  asprintf(&cmdstr, "%s \"%s\" \"%s\"", p_cp, reg->value, dest);
 
-  log_msg("BUFFER", "%s", cmdstr);
   shell_exec(cmdstr, NULL, self->cur_dir, NULL);
   free(dest);
   free(cmdstr);

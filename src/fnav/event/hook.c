@@ -12,6 +12,7 @@
 
 #define HK_INTL 1
 #define HK_CMD  2
+#define HK_TMP  3 /* for OP plugin until extension */
 
 typedef struct {
   char type;
@@ -108,6 +109,14 @@ void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, String msg)
   utarray_push_back(hkh->own, &hook);
 }
 
+void hook_set_tmp(String msg)
+{
+  EventHandler *evh;
+  HASH_FIND_STR(events_tbl, msg, evh);
+  Hook *hk = (Hook*)utarray_back(evh->hooks);
+  hk->type = HK_TMP;
+}
+
 void hook_clear_host(Plugin *host)
 {
   log_msg("HOOK", "clear");
@@ -127,6 +136,7 @@ EventHandler* find_evh(String msg)
 
 void call_intl_hook(Hook *hook, Plugin *host, Plugin *caller, void *data)
 {
+  log_msg("HOOK", "call_intl_hook");
   if (caller)
     hook->data.fn(host, caller, data);
   else
@@ -155,7 +165,7 @@ void call_hooks(EventHandler *evh, Plugin *host, Plugin *caller, void *data)
       call_cmd_hook(it);
       continue;
     }
-    if (it->host != host)
+    if (it->host != host && it->type != HK_TMP)
       continue;
 
     call_intl_hook(it, host, caller, data);

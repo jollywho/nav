@@ -15,6 +15,7 @@ void hook_add();
 void hook_remove();
 
 void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, String msg);
+void hook_set_tmp(String msg);
 void hook_clear_msg(Plugin *host, String msg);
 void hook_clear_host(Plugin *host);
 
