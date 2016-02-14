@@ -17,8 +17,7 @@ static struct modmasktable {
   short mod_mask;               /* Bit-mask for particular key modifier */
   short mod_flag;               /* Bit(s) for particular key modifier */
   char_u name;                  /* Single letter name of modifier */
-} mod_mask_table[] =
-{
+} mod_mask_table[] = {
   {MOD_MASK_ALT,              MOD_MASK_ALT,           (char_u)'M'},
   {MOD_MASK_META,             MOD_MASK_META,          (char_u)'T'},
   {MOD_MASK_CTRL,             MOD_MASK_CTRL,          (char_u)'C'},
@@ -31,8 +30,7 @@ static struct modmasktable {
 static struct key_name_entry {
   int key;              /* Special key code or ascii value */
   char  *name;        /* Name of key */
-} key_names_table[] =
-{
+} key_names_table[] = {
   {' ',               (char *)"Space"},
   {TAB,               (char *)"Tab"},
   {NL,                (char *)"NL"},
@@ -50,6 +48,13 @@ static struct key_name_entry {
   {BS,                (char *)"Del"},
   {DEL,               (char *)"Delete"},      /* Alternative name */
   {0,                 NULL}
+};
+
+static fn_reg reg_tbl[] = {
+  {NUL,  NULL},
+  {'0',  NULL},
+  {'1',  NULL},
+  {'_',  NULL},
 };
 
 int get_special_key_code(char *name)
@@ -249,10 +254,12 @@ int find_do_cmd(fn_keytbl *kt, Keyarg *ca, void *obj)
 {
   if (ca->key == ESC) {
     clearop(ca);
+    reg_clear_dcur();
     return 0;
   }
 
-  if (op_pending(ca)) return 0;
+  if (op_pending(ca))
+    return 0;
   int idx = find_command(kt, ca->key);
   if (idx >= 0) {
     ca->arg  = kt->tbl[idx].cmd_arg;
@@ -306,4 +313,45 @@ void clearop(Keyarg *ca)
 bool op_pending(Keyarg *arg)
 {
   return (arg->oap.key != OP_NOP);
+}
+
+fn_reg* reg_get(int ch)
+{
+  for (int i = 0; i < LENGTH(reg_tbl); i++)
+    if (reg_tbl[i].key == ch)
+      return &reg_tbl[i];
+  return NULL;
+}
+
+fn_reg* reg_dcur()
+{
+  fn_reg *reg0 = reg_get(NUL);
+  fn_reg *reg1 = reg_get('1');
+  if (reg0->value && reg1->value && strcmp(reg0->value, reg1->value) == 0)
+    return reg1;
+  else
+    return reg0;
+}
+
+void reg_clear_dcur()
+{
+  reg_set(NUL, NULL);
+}
+
+void reg_set(int ch, String value)
+{
+  log_msg("model", "reg_set");
+  fn_reg *find = reg_get(ch);
+  if (!find)
+    return;
+  if (find->value)
+    free(find->value);
+  if (!value)
+    return;
+  find->value = strdup(value);
+
+  String cpy;
+  asprintf(&cpy, "echo -n %s | xclip", value);
+  system(cpy);
+  free(cpy);
 }

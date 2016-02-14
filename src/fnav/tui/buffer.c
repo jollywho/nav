@@ -20,6 +20,7 @@ static void buf_g();
 static void buf_mark();
 static void buf_gomark();
 static void buf_yank();
+static void buf_del();
 static void buf_gen_event();
 static void buf_draw(void **);
 
@@ -38,6 +39,7 @@ static fn_oper key_operators[] = {
   {'m',      NUL,    buf_mark},
   {'\'',     NUL,    buf_gomark},
   {'g',      NUL,    buf_g},
+  {'d',      NUL,    buf_del},
 };
 
 static fn_key key_defaults[] = {
@@ -50,6 +52,7 @@ static fn_key key_defaults[] = {
   {'g',     buf_oper,        NCH_S,       BACKWARD},
   {'G',     buf_g,           0,           FORWARD},
   {'y',     buf_oper,        NCH,         OP_YANK},
+  {'d',     buf_oper,        NCH,         OP_DELETE},
   {'m',     buf_oper,        NCH_A,       OP_MARK},
   {'\'',    buf_oper,        NCH_A,       OP_JUMP},
   {'p',     buf_gen_event,   0,           EV_PASTE},
@@ -372,7 +375,16 @@ static void buf_g(Buffer *buf, Keyarg *ca)
 
 static void buf_yank(Buffer *buf, Keyarg *ca)
 {
-  reg_set(buf->hndl, "0", "fullpath");
+  String val = model_curs_value(buf->hndl->model, "fullpath");
+  reg_set(NUL, val);
+  reg_set('0', val);
+}
+
+static void buf_del(Buffer *buf, Keyarg *ca)
+{
+  String val = model_curs_value(buf->hndl->model, "fullpath");
+  reg_set(NUL, val);
+  reg_set('1', val);
 }
 
 static void buf_mark(Buffer *buf, Keyarg *ca)

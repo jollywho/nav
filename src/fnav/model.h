@@ -26,14 +26,4 @@ int model_count(Model *m);
 
 String model_str_expansion(String val);
 
-
-struct fn_reg {
-  String key;
-  String value;
-  UT_hash_handle hh;
-};
-
-fn_reg* reg_get(fn_handle *hndl, String reg_ch);
-void reg_set(fn_handle *hndl, String reg_ch, String fld);
-
 #endif

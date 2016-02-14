@@ -70,4 +70,14 @@ void input_check();
 void clearop(Keyarg *ca);
 bool op_pending(Keyarg *arg);
 
+struct fn_reg {
+  int key;
+  String value;
+};
+
+fn_reg* reg_get(int ch);
+fn_reg* reg_dcur();
+void reg_clear_dcur();
+void reg_set(int ch, String fld);
+
 #endif

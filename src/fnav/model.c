@@ -279,31 +279,3 @@ String model_str_expansion(String val)
   Model *m = buf->hndl->model;
   return rec_fld(m->cur, val);
 }
-
-fn_reg* reg_get(fn_handle *hndl, String reg_ch)
-{
-  fn_reg *find;
-  HASH_FIND_STR(registers, reg_ch, find);
-  return find;
-}
-
-void reg_set(fn_handle *hndl, String reg_ch, String fld)
-{
-  log_msg("model", "reg_set");
-  fn_reg *find = reg_get(hndl, reg_ch);
-  if (find) {
-    HASH_DEL(registers, find);
-    free(find->key);
-    free(find->value);
-    free(find);
-  }
-  fn_reg *reg = malloc(sizeof(fn_reg));
-  reg->value = strdup(rec_fld(hndl->model->cur, fld));
-  reg->key = strdup(reg_ch);
-  HASH_ADD_STR(registers, key, reg);
-
-  String cpy;
-  asprintf(&cpy, "echo -n %s | xclip", reg->value);
-  system(cpy);
-  free(cpy);
-}

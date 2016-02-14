@@ -166,24 +166,32 @@ static void fm_paste(Plugin *host, Plugin *caller, void *data)
 {
   log_msg("FM_plugin", "fm_paste");
   FM *self = (FM*)host->top;
-  fn_reg *reg = reg_get(host->hndl, "0");
+
+  char *oper = p_cp;
+  char *arg = "-r";
+  fn_reg *reg = reg_dcur();
   if (!reg)
     return;
+  if (reg->key == '1') {
+    oper = p_mv;
+    arg = "";
+  }
 
   String name = basename(reg->value);
-  log_msg("BUFFER", "{%s} |%s|", reg->key, reg->value);
+  log_msg("BUFFER", "{%d} |%s|", reg->key, reg->value);
 
   String dest;
   asprintf(&dest, "%s/%s", self->cur_dir, name);
   dest = next_valid_path(dest);
 
   String cmdstr;
-  asprintf(&cmdstr, "%s \"%s\" \"%s\"", p_cp, reg->value, dest);
+  asprintf(&cmdstr, "%s %s \"%s\" \"%s\"", oper, arg, reg->value, dest);
 
   shell_exec(cmdstr, NULL, self->cur_dir, NULL);
   free(dest);
   free(cmdstr);
   fs_fastreq(self->fs);
+  reg_clear_dcur();
 }
 
 static void fm_remove(Plugin *host, Plugin *caller, void *data)
@@ -194,7 +202,7 @@ static void fm_remove(Plugin *host, Plugin *caller, void *data)
     return;
 
   String src = model_curs_value(host->hndl->model, "fullpath");
-  log_msg("BUFFER", "%s", src);
+  log_msg("BUFFER", "\"%s\"", src);
   if (!src)
     return;
   remove(src);
