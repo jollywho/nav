@@ -4,6 +4,7 @@
 #include "fnav/plugins/op/op.h"
 #include "fnav/plugins/img/img.h"
 #include "fnav/plugins/term/term.h"
+#include "fnav/plugins/dt/dt.h"
 #include "fnav/compl.h"
 #include "fnav/log.h"
 #include "fnav/option.h"
@@ -32,6 +33,7 @@ static struct plugin_ent {
   {"op",   NULL,    op_new,   op_delete,   1},
   {"img",  NULL,    img_new,  img_delete,  0},
   {"term", NULL,    term_new, term_delete, 0},
+  {"dt",   NULL,    dt_new,   dt_delete,   0},
 };
 
 static int max_callable;

@@ -118,7 +118,7 @@ static int try_old_pos(Model *m, fn_lis *lis, int pos)
   ln = (fn_line*)utarray_eltptr(m->lines, pos);
   if (!ln)
     return 0;
-  return (strcmp(lis->fval, rec_fld(ln->rec, "fullpath")) == 0);
+  return (strcmp(lis->fval, rec_fld(ln->rec, m->hndl->kname)) == 0);
 }
 
 static void try_old_val(Model *m, fn_lis *lis, ventry *it)
@@ -147,7 +147,7 @@ void refind_line(Model *m)
   fn_handle *h = m->hndl;
   fn_lis *lis = m->lis;
 
-  ventry *it = fnd_val(h->tn, "fullpath", lis->fval);
+  ventry *it = fnd_val(h->tn, m->hndl->kname, lis->fval);
   if (!it)
     return;
 
@@ -200,7 +200,7 @@ void model_null_entry(Model *m, fn_lis *lis)
   fn_handle *h = m->hndl;
   m->head = NULL;
   m->cur = NULL;
-  buf_full_invalidate(h->buf, m->lis->index, m->lis->lnum);
+  buf_full_invalidate(h->buf, lis->index, lis->lnum);
   m->blocking = false;
   m->opened = true;
 }
@@ -265,7 +265,7 @@ void model_set_curs(Model *m, int index)
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
   if (res) {
     m->cur = res->rec;
-    String curval = model_curs_value(m, "fullpath");
+    String curval = model_curs_value(m, m->hndl->kname);
     SWAP_ALLOC_PTR(m->lis->fval, strdup(curval));
   }
 }

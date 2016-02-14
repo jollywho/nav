@@ -1,9 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
-#include <unistd.h>
-
 #include "fnav/ascii.h"
 #include "fnav/table.h"
 #include "fnav/model.h"
@@ -106,7 +100,7 @@ static void fm_right(Plugin *host, Plugin *caller, void *data)
 
 static void fm_ch_dir(void **args)
 {
-  log_msg("FM_plugin", "fm_ch_dir");
+  log_msg("FM", "fm_ch_dir");
   Plugin *plugin = args[0];
   String path = args[1];
   fm_opendir(plugin, path, FORWARD);
@@ -134,7 +128,7 @@ static String valid_full_path(String base, String path)
 
 static void fm_req_dir(Plugin *plugin, Plugin *caller, void *data)
 {
-  log_msg("FM_plugin", "fm_req_dir");
+  log_msg("FM", "fm_req_dir");
   FM *self = plugin->top;
   if (!data)
     data = "~";
@@ -164,7 +158,7 @@ static String next_valid_path(String path)
 
 static void fm_paste(Plugin *host, Plugin *caller, void *data)
 {
-  log_msg("FM_plugin", "fm_paste");
+  log_msg("FM", "fm_paste");
   FM *self = (FM*)host->top;
 
   char *oper = p_cp;
@@ -178,7 +172,7 @@ static void fm_paste(Plugin *host, Plugin *caller, void *data)
   }
 
   String name = basename(reg->value);
-  log_msg("BUFFER", "{%d} |%s|", reg->key, reg->value);
+  log_msg("FM", "{%d} |%s|", reg->key, reg->value);
 
   String dest;
   asprintf(&dest, "%s/%s", self->cur_dir, name);
@@ -196,13 +190,13 @@ static void fm_paste(Plugin *host, Plugin *caller, void *data)
 
 static void fm_remove(Plugin *host, Plugin *caller, void *data)
 {
-  log_msg("FM_plugin", "fm_remove");
+  log_msg("FM", "fm_remove");
   FM *self = (FM*)host->top;
   if (fs_blocking(self->fs))
     return;
 
   String src = model_curs_value(host->hndl->model, "fullpath");
-  log_msg("BUFFER", "\"%s\"", src);
+  log_msg("FM", "\"%s\"", src);
   if (!src)
     return;
   remove(src);
@@ -211,7 +205,7 @@ static void fm_remove(Plugin *host, Plugin *caller, void *data)
 
 static void fm_diropen_cb(Plugin *host, Plugin *caller, void *data)
 {
-  log_msg("FM_plugin", "fm_diropen_cb");
+  log_msg("FM", "fm_diropen_cb");
   FM *self = (FM*)caller->top;
   fs_close(self->fs);
   String path = strdup(data);
@@ -221,7 +215,7 @@ static void fm_diropen_cb(Plugin *host, Plugin *caller, void *data)
 
 static void fm_cursor_change_cb(Plugin *host, Plugin *caller, void *data)
 {
-  log_msg("FM_plugin", "fm_cursor_change_cb");
+  log_msg("FM", "fm_cursor_change_cb");
   FM *self = (FM*)caller->top;
   fn_handle *h = host->hndl;
 
@@ -237,14 +231,14 @@ static void fm_cursor_change_cb(Plugin *host, Plugin *caller, void *data)
 
 static void fm_pipe_left(Plugin *host, Plugin *caller, void *data)
 {
-  log_msg("FM_plugin", "fm_pipe_left");
+  log_msg("FM", "fm_pipe_left");
   //TODO: check if host is fm
   hook_add_intl(caller, host, fm_cursor_change_cb, "cursor_change");
 }
 
 static void fm_pipe_right(Plugin *host, Plugin *caller, void *data)
 {
-  log_msg("FM_plugin", "fm_pipe_right");
+  log_msg("FM", "fm_pipe_right");
   hook_add_intl(caller, host, fm_diropen_cb, "diropen");
 }
 
@@ -256,6 +250,7 @@ static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, String val)
   hndl->key_fld = "dir";
   hndl->key = val;
   hndl->fname = "name";
+  hndl->kname = "fullpath";
   c->hndl = hndl;
   c->_cancel = plugin_cancel;
   c->_focus = plugin_focus;
@@ -264,7 +259,7 @@ static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, String val)
 
 void fm_new(Plugin *plugin, Buffer *buf, void *arg)
 {
-  log_msg("FM_plugin", "init");
+  log_msg("FM", "init");
   FM *fm = malloc(sizeof(FM));
   fm->base = plugin;
   plugin->name = "fm";
@@ -294,7 +289,7 @@ void fm_new(Plugin *plugin, Buffer *buf, void *arg)
 
 void fm_delete(Plugin *plugin)
 {
-  log_msg("FM_plugin", "cleanup");
+  log_msg("FM", "delete");
   FM *fm = plugin->top;
   fn_handle *h = fm->base->hndl;
   model_close(h);

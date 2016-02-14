@@ -180,6 +180,9 @@ fn_lis* fnd_lis(String tn, String key_fld, String key)
 
   fn_lis *l;
   HASH_FIND_STR(f->lis, key, l);
+  if (!l)
+    return f->lis;
+
   return l;
 }
 

@@ -26,6 +26,7 @@ struct fn_handle {
   String key;     // listening value
   String key_fld; // listening field
   String fname;   // filter field
+  String kname;   // filter field
 };
 
 struct Plugin {
