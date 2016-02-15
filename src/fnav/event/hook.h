@@ -3,9 +3,14 @@
 
 #include "fnav/plugins/plugin.h"
 
-typedef void (*hook_cb)(Plugin *host, Plugin *caller, void *data);
+typedef struct {
+  Keyarg *ka;
+  String arg;
+} HookArg;
 
-void send_hook_msg(String msg, Plugin *host, Plugin *caller, void *data);
+typedef void (*hook_cb)(Plugin *host, Plugin *caller, HookArg *hka);
+
+void send_hook_msg(String msg, Plugin *host, Plugin *caller, HookArg *hka);
 void hook_init();
 void hook_cleanup();
 void hook_init_host(Plugin *host);

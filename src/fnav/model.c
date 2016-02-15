@@ -170,7 +170,7 @@ void model_sort(Model *m, String fld, int flags)
 
   if (strcmp(m->sort_type, "mtime") == 0)
     utarray_sort(m->lines, date_cmp, &m->sort_rev);
-  else
+  else if (strcmp(m->sort_type, "name") == 0)
     utarray_sort(m->lines, str_cmp, &m->sort_rev);
 
   refind_line(m);

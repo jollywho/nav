@@ -70,11 +70,11 @@ static int fm_opendir(Plugin *plugin, String path, short arg)
   fs_open(self->fs, cur_dir);
   self->cur_dir = cur_dir;
   window_ch_dir(self->cur_dir);
-  send_hook_msg("diropen", plugin, NULL, self->cur_dir);
+  send_hook_msg("diropen", plugin, NULL, &(HookArg){NULL,self->cur_dir});
   return 1;
 }
 
-static void fm_left(Plugin *host, Plugin *caller, void *data)
+static void fm_left(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "cmd left");
   FM *self = host->top;
@@ -83,7 +83,7 @@ static void fm_left(Plugin *host, Plugin *caller, void *data)
   free(path);
 }
 
-static void fm_right(Plugin *host, Plugin *caller, void *data)
+static void fm_right(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "cmd right");
   fn_handle *h = host->hndl;
@@ -126,14 +126,14 @@ static String valid_full_path(String base, String path)
   return dir;
 }
 
-static void fm_req_dir(Plugin *plugin, Plugin *caller, void *data)
+static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_req_dir");
   FM *self = plugin->top;
-  if (!data)
-    data = "~";
+  if (!hka->arg)
+    hka->arg = "~";
 
-  String path = valid_full_path(window_cur_dir(), data);
+  String path = valid_full_path(window_cur_dir(), hka->arg);
 
   if (path)
     fs_read(self->fs, path);
@@ -156,7 +156,7 @@ static String next_valid_path(String path)
   return str;
 }
 
-static void fm_paste(Plugin *host, Plugin *caller, void *data)
+static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_paste");
   FM *self = (FM*)host->top;
@@ -188,7 +188,7 @@ static void fm_paste(Plugin *host, Plugin *caller, void *data)
   reg_clear_dcur();
 }
 
-static void fm_remove(Plugin *host, Plugin *caller, void *data)
+static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_remove");
   FM *self = (FM*)host->top;
@@ -203,17 +203,17 @@ static void fm_remove(Plugin *host, Plugin *caller, void *data)
   fs_fastreq(self->fs);
 }
 
-static void fm_diropen_cb(Plugin *host, Plugin *caller, void *data)
+static void fm_diropen_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_diropen_cb");
   FM *self = (FM*)caller->top;
   fs_close(self->fs);
-  String path = strdup(data);
+  String path = strdup(hka->arg);
   fm_opendir(caller, path, BACKWARD);
   free(path);
 }
 
-static void fm_cursor_change_cb(Plugin *host, Plugin *caller, void *data)
+static void fm_cursor_change_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_cursor_change_cb");
   FM *self = (FM*)caller->top;
@@ -229,14 +229,14 @@ static void fm_cursor_change_cb(Plugin *host, Plugin *caller, void *data)
   }
 }
 
-static void fm_pipe_left(Plugin *host, Plugin *caller, void *data)
+static void fm_pipe_left(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_pipe_left");
   //TODO: check if host is fm
   hook_add_intl(caller, host, fm_cursor_change_cb, "cursor_change");
 }
 
-static void fm_pipe_right(Plugin *host, Plugin *caller, void *data)
+static void fm_pipe_right(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_pipe_right");
   hook_add_intl(caller, host, fm_diropen_cb, "diropen");

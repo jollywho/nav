@@ -76,7 +76,7 @@ const char* file_ext(const char *filename)
   return dot + 1;
 }
 
-static void fileopen_cb(Plugin *host, Plugin *caller, void *data)
+static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("OP", "fileopen_cb");
   Op *op = (Op*)caller->top;

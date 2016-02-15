@@ -41,7 +41,7 @@ void dt_new(Plugin *plugin, Buffer *buf, void *arg)
   model_open(hndl);
   dt->m = hndl->model;
   buf_set_plugin(buf, plugin);
-  buf_set_status(buf, 0, "filename", 0);
+  buf_set_status(buf, 0, arg, 0);
   hook_init_host(plugin);
 
   // open file

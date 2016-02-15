@@ -16,7 +16,7 @@
 #define SCROLL_HISTORY 500
 
 static void readfd_ready(uv_poll_t *, int, int);
-static void plugin_resize(Plugin *, Plugin *, void *);
+static void plugin_resize(Plugin *, Plugin *, HookArg *);
 static void plugin_focus(Plugin *);
 static void chld_handler(uv_signal_t *, int);
 
@@ -66,6 +66,7 @@ void term_new(Plugin *plugin, Buffer *buf, void *arg)
 
 static void term_close_poll(uv_handle_t *hndl)
 {
+  log_msg("TERM", "term_close_poll");
   Term *term = hndl->data;
   vt_destroy(term->vt);
   free(term);
@@ -125,7 +126,7 @@ static void term_draw(Term *term)
   doupdate();
 }
 
-static void plugin_resize(Plugin *host, Plugin *none, void *data)
+static void plugin_resize(Plugin *host, Plugin *none, HookArg *hka)
 {
   log_msg("TERM", "plugin_resize");
   Term *term = host->top;

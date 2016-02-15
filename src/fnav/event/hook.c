@@ -153,7 +153,7 @@ void call_cmd_hook(Hook *hook)
   cmdline_cleanup(&cmd);
 }
 
-void call_hooks(EventHandler *evh, Plugin *host, Plugin *caller, void *data)
+void call_hooks(EventHandler *evh, Plugin *host, Plugin *caller, HookArg *hka)
 {
   if (!evh)
     return;
@@ -168,14 +168,14 @@ void call_hooks(EventHandler *evh, Plugin *host, Plugin *caller, void *data)
     if (it->host != host && it->type != HK_TMP)
       continue;
 
-    call_intl_hook(it, host, caller, data);
+    call_intl_hook(it, host, caller, hka);
   }
 }
 
-void send_hook_msg(String msg, Plugin *host, Plugin *caller, void *data)
+void send_hook_msg(String msg, Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("HOOK", "(<%s>) msg sent", msg);
-  call_hooks(find_evh(msg), host, caller, data);
+  call_hooks(find_evh(msg), host, caller, hka);
 
   if (!host)
     return;

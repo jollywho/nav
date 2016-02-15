@@ -73,6 +73,7 @@ static String compl_cmds[] = {
 static String compl_args[][2] = {
   {"plugin", "fm;path:string:paths"},
   {"plugin", "img;window:number:wins"},
+  {"plugin", "dt;path:string:paths"},
 };
 
 static fn_key key_defaults[] = {
@@ -224,7 +225,7 @@ static void* win_cd(List *args, Cmdarg *ca)
   String path = list_arg(args, 1, VAR_STRING);
   Plugin *plugin = buf_plugin(layout_buf(&win.layout));
   if (plugin)
-    send_hook_msg("open", plugin, NULL, path);
+    send_hook_msg("open", plugin, NULL, &(HookArg){NULL,path});
   return 0;
 }
 
@@ -310,7 +311,7 @@ static void* win_bdel(List *args, Cmdarg *ca)
 
 void window_close_focus()
 {
-  win_close(NULL, 0);
+  win_close(NULL, &(Cmdarg){});
 }
 
 static void window_ex_cmd(Window *_w, Keyarg *arg)
