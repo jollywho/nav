@@ -73,6 +73,16 @@ void* list_arg(List *lst, int argc, char v_type)
   return token_val(word, v_type);
 }
 
+Token* list_tokbtwn(List *lst, int st, int ed)
+{
+  Token *word = NULL;
+  while ((word = (Token*)utarray_next(lst->items, word))) {
+    if (MAX(0, MIN(ed, word->end) - MAX(st, word->start)) > 0)
+      return word;
+  }
+  return NULL;
+}
+
 void* tok_arg(List *lst, int argc)
 {
   if (!lst || utarray_len(lst->items) < argc)
@@ -126,7 +136,7 @@ static void stack_push(QUEUE *queue, Token token)
 static void ref_push(QUEUE *queue, void *ref, char v_type)
 {
   log_msg("CMDLINE", "ref_push");
-  queue_ref_item *item = malloc(sizeof(queue_item));
+  queue_ref_item *item = malloc(sizeof(queue_ref_item));
   item->item.v_type = v_type;
   item->item.ref = ref;
   QUEUE_INIT(&item->node);
@@ -335,9 +345,9 @@ Cmdstr* cmdline_cmdbtwn(Cmdline *cmdline, int st, int ed)
     if (!word)
       continue;
     if (MAX(0, MIN(ed, word->end) - MAX(st, word->start)) > 0)
-      return cmd;
+      break;
   }
-  return NULL;
+  return cmd;
 }
 
 Token* cmdline_tokindex(Cmdline *cmdline, int idx)

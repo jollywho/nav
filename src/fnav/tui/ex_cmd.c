@@ -487,7 +487,7 @@ List* ex_cmd_curlist()
   if (!cmd.cmds)
     return NULL;
 
-  Cmdstr *cmdstr = (Cmdstr*)utarray_next(cmd.cmds, ex_cmd_curtok());
+  Cmdstr *cmdstr = ex_cmd_curcmd();
   if (!cmdstr)
     cmdstr = (Cmdstr*)utarray_front(cmd.cmds);
   List *list = token_val(&cmdstr->args, VAR_LIST);
@@ -496,5 +496,8 @@ List* ex_cmd_curlist()
 
 int ex_cmd_curidx(List *list)
 {
-  return utarray_eltidx(list->items, ex_cmd_curtok());
+  cmd_part *part = cmd_stack[cur_part];
+  int st = part->st;
+  int ed = curpos + 1;
+  return utarray_eltidx(list->items, list_tokbtwn(list, st, ed));
 }

@@ -134,7 +134,8 @@ static String expand_path(String line, String path)
 void path_list(List *args)
 {
   log_msg("MENU", "path_list");
-  if (!cur_menu) return;
+  if (!cur_menu)
+    return;
   if (!args) {
     log_msg("ERR", "unhandled execution path");
     abort();
