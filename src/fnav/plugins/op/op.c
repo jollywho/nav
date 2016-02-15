@@ -17,7 +17,8 @@ static Op *op_default;
 static uv_process_t proc;
 static uv_process_options_t opts;
 
-static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal) {
+static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal)
+{
   log_msg("OP", "exit_cb");
   uv_close((uv_handle_t*) req, NULL);
   Op *op = (Op*)req->data;

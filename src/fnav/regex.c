@@ -5,7 +5,7 @@
 #include "fnav/model.h"
 #include "fnav/tui/window.h"
 
-#define NSUBEXP  10
+#define NSUBEXP  5
 
 #define NEXT_OR_WRAP(match,l) \
   l = (int*)utarray_next(match, l); \
@@ -14,24 +14,21 @@
   l = (int*)utarray_prev(match, l); \
   l = l ? l : (int*)utarray_prev(match, l);
 
-//TODO: LineMatch store only pos and lines.
-//      LineMatch: ptr->singleton with pcre
 struct LineMatch {
   UT_array *lines;
   fn_handle *hndl;
-  String regex;
-  pcre *comp;
-  pcre_extra *extra;
   int pivot_top;
   int pivot_lnum;
+  String gcomp;
 };
+
+static String gcomp;
 
 LineMatch* regex_new(fn_handle *hndl)
 {
   LineMatch *lm = malloc(sizeof(LineMatch));
   memset(lm, 0, sizeof(LineMatch));
   lm->hndl = hndl;
-  lm->regex = strdup("");
   utarray_new(lm->lines, &ut_int_icd);
   return lm;
 }
@@ -39,30 +36,29 @@ LineMatch* regex_new(fn_handle *hndl)
 void regex_destroy(fn_handle *hndl)
 {
   LineMatch *lm = hndl->buf->matches;
-  free(lm->regex);
   free(lm);
 }
 
-static void regex_compile(LineMatch *lm)
+static void regex_compile(LineMatch *lm, pcre **pcre, pcre_extra **extra)
 {
   const char *pcreErrorStr;
   int pcreErrorOffset;
 
-  lm->comp = pcre_compile(lm->regex,
+  *pcre = pcre_compile(gcomp,
       PCRE_CASELESS,
       &pcreErrorStr,
       &pcreErrorOffset,
       NULL);
 
-  if (lm->comp == NULL) {
-    log_msg("REGEX", "COMPILE ERROR: %s, %s", lm->regex, pcreErrorStr);
+  if (pcre == NULL) {
+    log_msg("REGEX", "COMPILE ERROR: %s, %s", gcomp, pcreErrorStr);
     return;
   }
 
-  lm->extra = pcre_study(lm->comp, 0, &pcreErrorStr);
+  *extra = pcre_study(*pcre, 0, &pcreErrorStr);
 
   if(pcreErrorStr != NULL) {
-    log_msg("REGEX", "COULD NOT STUDY: %s, %s", lm->regex, pcreErrorStr);
+    log_msg("REGEX", "COULD NOT STUDY: %s, %s", gcomp, pcreErrorStr);
     return;
   }
 }
@@ -71,15 +67,19 @@ void regex_build(LineMatch *lm, String line)
 {
   log_msg("REGEX", "build");
   log_msg("REGEX", ":%s:", line);
+  pcre *pcre = NULL;
+  pcre_extra *extra = NULL;
 
   if (line) {
-    regex_del_matches(lm);
-    pcre_free(lm->regex);
-    lm->regex = strdup(line);
+    if (gcomp)
+      free(gcomp);
+    gcomp = strdup(line);
   }
+  lm->gcomp = gcomp;
 
-  regex_compile(lm);
+  regex_compile(lm, &pcre, &extra);
 
+  regex_del_matches(lm);
   utarray_new(lm->lines, &ut_int_icd);
 
   int max = model_count(lm->hndl->model);
@@ -89,8 +89,8 @@ void regex_build(LineMatch *lm, String line)
 
     String subject = model_str_line(lm->hndl->model, i);
 
-    int ret = pcre_exec(lm->comp,
-        lm->extra,
+    int ret = pcre_exec(pcre,
+        extra,
         subject,
         strlen(subject),  // length of string
         0,                // Start looking at this point
@@ -112,16 +112,15 @@ void regex_build(LineMatch *lm, String line)
       pcre_free_substring(match);
     }
   }
-  pcre_free(lm->extra);
-  pcre_free(lm->comp);
+  pcre_free(extra);
+  pcre_free(pcre);
 }
 
 void regex_del_matches(LineMatch *lm)
 {
   log_msg("REGEX", "regex_del_matches");
-  if (!lm->lines)
-    return;
-  utarray_free(lm->lines);
+  if (lm->lines)
+    utarray_free(lm->lines);
   lm->lines = NULL;
 }
 
@@ -137,7 +136,7 @@ static int line_diff(int to, int from)
 
 static void get_or_make_matches(LineMatch *lm)
 {
-  if (!lm->lines) {
+  if (!lm->lines || lm->gcomp != gcomp) {
     regex_mk_pivot(lm);
     regex_build(lm, NULL);
   }

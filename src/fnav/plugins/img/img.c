@@ -105,7 +105,7 @@ static int valid_ext(const char *path)
   return 0;
 }
 
-static int create_msg(Plugin *host, Plugin *caller, void *data)
+static int create_msg(Plugin *host, Plugin *caller, HookArg *hka)
 {
   Img *img = (Img*)caller->top;
   fn_handle *h = caller->hndl;
@@ -127,7 +127,7 @@ static int create_msg(Plugin *host, Plugin *caller, void *data)
   return 1;
 }
 
-static void cursor_change_cb(Plugin *host, Plugin *caller, void *data)
+static void cursor_change_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("IMG", "cursor_change_cb");
   Img *img = (Img*)caller->top;
@@ -141,7 +141,7 @@ static void cursor_change_cb(Plugin *host, Plugin *caller, void *data)
   }
 }
 
-static void try_refresh(Plugin *host, Plugin *none, void *data)
+static void try_refresh(Plugin *host, Plugin *none, HookArg *hka)
 {
   Img *img = (Img*)host->top;
   if (!img->img_set)
@@ -153,7 +153,7 @@ static void try_refresh(Plugin *host, Plugin *none, void *data)
   shell_start(img->sh_size);
 }
 
-static void pipe_attach_cb(Plugin *host, Plugin *caller, void *data)
+static void pipe_attach_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("IMG", "pipe_attach_cb");
   hook_add_intl(caller, host, cursor_change_cb, "cursor_change");
