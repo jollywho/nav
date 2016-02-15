@@ -305,7 +305,8 @@ static void ex_killline()
 
 static void ex_check_pipe()
 {
-  if (ex_cmd_curcmd()->exec) {
+  Cmdstr *cur = ex_cmd_curcmd();
+  if (cur && cur->exec) {
     mflag = EX_EXEC;
     return;
   }
@@ -314,16 +315,10 @@ static void ex_check_pipe()
     menu_restart(menu);
     mflag = 0;
   }
-  char pch = ex_cmd_prevstr()[0];
-  char ch = ex_cmd_curstr()[0];
-  log_msg("::::::::", "prev: %c cur: %c", pch, ch);
-  if (pch == '<' && ch == '|')
+  Cmdstr *prev = ex_cmd_prevcmd();
+  if (prev && prev->flag) {
     menu_restart(menu);
-  else if (pch == '|' && ch == '>')
-    menu_restart(menu);
-  else if (ch == '|') {
-    menu_restart(menu);
-    mflag = EX_PUSH;
+    mflag = 0;
   }
 }
 
@@ -398,9 +393,11 @@ void ex_cmd_push(fn_context *cx)
   cmd_stack[cur_part]->cx = cx;
 
   int st = 0;
-  if (cur_part > 0)
+  if (cur_part > 0) {
     st = curpos;
-
+    if (cmd.line[st] == '|')
+      st++;
+  }
   cmd_stack[cur_part]->st = st;
   mflag &= ~EX_NEW;
   mflag |= EX_FRESH;
@@ -440,7 +437,8 @@ int ex_cmd_curpos()
 
 Token* ex_cmd_curtok()
 {
-  int st = cmd_stack[cur_part]->st;
+  cmd_part *part = cmd_stack[cur_part];
+  int st = part->st;
   int ed = curpos + 1;
   Token *tok = cmdline_tokbtwn(&cmd, st, ed);
   return tok;
@@ -449,18 +447,6 @@ Token* ex_cmd_curtok()
 String ex_cmd_curstr()
 {
   Token *tok = ex_cmd_curtok();
-  if (tok)
-    return token_val(tok, VAR_STRING);
-  return "";
-}
-
-String ex_cmd_prevstr()
-{
-  if (cur_part < 1)
-    return "";
-  int st = cmd_stack[cur_part-1]->st;
-  int ed = curpos;
-  Token *tok = cmdline_tokbtwn(&cmd, st, ed);
   if (tok)
     return token_val(tok, VAR_STRING);
   return "";
@@ -476,6 +462,24 @@ void ex_cmd_set(int pos)
   curpos = pos;
 }
 
+Cmdstr* ex_cmd_prevcmd()
+{
+  if (cur_part < 1)
+    return NULL;
+  cmd_part *part = cmd_stack[cur_part - 1];
+  int st = part->st;
+  int ed = curpos + 1;
+  return cmdline_cmdbtwn(&cmd, st, ed);
+}
+
+Cmdstr* ex_cmd_curcmd()
+{
+  cmd_part *part = cmd_stack[cur_part];
+  int st = part->st;
+  int ed = curpos + 1;
+  return cmdline_cmdbtwn(&cmd, st, ed);
+}
+
 List* ex_cmd_curlist()
 {
   if (ex_state == EX_OFF_STATE)
@@ -488,14 +492,6 @@ List* ex_cmd_curlist()
     cmdstr = (Cmdstr*)utarray_front(cmd.cmds);
   List *list = token_val(&cmdstr->args, VAR_LIST);
   return list;
-}
-
-Cmdstr* ex_cmd_curcmd()
-{
-  if (!cmd.cmds)
-    return NULL;
-  Cmdstr *cmdstr = (Cmdstr*)utarray_next(cmd.cmds, ex_cmd_curtok());
-  return cmdstr;
 }
 
 int ex_cmd_curidx(List *list)

@@ -7,6 +7,7 @@
 #include "fnav/tui/window.h"
 #include "fnav/option.h"
 #include "fnav/event/fs.h"
+#include "fnav/info.h"
 
 static const int ROW_MAX = 5;
 static Menu *cur_menu;

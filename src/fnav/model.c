@@ -35,7 +35,6 @@ struct Model {
 
 #define REV_FN(cond,fn,a,b) ((cond) ? (fn((b),(a))) : (fn((a),(b))))
 
-static fn_reg *registers;
 static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
 
 static int date_cmp(const void *a, const void *b, void *arg)

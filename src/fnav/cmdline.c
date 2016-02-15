@@ -304,7 +304,9 @@ static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)
 
 void check_if_exec(Cmdline *cmdline, Cmdstr *cmd, Token *word)
 {
-  if (!word)
+  if (word)
+    word = (Token*)utarray_next(cmdline->tokens, word);
+  else
     word = (Token*)utarray_front(cmdline->tokens);
   if (!word)
     return;
@@ -316,19 +318,24 @@ void check_if_exec(Cmdline *cmdline, Cmdstr *cmd, Token *word)
 
 Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
 {
-  if (!cmdline->cmds)
-    return NULL;
-
-  Cmdstr *cmd = NULL;
-  NEXT_CMD(cmdline, cmd);
-
-  List *list = token_val(&cmd->args, VAR_LIST);
-  UT_array *arr = list->items;
-
   Token *word = NULL;
-  while ((word = (Token*)utarray_next(arr, word))) {
+  while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
     if (MAX(0, MIN(ed, word->end) - MAX(st, word->start)) > 0)
       return word;
+  }
+  return NULL;
+}
+
+Cmdstr* cmdline_cmdbtwn(Cmdline *cmdline, int st, int ed)
+{
+  Cmdstr *cmd = NULL;
+  while (NEXT_CMD(cmdline, cmd)) {
+    List *list = token_val(&cmd->args, VAR_LIST);
+    Token *word = (Token*)utarray_back(list->items);
+    if (!word)
+      continue;
+    if (MAX(0, MIN(ed, word->end) - MAX(st, word->start)) > 0)
+      return cmd;
   }
   return NULL;
 }

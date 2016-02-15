@@ -401,7 +401,7 @@ static void buf_gomark(Buffer *buf, Keyarg *ca)
     return;
   path = strdup(path);
   mark_chr_str('\'', buf->hndl->key);
-  send_hook_msg("open", buf->plugin, NULL, path);
+  send_hook_msg("open", buf->plugin, NULL, &(HookArg){NULL,path});
   free(path);
 }
 

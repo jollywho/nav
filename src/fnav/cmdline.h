@@ -71,6 +71,7 @@ void cmdline_build(Cmdline *cmdline);
 void cmdline_req_run(Cmdline *cmdline);
 
 Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed);
+Cmdstr* cmdline_cmdbtwn(Cmdline *cmdline, int st, int ed);
 Token* cmdline_tokindex(Cmdline *cmdline, int idx);
 Token* cmdline_last(Cmdline *cmdline);
 String cmdline_line_from(Cmdline *cmdline, int idx);

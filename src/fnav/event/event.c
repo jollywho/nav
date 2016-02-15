@@ -126,7 +126,7 @@ void queue_process_events(Queue *queue, int ms)
 
 static void prepare_events(uv_prepare_t *handle)
 {
-  log_msg("WINDOW", "--event--");
+  log_msg("", "--event--");
   if (mainloop()->running)
     return;
 
