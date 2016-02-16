@@ -20,6 +20,7 @@ static void ex_bckspc();
 static void ex_killword();
 static void ex_killline();
 static void ex_hist();
+static void ex_cmdinvert();
 
 #define STACK_MIN 10
 #define CURS_MIN -1
@@ -36,6 +37,7 @@ static fn_key key_defaults[] = {
   {Ctrl_N,   ex_hist,          0,       FORWARD},
   {Ctrl_W,   ex_killword,      0,       0},
   {Ctrl_U,   ex_killline,      0,       0},
+  {Ctrl_L,   ex_cmdinvert,     0,       0},
 };
 static fn_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
@@ -303,6 +305,33 @@ static void ex_killline()
   mflag = 0;
 }
 
+static void str_ins(String str, String ins, int pos, int ofs)
+{
+  char *buf = strdup(str);
+  strncpy(str, buf, pos);
+  strcpy(str+pos, ins);
+  strcpy(str+strlen(str), buf+pos+ofs);
+  free(buf);
+}
+
+static void ex_cmdinvert()
+{
+  List *list = ex_cmd_curlist();
+  if (!list || utarray_len(list->items) < 1)
+    return;
+  Token *word0 = tok_arg(list, 0);
+  Token *word1 = cmdline_tokbtwn(&cmd, word0->end, word0->end+1);
+  String excl = token_val(word1, VAR_STRING);
+  if (excl && excl[0] == '!') {
+    str_ins(cmd.line, "", word1->start, 1);
+    curpos--;
+  }
+  else {
+    str_ins(cmd.line, "!", word0->end, 0);
+    curpos++;
+  }
+}
+
 static void ex_check_pipe()
 {
   Cmdstr *cur = ex_cmd_curcmd();
@@ -475,8 +504,8 @@ Cmdstr* ex_cmd_prevcmd()
 Cmdstr* ex_cmd_curcmd()
 {
   cmd_part *part = cmd_stack[cur_part];
-  int st = part->st;
-  int ed = curpos + 1;
+  int st = part->st + 1;
+  int ed = curpos;
   return cmdline_cmdbtwn(&cmd, st, ed);
 }
 

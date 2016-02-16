@@ -251,6 +251,12 @@ static void* edit_color(List *args)
 static void* edit_variable(List *args)
 {
   log_msg("CONFIG", "edit_variable");
+  Token *var = tok_arg(args, 1);
+  Token *oper = tok_arg(args, 2);
+  Token *rhs = tok_arg(args, 3);
+  if (!var || !oper || !rhs || var->var.v_type != VAR_STRING)
+    return 0;
+
   return 0;
 }
 

@@ -339,7 +339,8 @@ Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
 Cmdstr* cmdline_cmdbtwn(Cmdline *cmdline, int st, int ed)
 {
   Cmdstr *cmd = NULL;
-  while (NEXT_CMD(cmdline, cmd)) {
+  for (int i = 0; i < utarray_len(cmdline->cmds); i++) {
+    NEXT_CMD(cmdline, cmd);
     List *list = token_val(&cmd->args, VAR_LIST);
     Token *word = (Token*)utarray_back(list->items);
     if (!word)
