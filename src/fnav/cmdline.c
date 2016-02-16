@@ -600,8 +600,13 @@ void cmdline_req_run(Cmdline *cmdline)
   log_msg("CMDLINE", "cmdline_req_run");
   Cmdstr *cmd = NULL;
   Cmdstr *prev = NULL;
+  if (!cmdline->cmds)
+    return;
 
   while (NEXT_CMD(cmdline, cmd)) {
+    List *list = token_val(&cmd->args, VAR_LIST);
+    if (utarray_len(list->items) < 1)
+      continue;
     if (exec_line(cmdline->line, cmd))
       continue;
 
