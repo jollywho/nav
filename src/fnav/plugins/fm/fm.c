@@ -112,8 +112,11 @@ static String valid_full_path(String base, String path)
     return strdup(base);
 
   String dir = fs_expand_path(path);
-  if (path[0] == '@')
-    SWAP_ALLOC_PTR(dir, strdup(mark_path(dir)));
+  if (path[0] == '@') {
+    String tmp = mark_path(dir);
+    if (tmp)
+      SWAP_ALLOC_PTR(dir, strdup(tmp));
+  }
   if (dir[0] != '/')
     SWAP_ALLOC_PTR(dir, conspath(window_cur_dir(), dir));
 

@@ -10,6 +10,7 @@
 
 static void* edit_setting();
 static void* edit_color();
+static void* edit_syntax();
 static void* edit_variable();
 static void* edit_mapping();
 static void* add_source();
@@ -17,6 +18,7 @@ static void* add_source();
 static const Cmd_T cmdtable[] = {
   {"set",    edit_setting,   0},
   {"hi",     edit_color,     0},
+  {"syn",    edit_syntax,    0},
   {"let",    edit_variable,  0},
   {"map",    edit_mapping,   0},
   {"so",     add_source,     0},
@@ -245,6 +247,12 @@ static void* edit_color(List *args)
   };
   set_color(&col);
   //TODO: refresh cached colors
+  return 0;
+}
+
+static void* edit_syntax(List *args)
+{
+  log_msg("CONFIG", "edit_syntax");
   return 0;
 }
 
