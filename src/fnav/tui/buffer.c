@@ -109,6 +109,14 @@ void buf_delete(Buffer *buf)
     buf_expire(buf);
 }
 
+void buf_detach(Buffer *buf)
+{
+  log_msg("BUFFER", "buf_detach");
+  buf->attached = false;
+  buf->plugin = NULL;
+  overlay_erase(buf->ov);
+}
+
 static void resize_adjustment(Buffer *buf)
 {
   log_msg("BUFFER", "resize_adjustment");
@@ -169,6 +177,7 @@ void buf_set_plugin(Buffer *buf, Plugin *plugin)
   buf->plugin = plugin;
   buf->hndl = plugin->hndl;
   buf->attached = true;
+  buf->nodraw = false;
   overlay_bufno(buf->ov, plugin->id);
   overlay_edit(buf->ov, plugin->fmt_name, 0, 0);
 }

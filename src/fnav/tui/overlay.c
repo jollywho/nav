@@ -92,6 +92,16 @@ static void overlay_refresh(Overlay *ov)
   window_req_draw(ov, overlay_draw);
 }
 
+static void set_string(String *from, String to)
+{
+  if (!to)
+    return;
+  if (*from)
+    free(*from);
+
+  *from = strdup(to);
+}
+
 void overlay_clear(Overlay *ov)
 {
   if (ov->separator) {
@@ -100,6 +110,15 @@ void overlay_clear(Overlay *ov)
   }
   werase(ov->nc_st);
   wnoutrefresh(ov->nc_st);
+}
+
+void overlay_erase(Overlay *ov)
+{
+  set_string(&ov->usr_arg, "");
+  set_string(&ov->pipe_in, "");
+  memset(ov->name,   ' ', SZ_NAMEBOX);
+  memset(ov->lineno, ' ', SZ_LNUMBOX);
+  overlay_clear(ov);
 }
 
 void overlay_focus(Overlay *ov)
@@ -134,16 +153,6 @@ void overlay_set(Overlay *ov, pos_T size, pos_T ofs, int sep)
   mvwin(ov->nc_sep, ofs.lnum, ofs.col - 1);
 
   overlay_refresh(ov);
-}
-
-static void set_string(String *from, String to)
-{
-  if (!to)
-    return;
-  if (*from)
-    free(*from);
-
-  *from = strdup(to);
 }
 
 void overlay_bufno(Overlay *ov, int id)

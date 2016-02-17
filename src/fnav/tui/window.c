@@ -287,6 +287,8 @@ static void* win_close(List *args, Cmdarg *ca)
 
   if (!(ca->pflag & BUFFER))
     window_remove_buffer();
+  else if (buf)
+    buf_detach(buf);
   return NULL;
 }
 
@@ -306,6 +308,8 @@ static void* win_buf(List *args, Cmdarg *ca)
 static void* win_bdel(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_bdel");
+  ca->pflag = BUFFER;
+  win_close(args, ca);
   return 0;
 }
 

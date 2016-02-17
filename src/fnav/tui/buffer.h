@@ -47,6 +47,7 @@ void buf_init();
 void buf_cleanup();
 Buffer* buf_new();
 void buf_delete(Buffer *buf);
+void buf_detach(Buffer *buf);
 
 Plugin* buf_plugin(Buffer *buf);
 WINDOW* buf_ncwin(Buffer *buf);

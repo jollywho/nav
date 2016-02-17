@@ -14,6 +14,7 @@ void overlay_lnum(Overlay *ov, int lnum, int max);
 void overlay_edit(Overlay *ov, String name, String usr, String in);
 void overlay_draw(void **argv);
 void overlay_clear(Overlay *ov);
+void overlay_erase(Overlay *ov);
 void overlay_focus(Overlay *ov);
 void overlay_unfocus(Overlay *ov);
 

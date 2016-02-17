@@ -7,7 +7,7 @@
 #include "fnav/event/hook.h"
 #include "fnav/event/event.h"
 
-//TODO: we want a single mpv process shared across all cntlr instances
+//we want a single mpv process shared across all cntlr instances
 //so basically, create an op_cntlr once on the first init call. return
 //a pointer to this after. reference count on cleanup and do actual
 //cleanup on count of 0. this mess can be properly managed when the real
