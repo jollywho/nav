@@ -248,10 +248,12 @@ static void* win_autocmd(List *args, Cmdarg *ca)
   log_msg("WINDOW", "win_autocmd");
 
   String event = list_arg(args, 1, VAR_STRING);
-  String cur = cmdline_line_from(ca->cmdline, 2);
+  String pat = list_arg(args, 2, VAR_STRING);
+  int pos = pat ? 3 : 2;
+  String cur = cmdline_line_from(ca->cmdline, pos);
   //TODO: handle rev flag
   if (event && cur)
-    hook_add(event, cur);
+    hook_add(event, pat, cur);
   return 0;
 }
 

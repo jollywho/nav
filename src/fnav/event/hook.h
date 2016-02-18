@@ -16,7 +16,7 @@ void hook_cleanup();
 void hook_init_host(Plugin *host);
 void hook_cleanup_host(Plugin *host);
 
-void hook_add();
+void hook_add(String msg, String pattern, String cmd);
 void hook_remove();
 
 void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, String msg);

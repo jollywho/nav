@@ -6,9 +6,7 @@
 #include "fnav/event/hook.h"
 #include "fnav/cmdline.h"
 #include "fnav/compl.h"
-
-// Array of supported events
-// "au left cd 1:%fullpath"
+#include "fnav/regex.h"
 
 #define HK_INTL 1
 #define HK_CMD  2
@@ -18,6 +16,7 @@ typedef struct {
   char type;
   Plugin *caller;
   Plugin *host;
+  Pattern *pat;
   union {
     hook_cb fn;
     String cmd;
@@ -75,21 +74,25 @@ void hook_cleanup_host(Plugin *host)
   free(host->event_hooks);
 }
 
-void hook_add(String msg, String cmd)
+void hook_add(String msg, String pattern, String cmd)
 {
   log_msg("HOOK", "ADD");
-  log_msg("HOOK", "<%s> `%s`", msg, cmd);
+  log_msg("HOOK", "<%s> %s `%s`", msg, pattern, cmd);
   EventHandler *evh;
   HASH_FIND_STR(events_tbl, msg, evh);
   if (!evh)
     return;
-  log_msg("HOOK", "added");
-  Hook hook = { HK_CMD, NULL, NULL, .data.cmd = strdup(cmd) };
+  Pattern *pat = NULL;
+  if (pattern)
+    pat = regex_pat_new(pattern);
+  Hook hook = { HK_CMD, NULL, NULL, pat, .data.cmd = strdup(cmd) };
   utarray_push_back(evh->hooks, &hook);
 }
 
 void hook_remove(String msg, String cmd)
 {
+  // if hk->pat
+  //   regex_pat_delete(hk->pat);
 }
 
 void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, String msg)
@@ -100,7 +103,7 @@ void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, String msg)
   if (!evh)
     return;
 
-  Hook hook = { HK_INTL, caller, host, .data.fn = fn };
+  Hook hook = { HK_INTL, caller, host, NULL, .data.fn = fn };
 
   utarray_push_back(evh->hooks, &hook);
 
@@ -143,9 +146,12 @@ void call_intl_hook(Hook *hook, Plugin *host, Plugin *caller, void *data)
     hook->data.fn(host, hook->caller, data);
 }
 
-void call_cmd_hook(Hook *hook)
+void call_cmd_hook(Hook *hook, HookArg *hka)
 {
   log_msg("HOOK", "call_cmd_hook");
+  log_msg("HOOK", "%p", hook->pat);
+  if (hook->pat && !regex_match(hook->pat, hka->arg))
+    return;
   Cmdline cmd;
   cmdline_init_config(&cmd, hook->data.cmd);
   cmdline_build(&cmd);
@@ -162,7 +168,7 @@ void call_hooks(EventHandler *evh, Plugin *host, Plugin *caller, HookArg *hka)
   while ((it = (Hook*)utarray_next(evh->hooks, it))) {
 
     if (it->type == HK_CMD) {
-      call_cmd_hook(it);
+      call_cmd_hook(it, hka);
       continue;
     }
     if (it->host != host && it->type != HK_TMP)
