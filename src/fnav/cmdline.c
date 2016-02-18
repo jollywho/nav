@@ -126,7 +126,6 @@ void cmdline_cleanup(Cmdline *cmdline)
 
 static void stack_push(QUEUE *queue, Token token)
 {
-  log_msg("CMDLINE", "stack_push");
   queue_item *item = malloc(sizeof(queue_item));
   item->item = token;
   QUEUE_INIT(&item->node);
@@ -135,7 +134,6 @@ static void stack_push(QUEUE *queue, Token token)
 
 static void ref_push(QUEUE *queue, void *ref, char v_type)
 {
-  log_msg("CMDLINE", "ref_push");
   queue_ref_item *item = malloc(sizeof(queue_ref_item));
   item->item.v_type = v_type;
   item->item.ref = ref;
@@ -145,7 +143,6 @@ static void ref_push(QUEUE *queue, void *ref, char v_type)
 
 static void ref_pop(QUEUE *refs)
 {
-  log_msg("CMDLINE", "ref_pop");
   QUEUE *h = QUEUE_HEAD(refs);
   queue_ref_item *item = QUEUE_DATA(h, queue_ref_item, node);
   QUEUE_REMOVE(&item->node);

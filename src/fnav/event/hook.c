@@ -74,12 +74,12 @@ void hook_cleanup_host(Plugin *host)
   free(host->event_hooks);
 }
 
-void hook_add(String msg, String pattern, String cmd)
+void hook_add(String event, String pattern, String cmd)
 {
   log_msg("HOOK", "ADD");
-  log_msg("HOOK", "<%s> %s `%s`", msg, pattern, cmd);
+  log_msg("HOOK", "<%s> %s `%s`", event, pattern, cmd);
   EventHandler *evh;
-  HASH_FIND_STR(events_tbl, msg, evh);
+  HASH_FIND_STR(events_tbl, event, evh);
   if (!evh)
     return;
   Pattern *pat = NULL;
@@ -89,10 +89,19 @@ void hook_add(String msg, String pattern, String cmd)
   utarray_push_back(evh->hooks, &hook);
 }
 
-void hook_remove(String msg, String cmd)
+void hook_remove(String event, String pattern)
 {
-  // if hk->pat
-  //   regex_pat_delete(hk->pat);
+  log_msg("HOOK", "REMOVE");
+  EventHandler *evh;
+  HASH_FIND_STR(events_tbl, event, evh);
+  if (!evh)
+    return;
+  Hook *it = NULL;
+  for (int i = 0; i < utarray_len(evh->hooks); i++) {
+    it = (Hook*)utarray_eltptr(evh->hooks, i);
+    if (it->type == HK_CMD)
+      utarray_erase(evh->hooks, i, 1);
+  }
 }
 
 void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, String msg)
@@ -104,7 +113,6 @@ void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, String msg)
     return;
 
   Hook hook = { HK_INTL, caller, host, NULL, .data.fn = fn };
-
   utarray_push_back(evh->hooks, &hook);
 
   HookHandler *hkh = host->event_hooks;
@@ -149,8 +157,7 @@ void call_intl_hook(Hook *hook, Plugin *host, Plugin *caller, void *data)
 void call_cmd_hook(Hook *hook, HookArg *hka)
 {
   log_msg("HOOK", "call_cmd_hook");
-  log_msg("HOOK", "%p", hook->pat);
-  if (hook->pat && !regex_match(hook->pat, hka->arg))
+  if (hook->pat && hka && !regex_match(hook->pat, hka->arg))
     return;
   Cmdline cmd;
   cmdline_init_config(&cmd, hook->data.cmd);

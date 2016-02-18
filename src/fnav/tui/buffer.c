@@ -333,7 +333,8 @@ static void buf_mv(Buffer *buf, Keyarg *ca)
     buf->lnum = count - 1;
   }
   model_set_curs(m, buf->top + buf->lnum);
-  send_hook_msg("cursor_change", buf->plugin, NULL, NULL);
+  String curval = model_str_line(m, buf->top + buf->lnum);
+  send_hook_msg("cursor_change", buf->plugin, NULL, &(HookArg){NULL,curval});
   buf_refresh(buf);
 }
 

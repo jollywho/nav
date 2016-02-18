@@ -246,13 +246,17 @@ static void* win_mark(List *args, Cmdarg *ca)
 static void* win_autocmd(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_autocmd");
-
+  int len = utarray_len(args->items);
+  log_msg("WINDOW", "%d %d", len, ca->cmdstr->rev);
   String event = list_arg(args, 1, VAR_STRING);
-  String pat = list_arg(args, 2, VAR_STRING);
-  int pos = pat ? 3 : 2;
-  String cur = cmdline_line_from(ca->cmdline, pos);
-  //TODO: handle rev flag
-  if (event && cur)
+  int pos = len > 3 ? 2 : -1;
+  int rem = len > 3 ? 3 : 2;
+  String pat = list_arg(args, pos, VAR_STRING);
+  String cur = cmdline_line_from(ca->cmdline, rem);
+  log_msg("WINDOW", "%p %p", event, cur);
+  if (event && ca->cmdstr->rev)
+    hook_remove(event, pat);
+  else if (event && cur)
     hook_add(event, pat, cur);
   return 0;
 }
@@ -287,7 +291,7 @@ static void* win_close(List *args, Cmdarg *ca)
   if (buf)
     plugin_close(buf_plugin(buf));
 
-  if (!(ca->pflag & BUFFER))
+  if (!(ca->pflag & BUFFER) && buf)
     window_remove_buffer();
   else if (buf)
     buf_detach(buf);

@@ -146,6 +146,9 @@ void regex_pat_delete(Pattern *pat)
 bool regex_match(Pattern *pat, String line)
 {
   log_msg("REGEX", "regex_match");
+  if (!line)
+    return false;
+
   int substr[NSUBEXP];
   const char *match;
   bool succ = false;
