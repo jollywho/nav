@@ -129,6 +129,15 @@ void stop_ex_cmd()
   window_ex_cmd_end();
 }
 
+static void str_ins(char *str, const char *ins, int pos, int ofs)
+{
+  char *buf = strdup(str);
+  strncpy(str, buf, pos);
+  strcpy(str+pos, ins);
+  strcpy(str+strlen(str), buf+pos+ofs);
+  free(buf);
+}
+
 static void gen_output_str()
 {
   char ch;
@@ -190,27 +199,32 @@ static void ex_esc()
 static void ex_tab(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "TAB");
-  char *key = menu_next(menu, arg->arg);
+  const char *key = menu_next(menu, arg->arg);
   if (!key)
     return;
 
-  int st = curpos + 1;
-  int ed = strlen(ex_cmd_curstr());
-  Token *tok = cmdline_tokbtwn(&cmd, curpos, curpos + 1);
-  if (tok) {
-    st = tok->start;
-    ed = tok->end;
-  }
+  cmd_part *part = cmd_stack[cur_part];
+  int st = part->st;
+  int ed = curpos + 1;
+  if (st > 0)
+    st++;
 
-  int len = ed - st;
-  if (curpos + len + 2 >= maxpos)
-    cmd.line = realloc(cmd.line, maxpos *= 2);
+  int len = strlen(key);
+  if (st + len >= maxpos - 1) {
+    char *line = strdup(cmd.line);
+    maxpos = 2 * (len+maxpos);
+    cmd.line = realloc(cmd.line, maxpos);
+    memset(cmd.line, '\0', maxpos);
+    strcpy(cmd.line, line);
+    free(line);
+  }
 
   int i;
   for (i = st; i < ed + 2; i++)
     cmd.line[i] = ' ';
-  for (i = 0; i < strlen(key); i++)
+  for (i = 0; i < len; i++) {
     cmd.line[st + i] = key[i];
+  }
 
   curpos = st + i - 1;
   mflag = EX_CYCLE;
@@ -218,7 +232,7 @@ static void ex_tab(void *none, Keyarg *arg)
 
 static void ex_hist(void *none, Keyarg *arg)
 {
-  char *ret = NULL;
+  const char *ret = NULL;
 
   if (arg->arg == BACKWARD)
     ret = hist_prev(EXCMD_HIST());
@@ -256,8 +270,13 @@ static void ex_spc()
   curpos++;
   mflag |= EX_RIGHT;
   mflag &= ~(EX_FRESH|EX_NEW);
-  if (curpos >= maxpos)
+  if (curpos >= maxpos - 1) {
+    char *line = strdup(cmd.line);
     cmd.line = realloc(cmd.line, maxpos *= 2);
+    memset(cmd.line, '\0', maxpos);
+    strcpy(cmd.line, line);
+    free(line);
+  }
 
   cmd.line[curpos] = ' ';
 }
@@ -303,15 +322,6 @@ static void ex_killline()
   ex_cmd_pop(-1);
   menu_restart(menu);
   mflag = 0;
-}
-
-static void str_ins(char *str, char *ins, int pos, int ofs)
-{
-  char *buf = strdup(str);
-  strncpy(str, buf, pos);
-  strcpy(str+pos, ins);
-  strcpy(str+strlen(str), buf+pos+ofs);
-  free(buf);
 }
 
 static void ex_cmdinvert()

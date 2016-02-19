@@ -253,7 +253,7 @@ static void* win_autocmd(List *args, Cmdarg *ca)
   int rem = len > 3 ? 3 : 2;
   char *pat = list_arg(args, pos, VAR_STRING);
   char *cur = cmdline_line_from(ca->cmdline, rem);
-  log_msg("WINDOW", "%p %p", event, cur);
+
   if (event && ca->cmdstr->rev)
     hook_remove(event, pat);
   else if (event && cur)

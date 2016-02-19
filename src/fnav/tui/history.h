@@ -15,7 +15,7 @@ void hist_insert(char *);
 
 void role_call(fn_hist *hst);
 
-char* hist_prev(fn_hist *hst);
-char* hist_next(fn_hist *hst);
+const char* hist_prev(fn_hist *hst);
+const char* hist_next(fn_hist *hst);
 
 #endif

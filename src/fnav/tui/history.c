@@ -74,7 +74,7 @@ void hist_save(fn_hist *hst)
   last->line = strdup(hst->cmd->line);
 }
 
-char* hist_prev(fn_hist *hst)
+const char* hist_prev(fn_hist *hst)
 {
   log_msg("HIST", "hist_prev");
   hist_item *item = TAILQ_PREV(hst->cur, cont, ent);
@@ -84,7 +84,7 @@ char* hist_prev(fn_hist *hst)
   return item->line;
 }
 
-char* hist_next(fn_hist *hst)
+const char* hist_next(fn_hist *hst)
 {
   log_msg("HIST", "hist_next");
   hist_item *item = TAILQ_NEXT(hst->cur, ent);
