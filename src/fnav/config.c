@@ -275,7 +275,7 @@ static void* edit_mapping(List *args)
 
 static void* add_source(List *args)
 {
-  String file = list_arg(args, 1, VAR_STRING);
+  char *file = list_arg(args, 1, VAR_STRING);
   if (!file)
     return 0;
 

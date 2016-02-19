@@ -16,7 +16,7 @@ void menu_rebuild(Menu *mnu);
 void menu_update(Menu *mnu, Cmdline *cmd);
 
 void menu_draw(Menu *mnu);
-String menu_next(Menu *mnu, int dir);
+char* menu_next(Menu *mnu, int dir);
 
 void path_list(List *args);
 void menu_ch_dir(void **args);

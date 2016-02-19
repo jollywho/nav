@@ -37,7 +37,7 @@ static UT_icd dict_icd = { sizeof(Pair),   NULL };
 static UT_icd list_icd = { sizeof(Token),  NULL };
 static UT_icd cmd_icd  = { sizeof(Cmdstr), NULL };
 
-int str_num(String str, int *tmp)
+int str_num(char *str, int *tmp)
 {
   return sscanf(str, "%d", tmp);
 }
@@ -371,7 +371,7 @@ Token* cmdline_last(Cmdline *cmdline)
   return word;
 }
 
-String cmdline_line_from(Cmdline *cmdline, int idx)
+char * cmdline_line_from(Cmdline *cmdline, int idx)
 {
   Token *word = cmdline_tokindex(cmdline, idx);
   if (!word)
@@ -415,7 +415,7 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
   if (!next)
     return false;
 
-  String str = token_val(next, VAR_STRING);
+  char * str = token_val(next, VAR_STRING);
   if (str && str[0] == ':') {
     push(pair_new(cmdline), stack);
     return true;
@@ -503,14 +503,14 @@ void cmdline_build(Cmdline *cmdline)
   }
 }
 
-static String do_expansion(String line)
+static char * do_expansion(char * line)
 {
   log_msg("CMDLINE", "do_expansion");
   if (!strstr(line, "%:"))
     return strdup(line);
 
-  String head = strtok(line, "%:");
-  String name = strtok(NULL, "%:");
+  char * head = strtok(line, "%:");
+  char * name = strtok(NULL, "%:");
 
   char *quote = "\"";
   char *delim = strchr(name, '"');
@@ -520,25 +520,25 @@ static String do_expansion(String line)
   }
 
   name = strtok(name, delim);
-  String tail = strtok(NULL, delim);
+  char * tail = strtok(NULL, delim);
 
-  String body = model_str_expansion(name);
+  char * body = model_str_expansion(name);
   if (!body)
     return strdup(line);
 
   if (!tail)
     tail = "";
 
-  String out;
+  char * out;
   asprintf(&out, "%s%s%s%s", head, body, quote, tail);
   return out;
 }
 
-static int exec_line(String line, Cmdstr *cmd)
+static int exec_line(char * line, Cmdstr *cmd)
 {
   if (!cmd->exec || strlen(line) < 2)
     return 0;
-  String str = strstr(line, "!");
+  char * str = strstr(line, "!");
   ++str;
   str = do_expansion(str);
   shell_exec(str, NULL, focus_dir(), NULL);
@@ -559,7 +559,7 @@ static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd, Cmdstr *prev)
 {
   log_msg("CMDLINE", "exec_pipe");
   List *args = token_val(&cmd->args, VAR_LIST);
-  String arg = list_arg(args, 0, VAR_STRING);
+  char * arg = list_arg(args, 0, VAR_STRING);
 
   if (!prev->ret) {
     prev->ret = focus_plugin();

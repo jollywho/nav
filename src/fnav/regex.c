@@ -24,10 +24,10 @@ struct LineMatch {
   fn_handle *hndl;
   int pivot_top;
   int pivot_lnum;
-  String gcomp;
+  char* gcomp;
 };
 
-static String gcomp;
+static char* gcomp;
 
 LineMatch* regex_new(fn_handle *hndl)
 {
@@ -44,7 +44,7 @@ void regex_destroy(fn_handle *hndl)
   free(lm);
 }
 
-static void regex_compile(String comp, pcre **pcre, pcre_extra **extra)
+static void regex_compile(const char *comp, pcre **pcre, pcre_extra **extra)
 {
   const char *pcreErrorStr;
   int pcreErrorOffset;
@@ -68,7 +68,7 @@ static void regex_compile(String comp, pcre **pcre, pcre_extra **extra)
   }
 }
 
-void regex_build(LineMatch *lm, String line)
+void regex_build(LineMatch *lm, const char *line)
 {
   log_msg("REGEX", "build");
   log_msg("REGEX", ":%s:", line);
@@ -92,7 +92,7 @@ void regex_build(LineMatch *lm, String line)
     int substr[NSUBEXP];
     const char *match;
 
-    String subject = model_str_line(lm->hndl->model, i);
+    char* subject = model_str_line(lm->hndl->model, i);
 
     int ret = pcre_exec(pcre,
         extra,
@@ -129,7 +129,7 @@ void regex_del_matches(LineMatch *lm)
   lm->lines = NULL;
 }
 
-Pattern* regex_pat_new(String regex)
+Pattern* regex_pat_new(const char *regex)
 {
   Pattern *pat = malloc(sizeof(Pattern));
   regex_compile(regex, &pat->pcre, &pat->extra);
@@ -143,7 +143,7 @@ void regex_pat_delete(Pattern *pat)
   free(pat);
 }
 
-bool regex_match(Pattern *pat, String line)
+bool regex_match(Pattern *pat, const char *line)
 {
   log_msg("REGEX", "regex_match");
   if (!line)

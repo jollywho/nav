@@ -338,7 +338,7 @@ void reg_clear_dcur()
   reg_set(NUL, NULL);
 }
 
-void reg_set(int ch, String value)
+void reg_set(int ch, char *value)
 {
   log_msg("model", "reg_set");
   fn_reg *find = reg_get(ch);
@@ -350,7 +350,7 @@ void reg_set(int ch, String value)
     return;
   find->value = strdup(value);
 
-  String cpy;
+  char *cpy;
   asprintf(&cpy, "echo -n %s | xclip", value);
   system(cpy);
   free(cpy);

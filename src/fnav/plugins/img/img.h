@@ -13,10 +13,10 @@ struct Img {
   Buffer *buf;
   bool disabled;
   bool img_set;
-  String sz_msg;
-  String cl_msg;
-  String img_msg;
-  String path;
+  char *sz_msg;
+  char *cl_msg;
+  char *img_msg;
+  char *path;
   int fontw; int fonth;
   int maxw; int maxh;
   int width; int height;

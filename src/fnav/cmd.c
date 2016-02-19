@@ -27,11 +27,11 @@ void cmd_add(Cmd_T *cmd)
   HASH_SORT(cmd_table, name_sort);
 }
 
-void cmd_remove(String name)
+void cmd_remove(const char *name)
 {
 }
 
-Cmd_T* cmd_find(String name)
+Cmd_T* cmd_find(const char *name)
 {
   Cmd_T *cmd;
   if (!name)

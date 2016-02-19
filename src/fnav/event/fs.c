@@ -19,7 +19,7 @@ static void watch_cb(uv_fs_event_t *, const char *, int, int);
 #define RFSH_RATE 1000
 
 struct fentry {
-  String key;
+  char *key;
   uv_fs_event_t watcher;
   uv_fs_t uv_fs; //data->req_handle
   uv_timer_t watcher_timer;
@@ -114,9 +114,9 @@ void fs_cleanup(fn_fs *fs)
   free(fs);
 }
 
-String conspath(const char *str1, const char *str2)
+char* conspath(const char *str1, const char *str2)
 {
-  String result;
+  char *result;
   if (strcmp(str1, "/") == 0)
     asprintf(&result, "/%s", str2);
   else
@@ -124,16 +124,16 @@ String conspath(const char *str1, const char *str2)
   return result;
 }
 
-String fs_parent_dir(const String path)
+char* fs_parent_dir(char *path)
 {
   log_msg("FS", "<<PARENT OF>>: %s", path);
   return dirname(path);
 }
 
-String fs_expand_path(String path)
+char* fs_expand_path(const char *path)
 {
   wordexp_t p;
-  String newpath = NULL;
+  char *newpath = NULL;
   if (wordexp(path, &p, 0) == 0)
     newpath = strdup(p.we_wordv[0]);
 
@@ -141,12 +141,12 @@ String fs_expand_path(String path)
   return newpath;
 }
 
-String fs_current_dir()
+char* fs_current_dir()
 {
   return get_current_dir_name();
 }
 
-bool isdir(String path)
+bool isdir(const char *path)
 {
   if (!path) return false;
   ventry *ent = fnd_val("fm_stat", "fullpath", path);
@@ -172,7 +172,7 @@ static void stat_read_cb(uv_fs_t *req)
   fn_fs *fs = req->data;
   uv_stat_t stat = req->statbuf;
 
-  String path = realpath(fs->readkey, NULL);
+  char *path = realpath(fs->readkey, NULL);
   log_msg("FS", "req_stat_cb %s", req->path);
 
   if (path && S_ISDIR(stat.st_mode)) {
@@ -186,9 +186,9 @@ static void stat_read_cb(uv_fs_t *req)
   }
 }
 
-void* fs_vt_stat_resolv(fn_rec *rec, String key)
+void* fs_vt_stat_resolv(fn_rec *rec, const char *key)
 {
-  String str1 = (String)rec_fld(rec, "fullpath");
+  char *str1 = (char *)rec_fld(rec, "fullpath");
   ventry *ent = fnd_val("fm_stat", "fullpath", str1);
   struct stat *stat = (struct stat*)rec_fld(ent->rec, "stat");
   return &stat->st_mtim.tv_sec;
@@ -219,7 +219,7 @@ bool fs_blocking(fn_fs *fs)
   return fs->ent->running;
 }
 
-void fs_read(fn_fs *fs, String dir)
+void fs_read(fn_fs *fs, const char *dir)
 {
   log_msg("FS", "fs read %s", dir);
   if (fs->running) return;
@@ -229,7 +229,7 @@ void fs_read(fn_fs *fs, String dir)
   uv_fs_stat(eventloop(), &fs->uv_fs, fs->readkey, stat_read_cb);
 }
 
-void fs_open(fn_fs *fs, String dir)
+void fs_open(fn_fs *fs, const char *dir)
 {
   log_msg("FS", "fs open %s", dir);
   fs->path = strdup(dir);
@@ -261,7 +261,7 @@ static int send_stat(fentry *ent, const char *dir, int upd)
   *cupd = upd;
 
   trans_rec *r = mk_trans_rec(tbl_fld_count("fm_stat"));
-  edit_trans(r, "fullpath", (String)dir, NULL);
+  edit_trans(r, "fullpath", (char *)dir, NULL);
   edit_trans(r, "update",   NULL,        cupd);
   edit_trans(r, "stat",     NULL,        cstat);
   CREATE_EVENT(eventq(), commit, 2, "fm_stat", r);
@@ -276,17 +276,17 @@ static void scan_cb(uv_fs_t *req)
   fentry *ent = req->data;
 
   /* clear outdated records */
-  tbl_del_val("fm_files", "dir",      (String)req->path);
-  tbl_del_val("fm_stat",  "fullpath", (String)req->path);
+  tbl_del_val("fm_files", "dir",      (char *)req->path);
+  tbl_del_val("fm_stat",  "fullpath", (char *)req->path);
 
   send_stat(ent, ent->key, 1);
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
     int err = 0;
     trans_rec *r = mk_trans_rec(tbl_fld_count("fm_files"));
-    edit_trans(r, "name", (String)dent.name, NULL);
-    edit_trans(r, "dir",  (String)req->path, NULL);
-    String full = conspath(req->path, dent.name);
+    edit_trans(r, "name", (char *)dent.name, NULL);
+    edit_trans(r, "dir",  (char *)req->path, NULL);
+    char *full = conspath(req->path, dent.name);
 
     ventry *vent = fnd_val("fm_stat", "fullpath", full);
     if (!vent) {
@@ -294,7 +294,7 @@ static void scan_cb(uv_fs_t *req)
       err = send_stat(ent, full, 0);
     }
 
-    edit_trans(r, "fullpath", (String)full,   NULL);
+    edit_trans(r, "fullpath", (char *)full,   NULL);
     free(full);
 
     if (err)

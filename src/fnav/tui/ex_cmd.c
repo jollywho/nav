@@ -50,7 +50,7 @@ static WINDOW *nc_win;
 static int curpos;
 static int maxpos;
 static Cmdline cmd;
-static String fmt_out;
+static char *fmt_out;
 static Menu *menu;
 static fn_hist *hist_cmds;
 static fn_hist *hist_regs;
@@ -190,7 +190,7 @@ static void ex_esc()
 static void ex_tab(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "TAB");
-  String key = menu_next(menu, arg->arg);
+  char *key = menu_next(menu, arg->arg);
   if (!key)
     return;
 
@@ -218,7 +218,7 @@ static void ex_tab(void *none, Keyarg *arg)
 
 static void ex_hist(void *none, Keyarg *arg)
 {
-  String ret = NULL;
+  char *ret = NULL;
 
   if (arg->arg == BACKWARD)
     ret = hist_prev(EXCMD_HIST());
@@ -305,7 +305,7 @@ static void ex_killline()
   mflag = 0;
 }
 
-static void str_ins(String str, String ins, int pos, int ofs)
+static void str_ins(char *str, char *ins, int pos, int ofs)
 {
   char *buf = strdup(str);
   strncpy(str, buf, pos);
@@ -321,7 +321,7 @@ static void ex_cmdinvert()
     return;
   Token *word0 = tok_arg(list, 0);
   Token *word1 = cmdline_tokbtwn(&cmd, word0->end, word0->end+1);
-  String excl = token_val(word1, VAR_STRING);
+  char *excl = token_val(word1, VAR_STRING);
   if (excl && excl[0] == '!') {
     str_ins(cmd.line, "", word1->start, 1);
     curpos--;
@@ -473,7 +473,7 @@ Token* ex_cmd_curtok()
   return tok;
 }
 
-String ex_cmd_curstr()
+char* ex_cmd_curstr()
 {
   Token *tok = ex_cmd_curtok();
   if (tok)

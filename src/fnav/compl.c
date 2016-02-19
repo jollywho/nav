@@ -9,7 +9,7 @@
 #include "fnav/event/hook.h"
 
 typedef struct {
-  String key;
+  char * key;
   fn_context *cx;
   UT_hash_handle hh;
 } fn_context_arg;
@@ -30,13 +30,13 @@ static fn_context *cxroot;
 static fn_context *cxtbl;
 static fn_context_arg *cxargs;
 static fn_context *cur_cx;
-static int compl_param(fn_context **arg, String param);
-static int count_subgrps(String str, String fnd);
+static int compl_param(fn_context **, char *);
+static int count_subgrps(char *, char *);
 
 void compl_init()
 {
   cur_cx = NULL;
-  String param;
+  char * param;
   param = strdup("cmd:string:cmds");
   compl_param(&cxroot, param);
   free(param);
@@ -61,7 +61,7 @@ void compl_cleanup()
   // clear entries in compl_table
 }
 
-static int compl_param(fn_context **arg, String param)
+static int compl_param(fn_context **arg, char * param)
 {
   log_msg("COMPL", "compl_param %s", param);
 
@@ -71,9 +71,9 @@ static int compl_param(fn_context **arg, String param)
     return -1;
   }
 
-  String name = strtok(param, ":");
-  String type = strtok(NULL, ":");
-  String comp = NULL;
+  char * name = strtok(param, ":");
+  char * type = strtok(NULL, ":");
+  char * comp = NULL;
 
   if (!name || !type) {
     log_msg("COMPL", "invalid format.");
@@ -90,7 +90,7 @@ static int compl_param(fn_context **arg, String param)
   return 1;
 }
 
-static void compl_add(String fmt_compl, fn_context **parent)
+static void compl_add(char * fmt_compl, fn_context **parent)
 {
   log_msg("COMPL", "compl_add");
   log_msg("COMPL", "%s", fmt_compl);
@@ -101,18 +101,18 @@ static void compl_add(String fmt_compl, fn_context **parent)
     return;
   }
 
-  String line = strdup(fmt_compl);
+  char * line = strdup(fmt_compl);
   fn_context *cx = malloc(sizeof(fn_context));
   fn_context **args = malloc(grpc*sizeof(fn_context*));
 
-  String keyptr;
-  String saveptr;
-  String lhs = strtok_r(line, ";", &saveptr);
+  char * keyptr;
+  char * saveptr;
+  char * lhs = strtok_r(line, ";", &saveptr);
   fn_context *find;
 
   keyptr = strdup(lhs);
 
-  String param = strtok_r(NULL, ";", &saveptr);
+  char * param = strtok_r(NULL, ";", &saveptr);
   for (pidx = 0; pidx < grpc; pidx++) {
     if (compl_param(&args[pidx], param) == -1)
       goto breakout;
@@ -148,13 +148,13 @@ breakout:
   return;
 }
 
-void compl_add_context(String fmt_compl)
+void compl_add_context(char *fmt_compl)
 {
   log_msg("COMPL", "compl_add_context");
   compl_add(fmt_compl, &cxtbl);
 }
 
-void compl_add_arg(String name, String fmt_compl)
+void compl_add_arg(const char *name, char *fmt_compl)
 {
   log_msg("COMPL", "compl_add_arg");
   fn_context_arg *find;
@@ -169,7 +169,7 @@ void compl_add_arg(String name, String fmt_compl)
   compl_add(fmt_compl, &find->cx);
 }
 
-fn_context* find_context(fn_context *cx, String name)
+fn_context* find_context(fn_context *cx, char * name)
 {
   log_msg("COMPL", "find_context");
   if (!cx || !name) {
@@ -207,7 +207,7 @@ void compl_build(fn_context *cx, List *args)
   log_msg("COMPL", "compl_build");
   if (!cx)
     return;
-  String key = cx->comp;
+  char * key = cx->comp;
   log_msg("COMPL", "%s", key);
   compl_entry *find;
   HASH_FIND_STR(compl_table, key, find);
@@ -225,7 +225,7 @@ fn_context* context_start()
   return cxroot;
 }
 
-void compl_update(fn_context *cx, String line)
+void compl_update(fn_context *cx, const char * line)
 {
   log_msg("COMPL", "compl_update");
   if (!cx || !line || !cx->cmpl)
@@ -235,7 +235,7 @@ void compl_update(fn_context *cx, String line)
   cmpl->matchcount = 0;
 
   for (int i = 0; i < cmpl->rowcount; i++) {
-    String key = cmpl->rows[i]->key;
+    char * key = cmpl->rows[i]->key;
     if (strstr(key, line)) {
       cmpl->matches[cmpl->matchcount] = cmpl->rows[i];
       cmpl->matchcount++;
@@ -281,7 +281,7 @@ void compl_destroy(fn_context *cx)
   cx->cmpl = NULL;
 }
 
-void compl_set_index(int idx, int count, String cols, String fmt, ...)
+void compl_set_index(int idx, int count, char * cols, char * fmt, ...)
 {
   fn_compl *cmpl = cur_cx->cmpl;
   cmpl->rows[idx] = malloc(sizeof(compl_item));
@@ -294,7 +294,7 @@ void compl_set_index(int idx, int count, String cols, String fmt, ...)
   cmpl->rows[idx]->columns = cols;
 }
 
-static int count_subgrps(String str, String fnd)
+static int count_subgrps(char * str, char * fnd)
 {
   int count = 0;
   const char *tmp = str;

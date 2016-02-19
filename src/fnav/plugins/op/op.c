@@ -40,7 +40,7 @@ static void chld_handler(uv_signal_t *handle, int signum)
     return;
 }
 
-static void create_proc(Op *op, String path)
+static void create_proc(Op *op, char *path)
 {
   log_msg("OP", "create_proc");
   opts.flags = UV_PROCESS_DETACHED;
@@ -82,7 +82,7 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("OP", "fileopen_cb");
   Op *op = (Op*)caller->top;
 
-  String path = model_curs_value(host->hndl->model, "fullpath");
+  char *path = model_curs_value(host->hndl->model, "fullpath");
 
   create_proc(op, path);
   system("mpv_i");

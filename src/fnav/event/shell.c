@@ -6,7 +6,7 @@
 
 static void out_data_cb(Stream *, RBuffer *, size_t, void *,  bool);
 static void shell_write_cb(Stream *, void *, int);
-static void shell_default_stdout_cb(Plugin *, String);
+static void shell_default_stdout_cb(Plugin *, char *);
 
 static char* args[4];
 
@@ -57,7 +57,7 @@ Shell* shell_new(Plugin *plugin)
   return sh;
 }
 
-void shell_args(Shell *sh, String *args, shell_stdout_cb readout)
+void shell_args(Shell *sh, char **args, shell_stdout_cb readout)
 {
   Process *proc = &sh->uvproc.process;
   proc->argv = args;
@@ -107,7 +107,7 @@ void shell_stop(Shell *sh)
   process_stop(proc);
 }
 
-void shell_set_in_buffer(Shell *sh, String msg)
+void shell_set_in_buffer(Shell *sh, char *msg)
 {
   log_msg("SHELL", "shell_write");
   if (sh->msg)
@@ -115,7 +115,7 @@ void shell_set_in_buffer(Shell *sh, String msg)
   sh->msg = strdup(msg);
 }
 
-void shell_write(Shell *sh, String msg)
+void shell_write(Shell *sh, char *msg)
 {
   log_msg("SHELL", "write_to_stream");
   WBuffer *input_buffer = wstream_new_buffer(msg, strlen(msg), 1, NULL);
@@ -158,12 +158,12 @@ static void shell_write_cb(Stream *stream, void *data, int status)
   stream_close(stream, NULL);
 }
 
-static void shell_default_stdout_cb(Plugin *plugin, String out)
+static void shell_default_stdout_cb(Plugin *plugin, char *out)
 {
   log_msg("SHELL", "stdout: %s", out);
 }
 
-void shell_exec(String line, shell_status_cb cb, String cwd, Plugin *caller)
+void shell_exec(char *line, shell_status_cb cb, char *cwd, Plugin *caller)
 {
   log_msg("SHELL", "shell_exec");
   log_msg("SHELL", "%s", line);
@@ -191,7 +191,7 @@ void shell_exec(String line, shell_status_cb cb, String cwd, Plugin *caller)
   if (cb)
     proc->fast_output = process_early_exit;
 
-  String rv = strdup(line);
+  char *rv = strdup(line);
   args[0] = p_sh;
   args[1] = "-c";
   args[2] = rv;

@@ -29,7 +29,7 @@ static void buf_draw(void **);
 #define EV_LEFT   2
 #define EV_RIGHT  3
 
-static String buf_events[] = {
+static char *buf_events[] = {
   "paste","remove","left","right",
 };
 
@@ -182,7 +182,7 @@ void buf_set_plugin(Buffer *buf, Plugin *plugin)
   overlay_edit(buf->ov, plugin->fmt_name, 0, 0);
 }
 
-void buf_set_status(Buffer *buf, String name, String usr, String in)
+void buf_set_status(Buffer *buf, char *name, char *usr, char *in)
 {
   overlay_edit(buf->ov, name, usr, in);
 }
@@ -211,7 +211,7 @@ void buf_refresh(Buffer *buf)
 
 static void draw_cur_line(Buffer *buf, Model *m)
 {
-  String it = model_str_line(m, buf->top + buf->lnum);
+  char *it = model_str_line(m, buf->top + buf->lnum);
   TOGGLE_ATTR(!buf->focused, buf->nc_win, A_REVERSE);
   DRAW_STR(buf, nc_win, buf->lnum, 0, it, col_select);
   wattroff(buf->nc_win, A_REVERSE);
@@ -220,12 +220,12 @@ static void draw_cur_line(Buffer *buf, Model *m)
 static void draw_lines(Buffer *buf, Model *m)
 {
   for (int i = 0; i < buf->b_size.lnum; ++i) {
-    String it = model_str_line(m, buf->top + i);
+    char *it = model_str_line(m, buf->top + i);
     if (!it)
       break;
 
     // TODO: plugin CB to filter string
-    String path = model_fld_line(m, "fullpath", buf->top + i);
+    char *path = model_fld_line(m, "fullpath", buf->top + i);
     if (isdir(path))
       DRAW_STR(buf, nc_win, i, 0, it, col_dir);
     else
@@ -333,7 +333,7 @@ static void buf_mv(Buffer *buf, Keyarg *ca)
     buf->lnum = count - 1;
   }
   model_set_curs(m, buf->top + buf->lnum);
-  String curval = model_str_line(m, buf->top + buf->lnum);
+  char *curval = model_str_line(m, buf->top + buf->lnum);
   send_hook_msg("cursor_change", buf->plugin, NULL, &(HookArg){NULL,curval});
   buf_refresh(buf);
 }
@@ -385,14 +385,14 @@ static void buf_g(Buffer *buf, Keyarg *ca)
 
 static void buf_yank(Buffer *buf, Keyarg *ca)
 {
-  String val = model_curs_value(buf->hndl->model, "fullpath");
+  char *val = model_curs_value(buf->hndl->model, "fullpath");
   reg_set(NUL, val);
   reg_set('0', val);
 }
 
 static void buf_del(Buffer *buf, Keyarg *ca)
 {
-  String val = model_curs_value(buf->hndl->model, "fullpath");
+  char *val = model_curs_value(buf->hndl->model, "fullpath");
   reg_set(NUL, val);
   reg_set('1', val);
 }
@@ -406,7 +406,7 @@ static void buf_mark(Buffer *buf, Keyarg *ca)
 static void buf_gomark(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_gomark");
-  String path = mark_str(ca->key);
+  char *path = mark_str(ca->key);
   if (!path)
     return;
   path = strdup(path);
@@ -422,7 +422,7 @@ static void buf_gen_event(Buffer *buf, Keyarg *ca)
   send_hook_msg(buf_events[ca->arg], buf->plugin, NULL, NULL);
 }
 
-void buf_sort(Buffer *buf, String fld, int flags)
+void buf_sort(Buffer *buf, char *fld, int flags)
 {
   if (!buf->hndl)
     return;

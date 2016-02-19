@@ -61,10 +61,10 @@ struct Cmdline {
   UT_array *cmds;
   UT_array *tokens;
   QUEUE refs;
-  String line;
+  char *line;
 };
 
-void cmdline_init_config(Cmdline *cmdline, char *line);
+void cmdline_init_config(Cmdline *cmdline, char *);
 void cmdline_init(Cmdline *cmdline, int size);
 void cmdline_cleanup(Cmdline *cmdline);
 void cmdline_build(Cmdline *cmdline);
@@ -75,11 +75,11 @@ Cmdstr* cmdline_cmdbtwn(Cmdline *cmdline, int st, int ed);
 Token* list_tokbtwn(List *lst, int st, int ed);
 Token* cmdline_tokindex(Cmdline *cmdline, int idx);
 Token* cmdline_last(Cmdline *cmdline);
-String cmdline_line_from(Cmdline *cmdline, int idx);
+char * cmdline_line_from(Cmdline *cmdline, int idx);
 
 void* token_val(Token *token, char v_type);
 void* list_arg(List *lst, int argc, char v_type);
 void* tok_arg(List *lst, int argc);
-int str_num(String str, int *tmp);
+int str_num(char *, int *);
 
 #endif

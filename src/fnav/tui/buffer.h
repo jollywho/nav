@@ -59,7 +59,7 @@ void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs);
 void buf_set_pass(Buffer *buf);
 
 void buf_set_linematch(Buffer *buf, LineMatch *match);
-void buf_set_status(Buffer *buf, String name, String usr, String in);
+void buf_set_status(Buffer *buf, char *, char *, char *);
 
 void buf_full_invalidate(Buffer *buf, int index, int lnum);
 int buf_input(Buffer *bn, Keyarg *ca);
@@ -80,6 +80,6 @@ pos_T buf_ofs(Buffer *buf);
 
 int buf_attached(Buffer *buf);
 
-void buf_sort(Buffer *buf, String fld, int flags);
+void buf_sort(Buffer *buf, char *fld, int flags);
 
 #endif

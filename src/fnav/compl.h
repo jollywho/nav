@@ -5,9 +5,9 @@
 #include "fnav/lib/uthash.h"
 
 typedef struct {
-  String key;
+  char *key;
   int colcount;
-  String columns;
+  char *columns;
 } compl_item;
 
 typedef struct {
@@ -20,19 +20,19 @@ typedef struct {
 
 typedef struct fn_context fn_context;
 struct fn_context {
-  String key;
-  String comp;
-  String type;
+  char *key;
+  char *comp;
+  char *type;
   fn_compl *cmpl;
   int argc;
   fn_context **params;
   UT_hash_handle hh;
 };
 
-typedef void (*compl_genfn)(List* args);
+typedef void (*compl_genfn)(List *args);
 
 typedef struct {
-  String key;
+  char *key;
   compl_genfn gen;
   UT_hash_handle hh;
 } compl_entry;
@@ -42,20 +42,20 @@ typedef struct {
 
 void compl_init();
 void compl_cleanup();
-void compl_add_context(String fmt_compl);
-void compl_add_arg(String name, String fmt_compl);
+void compl_add_context(char *);
+void compl_add_arg(const char *, char *);
 
 fn_context* context_start();
-void compl_update(fn_context *cx, String line);
+void compl_update(fn_context *cx, const char *);
 void compl_build(fn_context *cx, List *args);
 void compl_destroy(fn_context *cx);
 
 void compl_new(int size, int dynamic);
 void compl_delete(fn_compl *cmpl);
-void compl_set_index(int idx, int count, String cols, String fmt, ...);
+void compl_set_index(int idx, int count, char *, char *fmt, ...);
 
 fn_compl* compl_match_index(int idx);
-fn_context* find_context(fn_context *cx, String name);
+fn_context* find_context(fn_context *cx, char *);
 bool compl_isdynamic(fn_context *cx);
 
 #endif

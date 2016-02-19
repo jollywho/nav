@@ -40,7 +40,7 @@ void term_new(Plugin *plugin, Buffer *buf, void *arg)
   const char *pargs[4] = { shell, NULL };
   char *cwd = window_cur_dir();
 
-  String args = arg;
+  char *args = arg;
   if (args && args[0]) {
     pargs[1] = "-c";
     pargs[2] = args;

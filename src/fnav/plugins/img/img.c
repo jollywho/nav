@@ -16,9 +16,9 @@ static const char *DR_ARG = "0;1;%d;%d;%d;%d;;;;;%s\n4;\n3;\n";
 static const char *CL_ARG = "6;%d;%d;%d;%d\n4;\n3;\n";
 //FORMAT:                    5;filename
 static const char *SZ_ARG = "5;%s\n";
-static const char * const args[]   = {WM_IMG, NULL};
-static const char * const t_args[] = {WM_IMG, "-test", NULL};
-static const String img_exts[] = {"png","jpeg","jpg","gif","bmp"};
+static const char *const args[]   = {WM_IMG, NULL};
+static const char *const t_args[] = {WM_IMG, "-test", NULL};
+static const char *img_exts[] = {"png","jpeg","jpg","gif","bmp"};
 
 static void img_draw(Plugin *plugin)
 {
@@ -56,7 +56,7 @@ static void img_draw(Plugin *plugin)
   shell_start(img->sh_draw);
 }
 
-static void shell_stdout_size_cb(Plugin *plugin, String out)
+static void shell_stdout_size_cb(Plugin *plugin, char  *out)
 {
   log_msg("IMG", "shell_stdout_size_cb");
   log_msg("IMG", "%s", out);
@@ -70,7 +70,7 @@ static void shell_stdout_size_cb(Plugin *plugin, String out)
   img_draw(plugin);
 }
 
-static void shell_stdout_font_cb(Plugin *plugin, String out)
+static void shell_stdout_font_cb(Plugin *plugin, char *out)
 {
   log_msg("IMG", "shell_stdout_font_cb");
   log_msg("IMG", "%s", out);
@@ -85,10 +85,10 @@ static void shell_stdout_font_cb(Plugin *plugin, String out)
   img->fontw = (img->fontw + 2) / lo.col;
   img->fonth = (img->fonth + 2) / lo.lnum;
 
-  shell_args(img->sh_size, (String*)args, shell_stdout_size_cb);
+  shell_args(img->sh_size, (char**)args, shell_stdout_size_cb);
 }
 
-static const char *get_path_ext(const char *fspec)
+static const char* get_path_ext(const char *fspec)
 {
   char *e = strrchr (fspec, '.');
   if (e == NULL)
@@ -110,8 +110,8 @@ static int create_msg(Plugin *host, Plugin *caller, HookArg *hka)
   Img *img = (Img*)caller->top;
   fn_handle *h = caller->hndl;
 
-  String path = model_curs_value(host->hndl->model, "fullpath");
-  String name = model_curs_value(host->hndl->model, "name");
+  char *path = model_curs_value(host->hndl->model, "fullpath");
+  char *name = model_curs_value(host->hndl->model, "name");
 
   if (!valid_ext(path))
     return 0;
@@ -182,14 +182,14 @@ void img_new(Plugin *plugin, Buffer *buf, void *arg)
   buf_set_pass(buf);
 
   img->sh_size = shell_new(plugin);
-  shell_args(img->sh_size, (String*)t_args, shell_stdout_font_cb);
+  shell_args(img->sh_size, (char**)t_args, shell_stdout_font_cb);
   shell_start(img->sh_size);
 
   img->sh_draw = shell_new(plugin);
-  shell_args(img->sh_draw, (String*)args, NULL);
+  shell_args(img->sh_draw, (char**)args, NULL);
 
   img->sh_clear = shell_new(plugin);
-  shell_args(img->sh_clear, (String*)args, NULL);
+  shell_args(img->sh_clear, (char**)args, NULL);
 
   hook_init_host(plugin);
   hook_add_intl(plugin, NULL,   pipe_attach_cb, "pipe_left");

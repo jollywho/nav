@@ -47,12 +47,12 @@ void plugin_focus(Plugin *plugin)
   buf_refresh(plugin->hndl->buf);
 }
 
-static int fm_opendir(Plugin *plugin, String path, short arg)
+static int fm_opendir(Plugin *plugin, char *path, short arg)
 {
   log_msg("FM", "fm_opendir %s", path);
   FM *self = (FM*)plugin->top;
   fn_handle *h = plugin->hndl;
-  String cur_dir = self->cur_dir;
+  char *cur_dir = self->cur_dir;
 
   if (fs_blocking(self->fs))
     return 0;
@@ -78,7 +78,7 @@ static void fm_left(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "cmd left");
   FM *self = host->top;
-  String path = strdup(self->cur_dir);
+  char *path = strdup(self->cur_dir);
   fm_opendir(host, path, BACKWARD);
   free(path);
 }
@@ -88,7 +88,7 @@ static void fm_right(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("FM", "cmd right");
   fn_handle *h = host->hndl;
 
-  String path = model_curs_value(h->model, "fullpath");
+  char *path = model_curs_value(h->model, "fullpath");
   if (!path)
     return;
 
@@ -102,25 +102,25 @@ static void fm_ch_dir(void **args)
 {
   log_msg("FM", "fm_ch_dir");
   Plugin *plugin = args[0];
-  String path = args[1];
+  char *path = args[1];
   fm_opendir(plugin, path, FORWARD);
 }
 
-static String valid_full_path(String base, String path)
+static char* valid_full_path(char *base, char *path)
 {
   if (!path)
     return strdup(base);
 
-  String dir = fs_expand_path(path);
+  char *dir = fs_expand_path(path);
   if (path[0] == '@') {
-    String tmp = mark_path(dir);
+    char *tmp = mark_path(dir);
     if (tmp)
       SWAP_ALLOC_PTR(dir, strdup(tmp));
   }
   if (dir[0] != '/')
     SWAP_ALLOC_PTR(dir, conspath(window_cur_dir(), dir));
 
-  String valid = realpath(dir, NULL);
+  char *valid = realpath(dir, NULL);
   if (!valid) {
     free(dir);
     return strdup(base);
@@ -136,7 +136,7 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   if (!hka->arg)
     hka->arg = "~";
 
-  String path = valid_full_path(window_cur_dir(), hka->arg);
+  char *path = valid_full_path(window_cur_dir(), hka->arg);
 
   if (path)
     fs_read(self->fs, path);
@@ -144,15 +144,15 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   free(path);
 }
 
-static String next_valid_path(String path)
+static char* next_valid_path(char *path)
 {
-  String str = strdup(path);
+  char *str = strdup(path);
   free(path);
 
   //TODO: increment '_0' if already exists
   struct stat s;
   while (stat(str, &s) == 0) {
-    String next;
+    char *next;
     asprintf(&next, "%s_0", str);
     SWAP_ALLOC_PTR(str, next);
   }
@@ -174,14 +174,14 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
     arg = "";
   }
 
-  String name = basename(reg->value);
+  char *name = basename(reg->value);
   log_msg("FM", "{%d} |%s|", reg->key, reg->value);
 
-  String dest;
+  char *dest;
   asprintf(&dest, "%s/%s", self->cur_dir, name);
   dest = next_valid_path(dest);
 
-  String cmdstr;
+  char *cmdstr;
   asprintf(&cmdstr, "%s %s \"%s\" \"%s\"", oper, arg, reg->value, dest);
 
   shell_exec(cmdstr, NULL, self->cur_dir, NULL);
@@ -198,7 +198,7 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
   if (fs_blocking(self->fs))
     return;
 
-  String src = model_curs_value(host->hndl->model, "fullpath");
+  char *src = model_curs_value(host->hndl->model, "fullpath");
   log_msg("FM", "\"%s\"", src);
   if (!src)
     return;
@@ -211,7 +211,7 @@ static void fm_diropen_cb(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("FM", "fm_diropen_cb");
   FM *self = (FM*)caller->top;
   fs_close(self->fs);
-  String path = strdup(hka->arg);
+  char *path = strdup(hka->arg);
   fm_opendir(caller, path, BACKWARD);
   free(path);
 }
@@ -222,7 +222,7 @@ static void fm_cursor_change_cb(Plugin *host, Plugin *caller, HookArg *hka)
   FM *self = (FM*)caller->top;
   fn_handle *h = host->hndl;
 
-  String path = model_curs_value(h->model, "fullpath");
+  char *path = model_curs_value(h->model, "fullpath");
   if (!path)
     return;
 
@@ -245,7 +245,7 @@ static void fm_pipe_right(Plugin *host, Plugin *caller, HookArg *hka)
   hook_add_intl(caller, host, fm_diropen_cb, "diropen");
 }
 
-static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, String val)
+static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, char *val)
 {
   fn_handle *hndl = malloc(sizeof(fn_handle));
   hndl->tn = "fm_files";

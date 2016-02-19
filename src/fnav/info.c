@@ -9,18 +9,18 @@
 
 typedef struct fn_mark fn_mark;
 struct fn_mark {
-  String key;
-  String path;
+  char *key;
+  char *path;
   UT_hash_handle hh;
 };
 
 static fn_mark *lbl_marks;
 static fn_mark *chr_marks;
 
-void info_parse(String line)
+void info_parse(char *line)
 {
-  String label;
-  String dir;
+  char *label;
+  char *dir;
   switch (line[0]) {
     case '@':
       label = strtok(line, " ");
@@ -77,7 +77,7 @@ static void mark_del(fn_mark **mrk, fn_mark **tbl)
   free((*mrk));
 }
 
-String mark_path(String key)
+char * mark_path(const char *key)
 {
   fn_mark *mrk;
   HASH_FIND_STR(lbl_marks, key, mrk);
@@ -87,10 +87,10 @@ String mark_path(String key)
   return NULL;
 }
 
-String mark_str(int chr)
+char * mark_str(int chr)
 {
   fn_mark *mrk;
-  String key;
+  char * key;
   asprintf(&key, "'%c", chr);
 
   HASH_FIND_STR(chr_marks, key, mrk);
@@ -101,15 +101,15 @@ String mark_str(int chr)
   return NULL;
 }
 
-void mark_label_dir(String label, String dir)
+void mark_label_dir(char *label, const char *dir)
 {
   log_msg("INFO", "mark_label_dir");
-  String key;
+  char * key;
   if (label[0] == '@')
     label = &label[1];
   asprintf(&key, "@%s", label);
 
-  String tmp = strdup(dir);
+  char * tmp = strdup(dir);
   fn_mark *mrk;
   HASH_FIND_STR(lbl_marks, key, mrk);
   if (mrk)
@@ -121,19 +121,19 @@ void mark_label_dir(String label, String dir)
   HASH_ADD_STR(lbl_marks, key, mrk);
 }
 
-void mark_strchr_str(String str, String dir)
+void mark_strchr_str(const char *str, const char *dir)
 {
   if (strlen(str) == 2)
     mark_chr_str(str[1], dir);
 }
 
-void mark_chr_str(int chr, String dir)
+void mark_chr_str(int chr, const char *dir)
 {
   log_msg("FM", "mark_key_str");
-  String key;
+  char * key;
   asprintf(&key, "'%c", chr);
 
-  String tmp = strdup(dir);
+  char * tmp = strdup(dir);
   fn_mark *mrk;
   HASH_FIND_STR(chr_marks, key, mrk);
   if (mrk)

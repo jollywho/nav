@@ -21,7 +21,7 @@ struct Menu {
   bool docmpl;
   bool rebuild;
   bool active;
-  String line_key;
+  char *line_key;
 
   pos_T size;
   pos_T ofs;
@@ -75,7 +75,7 @@ void menu_ch_dir(void **args)
   if (!cur_menu->active)
     return;
 
-  String dir = args[1];
+  char *dir = args[1];
   if (!dir)
     return;
 
@@ -84,9 +84,9 @@ void menu_ch_dir(void **args)
   fs_open(cur_menu->fs, dir);
 }
 
-static int last_dir_in_path(Token *tok, List *args, int pos, String *path)
+static int last_dir_in_path(Token *tok, List *args, int pos, char **path)
 {
-  String val = NULL;
+  char *val = NULL;
   int prev = tok->block;
   int exec = 0;
   while ((tok = tok_arg(args, ++pos))) {
@@ -103,7 +103,7 @@ static int last_dir_in_path(Token *tok, List *args, int pos, String *path)
     else {
       exec = 0;
       cur_menu->line_key = val;
-      String tmp = conspath(*path, val);
+      char *tmp = conspath(*path, val);
       free(*path);
       *path = tmp;
     }
@@ -111,13 +111,13 @@ static int last_dir_in_path(Token *tok, List *args, int pos, String *path)
   return exec;
 }
 
-static String expand_path(String line, String path)
+static char* expand_path(char *line, char *path)
 {
   if (path[0] != '/') {
     SWAP_ALLOC_PTR(path, conspath(window_cur_dir(), path));
     cur_menu->line_key = line;
   }
-  String tmp = realpath(path, NULL);
+  char *tmp = realpath(path, NULL);
   if (!tmp)
     return path;
 
@@ -146,13 +146,13 @@ void path_list(List *args)
   free(cur_menu->line_key);
 
   if (!tok) {
-    String path = window_cur_dir();
+    char *path = window_cur_dir();
     cur_menu->line_key = strdup("");
     fs_read(cur_menu->fs, path);
   }
   else {
     cur_menu->line_key = token_val(tok, VAR_STRING);
-    String path = strdup(cur_menu->line_key);
+    char *path = strdup(cur_menu->line_key);
 
     if (path[0] == '@') {
       marklbl_list(args);
@@ -261,7 +261,7 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
   int i = 0;
   int pos = 0;
   while ((word = cmdline_tokindex(cmd, i))) {
-    String key = token_val(word, VAR_STRING);
+    char *key = token_val(word, VAR_STRING);
     fn_context *find = find_context(mnu->cx, key);
     if (find)
       mnu->cx = find->params[0];
@@ -286,11 +286,11 @@ void menu_rebuild(Menu *mnu)
   mnu->rebuild = true;
 }
 
-static String cycle_matches(Menu *mnu, int dir)
+static char* cycle_matches(Menu *mnu, int dir)
 {
   fn_compl *cmpl = mnu->cx->cmpl;
 
-  String before = cmpl->matches[mnu->lnum]->key;
+  char *before = cmpl->matches[mnu->lnum]->key;
   mnu->lnum += dir;
 
   if (mnu->lnum < 0)
@@ -300,7 +300,7 @@ static String cycle_matches(Menu *mnu, int dir)
   return before;
 }
 
-String menu_next(Menu *mnu, int dir)
+char* menu_next(Menu *mnu, int dir)
 {
   log_msg("MENU", "menu_curkey");
   if (!mnu->cx || !mnu->cx->cmpl)
@@ -311,7 +311,7 @@ String menu_next(Menu *mnu, int dir)
   if (cmpl->matchcount < 1)
     return NULL;
 
-  String before = cycle_matches(mnu, dir);
+  char *before = cycle_matches(mnu, dir);
 
   if (strcmp(ex_cmd_curstr(), before) == 0)
     before = cycle_matches(mnu, dir);
@@ -336,7 +336,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
     mnu->docmpl = true;
   }
   else if ((ex_cmd_state() & EX_PUSH) == EX_PUSH) {
-    String key = ex_cmd_curstr();
+    char *key = ex_cmd_curstr();
     fn_context *find = find_context(mnu->cx, key);
     if (find) {
       mnu->cx = find->params[0];
@@ -351,7 +351,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   if (mnu->docmpl || compl_isdynamic(mnu->cx))
     compl_build(mnu->cx, ex_cmd_curlist());
 
-  String line = ex_cmd_curstr();
+  char *line = ex_cmd_curstr();
   if (compl_isdynamic(mnu->cx))
     line = mnu->line_key;
 
@@ -386,11 +386,11 @@ void menu_draw(Menu *mnu)
 
     int ofs = strlen(row->key);
     for (int c = 0; c < row->colcount; c++) {
-      String col = row->columns;
+      char *col = row->columns;
       DRAW_STR(mnu, nc_win, i, ofs+3, col, col_text);
     }
   }
-  String key = mnu->cx->key;
+  char *key = mnu->cx->key;
   DRAW_STR(mnu, nc_win, ROW_MAX, 1, key, col_line);
 
   wnoutrefresh(mnu->nc_win);

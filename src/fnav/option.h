@@ -20,6 +20,6 @@ typedef struct {
 void option_init();
 void option_cleanup();
 void set_color(fn_color *color);
-int attr_color(const String name);
+int attr_color(const char *);
 
 #endif

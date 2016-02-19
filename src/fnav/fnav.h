@@ -1,7 +1,6 @@
 #ifndef FN_FNAV_H
 #define FN_FNAV_H
 
-typedef char* String;
 typedef struct Token Token;
 typedef struct Pair Pair;
 typedef struct Dict Dict;

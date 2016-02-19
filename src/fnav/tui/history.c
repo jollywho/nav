@@ -7,7 +7,7 @@
 
 typedef struct hist_item hist_item;
 struct hist_item {
-  String line;
+  char *line;
   TAILQ_ENTRY(hist_item) ent;
 };
 
@@ -74,7 +74,7 @@ void hist_save(fn_hist *hst)
   last->line = strdup(hst->cmd->line);
 }
 
-String hist_prev(fn_hist *hst)
+char* hist_prev(fn_hist *hst)
 {
   log_msg("HIST", "hist_prev");
   hist_item *item = TAILQ_PREV(hst->cur, cont, ent);
@@ -84,7 +84,7 @@ String hist_prev(fn_hist *hst)
   return item->line;
 }
 
-String hist_next(fn_hist *hst)
+char* hist_next(fn_hist *hst)
 {
   log_msg("HIST", "hist_next");
   hist_item *item = TAILQ_NEXT(hst->cur, ent);
@@ -94,7 +94,7 @@ String hist_next(fn_hist *hst)
   return item->line;
 }
 
-void hist_insert(String line)
+void hist_insert(char *line)
 {
   // get type based on line[0] from ex_cmd
 }

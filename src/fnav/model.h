@@ -11,19 +11,19 @@ void model_open(fn_handle *hndl);
 void model_close(fn_handle *hndl);
 int model_blocking(fn_handle *hndl);
 
-void model_sort(Model *m, String fld, int flags);
+void model_sort(Model *m, const char *fld, int flags);
 void model_recv(Model *m);
 void refind_line(Model *m);
 
 void model_read_entry(Model *m, fn_lis *lis, ventry *head);
 void model_null_entry(Model *m, fn_lis *lis);
 
-String model_str_line(Model *m, int index);
-void* model_fld_line(Model *m, String field, int index);
-void* model_curs_value(Model *m, String field);
+char* model_str_line(Model *m, int index);
+void* model_fld_line(Model *m, const char *fld, int index);
+void* model_curs_value(Model *m, const char *fld);
 void model_set_curs(Model *m, int index);
 int model_count(Model *m);
 
-String model_str_expansion(String val);
+char* model_str_expansion(char* val);
 
 #endif

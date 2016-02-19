@@ -28,10 +28,10 @@ struct ventry {
 };
 
 struct fn_lis {
-  String key;       // listening value
+  char *key;       // listening value
   fn_fld *key_fld;  // listening field
-  String fname;     // filter field
-  String fval;      // filter val
+  char *fname;     // filter field
+  char *fval;      // filter val
   fn_rec *rec;      // record for both listening & filter
   int lnum;
   int index;
@@ -40,41 +40,43 @@ struct fn_lis {
 
 void tables_init();
 void tables_cleanup();
-bool tbl_mk(String name);
-void tbl_del(String name);
-void tbl_mk_fld(String tn, String name, tFldType typ);
+bool tbl_mk(const char *);
+void tbl_del(const char *);
+void tbl_mk_fld(const char *, const char *, tFldType);
 
-void tbl_add_lis(String tn, String key_fld, String key);
+fn_tbl* get_tbl(const char *tn);
+void tbl_add_lis(const char *, const char *, const char *);
 void commit(void **data);
 
-ventry* fnd_val(String tn, String fname, String val);
-fn_lis* fnd_lis(String tn, String key_fld, String key);
-ventry* lis_get_val(fn_lis *lis, String fname);
+ventry* fnd_val(const char *, const char *, const char *);
+fn_lis* fnd_lis(const char *, const char *, const char *);
+ventry* lis_get_val(fn_lis *lis, const char *);
 void lis_save(fn_lis *lis, int index, int lnum);
-void* rec_fld(fn_rec *rec, String fname);
-String ent_str(ventry *ent);
+void* rec_fld(fn_rec *rec, const char *);
+char* ent_str(ventry *ent);
 ventry* ent_head(ventry *ent);
-ventry* ent_rec(fn_rec *rec, String fname);
+ventry* ent_rec(fn_rec *rec, const char *);
 
-void tbl_del_val(String tn, String fname, String val);
+void tbl_del_val(const char *, const char *, const char *);
 
-int tbl_fld_count(String tn);
+int tbl_fld_count(const char *);
 int tbl_ent_count(ventry *e);
+
+typedef void* (*tbl_vt_cb)(fn_rec *rec, const char *key);
 
 typedef struct {
   int count;
   int max;
-  String *flds;
+  char **flds;
   int *type;
   void **data;
 } trans_rec;
 
-typedef void* (*tbl_vt_cb)(fn_rec *rec, String key);
-void tbl_mk_vt_fld(String tn, String name, tbl_vt_cb cb);
-void* rec_vt_fld(String tn, fn_rec *rec, String fname);
+void tbl_mk_vt_fld(const char *, const char *, tbl_vt_cb cb);
+void* rec_vt_fld(const char *, fn_rec *rec, const char *);
 
 trans_rec* mk_trans_rec(int fld_count);
-void edit_trans(trans_rec *r, String fname, String val, void *data);
+void edit_trans(trans_rec *r, char *, char *, void *data);
 void clear_trans(trans_rec *r, int flush);
 
 void field_list(List *args);

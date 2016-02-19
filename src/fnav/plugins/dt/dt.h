@@ -8,7 +8,7 @@ typedef struct DT DT;
 struct DT {
   Plugin *base;
   FILE *f;
-  String filename;
+  char *filename;
   Model *m;
 };
 

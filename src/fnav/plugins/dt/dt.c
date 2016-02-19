@@ -73,8 +73,8 @@ static void dt_readfile(DT *dt)
 
   while ((size = getline(&line, &len, dt->f)) != -1) {
     trans_rec *r = mk_trans_rec(tbl_fld_count("filename"));
-    edit_trans(r, "name", (String)line, NULL);
-    edit_trans(r, "line", (String)"0",  NULL);
+    edit_trans(r, "name", (char*)line, NULL);
+    edit_trans(r, "line", (char*)"0",  NULL);
     CREATE_EVENT(eventq(), commit, 2, "filename", r);
   }
   free(line);

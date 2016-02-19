@@ -28,7 +28,7 @@ struct Model {
   ventry *head;
   bool blocking;
   bool opened;
-  String sort_type;
+  char *sort_type;
   int sort_rev;
   UT_array *lines;
 };
@@ -51,8 +51,8 @@ static int str_cmp(const void *a, const void *b, void *arg)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
-  String s1 = rec_fld(l1.rec, "name");
-  String s2 = rec_fld(l2.rec, "name");
+  char *s1 = rec_fld(l1.rec, "name");
+  char *s2 = rec_fld(l2.rec, "name");
   return REV_FN(*(int*)arg, strcmp, s1, s2);
 }
 
@@ -158,7 +158,7 @@ void refind_line(Model *m)
   try_old_val(m, lis, it);
 }
 
-void model_sort(Model *m, String fld, int flags)
+void model_sort(Model *m, const char *fld, int flags)
 {
   log_msg("MODEL", "model_sort");
   if (fld) {
@@ -230,7 +230,7 @@ static void generate_lines(Model *m)
   }
 }
 
-String model_str_line(Model *m, int index)
+char* model_str_line(Model *m, int index)
 {
   if (!m->lines || utarray_len(m->lines) < index)
     return NULL;
@@ -244,15 +244,15 @@ int model_count(Model *m)
   return utarray_len(m->lines);
 }
 
-void* model_curs_value(Model *m, String field)
+void* model_curs_value(Model *m, const char *fld)
 {
-  return rec_fld(m->cur, field);
+  return rec_fld(m->cur, fld);
 }
 
-void* model_fld_line(Model *m, String field, int index)
+void* model_fld_line(Model *m, const char *fld, int index)
 {
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
-  return rec_fld(res->rec, field);
+  return rec_fld(res->rec, fld);
 }
 
 void model_set_curs(Model *m, int index)
@@ -264,12 +264,12 @@ void model_set_curs(Model *m, int index)
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
   if (res) {
     m->cur = res->rec;
-    String curval = model_curs_value(m, m->hndl->kname);
+    char *curval = model_curs_value(m, m->hndl->kname);
     SWAP_ALLOC_PTR(m->lis->fval, strdup(curval));
   }
 }
 
-String model_str_expansion(String val)
+char* model_str_expansion(char *val)
 {
   Buffer *buf = window_get_focus();
   if (!buf || !buf_attached(buf))

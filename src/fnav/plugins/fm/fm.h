@@ -8,7 +8,7 @@ typedef struct FM FM;
 
 struct FM {
   Plugin *base;
-  String cur_dir;
+  char *cur_dir;
   fn_fs *fs;
 };
 

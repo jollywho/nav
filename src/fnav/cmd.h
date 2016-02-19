@@ -14,10 +14,10 @@
 
 typedef struct Cmd_T Cmd_T;
 typedef struct Cmdarg Cmdarg;
-typedef void* (*Cmd_Func_T)(List *, Cmdarg *);
+typedef void* (*Cmd_Func_T)(const List *, Cmdarg *);
 
 struct Cmd_T {
-  String name;
+  char *name;
   Cmd_Func_T cmd_func;
   int flags;
   UT_hash_handle hh;
@@ -31,10 +31,10 @@ struct Cmdarg {
 };
 
 void cmd_add(Cmd_T *cmd);
-void cmd_remove(String name);
+void cmd_remove(const char *);
 void cmd_clearall();
 void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline);
-Cmd_T* cmd_find(String name);
+Cmd_T* cmd_find(const char *);
 void cmd_list(List *args);
 
 #endif

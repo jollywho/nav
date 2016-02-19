@@ -57,7 +57,7 @@ void set_color(fn_color *color)
   HASH_ADD_STR(options->hi_colors, key, col);
 }
 
-int attr_color(const String name)
+int attr_color(const char *name)
 {
   fn_color *color;
   HASH_FIND_STR(options->hi_colors, name, color);

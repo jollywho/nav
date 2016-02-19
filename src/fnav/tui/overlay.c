@@ -23,8 +23,8 @@ struct Overlay {
   bool queued;
   bool del;
 
-  String usr_arg;
-  String pipe_in;
+  char *usr_arg;
+  char *pipe_in;
   char bufno[SZ_BUFBOX];
   char name[SZ_NAMEBOX];
   char lineno[SZ_LNUMBOX];
@@ -92,7 +92,7 @@ static void overlay_refresh(Overlay *ov)
   window_req_draw(ov, overlay_draw);
 }
 
-static void set_string(String *from, String to)
+static void set_string(char **from, char *to)
 {
   if (!to)
     return;
@@ -168,7 +168,7 @@ void overlay_lnum(Overlay *ov, int lnum, int max)
   wnoutrefresh(ov->nc_st);
 }
 
-void overlay_edit(Overlay *ov, String name, String usr, String in)
+void overlay_edit(Overlay *ov, char *name, char *usr, char *in)
 {
   set_string(&ov->usr_arg, usr);
   set_string(&ov->pipe_in, in);

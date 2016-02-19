@@ -55,7 +55,7 @@ static const Cmd_T cmdtable[] = {
   {"delm",    win_mark,    1},
 };
 
-static String compl_cmds[] = {
+static char * compl_cmds[] = {
   "q;window:string:wins",
   "close;window:string:wins",
   "au;event:string:events",
@@ -70,7 +70,7 @@ static String compl_cmds[] = {
   "cd;path:string:paths",
   "mark;label:string:marklbls",
 };
-static String compl_args[][2] = {
+static char * compl_args[][2] = {
   {"plugin", "fm;path:string:paths"},
   {"plugin", "img;window:number:wins"},
   {"plugin", "dt;path:string:paths"},
@@ -89,7 +89,7 @@ static fn_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
 static const uint64_t RFSH_RATE = 10;
 static Window win;
-static String cur_dir;
+static char * cur_dir;
 
 void sig_resize(int sig)
 {
@@ -193,12 +193,12 @@ void window_stop_override()
   win.term = NULL;
 }
 
-void window_ch_dir(String dir)
+void window_ch_dir(char *dir)
 {
   SWAP_ALLOC_PTR(cur_dir, strdup(dir));
 }
 
-String window_cur_dir()
+char* window_cur_dir()
 {
   return cur_dir;
 }
@@ -222,7 +222,7 @@ static void* win_cd(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_cd");
 
-  String path = list_arg(args, 1, VAR_STRING);
+  char *path = list_arg(args, 1, VAR_STRING);
   Plugin *plugin = buf_plugin(layout_buf(&win.layout));
   if (plugin)
     send_hook_msg("open", plugin, NULL, &(HookArg){NULL,path});
@@ -233,7 +233,7 @@ static void* win_mark(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_mark");
 
-  String label = list_arg(args, 1, VAR_STRING);
+  char *label = list_arg(args, 1, VAR_STRING);
   if (!label)
     return 0;
 
@@ -248,11 +248,11 @@ static void* win_autocmd(List *args, Cmdarg *ca)
   log_msg("WINDOW", "win_autocmd");
   int len = utarray_len(args->items);
   log_msg("WINDOW", "%d %d", len, ca->cmdstr->rev);
-  String event = list_arg(args, 1, VAR_STRING);
+  char *event = list_arg(args, 1, VAR_STRING);
   int pos = len > 3 ? 2 : -1;
   int rem = len > 3 ? 3 : 2;
-  String pat = list_arg(args, pos, VAR_STRING);
-  String cur = cmdline_line_from(ca->cmdline, rem);
+  char *pat = list_arg(args, pos, VAR_STRING);
+  char *cur = cmdline_line_from(ca->cmdline, rem);
   log_msg("WINDOW", "%p %p", event, cur);
   if (event && ca->cmdstr->rev)
     hook_remove(event, pat);
@@ -265,7 +265,7 @@ static void* win_sort(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_sort");
 
-  String fld = list_arg(args, 1, VAR_STRING);
+  char *fld = list_arg(args, 1, VAR_STRING);
   buf_sort(layout_buf(&win.layout), fld, ca->cmdstr->rev);
   return 0;
 }
@@ -273,7 +273,7 @@ static void* win_sort(List *args, Cmdarg *ca)
 static void* win_new(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_new");
-  String name = list_arg(args, 1, VAR_STRING);
+  char *name = list_arg(args, 1, VAR_STRING);
   if (!name)
     window_add_buffer(ca->flags);
   if (!plugin_requires_buf(name))
@@ -301,7 +301,7 @@ static void* win_close(List *args, Cmdarg *ca)
 static void* win_buf(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_buf");
-  String name = list_arg(args, 1, VAR_STRING);
+  char *name = list_arg(args, 1, VAR_STRING);
   if (!name || layout_is_root(&win.layout))
     return 0;
 

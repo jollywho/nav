@@ -5,7 +5,7 @@
 #include "fnav/event/rstream.h"
 #include "fnav/plugins/plugin.h"
 
-typedef void (*shell_stdout_cb)(Plugin *c, String out);
+typedef void (*shell_stdout_cb)(Plugin *c, char *out);
 typedef void (*shell_status_cb)(Plugin *c, int status);
 
 typedef struct Shell Shell;
@@ -22,16 +22,16 @@ struct Shell {
   bool blocking;
   bool again;
   bool reg;
-  String msg;
+  char *msg;
 };
 
 Shell* shell_new(Plugin *plugin);
 void shell_delete(Shell *sh);
-void shell_args(Shell *sh, String *args, shell_stdout_cb readout);
+void shell_args(Shell *sh, char **args, shell_stdout_cb readout);
 void shell_start(Shell *sh);
 void shell_stop(Shell *sh);
-void shell_set_in_buffer(Shell *sh, String msg);
-void shell_exec(String line, shell_status_cb cb, String cwd, Plugin *caller);
-void shell_write(Shell *sh, String msg);
+void shell_set_in_buffer(Shell *sh, char *msg);
+void shell_exec(char *line, shell_status_cb cb, char *cwd, Plugin *caller);
+void shell_write(Shell *sh, char *msg);
 
 #endif

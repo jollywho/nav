@@ -40,7 +40,7 @@ int ex_cmd_curpos();
 Cmdstr* ex_cmd_curcmd();
 Cmdstr* ex_cmd_prevcmd();
 Token* ex_cmd_curtok();
-String ex_cmd_curstr();
+char* ex_cmd_curstr();
 List* ex_cmd_curlist();
 int ex_cmd_state();
 int ex_cmd_curidx(List *list);

@@ -11,7 +11,7 @@ void overlay_set(Overlay *ov, pos_T size, pos_T ofs, int sep);
 
 void overlay_bufno(Overlay *ov, int id);
 void overlay_lnum(Overlay *ov, int lnum, int max);
-void overlay_edit(Overlay *ov, String name, String usr, String in);
+void overlay_edit(Overlay *ov, char *, char *, char *);
 void overlay_draw(void **argv);
 void overlay_clear(Overlay *ov);
 void overlay_erase(Overlay *ov);

@@ -19,13 +19,13 @@ typedef struct {
   Pattern *pat;
   union {
     hook_cb fn;
-    String cmd;
+    char *cmd;
   } data;
 } Hook;
 
 //TODO: group name for namespace
 typedef struct {
-  String msg;
+  char *msg;
   UT_hash_handle hh;
   UT_array *hooks;   /* Hook */
 } EventHandler;
@@ -35,7 +35,7 @@ struct HookHandler {
   UT_array *own;     /* Hook */
 };
 
-static const String events_list[] = {
+static const char *events_list[] = {
   "open", "fileopen", "cursor_change", "window_resize", "diropen",
   "pipe_left", "pipe_right", "left", "right", "paste", "remove",
 };
@@ -74,7 +74,7 @@ void hook_cleanup_host(Plugin *host)
   free(host->event_hooks);
 }
 
-void hook_add(String event, String pattern, String cmd)
+void hook_add(char *event, char *pattern, char *cmd)
 {
   log_msg("HOOK", "ADD");
   log_msg("HOOK", "<%s> %s `%s`", event, pattern, cmd);
@@ -89,7 +89,7 @@ void hook_add(String event, String pattern, String cmd)
   utarray_push_back(evh->hooks, &hook);
 }
 
-void hook_remove(String event, String pattern)
+void hook_remove(char *event, char *pattern)
 {
   log_msg("HOOK", "REMOVE");
   EventHandler *evh;
@@ -104,7 +104,7 @@ void hook_remove(String event, String pattern)
   }
 }
 
-void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, String msg)
+void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg)
 {
   log_msg("HOOK", "ADD_INTL");
   EventHandler *evh;
@@ -120,7 +120,7 @@ void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, String msg)
   utarray_push_back(hkh->own, &hook);
 }
 
-void hook_set_tmp(String msg)
+void hook_set_tmp(char *msg)
 {
   EventHandler *evh;
   HASH_FIND_STR(events_tbl, msg, evh);
@@ -138,7 +138,7 @@ void hook_clear_host(Plugin *host)
   utarray_clear(hkh->hosting);
 }
 
-EventHandler* find_evh(String msg)
+EventHandler* find_evh(char *msg)
 {
   EventHandler *evh;
   HASH_FIND_STR(events_tbl, msg, evh);
@@ -185,7 +185,7 @@ void call_hooks(EventHandler *evh, Plugin *host, Plugin *caller, HookArg *hka)
   }
 }
 
-void send_hook_msg(String msg, Plugin *host, Plugin *caller, HookArg *hka)
+void send_hook_msg(char *msg, Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("HOOK", "(<%s>) msg sent", msg);
   call_hooks(find_evh(msg), host, caller, hka);

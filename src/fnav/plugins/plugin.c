@@ -23,7 +23,7 @@ struct _Cid {
 };
 
 static struct plugin_ent {
-  String name;
+  char *name;
   plugin_init_cb init_cb;
   plugin_open_cb open_cb;
   plugin_close_cb close_cb;
@@ -54,7 +54,7 @@ void plugin_init()
   }
 }
 
-static int find_plugin(String name)
+static int find_plugin(const char *name)
 {
   if (!name)
     return -1;
@@ -66,7 +66,7 @@ static int find_plugin(String name)
   return -1;
 }
 
-static Plugin* find_loaded_plugin(String name)
+static Plugin* find_loaded_plugin(char *name)
 {
   Cid *it;
   for (it = id_table; it != NULL; it = it->hh.next) {
@@ -111,7 +111,7 @@ static void unset_cid(Plugin *plugin)
   LIST_INSERT_HEAD(&id_pool, rem, ent);
 }
 
-int plugin_requires_buf(String name)
+int plugin_requires_buf(const char *name)
 {
   int ret = find_plugin(name);
   if (ret == -1)
@@ -126,7 +126,7 @@ static Plugin* plugin_in_bkgrnd(plugin_ent *ent)
   return find_loaded_plugin(ent->name);
 }
 
-Plugin* plugin_open(String name, Buffer *buf, List *args)
+Plugin* plugin_open(const char *name, Buffer *buf, List *args)
 {
   int i = find_plugin(name);
   if (i == -1)
@@ -157,7 +157,7 @@ void plugin_close(Plugin *plugin)
   free(plugin);
 }
 
-int plugin_isloaded(String name)
+int plugin_isloaded(const char *name)
 {
   return find_plugin(name) + 1;
 }
@@ -168,7 +168,7 @@ Plugin* focus_plugin()
   return buf->plugin;
 }
 
-String focus_dir()
+char* focus_dir()
 {
   return window_cur_dir();
 }

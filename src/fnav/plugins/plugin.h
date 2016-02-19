@@ -22,18 +22,18 @@ typedef void (*plugin_close_cb)(Plugin *plugin);
 struct fn_handle {
   Buffer *buf;
   Model *model;
-  String tn;      // listening table name
-  String key;     // listening value
-  String key_fld; // listening field
-  String fname;   // filter field
-  String kname;   // filter field
+  char *tn;      // listening table name
+  char *key;     // listening value
+  char *key_fld; // listening field
+  char *fname;   // filter field
+  char *kname;   // filter field
 };
 
 struct Plugin {
   int id;
-  String name;
-  String fmt_name;
-  String compl_key;
+  char *name;
+  char *fmt_name;
+  char *compl_key;
   fn_handle *hndl;
   void *top;
   void (*_cancel)(Plugin *plugin);
@@ -47,16 +47,15 @@ typedef struct {
 } pos_T;
 
 void plugin_init();
-void plugin_load(String name, plugin_open_cb open_cb, plugin_close_cb close_cb);
-int plugin_isloaded(String name);
+int plugin_isloaded(const char *);
 
-Plugin* plugin_open(String name, Buffer *buf, List *args);
+Plugin* plugin_open(const char *, Buffer *buf, List *args);
 void plugin_close(Plugin *plugin);
 
 Plugin* focus_plugin();
 Plugin* plugin_from_id(int id);
-int plugin_requires_buf(String name);
-String focus_dir();
+int plugin_requires_buf(const char *);
+char *focus_dir();
 
 void plugin_list(List *args);
 void win_list(List *args);

@@ -8,11 +8,11 @@ typedef struct fentry fentry;
 typedef struct fn_fs fn_fs;
 
 struct fn_fs {
-  String path;
+  char *path;
 
   fn_handle *hndl;
   uv_fs_t uv_fs;  /* readonly stat */
-  String readkey;
+  char *readkey;
   fentry *ent;
 
   void *data;
@@ -24,19 +24,19 @@ struct fn_fs {
 
 fn_fs* fs_init(fn_handle *hndl);
 void fs_cleanup(fn_fs *fs);
-void fs_open(fn_fs *fs, String dir);
+void fs_open(fn_fs *fs, const char *);
 void fs_close(fn_fs *fs);
-void fs_read(fn_fs *fs, String dir);
+void fs_read(fn_fs *fs, const char *);
 
 void fs_fastreq(fn_fs *fs);
 bool fs_blocking(fn_fs *fs);
 
-bool isdir(String path);
-String fs_expand_path(String path);
-String fs_parent_dir(const String path);
-void* fs_vt_stat_resolv(fn_rec *rec, String key);
-String conspath(const char *str1, const char *str2);
+bool isdir(const char *);
+char* fs_expand_path(const char *);
+char* fs_parent_dir(char *);
+void* fs_vt_stat_resolv(fn_rec *rec, const char *);
+char* conspath(const char *, const char *);
 
-String fs_current_dir();
+char* fs_current_dir();
 
 #endif
