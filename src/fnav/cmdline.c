@@ -33,7 +33,6 @@ static void ref_pop(QUEUE *refs);
 #define NEXT_CMD(cl,c) \
   (c = (Cmdstr*)utarray_next(cl->cmds, c))
 
-static UT_icd dict_icd = { sizeof(Pair),   NULL };
 static UT_icd list_icd = { sizeof(Token),  NULL };
 static UT_icd cmd_icd  = { sizeof(Cmdstr), NULL };
 
@@ -54,14 +53,12 @@ void* token_val(Token *token, char v_type)
   switch (t_type) {
     case VAR_LIST:
       return token->var.vval.v_list;
-    case VAR_DICT:
-      return token->var.vval.v_dict;
     case VAR_PAIR:
       return token->var.vval.v_pair;
     case VAR_STRING:
       return token->var.vval.v_string;
     default:
-      return NULL;
+      return token;
   }
 }
 
@@ -124,6 +121,11 @@ void cmdline_cleanup(Cmdline *cmdline)
   utarray_free(cmdline->tokens);
 }
 
+Cmdstr* cmdline_getcmd(Cmdline *cmdline)
+{
+  return (Cmdstr*)utarray_front(cmdline->cmds);
+}
+
 static void stack_push(QUEUE *queue, Token token)
 {
   queue_item *item = malloc(sizeof(queue_item));
@@ -150,10 +152,6 @@ static void ref_pop(QUEUE *refs)
   if (item->item.v_type == VAR_LIST) {
     List *l = ref;
     utarray_free(l->items);
-  }
-  if (item->item.v_type == VAR_DICT) {
-    Dict *d = ref;
-    utarray_free(d->items);
   }
   free(item);
   free(ref);
@@ -213,18 +211,6 @@ static Token list_new(Cmdline *cmdline)
   return token;
 }
 
-static Token dict_new(Cmdline *cmdline)
-{
-  Token token;
-  memset(&token, 0, sizeof(Token));
-  Dict *d = malloc(sizeof(Dict));
-  ref_push(&cmdline->refs, d, VAR_DICT);
-  token.var.v_type = VAR_DICT;
-  utarray_new(d->items, &dict_icd);
-  token.var.vval.v_dict = d;
-  return token;
-}
-
 static void cmdline_create_token(UT_array *ar, char *str, int st, int ed, int b)
 {
   int len = ed - st;
@@ -253,7 +239,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
   int block = 0;
 
   st = ed = pos = 0;
-  for(;;) {
+  for (;;) {
     ch[0] = str[pos++];
     if (ch[0] == '\0') {
       cmdline_create_token(cmdline->tokens, str, st, ed, block);
@@ -269,7 +255,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
         st = end;
       }
     }
-    else if (strpbrk(ch, "!/:|<>,[]{} ")) {
+    else if (strpbrk(ch, "!/:|<>,[]{}()$ ")) {
       cmdline_create_token(cmdline->tokens, str, st, ed, block);
       if (*ch == ' ')
         block++;
@@ -371,7 +357,7 @@ Token* cmdline_last(Cmdline *cmdline)
   return word;
 }
 
-char * cmdline_line_from(Cmdline *cmdline, int idx)
+char* cmdline_line_from(Cmdline *cmdline, int idx)
 {
   Token *word = cmdline_tokindex(cmdline, idx);
   if (!word)
@@ -386,10 +372,6 @@ static void pop(QUEUE *stack)
 
   if (parent.var.v_type == VAR_LIST) {
     utarray_push_back(parent.var.vval.v_list->items, &token);
-    parent.end = token.end;
-  }
-  else if (parent.var.v_type == VAR_DICT) {
-    utarray_push_back(parent.var.vval.v_dict->items, &token);
     parent.end = token.end;
   }
   else if (stack_prevprev(stack).var.v_type == VAR_PAIR) {
@@ -456,16 +438,11 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
         break;
       case ',':
         push(*word, stack);
-      case '}':
       case ']':
         /*FALLTHROUGH*/
         pop(stack);
         break;
         //
-      case '{':
-        push(dict_new(cmdline), stack);
-        head.start = word->start;
-        break;
       case '[':
         push(list_new(cmdline), stack);
         head.start = word->start;
@@ -503,14 +480,14 @@ void cmdline_build(Cmdline *cmdline)
   }
 }
 
-static char * do_expansion(char * line)
+static char* do_expansion(char *line)
 {
   log_msg("CMDLINE", "do_expansion");
   if (!strstr(line, "%:"))
     return strdup(line);
 
-  char * head = strtok(line, "%:");
-  char * name = strtok(NULL, "%:");
+  char *head = strtok(line, "%:");
+  char *name = strtok(NULL, "%:");
 
   char *quote = "\"";
   char *delim = strchr(name, '"');
@@ -520,25 +497,25 @@ static char * do_expansion(char * line)
   }
 
   name = strtok(name, delim);
-  char * tail = strtok(NULL, delim);
+  char *tail = strtok(NULL, delim);
 
-  char * body = model_str_expansion(name);
+  char *body = model_str_expansion(name);
   if (!body)
     return strdup(line);
 
   if (!tail)
     tail = "";
 
-  char * out;
+  char *out;
   asprintf(&out, "%s%s%s%s", head, body, quote, tail);
   return out;
 }
 
-static int exec_line(char * line, Cmdstr *cmd)
+static int exec_line(char *line, Cmdstr *cmd)
 {
   if (!cmd->exec || strlen(line) < 2)
     return 0;
-  char * str = strstr(line, "!");
+  char *str = strstr(line, "!");
   ++str;
   str = do_expansion(str);
   shell_exec(str, NULL, focus_dir(), NULL);
@@ -559,7 +536,7 @@ static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd, Cmdstr *prev)
 {
   log_msg("CMDLINE", "exec_pipe");
   List *args = token_val(&cmd->args, VAR_LIST);
-  char * arg = list_arg(args, 0, VAR_STRING);
+  char *arg = list_arg(args, 0, VAR_STRING);
 
   if (!prev->ret) {
     prev->ret = focus_plugin();

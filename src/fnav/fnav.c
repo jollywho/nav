@@ -36,16 +36,17 @@ void init(void)
   raw();
   vt_init(term);
 
+  cmd_init();
   option_init();
-  config_init();
-  config_load_defaults();
-
   tables_init();
   event_init();
   input_init();
   compl_init();
   hook_init();
   window_init();
+
+  config_init();
+  config_load_defaults();
   log_msg("INIT", "INIT_END");
 }
 

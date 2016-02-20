@@ -20,7 +20,6 @@ typedef struct {
 #define VAR_STRING  2       /* "v_string" is used          */
 #define VAR_PAIR    3       /* "v_pair" is used            */
 #define VAR_LIST    4       /* "v_list" is used            */
-#define VAR_DICT    5       /* "v_dict" is used            */
 
 struct Token {
   int block;                /* block level flag           */
@@ -36,10 +35,6 @@ struct Pair {
 };
 
 struct List {
-  UT_array *items;
-};
-
-struct Dict {
   UT_array *items;
 };
 
@@ -75,7 +70,8 @@ Cmdstr* cmdline_cmdbtwn(Cmdline *cmdline, int st, int ed);
 Token* list_tokbtwn(List *lst, int st, int ed);
 Token* cmdline_tokindex(Cmdline *cmdline, int idx);
 Token* cmdline_last(Cmdline *cmdline);
-char * cmdline_line_from(Cmdline *cmdline, int idx);
+char* cmdline_line_from(Cmdline *cmdline, int idx);
+Cmdstr* cmdline_getcmd(Cmdline *cmdline);
 
 void* token_val(Token *token, char v_type);
 void* list_arg(List *lst, int argc, char v_type);

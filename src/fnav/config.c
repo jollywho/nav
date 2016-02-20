@@ -211,11 +211,8 @@ bool config_read(FILE *file)
       free(line);
       continue;
     }
-    Cmdline cmd;
-    cmdline_init_config(&cmd, line);
-    cmdline_build(&cmd);
-    cmdline_req_run(&cmd);
-    cmdline_cleanup(&cmd);
+    log_msg("CONFIG", "pump");
+    cmd_eval(line);
     free(line);
   }
   return 1;
