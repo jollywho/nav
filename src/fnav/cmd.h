@@ -4,7 +4,7 @@
 #include "fnav/lib/uthash.h"
 #include "fnav/cmdline.h"
 
-#define XFILE     0x01
+#define WORD      0x01
 #define BUFFER    0x02
 #define FIELD     0x04
 #define FUNCTION  0x08
@@ -31,6 +31,8 @@ struct Cmdarg {
 };
 
 void cmd_init();
+void cmd_start();
+void cmd_end();
 void cmd_add(Cmd_T *cmd);
 void cmd_remove(const char *);
 void cmd_clearall();

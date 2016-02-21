@@ -1,10 +1,10 @@
-#include "fnav/lib/queue.h"
 #include "fnav/cmd.h"
 #include "fnav/log.h"
 #include "fnav/compl.h"
 #include "fnav/table.h"
 
 enum CTLCMD {
+  CTL_NOP,
   CTL_IF,
   CTL_ELSEIF,
   CTL_ELSE,
@@ -13,70 +13,70 @@ enum CTLCMD {
 
 typedef struct Expr Expr;
 struct Expr {
+  int size;
   Expr *parent;
-  QUEUE childs;
   char *line;
 };
-
-typedef struct {
-  Expr *expr;
-  QUEUE node;
-} cmd_item;
 
 static void* cmd_ifblock();
 static void* cmd_elseblock();
 static void* cmd_endblock();
 
 static Cmd_T *cmd_table;
+static Expr *root;
 static Expr *block;
+static int pos;
 
 static const Cmd_T builtins[] = {
+  {NULL,      NULL,          0},
   {"if",      cmd_ifblock,   0},
   {"elseif",  cmd_elseblock, 0},
   {"else",    cmd_elseblock, 0},
   {"end",     cmd_endblock,  0},
 };
 
-static void stack_new(char *line)
-{
-  Expr *expr = malloc(sizeof(Expr));
-  log_msg("CMD", "new %s", line);
-  expr->line = strdup(line);
-  QUEUE_INIT(&expr->childs);
-  if (block) {
-    cmd_item *item = malloc(sizeof(cmd_item));
-    item->expr = expr;
-    QUEUE_INSERT_HEAD(&block->childs, &item->node);
-  }
-  block = expr;
-}
-
 static void stack_push(char *line)
 {
-  cmd_item *item = malloc(sizeof(cmd_item));
-  item->expr = malloc(sizeof(Expr));
-  log_msg("CMD", "push %s", line);
-  item->expr->line = strdup(line);
-  QUEUE_INSERT_HEAD(&block->childs, &item->node);
+  root[++pos].line = strdup(line);
+  block->size++;
 }
 
-static Expr* stack_pop()
+static void stack_new(char *line)
 {
-  QUEUE *h = QUEUE_HEAD(&block->childs);
-  cmd_item *item = QUEUE_DATA(h, cmd_item, node);
-  QUEUE_REMOVE(&item->node);
-  Expr *expr = item->expr;
-  free(item);
-  return expr;
+  log_msg("CMD", "new| %s", line);
+  Expr *prev = block;
+  if (prev != root)
+    prev->size++;
+  block = &root[pos+1];
+  block->parent = prev;
+  root[++pos].line = strdup(line);
 }
 
 void cmd_init()
 {
-  for (int i = 0; i < LENGTH(builtins); i++) {
+  for (int i = 1; i < LENGTH(builtins); i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
     cmd = memmove(cmd, &builtins[i], sizeof(Cmd_T));
     cmd_add(cmd);
   }
+}
+
+void cmd_start()
+{
+  pos = -1;
+  root = calloc(50, sizeof(Expr));
+  block = &root[0];
+  block->size++;
+}
+
+void cmd_end()
+{
+  //TODO: force parse errors
+  for (int i = 0; i < pos + 1; i++) {
+    free(root[i].line);
+  }
+  free(root);
+  block = NULL;
 }
 
 static void cmd_do(char *line)
@@ -89,16 +89,9 @@ static void cmd_do(char *line)
   cmdline_cleanup(&cmd);
 }
 
-static void start_do()
-{
-  log_msg("CMD", "start_do");
-  // run item
-  // if ret
-}
-
 static enum CTLCMD ctl_cmd(const char *line)
 {
-  for (int i = 0; i < LENGTH(builtins); i++) {
+  for (int i = 1; i < LENGTH(builtins); i++) {
     char *str = builtins[i].name;
     if (!strncmp(str, line, strlen(str)))
       return i;
@@ -116,13 +109,14 @@ void cmd_eval(char *line)
       // elseif
       // add to head->parent->childs
     case CTL_END:
-      if (!block->parent)
-        start_do();
+      if (block == root) {
+        cmd_do(block->line);
+      }
       else
         block = block->parent;
       break;
     default:
-      if (block)
+      if (pos > 0)
         stack_push(line);
       else
         cmd_do(line);
@@ -132,9 +126,29 @@ void cmd_eval(char *line)
 static void* cmd_ifblock(List *args, Cmdarg *ca)
 {
   log_msg("CMD", "cmd_ifblock");
+  //TODO: make ret a arg struct
+  Expr *node = block;
+  char *line = ca->cmdline->line + 3;
+  Cmdline cmd;
+  cmdline_init_config(&cmd, line);
+  cmdline_build(&cmd);
+  cmdline_req_run(&cmd);
+  void *ret = cmdline_getcmd(&cmd)->ret;
+  log_msg("CMD", ":-:| %s %d", node->line, node->size);
 
-  if (ca->flags || ca->cmdstr->ret) {
+  if (ret) {
+    int ofs = 1;
+    for (int i = 1; i < node->size + 1; i++) {
+      Expr *expr = &node[ofs];
+      ofs += expr->size + 1;
+      log_msg("CMD", ":| %s ", expr->line);
+      block = expr;
+      cmd_do(expr->line);
+    }
   }
+  log_msg("CMD", "cmd_endofblock");
+  cmdline_cleanup(&cmd);
+  block = node->parent;
   return 0;
 }
 
@@ -192,10 +206,11 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
   if (utarray_len(args->items) < 1)
     return;
 
-  Cmd_T *fun = cmd_find(list_arg(args, 0, VAR_STRING));
+  char *word = list_arg(args, 0, VAR_STRING);
+  Cmd_T *fun = cmd_find(word);
   if (!fun) {
-    cmdstr->ret_t = 0;
-    cmdstr->ret = NULL;
+    cmdstr->ret_t = WORD;
+    cmdstr->ret = word;
     return;
   }
 
