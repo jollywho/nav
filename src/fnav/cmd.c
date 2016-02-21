@@ -17,8 +17,6 @@ struct Expr {
   char *line;
 };
 
-#define DEFAULT_SIZE 20
-
 static void* cmd_ifhead();
 static void* cmd_elsehead();
 static void* cmd_endhead();
@@ -27,6 +25,7 @@ static Cmd_T *cmd_table;
 static Expr *root;
 static int pos;
 static int lvl;
+static int maxpos;
 
 static const Cmd_T builtins[] = {
   {NULL,      NULL,         0},
@@ -38,13 +37,20 @@ static const Cmd_T builtins[] = {
 
 static void stack_push(char *line)
 {
+  if (pos + 2 > maxpos) {
+    maxpos *= 2;
+    root = realloc(root, maxpos*sizeof(Expr));
+    for (int i = pos+1; i < maxpos; i++)
+      memset(&root[i], 0, sizeof(Expr));
+  }
   root[++pos].line = strdup(line);
 }
 
 void cmd_reset()
 {
   pos = -1;
-  root = calloc(DEFAULT_SIZE, sizeof(Expr));
+  maxpos = BUFSIZ;
+  root = calloc(maxpos, sizeof(Expr));
 }
 
 void cmd_init()
@@ -67,9 +73,10 @@ void cmd_cleanup()
 void cmd_flush()
 {
   log_msg("CMD", "flush");
+
+  //TODO: force parse errors
   if (lvl > 0)
     log_msg("CMD", "parse error: open block not closed!");
-  //TODO: force parse errors
   for (int i = 0; root[i].line; i++)
     free(root[i].line);
   free(root);

@@ -91,7 +91,7 @@ static fn_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
 static const uint64_t RFSH_RATE = 10;
 static Window win;
-static char * cur_dir;
+static char *cur_dir;
 
 void sig_resize(int sig)
 {
