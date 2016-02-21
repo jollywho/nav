@@ -31,8 +31,8 @@ struct Cmdarg {
 };
 
 void cmd_init();
-void cmd_start();
-void cmd_end();
+void cmd_cleanup();
+void cmd_flush();
 void cmd_add(Cmd_T *cmd);
 void cmd_remove(const char *);
 void cmd_clearall();

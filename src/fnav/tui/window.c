@@ -33,6 +33,7 @@ static void* win_bdel();
 static void* win_cd();
 static void* win_mark();
 static void* win_autocmd();
+static void* win_echo();
 static void win_layout();
 static void window_ex_cmd();
 static void window_update(uv_timer_t *);
@@ -53,6 +54,7 @@ static const Cmd_T cmdtable[] = {
   {"cd",      win_cd,      0},
   {"mark",    win_mark,    0},
   {"delm",    win_mark,    1},
+  {"echo",    win_echo,    0},
 };
 
 static char * compl_cmds[] = {
@@ -258,6 +260,13 @@ static void* win_autocmd(List *args, Cmdarg *ca)
     hook_remove(event, pat);
   else if (event && cur)
     hook_add(event, pat, cur);
+  return 0;
+}
+
+static void* win_echo(List *args, Cmdarg *ca)
+{
+  char *out = list_arg(args, 1, VAR_STRING);
+  log_msg("WINDOW", "win_echo %% %% %s", out);
   return 0;
 }
 

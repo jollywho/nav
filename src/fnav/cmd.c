@@ -13,47 +13,43 @@ enum CTLCMD {
 
 typedef struct Expr Expr;
 struct Expr {
-  int size;
-  Expr *parent;
+  enum CTLCMD type;
   char *line;
 };
 
-static void* cmd_ifblock();
-static void* cmd_elseblock();
-static void* cmd_endblock();
+#define DEFAULT_SIZE 20
+
+static void* cmd_ifhead();
+static void* cmd_elsehead();
+static void* cmd_endhead();
 
 static Cmd_T *cmd_table;
 static Expr *root;
-static Expr *block;
 static int pos;
+static int lvl;
 
 static const Cmd_T builtins[] = {
-  {NULL,      NULL,          0},
-  {"if",      cmd_ifblock,   0},
-  {"elseif",  cmd_elseblock, 0},
-  {"else",    cmd_elseblock, 0},
-  {"end",     cmd_endblock,  0},
+  {NULL,      NULL,         0},
+  {"if",      cmd_ifhead,   0},
+  {"elseif",  cmd_elsehead, 0},
+  {"else",    cmd_elsehead, 0},
+  {"end",     cmd_endhead,  0},
 };
 
 static void stack_push(char *line)
 {
   root[++pos].line = strdup(line);
-  block->size++;
 }
 
-static void stack_new(char *line)
+void cmd_reset()
 {
-  log_msg("CMD", "new| %s", line);
-  Expr *prev = block;
-  if (prev != root)
-    prev->size++;
-  block = &root[pos+1];
-  block->parent = prev;
-  root[++pos].line = strdup(line);
+  pos = -1;
+  root = calloc(DEFAULT_SIZE, sizeof(Expr));
 }
 
 void cmd_init()
 {
+  cmd_reset();
   for (int i = 1; i < LENGTH(builtins); i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
     cmd = memmove(cmd, &builtins[i], sizeof(Cmd_T));
@@ -61,22 +57,23 @@ void cmd_init()
   }
 }
 
-void cmd_start()
+void cmd_cleanup()
 {
-  pos = -1;
-  root = calloc(50, sizeof(Expr));
-  block = &root[0];
-  block->size++;
+  for (int i = 0; root[i].line; i++)
+    free(root[i].line);
+  free(root);
 }
 
-void cmd_end()
+void cmd_flush()
 {
+  log_msg("CMD", "flush");
+  if (lvl > 0)
+    log_msg("CMD", "parse error: open block not closed!");
   //TODO: force parse errors
-  for (int i = 0; i < pos + 1; i++) {
+  for (int i = 0; root[i].line; i++)
     free(root[i].line);
-  }
   free(root);
-  block = NULL;
+  cmd_reset();
 }
 
 static void cmd_do(char *line)
@@ -89,7 +86,54 @@ static void cmd_do(char *line)
   cmdline_cleanup(&cmd);
 }
 
-static enum CTLCMD ctl_cmd(const char *line)
+static bool cond_do(char *line)
+{
+  bool cond = false;
+  Cmdline cmd;
+  cmdline_init_config(&cmd, line);
+  cmdline_build(&cmd);
+  cmdline_req_run(&cmd);
+  cond = cmdline_getcmd(&cmd)->ret ? true : false;
+  cmdline_cleanup(&cmd);
+  return cond;
+}
+
+//TODO: make ret a arg struct
+//TODO: handle bracketed expr
+static void cmd_start()
+{
+  bool skip = 0;
+  for (int i = 0; i < pos; i++) {
+    Expr *cur = &root[i];
+    log_msg("CMD", "cur %d %d", cur->type, skip);
+    switch (cur->type) {
+      case CTL_IF:
+        skip = !cond_do(cur->line);
+        break;
+      case CTL_ELSEIF:
+        if (!skip) {
+          skip = true;
+          continue;
+        }
+        skip = !cond_do(cur->line);
+        break;
+      case CTL_ELSE:
+        if (!skip) {
+          skip = true;
+          continue;
+        }
+        break;
+      case CTL_END:
+        skip = false;
+        break;
+      default:
+        if (!skip)
+          cmd_do(cur->line);
+    }
+  }
+}
+
+static int ctl_cmd(const char *line)
 {
   for (int i = 1; i < LENGTH(builtins); i++) {
     char *str = builtins[i].name;
@@ -101,66 +145,40 @@ static enum CTLCMD ctl_cmd(const char *line)
 
 void cmd_eval(char *line)
 {
-  enum CTLCMD ctl = ctl_cmd(line);
-  switch (ctl) {
-    case CTL_IF:
-      stack_new(line);
-      break;
-      // elseif
-      // add to head->parent->childs
-    case CTL_END:
-      if (block == root) {
-        cmd_do(block->line);
-      }
-      else
-        block = block->parent;
-      break;
-    default:
-      if (pos > 0)
-        stack_push(line);
-      else
-        cmd_do(line);
-  }
+  log_msg("CMD", "%d %d", lvl, ctl_cmd(line));
+  if (lvl < 1 || ctl_cmd(line) != -1)
+    cmd_do(line);
+  else
+    stack_push(line);
 }
 
-static void* cmd_ifblock(List *args, Cmdarg *ca)
+static void* cmd_ifhead(List *args, Cmdarg *ca)
 {
-  log_msg("CMD", "cmd_ifblock");
-  //TODO: make ret a arg struct
-  Expr *node = block;
-  char *line = ca->cmdline->line + 3;
-  Cmdline cmd;
-  cmdline_init_config(&cmd, line);
-  cmdline_build(&cmd);
-  cmdline_req_run(&cmd);
-  void *ret = cmdline_getcmd(&cmd)->ret;
-  log_msg("CMD", ":-:| %s %d", node->line, node->size);
-
-  if (ret) {
-    int ofs = 1;
-    for (int i = 1; i < node->size + 1; i++) {
-      Expr *expr = &node[ofs];
-      ofs += expr->size + 1;
-      log_msg("CMD", ":| %s ", expr->line);
-      block = expr;
-      cmd_do(expr->line);
-    }
-  }
-  log_msg("CMD", "cmd_endofblock");
-  cmdline_cleanup(&cmd);
-  block = node->parent;
+  log_msg("CMD", "cmd_ifhead");
+  if (lvl == 0)
+    cmd_flush();
+  stack_push(ca->cmdline->line + strlen("if"));
+  ++lvl;
+  root[pos].type = CTL_IF;
   return 0;
 }
 
-static void* cmd_elseblock()
+static void* cmd_elsehead(List *args, Cmdarg *ca)
 {
-  log_msg("CMD", "cmd_elseblock");
+  log_msg("CMD", "cmd_elsehead");
+  stack_push(ca->cmdline->line + strlen("else"));
+  root[pos].type = CTL_ELSE;
   return 0;
 }
 
-static void* cmd_endblock()
+static void* cmd_endhead(List *args, Cmdarg *ca)
 {
-  log_msg("CMD", "cmd_endblock");
+  log_msg("CMD", "cmd_endhead");
+  stack_push("end");
+  --lvl;
+  root[pos].type = CTL_END;
+  if (lvl < 1)
+    cmd_start();
   return 0;
 }
 

@@ -203,7 +203,6 @@ bool config_read(FILE *file)
 {
   int line_number = 0;
   char *line;
-  cmd_start();
   while (!feof(file)) {
     line = read_line(file);
     line_number++;
@@ -216,7 +215,7 @@ bool config_read(FILE *file)
     cmd_eval(line);
     free(line);
   }
-  cmd_end();
+  cmd_flush();
   return 1;
 }
 

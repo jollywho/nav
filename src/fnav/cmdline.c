@@ -107,7 +107,6 @@ void cmdline_init(Cmdline *cmdline, int size)
 
 void cmdline_cleanup(Cmdline *cmdline)
 {
-  log_msg("CMDLINE", "cmdline_cleanup");
   if (!cmdline->cmds)
     return;
   Token *word = NULL;
@@ -408,7 +407,6 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
 
 static Token* cmdline_parse(Cmdline *cmdline, Token *word)
 {
-  log_msg("CMDLINE", "cmdline_parse");
   char ch;
   bool seek;
   Cmdstr cmd = {.flag = 0};
@@ -571,7 +569,6 @@ static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd, Cmdstr *prev)
 
 void cmdline_req_run(Cmdline *cmdline)
 {
-  log_msg("CMDLINE", "cmdline_req_run");
   Cmdstr *cmd = NULL;
   Cmdstr *prev = NULL;
   if (!cmdline->cmds)

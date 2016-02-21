@@ -59,6 +59,7 @@ void cleanup(void)
   event_cleanup();
   tables_cleanup();
   option_cleanup();
+  cmd_cleanup();
   vt_shutdown();
   endwin();
   log_msg("CLEANUP", "CLEANUP_END");
