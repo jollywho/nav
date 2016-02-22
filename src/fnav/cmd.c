@@ -11,46 +11,46 @@ enum CTLCMD {
   CTL_END,
 };
 
-typedef struct Expr Expr;
-struct Expr {
+typedef struct Symb Symb;
+struct Symb {
   enum CTLCMD type;
   char *line;
 };
 
-static void* cmd_ifhead();
-static void* cmd_elsehead();
-static void* cmd_endhead();
+static void* cmd_ifblock();
+static void* cmd_elseblock();
+static void* cmd_endblock();
 
 static Cmd_T *cmd_table;
-static Expr *root;
+static Symb *tape;
 static int pos;
 static int lvl;
 static int maxpos;
 
 static const Cmd_T builtins[] = {
-  {NULL,      NULL,         0},
-  {"if",      cmd_ifhead,   0},
-  {"elseif",  cmd_elsehead, 0},
-  {"else",    cmd_elsehead, 0},
-  {"end",     cmd_endhead,  0},
+  {NULL,      NULL,           0},
+  {"if",      cmd_ifblock,    0},
+  {"elseif",  cmd_elseblock,  0},
+  {"else",    cmd_elseblock,  0},
+  {"end",     cmd_endblock,   0},
 };
 
 static void stack_push(char *line)
 {
   if (pos + 2 > maxpos) {
     maxpos *= 2;
-    root = realloc(root, maxpos*sizeof(Expr));
+    tape = realloc(tape, maxpos*sizeof(Symb));
     for (int i = pos+1; i < maxpos; i++)
-      memset(&root[i], 0, sizeof(Expr));
+      memset(&tape[i], 0, sizeof(Symb));
   }
-  root[++pos].line = strdup(line);
+  tape[++pos].line = strdup(line);
 }
 
 void cmd_reset()
 {
   pos = -1;
   maxpos = BUFSIZ;
-  root = calloc(maxpos, sizeof(Expr));
+  tape = calloc(maxpos, sizeof(Symb));
 }
 
 void cmd_init()
@@ -65,9 +65,9 @@ void cmd_init()
 
 void cmd_cleanup()
 {
-  for (int i = 0; root[i].line; i++)
-    free(root[i].line);
-  free(root);
+  for (int i = 0; tape[i].line; i++)
+    free(tape[i].line);
+  free(tape);
 }
 
 void cmd_flush()
@@ -77,9 +77,9 @@ void cmd_flush()
   //TODO: force parse errors
   if (lvl > 0)
     log_msg("CMD", "parse error: open block not closed!");
-  for (int i = 0; root[i].line; i++)
-    free(root[i].line);
-  free(root);
+  for (int i = 0; tape[i].line; i++)
+    free(tape[i].line);
+  free(tape);
   cmd_reset();
 }
 
@@ -109,32 +109,30 @@ static bool cond_do(char *line)
 //TODO: handle bracketed expr
 static void cmd_start()
 {
-  bool skip = 0;
+  bool cond = true;
+  bool stack[lvl];
+  int curlvl = 0;
   for (int i = 0; i < pos; i++) {
-    Expr *cur = &root[i];
-    log_msg("CMD", "cur %d %d", cur->type, skip);
+    Symb *cur = &tape[i];
+    log_msg("CMD", "cur %d %d", cur->type, cond);
     switch (cur->type) {
       case CTL_IF:
-        skip = !cond_do(cur->line);
+        curlvl++;
+        cond = cond_do(cur->line);
         break;
       case CTL_ELSEIF:
-        if (!skip) {
-          skip = true;
-          continue;
-        }
-        skip = !cond_do(cur->line);
+        if (!cond)
+          cond = cond_do(cur->line);
         break;
       case CTL_ELSE:
-        if (!skip) {
-          skip = true;
-          continue;
-        }
+        cond = !cond;
         break;
       case CTL_END:
-        skip = false;
+        curlvl--;
+        cond = stack[curlvl];
         break;
       default:
-        if (!skip)
+        if (cond)
           cmd_do(cur->line);
     }
   }
@@ -152,38 +150,34 @@ static int ctl_cmd(const char *line)
 
 void cmd_eval(char *line)
 {
-  log_msg("CMD", "%d %d", lvl, ctl_cmd(line));
   if (lvl < 1 || ctl_cmd(line) != -1)
     cmd_do(line);
   else
     stack_push(line);
 }
 
-static void* cmd_ifhead(List *args, Cmdarg *ca)
+static void* cmd_ifblock(List *args, Cmdarg *ca)
 {
-  log_msg("CMD", "cmd_ifhead");
   if (lvl == 0)
     cmd_flush();
   stack_push(ca->cmdline->line + strlen("if"));
   ++lvl;
-  root[pos].type = CTL_IF;
+  tape[pos].type = CTL_IF;
   return 0;
 }
 
-static void* cmd_elsehead(List *args, Cmdarg *ca)
+static void* cmd_elseblock(List *args, Cmdarg *ca)
 {
-  log_msg("CMD", "cmd_elsehead");
   stack_push(ca->cmdline->line + strlen("else"));
-  root[pos].type = CTL_ELSE;
+  tape[pos].type = CTL_ELSE;
   return 0;
 }
 
-static void* cmd_endhead(List *args, Cmdarg *ca)
+static void* cmd_endblock(List *args, Cmdarg *ca)
 {
-  log_msg("CMD", "cmd_endhead");
   stack_push("end");
   --lvl;
-  root[pos].type = CTL_END;
+  tape[pos].type = CTL_END;
   if (lvl < 1)
     cmd_start();
   return 0;
