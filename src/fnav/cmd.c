@@ -1,3 +1,4 @@
+#include <sys/queue.h>
 #include "fnav/cmd.h"
 #include "fnav/log.h"
 #include "fnav/compl.h"
@@ -14,6 +15,9 @@ enum CTLCMD {
 typedef struct Symb Symb;
 struct Symb {
   enum CTLCMD type;
+  STAILQ_HEAD(Childs, Symb) childs;
+  STAILQ_ENTRY(Symb) ent;
+  Symb *parent;
   char *line;
 };
 
@@ -23,6 +27,8 @@ static void* cmd_endblock();
 
 static Cmd_T *cmd_table;
 static Symb *tape;
+static Symb *cur;
+static Symb root;
 static int pos;
 static int lvl;
 static int maxpos;
@@ -44,6 +50,9 @@ static void stack_push(char *line)
       memset(&tape[i], 0, sizeof(Symb));
   }
   tape[++pos].line = strdup(line);
+  tape[pos].parent = cur;
+  STAILQ_INIT(&tape[pos].childs);
+  STAILQ_INSERT_TAIL(&cur->childs, &tape[pos], ent);
 }
 
 void cmd_reset()
@@ -51,6 +60,9 @@ void cmd_reset()
   pos = -1;
   maxpos = BUFSIZ;
   tape = calloc(maxpos, sizeof(Symb));
+  cur = &root;
+  cur->parent = &root;
+  STAILQ_INIT(&cur->childs);
 }
 
 void cmd_init()
@@ -93,47 +105,52 @@ static void cmd_do(char *line)
   cmdline_cleanup(&cmd);
 }
 
-static bool cond_do(char *line)
+static int cond_do(char *line)
 {
-  bool cond = false;
+  int cond = 0;
   Cmdline cmd;
   cmdline_init_config(&cmd, line);
   cmdline_build(&cmd);
   cmdline_req_run(&cmd);
-  cond = cmdline_getcmd(&cmd)->ret ? true : false;
+  cond = cmdline_getcmd(&cmd)->ret ? 1 : 0;
   cmdline_cleanup(&cmd);
   return cond;
+}
+
+static Symb* cmd_next(Symb *node)
+{
+  Symb *n = STAILQ_NEXT(node, ent);
+  if (!n)
+    n = STAILQ_NEXT(node->parent, ent);
+  return n;
 }
 
 //TODO: make ret a arg struct
 //TODO: handle bracketed expr
 static void cmd_start()
 {
-  bool cond = true;
-  bool stack[lvl];
-  int curlvl = 0;
-  for (int i = 0; i < pos; i++) {
-    Symb *cur = &tape[i];
-    log_msg("CMD", "cur %d %d", cur->type, cond);
-    switch (cur->type) {
+  Symb *it = STAILQ_FIRST(&root.childs);
+  int cond;
+  while (it) {
+    switch (it->type) {
       case CTL_IF:
-        curlvl++;
-        cond = cond_do(cur->line);
+        cond = cond_do(it->line);
+        if (cond)
+          it = STAILQ_FIRST(&it->childs);
+        else
+          it = cmd_next(it);
         break;
       case CTL_ELSEIF:
-        if (!cond)
-          cond = cond_do(cur->line);
         break;
       case CTL_ELSE:
-        cond = !cond;
-        break;
-      case CTL_END:
-        curlvl--;
-        cond = stack[curlvl];
+        if (!cond)
+          it = STAILQ_FIRST(&it->childs);
+        else
+          it = cmd_next(it);
         break;
       default:
-        if (cond)
-          cmd_do(cur->line);
+        cmd_do(it->line);
+        it = cmd_next(it);
     }
   }
 }
@@ -162,22 +179,28 @@ static void* cmd_ifblock(List *args, Cmdarg *ca)
     cmd_flush();
   stack_push(ca->cmdline->line + strlen("if"));
   ++lvl;
+  Symb *parent = cur;
+  cur = &tape[pos];
+  cur->parent = parent;
   tape[pos].type = CTL_IF;
   return 0;
 }
 
 static void* cmd_elseblock(List *args, Cmdarg *ca)
 {
+  cur = cur->parent;
   stack_push(ca->cmdline->line + strlen("else"));
   tape[pos].type = CTL_ELSE;
+  Symb *parent = cur;
+  cur = &tape[pos];
+  cur->parent = parent;
   return 0;
 }
 
 static void* cmd_endblock(List *args, Cmdarg *ca)
 {
-  stack_push("end");
+  cur = cur->parent;
   --lvl;
-  tape[pos].type = CTL_END;
   if (lvl < 1)
     cmd_start();
   return 0;
