@@ -17,11 +17,14 @@ struct Symb {
   enum CTLCMD type;
   STAILQ_HEAD(Childs, Symb) childs;
   STAILQ_ENTRY(Symb) ent;
+  int st;
   Symb *parent;
+  Symb *end;
   char *line;
 };
 
 static void* cmd_ifblock();
+static void* cmd_elseifblock();
 static void* cmd_elseblock();
 static void* cmd_endblock();
 
@@ -36,8 +39,8 @@ static int maxpos;
 static const Cmd_T builtins[] = {
   {NULL,      NULL,           0},
   {"if",      cmd_ifblock,    0},
-  {"elseif",  cmd_elseblock,  0},
   {"else",    cmd_elseblock,  0},
+  {"elseif",  cmd_elseifblock,0},
   {"end",     cmd_endblock,   0},
 };
 
@@ -121,7 +124,7 @@ static Symb* cmd_next(Symb *node)
 {
   Symb *n = STAILQ_NEXT(node, ent);
   if (!n)
-    n = STAILQ_NEXT(node->parent, ent);
+    n = node->parent->end;
   return n;
 }
 
@@ -134,19 +137,24 @@ static void cmd_start()
   while (it) {
     switch (it->type) {
       case CTL_IF:
+      case CTL_ELSEIF:
         cond = cond_do(it->line);
         if (cond)
           it = STAILQ_FIRST(&it->childs);
         else
           it = cmd_next(it);
         break;
-      case CTL_ELSEIF:
-        break;
       case CTL_ELSE:
         if (!cond)
           it = STAILQ_FIRST(&it->childs);
         else
           it = cmd_next(it);
+        break;
+      case CTL_END:
+        if (it->parent == &root)
+          it = NULL;
+        else
+          it++;
         break;
       default:
         cmd_do(it->line);
@@ -178,28 +186,41 @@ static void* cmd_ifblock(List *args, Cmdarg *ca)
   if (lvl == 0)
     cmd_flush();
   stack_push(ca->cmdline->line + strlen("if"));
-  ++lvl;
-  Symb *parent = cur;
   cur = &tape[pos];
-  cur->parent = parent;
+  cur->st = pos;
   tape[pos].type = CTL_IF;
+  ++lvl;
+  return 0;
+}
+
+static void* cmd_elseifblock(List *args, Cmdarg *ca)
+{
+  int st = cur->st;
+  cur = cur->parent;
+  cur->st = st;
+  stack_push(ca->cmdline->line + strlen("elseif"));
+  tape[pos].type = CTL_ELSEIF;
+  cur = &tape[pos];
   return 0;
 }
 
 static void* cmd_elseblock(List *args, Cmdarg *ca)
 {
+  int st = cur->st;
   cur = cur->parent;
+  cur->st = st;
   stack_push(ca->cmdline->line + strlen("else"));
   tape[pos].type = CTL_ELSE;
-  Symb *parent = cur;
   cur = &tape[pos];
-  cur->parent = parent;
   return 0;
 }
 
 static void* cmd_endblock(List *args, Cmdarg *ca)
 {
   cur = cur->parent;
+  stack_push(ca->cmdline->line + strlen("end"));
+  tape[cur->st].end = &tape[pos];
+  tape[pos].type = CTL_END;
   --lvl;
   if (lvl < 1)
     cmd_start();
