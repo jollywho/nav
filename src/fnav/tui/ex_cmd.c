@@ -257,8 +257,10 @@ static void ex_hist(void *none, Keyarg *arg)
 
 static void ex_car()
 {
-  if (ex_state == EX_CMD_STATE)
+  if (ex_state == EX_CMD_STATE) {
     cmdline_req_run(&cmd);
+    cmd_flush();
+  }
 
   hist_save(EXCMD_HIST());
   mflag = EX_QUIT;

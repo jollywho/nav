@@ -60,6 +60,7 @@ static void stack_push(char *line)
 
 void cmd_reset()
 {
+  lvl = 0;
   pos = -1;
   maxpos = BUFSIZ;
   tape = calloc(maxpos, sizeof(Symb));
@@ -145,10 +146,7 @@ static void cmd_start()
           it = cmd_next(it);
         break;
       case CTL_ELSE:
-        if (!cond)
-          it = STAILQ_FIRST(&it->childs);
-        else
-          it = cmd_next(it);
+        it = STAILQ_FIRST(&it->childs);
         break;
       case CTL_END:
         if (it->parent == &root)
@@ -183,6 +181,7 @@ void cmd_eval(char *line)
 
 static void* cmd_ifblock(List *args, Cmdarg *ca)
 {
+  log_msg("CMD", "%d", lvl);
   if (lvl == 0)
     cmd_flush();
   stack_push(ca->cmdline->line + strlen("if"));
