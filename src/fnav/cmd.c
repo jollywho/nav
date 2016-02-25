@@ -266,8 +266,13 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
 {
   log_msg("CMD", "cmd_run");
   List *args = token_val(&cmdstr->args, VAR_LIST);
-  if (utarray_len(args->items) < 1)
-    return;
+
+  if (cmdstr->chlds) {
+    Cmdstr *cmd = NULL;
+    while ((cmd = (Cmdstr*)utarray_next(cmdstr->chlds, cmd))) {
+      cmd_run(cmd, cmdline);
+    }
+  }
 
   char *word = list_arg(args, 0, VAR_STRING);
   Cmd_T *fun = cmd_find(word);

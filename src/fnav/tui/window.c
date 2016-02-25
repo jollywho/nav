@@ -265,8 +265,11 @@ static void* win_autocmd(List *args, Cmdarg *ca)
 
 static void* win_echo(List *args, Cmdarg *ca)
 {
-  char *out = list_arg(args, 1, VAR_STRING);
-  log_msg("WINDOW", "win_echo %% %% %s", out);
+  log_msg("WINDOW", "win_echo => ");
+  for (int i = 1; i < utarray_len(args->items); i++) {
+    char *out = list_arg(args, i, VAR_STRING);
+    log_msg("WINDOW", "%s", out);
+  }
   return 0;
 }
 

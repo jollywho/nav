@@ -33,8 +33,22 @@ static void ref_pop(QUEUE *refs);
 #define NEXT_CMD(cl,c) \
   (c = (Cmdstr*)utarray_next(cl->cmds, c))
 
-static UT_icd list_icd = { sizeof(Token),  NULL };
-static UT_icd cmd_icd  = { sizeof(Cmdstr), NULL };
+void cmdstr_copy(void *_dst, const void *_src)
+{
+  Cmdstr *dst = (Cmdstr*)_dst, *src = (Cmdstr*)_src;
+  dst->chlds = src->chlds;
+  dst->args = src->args;
+}
+
+void cmdstr_dtor(void *_elt)
+{
+  Cmdstr *elt = (Cmdstr*)_elt;
+  utarray_free(elt->chlds);
+}
+
+static UT_icd list_icd =  { sizeof(Token),  NULL };
+static UT_icd cmd_icd  =  { sizeof(Cmdstr), NULL };
+static UT_icd chld_icd = { sizeof(Cmdstr),  NULL, cmdstr_copy, cmdstr_dtor };
 
 int str_num(char *str, int *tmp)
 {
@@ -114,8 +128,8 @@ void cmdline_cleanup(Cmdline *cmdline)
     free(word->var.vval.v_string);
   while (!QUEUE_EMPTY(&cmdline->refs))
     ref_pop(&cmdline->refs);
-  utarray_clear(cmdline->cmds);
-  utarray_clear(cmdline->tokens);
+  Cmdstr *root = (Cmdstr*)utarray_front(cmdline->cmds);
+  utarray_free(root->chlds);
   utarray_free(cmdline->cmds);
   utarray_free(cmdline->tokens);
 }
@@ -405,7 +419,7 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
   return false;
 }
 
-static Token* cmdline_parse(Cmdline *cmdline, Token *word)
+static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
 {
   char ch;
   bool seek;
@@ -417,11 +431,13 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
   cmd.args = list_new(cmdline);
   stack_push(stack, cmd.args);
   Token head = stack_head(stack);
+  utarray_new(cmd.chlds, &chld_icd);
 
   check_if_exec(cmdline, &cmd, word);
 
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
     char *str = token_val(word, VAR_STRING);
+    log_msg("CMD", "-- %s", str);
 
     switch(ch = str[0]) {
       case '|':
@@ -429,6 +445,15 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
         goto breakout;
       case '!':
         cmd.rev = 1;
+        break;
+      case ')':
+        log_msg("CMD", ")");
+        goto breakout;
+      case '(':
+        log_msg("CMD", "(");
+        word = cmdline_parse(cmdline, word, cmd.chlds);
+        if (!word)
+          goto breakout;
         break;
       case '"':
         break;
@@ -440,7 +465,6 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word)
         /*FALLTHROUGH*/
         pop(stack);
         break;
-        //
       case '[':
         push(list_new(cmdline), stack);
         head.start = word->start;
@@ -456,7 +480,7 @@ breakout:
   while (!QUEUE_EMPTY(stack))
     stack_pop(stack);
 
-  utarray_push_back(cmdline->cmds, &cmd);
+  utarray_push_back(parent, &cmd);
   return word;
 }
 
@@ -473,8 +497,9 @@ void cmdline_build(Cmdline *cmdline)
   /* parse until empty */
   Token *word = NULL;
   for(;;) {
-    word = cmdline_parse(cmdline, word);
-    if (!word) break;
+    word = cmdline_parse(cmdline, word, cmdline->cmds);
+    if (!word)
+      break;
   }
 }
 

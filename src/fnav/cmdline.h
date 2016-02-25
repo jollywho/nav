@@ -46,6 +46,7 @@ struct Cmdstr {
   int ret_t;
   int exec;
   void *ret;
+  UT_array *chlds;  /* Cmdstr */
 };
 
 #define PIPE         1
