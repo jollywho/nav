@@ -254,14 +254,21 @@ static void* edit_syntax(List *args)
   return 0;
 }
 
-static void* edit_variable(List *args)
+static void* edit_variable(List *args, Cmdarg *ca)
 {
   log_msg("CONFIG", "edit_variable");
-  Token *var = tok_arg(args, 1);
+  Token *lhs = tok_arg(args, 1);
   Token *oper = tok_arg(args, 2);
   Token *rhs = tok_arg(args, 3);
-  if (!var || !oper || !rhs || var->var.v_type != VAR_STRING)
+  if (!lhs || !oper || !rhs || lhs->var.v_type != VAR_STRING)
     return 0;
+  char *key = token_val(lhs, VAR_STRING);
+  char *str = cmdline_line_from(ca->cmdline, 3);
+  fn_var var = {
+    .key = strdup(key),
+    .var = strdup(str),
+  };
+  set_var(&var);
 
   return 0;
 }

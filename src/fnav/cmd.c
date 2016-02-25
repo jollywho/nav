@@ -3,6 +3,7 @@
 #include "fnav/log.h"
 #include "fnav/compl.h"
 #include "fnav/table.h"
+#include "fnav/option.h"
 
 enum CTLCMD {
   CTL_NOP,

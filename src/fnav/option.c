@@ -8,22 +8,31 @@
 
 typedef struct {
   fn_color *hi_colors;
+  fn_var   *gbl_vars;
   // maps
-  // variables
   // setting
 } fn_options;
 
 fn_options *options;
 
-void clear_colors()
-{
-  fn_color *it, *tmp;
-  HASH_ITER(hh, options->hi_colors, it, tmp) {
-    HASH_DEL(options->hi_colors, it);
-    free(it->key);
-    free(it);
-  }
-}
+#define FLUSH_OLD_OPT(type,opt,str)             \
+  type *find;                                   \
+  HASH_FIND_STR(options->opt, (str), (find));   \
+  if (find) {                                   \
+    HASH_DEL(options->opt, find);               \
+    free(find->key);                            \
+    free(find);                                 \
+  }                                             \
+
+#define CLEAR_OPT(type,opt)                     \
+  do {                                          \
+    type *it, *tmp;                             \
+    HASH_ITER(hh, options->opt, it, tmp) {      \
+      HASH_DEL(options->opt, it);               \
+      free(it->key);                            \
+      free(it);                                 \
+    }                                           \
+  } while(0)                                    \
 
 void option_init()
 {
@@ -34,7 +43,8 @@ void option_init()
 
 void option_cleanup()
 {
-  clear_colors();
+  CLEAR_OPT(fn_color, hi_colors);
+  CLEAR_OPT(fn_var,   gbl_vars);
   free(options);
 }
 
@@ -44,13 +54,7 @@ void set_color(fn_color *color)
   fn_color *col = malloc(sizeof(fn_color));
   memmove(col, color, sizeof(fn_color));
 
-  fn_color *find;
-  HASH_FIND_STR(options->hi_colors, col->key, find);
-  if (find) {
-    HASH_DEL(options->hi_colors, find);
-    free(find->key);
-    free(find);
-  }
+  FLUSH_OLD_OPT(fn_color, hi_colors, col->key)
 
   col->pair = vt_color_get(NULL, col->fg, col->bg);
   color_set(col->pair, NULL);
@@ -64,4 +68,24 @@ int attr_color(const char *name)
   if (!color)
     return 0;
   return color->pair;
+}
+
+void set_var(fn_var *variable)
+{
+  fn_var *var = malloc(sizeof(fn_var));
+  memmove(var, variable, sizeof(fn_var));
+
+  FLUSH_OLD_OPT(fn_var, gbl_vars, var->key)
+  log_msg("CONFIG", "||%s %s", var->key, var->var);
+
+  HASH_ADD_STR(options->gbl_vars, key, var);
+}
+
+char* opt_var(const char *name)
+{
+  fn_var *var;
+  HASH_FIND_STR(options->gbl_vars, name, var);
+  if (!var)
+    return 0;
+  return var->var;
 }

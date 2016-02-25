@@ -17,9 +17,18 @@ typedef struct {
   char *key;
 } fn_color;
 
+typedef struct {
+  UT_hash_handle hh;
+  char *key;
+  char *var;
+  //Token *var;
+} fn_var;
+
 void option_init();
 void option_cleanup();
 void set_color(fn_color *color);
 int attr_color(const char *);
+void set_var(fn_var *var);
+char* opt_var(const char *name);
 
 #endif
