@@ -135,13 +135,11 @@ void window_init(void)
   sig_resize(0);
   plugin_init();
   buf_init();
-  ex_cmd_init();
 }
 
 void window_cleanup(void)
 {
   log_msg("CLEANUP", "window_cleanup");
-  ex_cmd_cleanup();
   cmd_clearall();
   layout_cleanup(&win.layout);
   buf_cleanup();

@@ -288,6 +288,7 @@ void fm_new(Plugin *plugin, Buffer *buf, void *arg)
   fm->fs->stat_cb = fm_ch_dir;
   fm->fs->data = plugin;
   fs_open(fm->fs, fm->cur_dir);
+  window_ch_dir(fm->cur_dir);
 }
 
 void fm_delete(Plugin *plugin)

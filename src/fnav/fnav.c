@@ -47,12 +47,15 @@ void init(void)
 
   config_init();
   config_load_defaults();
+
+  ex_cmd_init();
   log_msg("INIT", "INIT_END");
 }
 
 void cleanup(void)
 {
   log_msg("CLEANUP", "CLEANUP_START");
+  ex_cmd_cleanup();
   window_cleanup();
   compl_cleanup();
   input_cleanup();

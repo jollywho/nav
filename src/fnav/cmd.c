@@ -268,14 +268,14 @@ static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
   char base[strlen(cmdline->line)];
   int pos = 0;
   int prevst = 0;
+  log_msg("CMD", "--------------");
   while ((cmd = (Cmdstr*)utarray_next(cmdstr->chlds, cmd))) {
     strncpy(base+pos, &cmdline->line[prevst], cmd->st);
     pos += cmd->st - prevst;
     prevst = cmd->ed + 1;
-    base[pos] = '\0';
-    Cmdline newcmd = {.line = base };
-    log_msg("CMD", "base:: %s", base);
-    cmd_run(cmd, &newcmd);
+    //TODO: cmdline always copy line string so
+    //echo(/everything) can operate on a single string line
+    cmd_run(cmd, cmdline);
     if (!cmd->ret)
       continue;
 
