@@ -36,6 +36,7 @@ static void ref_pop(QUEUE *refs);
 void cmdstr_copy(void *_dst, const void *_src)
 {
   Cmdstr *dst = (Cmdstr*)_dst, *src = (Cmdstr*)_src;
+  memcpy(dst, src, sizeof(Cmdstr));
   dst->chlds = src->chlds;
   dst->args = src->args;
 }
@@ -424,6 +425,8 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
   char ch;
   bool seek;
   Cmdstr cmd = {.flag = 0};
+  if (word)
+    cmd.st = word->start;
 
   QUEUE *stack = &cmd.stack;
   QUEUE_INIT(stack);
@@ -437,7 +440,6 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
 
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
     char *str = token_val(word, VAR_STRING);
-    log_msg("CMD", "-- %s", str);
 
     switch(ch = str[0]) {
       case '|':
@@ -447,10 +449,9 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         cmd.rev = 1;
         break;
       case ')':
-        log_msg("CMD", ")");
+        cmd.ed = word->start;
         goto breakout;
       case '(':
-        log_msg("CMD", "(");
         word = cmdline_parse(cmdline, word, cmd.chlds);
         if (!word)
           goto breakout;

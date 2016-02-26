@@ -270,7 +270,7 @@ static void* win_echo(List *args, Cmdarg *ca)
     char *out = list_arg(args, i, VAR_STRING);
     log_msg("WINDOW", "%s", out);
   }
-  return 0;
+  return list_arg(args, 1, VAR_STRING);
 }
 
 static void* win_sort(List *args, Cmdarg *ca)

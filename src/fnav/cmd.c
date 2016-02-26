@@ -262,16 +262,41 @@ Cmd_T* cmd_find(const char *name)
   return cmd;
 }
 
+static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
+{
+  Cmdstr *cmd = NULL;
+  char base[strlen(cmdline->line)];
+  int pos = 0;
+  int prevst = 0;
+  while ((cmd = (Cmdstr*)utarray_next(cmdstr->chlds, cmd))) {
+    strncpy(base+pos, &cmdline->line[prevst], cmd->st);
+    pos += cmd->st - prevst;
+    prevst = cmd->ed + 1;
+    base[pos] = '\0';
+    Cmdline newcmd = {.line = base };
+    log_msg("CMD", "base:: %s", base);
+    cmd_run(cmd, &newcmd);
+    if (!cmd->ret)
+      continue;
+
+    char *expstr = cmd->ret;
+    strcpy(base+pos, expstr);
+    pos += strlen(expstr);
+    log_msg("CMD", "ret => %s", expstr);
+  }
+  Cmdstr *last = (Cmdstr*)utarray_back(cmdstr->chlds);
+  strcpy(base+pos, &cmdline->line[last->ed+1]);
+  log_msg("CMD", "base:: %s", base);
+  cmd_do(base);
+}
+
 void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
 {
   log_msg("CMD", "cmd_run");
   List *args = token_val(&cmdstr->args, VAR_LIST);
 
-  if (cmdstr->chlds) {
-    Cmdstr *cmd = NULL;
-    while ((cmd = (Cmdstr*)utarray_next(cmdstr->chlds, cmd))) {
-      cmd_run(cmd, cmdline);
-    }
+  if (utarray_len(cmdstr->chlds) > 0) {
+    return cmd_sub(cmdstr, cmdline);
   }
 
   char *word = list_arg(args, 0, VAR_STRING);

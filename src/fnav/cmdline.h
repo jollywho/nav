@@ -46,6 +46,8 @@ struct Cmdstr {
   int ret_t;
   int exec;
   void *ret;
+  int st;
+  int ed;
   UT_array *chlds;  /* Cmdstr */
 };
 
