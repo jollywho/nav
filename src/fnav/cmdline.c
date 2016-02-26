@@ -41,15 +41,24 @@ void cmdstr_copy(void *_dst, const void *_src)
   dst->args = src->args;
 }
 
+void cmdret_dtor(void *_elt)
+{
+  Cmdstr *elt = (Cmdstr*)_elt;
+  if (elt->ret_t == WORD)
+    free(elt->ret);
+}
+
 void cmdstr_dtor(void *_elt)
 {
   Cmdstr *elt = (Cmdstr*)_elt;
+  if (elt->ret)
+    free(elt->ret);
   utarray_free(elt->chlds);
 }
 
-static UT_icd list_icd =  { sizeof(Token),  NULL };
-static UT_icd cmd_icd  =  { sizeof(Cmdstr), NULL };
-static UT_icd chld_icd = { sizeof(Cmdstr),  NULL, cmdstr_copy, cmdstr_dtor };
+static UT_icd list_icd = { sizeof(Token),  NULL };
+static UT_icd cmd_icd  = { sizeof(Cmdstr), NULL, NULL, cmdret_dtor };
+static UT_icd chld_icd = { sizeof(Cmdstr), NULL, cmdstr_copy, cmdstr_dtor };
 
 int str_num(char *str, int *tmp)
 {

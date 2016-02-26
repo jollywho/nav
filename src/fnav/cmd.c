@@ -260,32 +260,48 @@ Cmd_T* cmd_find(const char *name)
   return cmd;
 }
 
+static void* cmd_do_sub(Cmdline *cmdline, char *line)
+{
+  cmdline_build(cmdline, line);
+  cmdline_req_run(cmdline);
+  return cmdline_getcmd(cmdline)->ret;
+}
+
 static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
 {
   Cmdstr *cmd = NULL;
   char base[strlen(cmdline->line)];
   int pos = 0;
   int prevst = 0;
-  log_msg("CMD", "--------------");
+
   while ((cmd = (Cmdstr*)utarray_next(cmdstr->chlds, cmd))) {
     strncpy(base+pos, &cmdline->line[prevst], cmd->st);
     pos += cmd->st - prevst;
     prevst = cmd->ed + 1;
-    //TODO: cmdline always copy line string so
-    //echo(/everything) can operate on a single string line
-    cmd_run(cmd, cmdline);
-    if (!cmd->ret)
-      continue;
 
-    char *expstr = cmd->ret;
-    strcpy(base+pos, expstr);
-    pos += strlen(expstr);
-    log_msg("CMD", "ret => %s", expstr);
+    size_t len = cmd->ed - cmd->st;
+    char subline[len+1];
+    strncpy(subline, &cmdline->line[cmd->st+1], len-1);
+    subline[len-1] = '\0';
+
+    Cmdline newcmd;
+    void *retp = cmd_do_sub(&newcmd, subline);
+    if (retp) {
+      char *retline = retp;
+      strcpy(base+pos, retline);
+      pos += strlen(retline);
+    }
+    cmdline_cleanup(&newcmd);
   }
   Cmdstr *last = (Cmdstr*)utarray_back(cmdstr->chlds);
   strcpy(base+pos, &cmdline->line[last->ed+1]);
-  log_msg("CMD", "base:: %s", base);
-  cmd_do(base);
+  Cmdline newcmd;
+  void *retp = cmd_do_sub(&newcmd, base);
+  if (retp) {
+    cmdstr->ret = strdup((char*)retp);
+    cmdstr->ret_t = WORD;
+  }
+  cmdline_cleanup(&newcmd);
 }
 
 void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
