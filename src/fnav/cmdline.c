@@ -103,23 +103,6 @@ void* tok_arg(List *lst, int argc)
   return word;
 }
 
-void cmdline_init_config(Cmdline *cmdline, char *line)
-{
-  cmdline->line = line;
-  cmdline->cmds = NULL;
-  cmdline->tokens = NULL;
-  QUEUE_INIT(&cmdline->refs);
-}
-
-void cmdline_init(Cmdline *cmdline, int size)
-{
-  cmdline->line = malloc(size * sizeof(char*));
-  memset(cmdline->line, '\0', size);
-  cmdline->cmds = NULL;
-  cmdline->tokens = NULL;
-  QUEUE_INIT(&cmdline->refs);
-}
-
 void cmdline_cleanup(Cmdline *cmdline)
 {
   if (!cmdline->cmds)
@@ -133,6 +116,7 @@ void cmdline_cleanup(Cmdline *cmdline)
   utarray_free(root->chlds);
   utarray_free(cmdline->cmds);
   utarray_free(cmdline->tokens);
+  free(cmdline->line);
 }
 
 Cmdstr* cmdline_getcmd(Cmdline *cmdline)
@@ -485,11 +469,11 @@ breakout:
   return word;
 }
 
-void cmdline_build(Cmdline *cmdline)
+void cmdline_build(Cmdline *cmdline, char *line)
 {
   log_msg("CMDSTR", "cmdline_build");
-
-  cmdline_cleanup(cmdline);
+  cmdline->line = strdup(line);
+  QUEUE_INIT(&cmdline->refs);
   utarray_new(cmdline->cmds, &cmd_icd);
   utarray_new(cmdline->tokens, &list_icd);
 

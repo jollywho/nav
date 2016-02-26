@@ -62,11 +62,9 @@ struct Cmdline {
   char *line;
 };
 
-void cmdline_init_config(Cmdline *cmdline, char *);
-void cmdline_init(Cmdline *cmdline, int size);
-void cmdline_cleanup(Cmdline *cmdline);
-void cmdline_build(Cmdline *cmdline);
+void cmdline_build(Cmdline *cmdline, char *line);
 void cmdline_req_run(Cmdline *cmdline);
+void cmdline_cleanup(Cmdline *cmdline);
 
 Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed);
 Cmdstr* cmdline_cmdbtwn(Cmdline *cmdline, int st, int ed);

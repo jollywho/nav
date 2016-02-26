@@ -104,8 +104,7 @@ static void cmd_do(char *line)
 {
   log_msg("CMD", "cmd_do");
   Cmdline cmd;
-  cmdline_init_config(&cmd, line);
-  cmdline_build(&cmd);
+  cmdline_build(&cmd, line);
   cmdline_req_run(&cmd);
   cmdline_cleanup(&cmd);
 }
@@ -114,8 +113,7 @@ static int cond_do(char *line)
 {
   int cond = 0;
   Cmdline cmd;
-  cmdline_init_config(&cmd, line);
-  cmdline_build(&cmd);
+  cmdline_build(&cmd, line);
   cmdline_req_run(&cmd);
   cond = cmdline_getcmd(&cmd)->ret ? 1 : 0;
   cmdline_cleanup(&cmd);

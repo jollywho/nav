@@ -160,8 +160,7 @@ void call_cmd_hook(Hook *hook, HookArg *hka)
   if (hook->pat && hka && !regex_match(hook->pat, hka->arg))
     return;
   Cmdline cmd;
-  cmdline_init_config(&cmd, hook->data.cmd);
-  cmdline_build(&cmd);
+  cmdline_build(&cmd, hook->data.cmd);
   cmdline_req_run(&cmd);
   cmdline_cleanup(&cmd);
 }

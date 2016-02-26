@@ -50,6 +50,7 @@ static WINDOW *nc_win;
 static int curpos;
 static int maxpos;
 static Cmdline cmd;
+static char *line;
 static char *fmt_out;
 static Menu *menu;
 static fn_hist *hist_cmds;
@@ -103,7 +104,9 @@ void start_ex_cmd(int state)
     max_part = STACK_MIN;
     menu_start(menu);
   }
-  cmdline_init(&cmd, max.col);
+  line = calloc(max.col, sizeof(char*));
+  cmd.cmds = NULL;
+  cmd.line = NULL;
   hist_push(EXCMD_HIST(), &cmd);
   window_req_draw(NULL, NULL);
 }
@@ -117,7 +120,7 @@ void stop_ex_cmd()
     menu_stop(menu);
   }
   lm = NULL;
-  free(cmd.line);
+  free(line);
   free(fmt_out);
   cmdline_cleanup(&cmd);
   werase(nc_win);
@@ -147,7 +150,7 @@ static void gen_output_str()
   fmt_out = calloc(maxpos+1, sizeof(char*));
 
   i = j = 0;
-  while ((ch = cmd.line[i])) {
+  while ((ch = line[i])) {
     fmt_out[j] = ch;
 
     if (ch == '%') {
@@ -211,19 +214,19 @@ static void ex_tab(void *none, Keyarg *arg)
 
   int len = strlen(key);
   if (st + len >= maxpos - 1) {
-    char *line = strdup(cmd.line);
+    char *newline = strdup(line);
     maxpos = 2 * (len+maxpos);
-    cmd.line = realloc(cmd.line, maxpos);
-    memset(cmd.line, '\0', maxpos);
-    strcpy(cmd.line, line);
-    free(line);
+    line = realloc(line, maxpos);
+    memset(line, '\0', maxpos);
+    strcpy(line, newline);
+    free(newline);
   }
 
   int i;
   for (i = st; i < ed + 2; i++)
-    cmd.line[i] = ' ';
+    line[i] = ' ';
   for (i = 0; i < len; i++) {
-    cmd.line[st + i] = key[i];
+    line[st + i] = key[i];
   }
 
   curpos = st + i - 1;
@@ -243,14 +246,14 @@ static void ex_hist(void *none, Keyarg *arg)
       ex_cmd_pop(-1);
       menu_rebuild(menu);
     }
-    free(cmd.line);
+    free(line);
 
     if (strlen(ret) < 1)
-      cmd.line = calloc(maxpos, sizeof(char*));
+      line = calloc(maxpos, sizeof(char*));
     else
-      cmd.line = strdup(ret);
+      line = strdup(ret);
 
-    curpos = strlen(cmd.line) - 1;
+    curpos = strlen(line) - 1;
     mflag = EX_HIST;
   }
 }
@@ -273,21 +276,21 @@ static void ex_spc()
   mflag |= EX_RIGHT;
   mflag &= ~(EX_FRESH|EX_NEW);
   if (curpos >= maxpos - 1) {
-    char *line = strdup(cmd.line);
-    cmd.line = realloc(cmd.line, maxpos *= 2);
-    memset(cmd.line, '\0', maxpos);
-    strcpy(cmd.line, line);
-    free(line);
+    char *newline = strdup(line);
+    line = realloc(line, maxpos *= 2);
+    memset(line, '\0', maxpos);
+    strcpy(line, newline);
+    free(newline);
   }
 
-  cmd.line[curpos] = ' ';
+  line[curpos] = ' ';
 }
 
 static void ex_bckspc()
 {
   log_msg("EXCMD", "bkspc");
   //FIXME: this will split line when cursor movement added
-  cmd.line[curpos] = '\0';
+  line[curpos] = '\0';
   curpos--;
   mflag |= EX_LEFT;
   if (curpos < CURS_MIN)
@@ -309,7 +312,7 @@ static void ex_killword()
   int st = last->start;
   int ed = last->end;
   for (int i = st; i < ed; i++)
-    cmd.line[i] = ' ';
+    line[i] = ' ';
 
   curpos = st;
   ex_bckspc();
@@ -317,8 +320,8 @@ static void ex_killword()
 
 static void ex_killline()
 {
-  free(cmd.line);
-  cmd.line = calloc(maxpos, sizeof(char*));
+  free(line);
+  line = calloc(maxpos, sizeof(char*));
   curpos = -1;
 
   ex_cmd_pop(-1);
@@ -335,11 +338,11 @@ static void ex_cmdinvert()
   Token *word1 = cmdline_tokbtwn(&cmd, word0->end, word0->end+1);
   char *excl = token_val(word1, VAR_STRING);
   if (excl && excl[0] == '!') {
-    str_ins(cmd.line, "", word1->start, 1);
+    str_ins(line, "", word1->start, 1);
     curpos--;
   }
   else {
-    str_ins(cmd.line, "!", word0->end, 0);
+    str_ins(line, "!", word0->end, 0);
     curpos++;
   }
 }
@@ -380,13 +383,14 @@ static void ex_onkey()
 {
   log_msg("EXCMD", "##%d", ex_cmd_state());
   if (ex_state == EX_CMD_STATE) {
-    cmdline_build(&cmd);
+    cmdline_cleanup(&cmd);
+    cmdline_build(&cmd, line);
     check_new_state();
     menu_update(menu, &cmd);
   }
   else {
     if (window_focus_attached() && curpos > CURS_MIN) {
-      regex_build(lm, cmd.line);
+      regex_build(lm, line);
       regex_pivot(lm);
       regex_hover(lm);
     }
@@ -408,10 +412,10 @@ void ex_input(int key)
     mflag |= EX_RIGHT;
     mflag &= ~(EX_FRESH|EX_NEW);
     if (curpos >= maxpos)
-      cmd.line = realloc(cmd.line, maxpos *= 2);
+      line = realloc(line, maxpos *= 2);
 
     // FIXME: wide char support
-    cmd.line[curpos] = key;
+    line[curpos] = key;
   }
 
   if (mflag & EX_QUIT)
@@ -436,7 +440,7 @@ void ex_cmd_push(fn_context *cx)
   int st = 0;
   if (cur_part > 0) {
     st = curpos;
-    if (cmd.line[st] == '|')
+    if (line[st] == '|')
       st++;
   }
   cmd_stack[cur_part]->st = st;
@@ -468,7 +472,7 @@ cmd_part* ex_cmd_pop(int count)
 
 char ex_cmd_curch()
 {
-  return cmd.line[curpos];
+  return line[curpos];
 }
 
 int ex_cmd_curpos()
