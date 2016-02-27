@@ -63,6 +63,8 @@ void hist_push(fn_hist *hst, Cmdline *cmd)
 void hist_save(fn_hist *hst)
 {
   log_msg("HIST", "hist_save");
+  if (!hst->cmd->line)
+    return;
   hist_item *last = TAILQ_LAST(&hst->p, cont);
 
   //TODO:

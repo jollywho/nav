@@ -299,7 +299,7 @@ static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
   void *retp = cmd_do_sub(&newcmd, base);
   if (retp) {
     cmdstr->ret = strdup((char*)retp);
-    cmdstr->ret_t = WORD;
+    cmdstr->ret_t = STRING;
   }
   cmdline_cleanup(&newcmd);
 }
@@ -311,11 +311,10 @@ static void cmd_vars(Cmdline *cmdline)
   char *var_lst[count];
   Token *tok_lst[count];
   int len_lst[count];
-
-  Token *word = NULL;
   int size = 0;
+
   for (int i = 0; i < count; i++) {
-    word = (Token*)utarray_next(cmdline->vars, word);
+    Token *word = (Token*)utarray_eltptr(cmdline->vars, i);
     char *name = token_val(word, VAR_STRING);
     char *var = opt_var(name+1);
     len_lst[i] = strlen(var);
@@ -351,7 +350,7 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
   Cmd_T *fun = cmd_find(word);
   if (!fun) {
     cmdstr->ret_t = WORD;
-    cmdstr->ret = word;
+    cmdstr->ret = cmdline->line;
     return;
   }
 

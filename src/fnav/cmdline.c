@@ -44,7 +44,7 @@ void cmdstr_copy(void *_dst, const void *_src)
 void cmdret_dtor(void *_elt)
 {
   Cmdstr *elt = (Cmdstr*)_elt;
-  if (elt->ret_t == WORD)
+  if (elt->ret_t == STRING)
     free(elt->ret);
 }
 
@@ -599,11 +599,10 @@ void cmdline_req_run(Cmdline *cmdline)
   Cmdstr *cmd = NULL;
   Cmdstr *prev = NULL;
   if (!cmdline->cmds)
-    return;
+  log_msg("CMD", ":: %s", cmdline->line);
 
   while (NEXT_CMD(cmdline, cmd)) {
-    List *list = token_val(&cmd->args, VAR_LIST);
-    if (utarray_len(list->items) < 1)
+    if (cmd->flag & (PIPE_LEFT|PIPE_RIGHT))
       continue;
     if (exec_line(cmdline->line, cmd))
       continue;

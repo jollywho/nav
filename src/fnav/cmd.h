@@ -11,6 +11,7 @@
 #define RANGE     0x10
 #define REGEX     0x20
 #define PLUGIN    0x40
+#define STRING    0x80
 
 typedef struct Cmd_T Cmd_T;
 typedef struct Cmdarg Cmdarg;
