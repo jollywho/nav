@@ -58,6 +58,7 @@ struct Cmdstr {
 struct Cmdline {
   UT_array *cmds;
   UT_array *tokens;
+  UT_array *vars;
   QUEUE refs;
   char *line;
 };

@@ -260,7 +260,9 @@ static void* edit_variable(List *args, Cmdarg *ca)
   Token *lhs = tok_arg(args, 1);
   Token *oper = tok_arg(args, 2);
   Token *rhs = tok_arg(args, 3);
-  if (!lhs || !oper || !rhs || lhs->var.v_type != VAR_STRING)
+  if (!lhs || !oper || !rhs
+      || lhs->var.v_type != VAR_STRING
+      || rhs->var.v_type != VAR_STRING)
     return 0;
   char *key = token_val(lhs, VAR_STRING);
   char *str = cmdline_line_from(ca->cmdline, 3);

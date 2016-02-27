@@ -15,12 +15,13 @@ typedef struct {
 
 fn_options *options;
 
-#define FLUSH_OLD_OPT(type,opt,str)             \
+#define FLUSH_OLD_OPT(type,opt,str,expr)        \
   type *find;                                   \
   HASH_FIND_STR(options->opt, (str), (find));   \
   if (find) {                                   \
     HASH_DEL(options->opt, find);               \
     free(find->key);                            \
+    (expr);                                     \
     free(find);                                 \
   }                                             \
 
@@ -54,7 +55,7 @@ void set_color(fn_color *color)
   fn_color *col = malloc(sizeof(fn_color));
   memmove(col, color, sizeof(fn_color));
 
-  FLUSH_OLD_OPT(fn_color, hi_colors, col->key)
+  FLUSH_OLD_OPT(fn_color, hi_colors, col->key, {})
 
   col->pair = vt_color_get(NULL, col->fg, col->bg);
   color_set(col->pair, NULL);
@@ -75,8 +76,8 @@ void set_var(fn_var *variable)
   fn_var *var = malloc(sizeof(fn_var));
   memmove(var, variable, sizeof(fn_var));
 
-  FLUSH_OLD_OPT(fn_var, gbl_vars, var->key)
-  log_msg("CONFIG", "||%s %s", var->key, var->var);
+  log_msg("CONFIG", "%s := %s", var->key, var->var);
+  FLUSH_OLD_OPT(fn_var, gbl_vars, var->key, free(find->var))
 
   HASH_ADD_STR(options->gbl_vars, key, var);
 }

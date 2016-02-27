@@ -304,14 +304,48 @@ static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
   cmdline_cleanup(&newcmd);
 }
 
+static void cmd_vars(Cmdline *cmdline)
+{
+  log_msg("CMD", "cmd_vars");
+  int count = utarray_len(cmdline->vars);
+  char *var_lst[count];
+  Token *tok_lst[count];
+  int len_lst[count];
+
+  Token *word = NULL;
+  int size = 0;
+  for (int i = 0; i < count; i++) {
+    word = (Token*)utarray_next(cmdline->vars, word);
+    char *name = token_val(word, VAR_STRING);
+    char *var = opt_var(name+1);
+    len_lst[i] = strlen(var);
+    var_lst[i] = var;
+    tok_lst[i] = word;
+    size += len_lst[i];
+  }
+
+  char base[size];
+  int pos = 0, prevst = 0;
+  for (int i = 0; i < count; i++) {
+    strncpy(base+pos, &cmdline->line[prevst], tok_lst[i]->start);
+    pos += tok_lst[i]->start - prevst;
+    prevst = tok_lst[i]->end;
+    strcpy(base+pos, var_lst[i]);
+    pos += len_lst[i];
+  }
+  cmd_do(base);
+}
+
 void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
 {
   log_msg("CMD", "cmd_run");
   List *args = token_val(&cmdstr->args, VAR_LIST);
 
-  if (utarray_len(cmdstr->chlds) > 0) {
+  if (utarray_len(cmdstr->chlds) > 0)
     return cmd_sub(cmdstr, cmdline);
-  }
+
+  if (utarray_len(cmdline->vars) > 0)
+    return cmd_vars(cmdline);
 
   char *word = list_arg(args, 0, VAR_STRING);
   Cmd_T *fun = cmd_find(word);

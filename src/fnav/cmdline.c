@@ -125,6 +125,7 @@ void cmdline_cleanup(Cmdline *cmdline)
   utarray_free(root->chlds);
   utarray_free(cmdline->cmds);
   utarray_free(cmdline->tokens);
+  utarray_free(cmdline->vars);
   free(cmdline->line);
 }
 
@@ -463,7 +464,13 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         push(list_new(cmdline), stack);
         head.start = word->start;
         break;
+      case '$':
+        if (str[1]) {
+          utarray_push_back(cmdline->vars, word);
+          break;
+        }
       default:
+        /*FALLTHROUGH*/
         seek = seek_ahead(cmdline, stack, word);
         push(*word, stack);
         if (!seek)
@@ -483,8 +490,9 @@ void cmdline_build(Cmdline *cmdline, char *line)
   log_msg("CMDSTR", "cmdline_build");
   cmdline->line = strdup(line);
   QUEUE_INIT(&cmdline->refs);
-  utarray_new(cmdline->cmds, &cmd_icd);
+  utarray_new(cmdline->cmds,   &cmd_icd);
   utarray_new(cmdline->tokens, &list_icd);
+  utarray_new(cmdline->vars,   &list_icd);
 
   cmdline_tokenize(cmdline);
 
