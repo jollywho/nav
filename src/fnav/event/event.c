@@ -124,6 +124,20 @@ void queue_process_events(Queue *queue, int ms)
   }
 }
 
+void do_events_until(loop_cond cond, void *arg)
+{
+  if (mainloop()->running)
+    return;
+
+  mainloop()->running = true;
+  while (cond(arg)) {
+    queue_process_events(eventq(), TIMEOUT);
+    queue_process_events(drawq(),  TIMEOUT);
+    uv_run(eventloop(), UV_RUN_NOWAIT);
+  }
+  mainloop()->running = false;
+}
+
 static void prepare_events(uv_prepare_t *handle)
 {
   log_msg("", "--event--");

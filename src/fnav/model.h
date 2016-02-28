@@ -9,7 +9,7 @@ void model_init(fn_handle *hndl);
 void model_cleanup(fn_handle *hndl);
 void model_open(fn_handle *hndl);
 void model_close(fn_handle *hndl);
-int model_blocking(fn_handle *hndl);
+bool model_blocking(fn_handle *hndl);
 
 void model_sort(Model *m, const char *fld, int flags);
 void model_recv(Model *m);

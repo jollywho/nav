@@ -296,6 +296,7 @@ void fm_delete(Plugin *plugin)
   log_msg("FM", "delete");
   FM *fm = plugin->top;
   fn_handle *h = fm->base->hndl;
+  do_events_until(fs_blocking, fm->fs);
   model_close(h);
   model_cleanup(h);
   hook_clear_host(fm->base);

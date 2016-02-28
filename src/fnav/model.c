@@ -64,6 +64,7 @@ void model_init(fn_handle *hndl)
   hndl->model = model;
   model->sort_type = strdup("");
   model->sort_rev = 1;
+  model->blocking = true;
   utarray_new(model->lines, &icd);
   Buffer *buf = hndl->buf;
   buf->matches = regex_new(hndl);
@@ -94,7 +95,7 @@ void model_close(fn_handle *hndl)
   utarray_clear(m->lines);
 }
 
-int model_blocking(fn_handle *hndl)
+bool model_blocking(fn_handle *hndl)
 {
   return hndl->model->blocking;
 }

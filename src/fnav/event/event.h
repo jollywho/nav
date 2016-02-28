@@ -59,6 +59,8 @@ static inline Event event_create(argv_callback cb, int argc, ...)
   return event;
 }
 
+typedef bool (*loop_cond)();
+void do_events_until(loop_cond cond, void *arg);
 void event_wakeup(void);
 
 void queue_push(Queue *queue, Event event);
