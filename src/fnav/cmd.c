@@ -364,9 +364,11 @@ void cmd_list(List *args)
   log_msg("CMD", "compl cmd_list");
   int i = 0;
   Cmd_T *it;
-  compl_new(HASH_COUNT(cmd_table), COMPL_STATIC);
+  compl_new(HASH_COUNT(cmd_table) - (LENGTH(builtins) - 1), COMPL_STATIC);
   for (it = cmd_table; it != NULL; it = it->hh.next) {
-    compl_set_index(i, 0, NULL, "%s", it->name);
-    i++;
+    if (ctl_cmd(it->name) == -1) {
+      compl_set_index(i, 0, NULL, "%s", it->name);
+      i++;
+    }
   }
 }
