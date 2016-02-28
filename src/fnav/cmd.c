@@ -36,6 +36,8 @@ static Symb root;
 static int pos;
 static int lvl;
 static int maxpos;
+static char *lncont;
+static int lvlcont;
 
 static const Cmd_T builtins[] = {
   {NULL,      NULL,           0},
@@ -61,6 +63,8 @@ static void stack_push(char *line)
 
 void cmd_reset()
 {
+  lncont = NULL;
+  lvlcont = 0;
   lvl = 0;
   pos = -1;
   maxpos = BUFSIZ;
@@ -94,18 +98,32 @@ void cmd_flush()
   //TODO: force parse errors
   if (lvl > 0)
     log_msg("CMD", "parse error: open block not closed!");
+  if (lvlcont > 0)
+    log_msg("CMD", "parse error: open '(' not closed!");
   for (int i = 0; tape[i].line; i++)
     free(tape[i].line);
   free(tape);
+  free(lncont);
   cmd_reset();
 }
 
 static void cmd_do(char *line)
 {
-  log_msg("CMD", "cmd_do");
+  if (lvlcont > 0) {
+    char *str;
+    asprintf(&str, "%s%s", lncont, line);
+    SWAP_ALLOC_PTR(lncont, str);
+    line = lncont;
+  }
+
   Cmdline cmd;
   cmdline_build(&cmd, line);
-  cmdline_req_run(&cmd);
+  lvlcont = cmd.lvl;
+
+  if (lvlcont == 0)
+    cmdline_req_run(&cmd);
+  else
+    SWAP_ALLOC_PTR(lncont, strdup(line));
   cmdline_cleanup(&cmd);
 }
 

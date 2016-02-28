@@ -264,6 +264,8 @@ static void* win_autocmd(List *args, Cmdarg *ca)
 static void* win_echo(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_echo");
+  if (!tok_arg(args, 1))
+    return NULL;
   char *out = ca->cmdline->line + strlen("echo ");
   log_msg(">", "%s", out);
   return out;

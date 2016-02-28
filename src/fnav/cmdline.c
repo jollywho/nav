@@ -443,9 +443,11 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         cmd.rev = 1;
         break;
       case ')':
+        cmdline->lvl--;
         cmd.ed = word->start;
         goto breakout;
       case '(':
+        cmdline->lvl++;
         word = cmdline_parse(cmdline, word, cmd.chlds);
         if (!word)
           goto breakout;
@@ -488,6 +490,7 @@ breakout:
 void cmdline_build(Cmdline *cmdline, char *line)
 {
   log_msg("CMDSTR", "cmdline_build");
+  cmdline->lvl = 0;
   cmdline->line = strdup(line);
   QUEUE_INIT(&cmdline->refs);
   utarray_new(cmdline->cmds,   &cmd_icd);
@@ -599,7 +602,7 @@ void cmdline_req_run(Cmdline *cmdline)
   Cmdstr *cmd = NULL;
   Cmdstr *prev = NULL;
   if (!cmdline->cmds)
-  log_msg("CMD", ":: %s", cmdline->line);
+    return;
 
   while (NEXT_CMD(cmdline, cmd)) {
     if (cmd->flag & (PIPE_LEFT|PIPE_RIGHT))

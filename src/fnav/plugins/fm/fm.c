@@ -54,9 +54,6 @@ static int fm_opendir(Plugin *plugin, char *path, short arg)
   fn_handle *h = plugin->hndl;
   char *cur_dir = self->cur_dir;
 
-  if (fs_blocking(self->fs))
-    return 0;
-
   free(cur_dir);
   cur_dir = strdup(path);
 
@@ -135,6 +132,8 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   FM *self = plugin->top;
   if (!hka->arg)
     hka->arg = "~";
+
+  do_events_until(fs_blocking, self->fs);
 
   char *path = valid_full_path(window_cur_dir(), hka->arg);
 

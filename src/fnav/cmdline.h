@@ -61,6 +61,7 @@ struct Cmdline {
   UT_array *vars;
   QUEUE refs;
   char *line;
+  int lvl;
 };
 
 void cmdline_build(Cmdline *cmdline, char *line);
