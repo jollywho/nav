@@ -3,6 +3,7 @@
 
 #include "fnav/fnav.h"
 #include "fnav/lib/uthash.h"
+#include "fnav/lib/utarray.h"
 
 extern char *p_sh;          /* 'shell' */
 extern char *p_cp;          /* 'copy   cmd' */
@@ -24,11 +25,19 @@ typedef struct {
   //Token *var;
 } fn_var;
 
+typedef struct {
+  UT_hash_handle hh;
+  UT_array *lines;
+  char *key;
+} fn_func;
+
 void option_init();
 void option_cleanup();
 void set_color(fn_color *color);
 int attr_color(const char *);
 void set_var(fn_var *var);
 char* opt_var(const char *name);
+void set_func(fn_func *fn);
+fn_func* opt_func(const char *name);
 
 #endif

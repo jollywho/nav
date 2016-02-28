@@ -9,6 +9,7 @@
 typedef struct {
   fn_color *hi_colors;
   fn_var   *gbl_vars;
+  fn_func  *gbl_funcs;
   // maps
   // setting
 } fn_options;
@@ -21,7 +22,7 @@ fn_options *options;
   if (find) {                                   \
     HASH_DEL(options->opt, find);               \
     free(find->key);                            \
-    (expr);                                     \
+    expr;                                       \
     free(find);                                 \
   }                                             \
 
@@ -89,4 +90,24 @@ char* opt_var(const char *name)
   if (!var)
     return 0;
   return var->var;
+}
+
+void set_func(fn_func *func)
+{
+  fn_func *fn = malloc(sizeof(fn_func));
+  memmove(fn, func, sizeof(fn_func));
+  fn->key = strdup(func->key);
+
+  log_msg("CONFIG", "%s :: %s", fn->key, *(char**)utarray_front(fn->lines));
+  FLUSH_OLD_OPT(fn_func, gbl_funcs, fn->key, utarray_free(find->lines))
+  HASH_ADD_STR(options->gbl_funcs, key, fn);
+}
+
+fn_func* opt_func(const char *name)
+{
+  fn_func *fn;
+  HASH_FIND_STR(options->gbl_funcs, name, fn);
+  if (!fn)
+    return NULL;
+  return fn;
 }

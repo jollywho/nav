@@ -38,6 +38,7 @@ void cmd_add(Cmd_T *cmd);
 void cmd_remove(const char *);
 void cmd_clearall();
 void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline);
+void* cmd_call(List *args, Cmdarg *ca);
 Cmd_T* cmd_find(const char *);
 void cmd_list(List *args);
 void cmd_eval(char *line);

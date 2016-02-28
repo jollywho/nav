@@ -55,6 +55,7 @@ static const Cmd_T cmdtable[] = {
   {"mark",    win_mark,    0},
   {"delm",    win_mark,    1},
   {"echo",    win_echo,    0},
+  {"call",    cmd_call,    0},
 };
 
 static char * compl_cmds[] = {

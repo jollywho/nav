@@ -11,6 +11,7 @@ enum CTLCMD {
   CTL_ELSEIF,
   CTL_ELSE,
   CTL_END,
+  CTL_FUNC,
 };
 
 typedef struct Symb Symb;
@@ -28,6 +29,7 @@ static void* cmd_ifblock();
 static void* cmd_elseifblock();
 static void* cmd_elseblock();
 static void* cmd_endblock();
+static void* cmd_funcblock();
 
 static Cmd_T *cmd_table;
 static Symb *tape;
@@ -38,17 +40,24 @@ static int lvl;
 static int maxpos;
 static char *lncont;
 static int lvlcont;
+static fn_func fndef;
 
 static const Cmd_T builtins[] = {
-  {NULL,      NULL,           0},
-  {"if",      cmd_ifblock,    0},
-  {"else",    cmd_elseblock,  0},
-  {"elseif",  cmd_elseifblock,0},
-  {"end",     cmd_endblock,   0},
+  {NULL,        NULL,           0},
+  {"if",        cmd_ifblock,    0},
+  {"else",      cmd_elseblock,  0},
+  {"elseif",    cmd_elseifblock,0},
+  {"end",       cmd_endblock,   0},
+  {"function",  cmd_funcblock,  0},
 };
 
 static void stack_push(char *line)
 {
+  if (fndef.key) {
+    log_msg("CMD", "push : %s", line);
+    utarray_push_back(fndef.lines, &line);
+    return;
+  }
   if (pos + 2 > maxpos) {
     maxpos *= 2;
     tape = realloc(tape, maxpos*sizeof(Symb));
@@ -64,6 +73,7 @@ static void stack_push(char *line)
 void cmd_reset()
 {
   lncont = NULL;
+  fndef.key = NULL;
   lvlcont = 0;
   lvl = 0;
   pos = -1;
@@ -96,6 +106,8 @@ void cmd_flush()
   log_msg("CMD", "flush");
 
   //TODO: force parse errors
+  if (fndef.key)
+    free(fndef.key);
   if (lvl > 0)
     log_msg("CMD", "parse error: open block not closed!");
   if (lvlcont > 0)
@@ -190,7 +202,7 @@ static int ctl_cmd(const char *line)
 
 void cmd_eval(char *line)
 {
-  if (lvl < 1 || ctl_cmd(line) != -1)
+  if ((lvl < 1 && !fndef.key) || ctl_cmd(line) != -1)
     cmd_do(line);
   else
     stack_push(line);
@@ -233,13 +245,39 @@ static void* cmd_elseblock(List *args, Cmdarg *ca)
 
 static void* cmd_endblock(List *args, Cmdarg *ca)
 {
-  cur = cur->parent;
-  stack_push(ca->cmdline->line + strlen("end"));
-  tape[cur->st].end = &tape[pos];
-  tape[pos].type = CTL_END;
-  --lvl;
-  if (lvl < 1)
-    cmd_start();
+  if (fndef.key) {
+    set_func(&fndef);
+  }
+  else {
+    cur = cur->parent;
+    stack_push(ca->cmdline->line + strlen("end"));
+    tape[cur->st].end = &tape[pos];
+    tape[pos].type = CTL_END;
+    --lvl;
+    if (lvl < 1)
+      cmd_start();
+  }
+  return 0;
+}
+
+static void* cmd_funcblock(List *args, Cmdarg *ca)
+{
+  utarray_new(fndef.lines, &ut_str_icd);
+  fndef.key = strdup(ca->cmdline->line + strlen("function "));
+  return 0;
+}
+
+void* cmd_call(List *args, Cmdarg *ca)
+{
+  log_msg("CMD", "cmd_call");
+  fn_func *fn = opt_func(list_arg(args, 1, VAR_STRING));
+  if (!fn)
+    return 0;
+  for (int i = 0; i < utarray_len(fn->lines); i++) {
+    char *line = *(char**)utarray_eltptr(fn->lines, i);
+    cmd_do(line);
+    cmd_flush();
+  }
   return 0;
 }
 
