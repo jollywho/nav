@@ -93,7 +93,7 @@ void start_ex_cmd(int state)
   fmt_out = malloc(1);
   col_text = attr_color("ComplText");
 
-  if (window_get_focus() && state == EX_REG_STATE) {
+  if (state == EX_REG_STATE) {
     Buffer *buf = window_get_focus();
     lm = buf->matches;
     regex_mk_pivot(lm);

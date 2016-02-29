@@ -43,12 +43,12 @@ static int lvlcont;
 static fn_func fndef;
 
 static const Cmd_T builtins[] = {
-  {NULL,        NULL,           0},
-  {"if",        cmd_ifblock,    0},
-  {"else",      cmd_elseblock,  0},
-  {"elseif",    cmd_elseifblock,0},
-  {"end",       cmd_endblock,   0},
-  {"function",  cmd_funcblock,  0},
+  {NULL,          NULL,               0},
+  {"if",          cmd_ifblock,        0},
+  {"else",        cmd_elseblock,      0},
+  {"elseif",      cmd_elseifblock,    0},
+  {"end",         cmd_endblock,       0},
+  {"function",    cmd_funcblock,      0},
 };
 
 static void stack_push(char *line)

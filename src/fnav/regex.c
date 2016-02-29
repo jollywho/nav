@@ -24,7 +24,7 @@ struct LineMatch {
   fn_handle *hndl;
   int pivot_top;
   int pivot_lnum;
-  char* gcomp;
+  char *gcomp;
 };
 
 static char* gcomp;
@@ -41,6 +41,8 @@ LineMatch* regex_new(fn_handle *hndl)
 void regex_destroy(fn_handle *hndl)
 {
   LineMatch *lm = hndl->buf->matches;
+  if (lm->lines)
+    utarray_free(lm->lines);
   free(lm);
 }
 
@@ -182,6 +184,8 @@ static int line_diff(int to, int from)
 
 static void get_or_make_matches(LineMatch *lm)
 {
+  if (!lm->gcomp)
+    return;
   if (!lm->lines || lm->gcomp != gcomp) {
     regex_mk_pivot(lm);
     regex_build(lm, NULL);

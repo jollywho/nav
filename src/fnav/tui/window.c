@@ -216,6 +216,8 @@ Plugin* window_get_plugin()
 
 int window_focus_attached()
 {
+  if (!layout_buf(&win.layout))
+    return 0;
   return buf_attached(layout_buf(&win.layout));
 }
 
@@ -337,6 +339,8 @@ void window_close_focus()
 
 static void window_ex_cmd(Window *_w, Keyarg *arg)
 {
+  if (!window_focus_attached() && arg->arg == EX_REG_STATE)
+    return;
   win.ex = true;
   start_ex_cmd(arg->arg);
 }

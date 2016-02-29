@@ -79,7 +79,6 @@ void set_var(fn_var *variable)
 
   log_msg("CONFIG", "%s := %s", var->key, var->var);
   FLUSH_OLD_OPT(fn_var, gbl_vars, var->key, free(find->var))
-
   HASH_ADD_STR(options->gbl_vars, key, var);
 }
 
@@ -107,7 +106,5 @@ fn_func* opt_func(const char *name)
 {
   fn_func *fn;
   HASH_FIND_STR(options->gbl_funcs, name, fn);
-  if (!fn)
-    return NULL;
   return fn;
 }

@@ -22,7 +22,6 @@ typedef struct {
   UT_hash_handle hh;
   char *key;
   char *var;
-  //Token *var;
 } fn_var;
 
 typedef struct {
