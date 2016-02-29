@@ -256,8 +256,18 @@ static void* cmd_endblock(List *args, Cmdarg *ca)
 
 static void* cmd_funcblock(List *args, Cmdarg *ca)
 {
-  utarray_new(fndef.lines, &ut_str_icd);
-  fndef.key = strdup(ca->cmdline->line + strlen("function "));
+  const char *name = list_arg(args, 1, VAR_STRING);
+  if (!name)
+    return 0;
+  if (ca->cmdstr->rev) {
+    utarray_new(fndef.lines, &ut_str_icd);
+    fndef.key = strdup(name);
+  }
+  else {
+    fn_func *fn = opt_func(name);
+    for (int i = 0; i < utarray_len(fn->lines); i++)
+      log_msg("CMD", "%s", *(char**)utarray_eltptr(fn->lines, i));
+  }
   return 0;
 }
 

@@ -161,6 +161,8 @@ static FILE* config_open(const char *file, const char **defaults, char *mode)
 void config_load(const char *file)
 {
   FILE *f = config_open(file, config_paths, "r");
+  if (!f)
+    return;
   config_read(f);
   fclose(f);
 }

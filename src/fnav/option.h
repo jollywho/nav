@@ -30,6 +30,16 @@ typedef struct {
   char *key;
 } fn_func;
 
+typedef struct {
+  char *key;
+  char *rhs;
+} fn_bind;
+
+typedef struct {
+  char *key;
+  char *value;
+} fn_option;
+
 void option_init();
 void option_cleanup();
 void set_color(fn_color *color);

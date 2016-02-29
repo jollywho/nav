@@ -55,15 +55,12 @@ void init(void)
 void cleanup(void)
 {
   log_msg("CLEANUP", "CLEANUP_START");
-  endwin();
-
   ex_cmd_cleanup();
   window_cleanup();
-  exit(0);
   compl_cleanup();
   input_cleanup();
   event_cleanup();
-  tables_cleanup();
+  //tables_cleanup();
   option_cleanup();
   cmd_cleanup();
   vt_shutdown();
