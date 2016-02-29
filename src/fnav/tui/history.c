@@ -32,6 +32,7 @@ void hist_delete(fn_hist* hst)
   while (!TAILQ_EMPTY(&hst->p)) {
     hist_item *it = TAILQ_FIRST(&hst->p);
     TAILQ_REMOVE(&hst->p, it, ent);
+    free(it->line);
     free(it);
   }
   free(hst);

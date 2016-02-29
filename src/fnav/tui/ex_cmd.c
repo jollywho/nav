@@ -261,7 +261,7 @@ static void ex_hist(void *none, Keyarg *arg)
 static void ex_car()
 {
   if (ex_state == EX_CMD_STATE) {
-    cmdline_req_run(&cmd);
+    cmd_eval(cmd.line);
     cmd_flush();
   }
 
@@ -305,6 +305,7 @@ static void ex_bckspc()
 
 static void ex_killword()
 {
+  //FIXME: regex_state does not build cmdline
   Token *last = cmdline_last(&cmd);
   if (!last)
     return;
@@ -324,8 +325,10 @@ static void ex_killline()
   line = calloc(maxpos, sizeof(char*));
   curpos = -1;
 
-  ex_cmd_pop(-1);
-  menu_restart(menu);
+  if (ex_state == EX_CMD_STATE) {
+    ex_cmd_pop(-1);
+    menu_restart(menu);
+  }
   mflag = 0;
 }
 

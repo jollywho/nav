@@ -148,12 +148,7 @@ void window_cleanup(void)
 
 static void* win_shut()
 {
-#ifndef DEBUG
-  stop_ex_cmd();
-  uv_run(eventloop(), UV_RUN_NOWAIT);
-  endwin();
-  exit(0);
-#endif
+  uv_timer_stop(&win.draw_timer);
   stop_event_loop();
   return 0;
 }

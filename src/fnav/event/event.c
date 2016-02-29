@@ -126,16 +126,17 @@ void queue_process_events(Queue *queue, int ms)
 
 void do_events_until(loop_cond cond, void *arg)
 {
-  if (mainloop()->running)
-    return;
-
   mainloop()->running = true;
   while (cond(arg)) {
     queue_process_events(eventq(), TIMEOUT);
     queue_process_events(drawq(),  TIMEOUT);
     uv_run(eventloop(), UV_RUN_NOWAIT);
   }
-  mainloop()->running = false;
+}
+
+bool mainloop_busy()
+{
+  return !(queue_empty(eventq()) && queue_empty(drawq()));
 }
 
 static void prepare_events(uv_prepare_t *handle)
@@ -149,8 +150,7 @@ static void prepare_events(uv_prepare_t *handle)
     queue_process_events(eventq(), TIMEOUT);
     queue_process_events(drawq(),  TIMEOUT);
 
-    int empty = queue_empty(eventq()) && queue_empty(drawq());
-    if (empty) {
+    if (!mainloop_busy()) {
       uv_prepare_stop(handle);
       break;
     }

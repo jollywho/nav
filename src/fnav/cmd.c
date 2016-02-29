@@ -5,14 +5,7 @@
 #include "fnav/table.h"
 #include "fnav/option.h"
 
-enum CTLCMD {
-  CTL_NOP,
-  CTL_IF,
-  CTL_ELSEIF,
-  CTL_ELSE,
-  CTL_END,
-  CTL_FUNC,
-};
+enum CTLCMD { CTL_NOP, CTL_IF, CTL_ELSEIF, CTL_ELSE, CTL_END, CTL_FUNC, };
 
 typedef struct Symb Symb;
 struct Symb {
@@ -136,6 +129,7 @@ static void cmd_do(char *line)
     cmdline_req_run(&cmd);
   else
     SWAP_ALLOC_PTR(lncont, strdup(line));
+
   cmdline_cleanup(&cmd);
 }
 

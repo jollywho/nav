@@ -32,16 +32,8 @@ struct Buffer {
   int col_dir;
 };
 
-enum move_dir {
-  MOVE_UP,
-  MOVE_DOWN,
-  MOVE_LEFT,
-  MOVE_RIGHT,
-};
-enum dir_type {
-  L_HORIZ,
-  L_VERT
-};
+enum move_dir { MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT };
+enum dir_type { L_HORIZ, L_VERT };
 
 void buf_init();
 void buf_cleanup();

@@ -55,8 +55,11 @@ void init(void)
 void cleanup(void)
 {
   log_msg("CLEANUP", "CLEANUP_START");
+  endwin();
+
   ex_cmd_cleanup();
   window_cleanup();
+  exit(0);
   compl_cleanup();
   input_cleanup();
   event_cleanup();
@@ -83,6 +86,7 @@ int main(int argc, char **argv)
 #endif
   init();
   start_event_loop();
+  do_events_until(mainloop_busy, 0);
   config_write_info();
   cleanup();
   log_msg("INIT", "END_OF_EXECUTION");

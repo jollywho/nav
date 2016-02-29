@@ -27,7 +27,7 @@ struct LineMatch {
   char *gcomp;
 };
 
-static char* gcomp;
+static char* gcomp; /* shared regex for all buffers */
 
 LineMatch* regex_new(fn_handle *hndl)
 {
@@ -157,7 +157,7 @@ bool regex_match(Pattern *pat, const char *line)
   int ret = pcre_exec(pat->pcre,
       pat->extra,
       line,
-      strlen(line),  // length of string
+      strlen(line),     // length of string
       0,                // Start looking at this point
       0,                // OPTIONS
       substr,
