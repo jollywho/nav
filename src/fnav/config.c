@@ -277,17 +277,13 @@ static void* edit_variable(List *args, Cmdarg *ca)
   return 0;
 }
 
-static void* edit_mapping(List *args)
+static void* edit_mapping(List *args, Cmdarg *ca)
 {
-  Token *lhs = tok_arg(args, 1);
-  Token *rhs = tok_arg(args, 2);
-  if (!lhs || !rhs
-      || lhs->var.v_type != VAR_STRING
-      || rhs->var.v_type != VAR_STRING)
-    return 0;
-  char *from = token_val(lhs, VAR_STRING);
-  char *to   = token_val(rhs, VAR_STRING);
-  set_map(from, to);
+  char *from = strdup(ca->cmdline->line + strlen("map "));
+  char *to = strchr(from, ' ');
+  *to = '\0';
+  set_map(from, to+1);
+  free(from);
   return 0;
 }
 

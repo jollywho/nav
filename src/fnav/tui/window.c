@@ -80,7 +80,7 @@ static char * compl_args[][2] = {
 };
 
 static fn_key key_defaults[] = {
-  {';',     window_ex_cmd,   0,           EX_CMD_STATE},
+  {':',     window_ex_cmd,   0,           EX_CMD_STATE},
   {'/',     window_ex_cmd,   0,           EX_REG_STATE},
   {'H',     win_layout,      0,           MOVE_LEFT},
   {'J',     win_layout,      0,           MOVE_DOWN},
