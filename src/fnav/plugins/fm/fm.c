@@ -133,7 +133,7 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   if (!hka->arg)
     hka->arg = "~";
 
-  do_events_until(fs_blocking, self->fs);
+  DO_EVENTS_UNTIL(!fs_blocking(self->fs));
 
   char *path = valid_full_path(window_cur_dir(), hka->arg);
 
@@ -295,7 +295,7 @@ void fm_delete(Plugin *plugin)
   log_msg("FM", "delete");
   FM *fm = plugin->top;
   fn_handle *h = fm->base->hndl;
-  do_events_until(fs_blocking, fm->fs);
+  DO_EVENTS_UNTIL(!fs_blocking(fm->fs));
   model_close(h);
   model_cleanup(h);
   hook_clear_host(fm->base);

@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 #endif
   init();
   start_event_loop();
-  do_events_until(mainloop_busy, 0);
+  DO_EVENTS_UNTIL(!mainloop_busy());
   config_write_info();
   cleanup();
   log_msg("INIT", "END_OF_EXECUTION");

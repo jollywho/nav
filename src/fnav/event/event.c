@@ -10,8 +10,6 @@ struct queue_item {
   QUEUE node;
 };
 
-#define TIMEOUT 10
-
 static Loop main_event_loop;
 
 void event_init(void)
@@ -121,16 +119,6 @@ void queue_process_events(Queue *queue, int ms)
         break;
       }
     }
-  }
-}
-
-void do_events_until(loop_cond cond, void *arg)
-{
-  mainloop()->running = true;
-  while (cond(arg)) {
-    queue_process_events(eventq(), TIMEOUT);
-    queue_process_events(drawq(),  TIMEOUT);
-    uv_run(eventloop(), UV_RUN_NOWAIT);
   }
 }
 

@@ -11,6 +11,9 @@ void menu_delete(Menu *mnu);
 void menu_start(Menu *mnu);
 void menu_restart(Menu *mnu);
 void menu_stop(Menu *mnu);
+void menu_toggle_hints(Menu *mnu);
+bool menu_hints_enabled(Menu *mnu);
+void menu_input(Menu *mnu, int key);
 
 void menu_rebuild(Menu *mnu);
 void menu_update(Menu *mnu, Cmdline *cmd);

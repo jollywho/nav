@@ -8,6 +8,7 @@
 #include "fnav/option.h"
 #include "fnav/event/fs.h"
 #include "fnav/info.h"
+#include "fnav/ascii.h"
 
 static const int ROW_MAX = 5;
 static Menu *cur_menu;
@@ -21,6 +22,7 @@ struct Menu {
   bool docmpl;
   bool rebuild;
   bool active;
+  bool hints;
   char *line_key;
 
   pos_T size;
@@ -203,6 +205,7 @@ void menu_delete(Menu *mnu)
 {
   log_msg("MENU", "menu_delete");
   fs_cleanup(mnu->fs);
+  free(mnu->hndl->key);
   free(mnu->hndl);
   free(mnu);
   cur_menu = NULL;
@@ -241,6 +244,7 @@ void menu_stop(Menu *mnu)
   window_shift(ROW_MAX+1);
   free(mnu->line_key);
   mnu->active = false;
+  mnu->hints = false;
 }
 
 void menu_restart(Menu *mnu)
@@ -319,6 +323,48 @@ char* menu_next(Menu *mnu, int dir)
   return before;
 }
 
+bool menu_hints_enabled(Menu *mnu)
+{ return mnu->hints; }
+
+void menu_toggle_hints(Menu *mnu)
+{
+  log_msg("MENU", "toggle hints");
+  mnu->hints = !mnu->hints;
+  if (!mnu->cx || !mnu->cx->cmpl || ex_cmd_state() & EX_EXEC)
+    mnu->hints = false;
+}
+
+void menu_input(Menu *mnu, int key)
+{
+  log_msg("MENU", "toggle hints");
+
+  window_req_draw(cur_menu, menu_queue_draw);
+  if (key == ESC)
+    return menu_toggle_hints(mnu);
+
+  char *hints = get_opt(0);
+  char *str = NULL;
+  fn_compl *cmpl = mnu->cx->cmpl;
+  for (int i = 0; i < ROW_MAX; i++) {
+    if (hints[i] == key)
+      str = cmpl->matches[i]->key;
+  }
+  if (!str)
+    return;
+
+  int pos = ex_cmd_curpos() + 1;
+  Token *cur = ex_cmd_curtok();
+  if (cur)
+    pos = cur->start;
+
+  char newline[pos + strlen(str)];
+  strcpy(newline, ex_cmd_line());
+  strcpy(&newline[pos], str);
+  ex_cmd_populate(newline);
+  menu_toggle_hints(mnu);
+  ex_input(CAR);
+}
+
 void menu_update(Menu *mnu, Cmdline *cmd)
 {
   log_msg("MENU", "menu_update");
@@ -376,12 +422,15 @@ void menu_draw(Menu *mnu)
     return;
   }
   fn_compl *cmpl = mnu->cx->cmpl;
+  char *hints = ">>>>>";
+  if (mnu->hints)
+    hints = get_opt(0);
 
   for (int i = 0; i < ROW_MAX && i < cmpl->matchcount; i++) {
 
     compl_item *row = cmpl->matches[i];
 
-    DRAW_STR(mnu, nc_win, i, 0, ">", col_div);
+    DRAW_CH(mnu, nc_win, i, 0, hints[i], col_div);
     DRAW_STR(mnu, nc_win, i, 2, row->key, col_text);
 
     int ofs = strlen(row->key);

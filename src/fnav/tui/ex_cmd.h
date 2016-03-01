@@ -34,6 +34,7 @@ void stop_ex_cmd();
 
 void ex_input(int key);
 void cmdline_refresh();
+void ex_cmd_populate(const char *);
 
 char ex_cmd_curch();
 int ex_cmd_curpos();
@@ -44,6 +45,7 @@ char* ex_cmd_curstr();
 List* ex_cmd_curlist();
 int ex_cmd_state();
 int ex_cmd_curidx(List *list);
+char* ex_cmd_line();
 
 void ex_cmd_push(fn_context *cx);
 cmd_part* ex_cmd_pop(int count);

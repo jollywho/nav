@@ -426,7 +426,7 @@ void buf_sort(Buffer *buf, char *fld, int flags)
 {
   if (!buf->hndl)
     return;
-  do_events_until(model_blocking, buf->hndl);
+  DO_EVENTS_UNTIL(!model_blocking(buf->hndl));
   model_sort(buf->hndl->model, fld, flags);
 }
 

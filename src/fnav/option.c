@@ -10,7 +10,14 @@ static fn_color  *hi_colors;
 static fn_var    *gbl_vars;
 static fn_func   *gbl_funcs;
 static fn_bind   *key_syms;
-static fn_option *options;
+
+static struct fn_option {
+  char *key;
+  int flags;
+  void *value;
+} options[] = {
+  {"hintkeys",  VAR_STRING,  "waesg"},
+};
 
 #define FLUSH_OLD_OPT(type,opt,str,expr)       \
   do {                                         \
@@ -105,4 +112,10 @@ fn_func* opt_func(const char *name)
   fn_func *fn;
   HASH_FIND_STR(gbl_funcs, name, fn);
   return fn;
+}
+
+void* get_opt(const char *name)
+{
+  //FIXME: for test only
+  return (void*)options[0].value;
 }

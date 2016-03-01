@@ -59,14 +59,22 @@ static inline Event event_create(argv_callback cb, int argc, ...)
   return event;
 }
 
-typedef bool (*loop_cond)();
-void do_events_until(loop_cond cond, void *arg);
+#define TIMEOUT 10
+
+#define DO_EVENTS_UNTIL(cond)                 \
+  while (!(cond)) {                           \
+    queue_process_events(eventq(), TIMEOUT);  \
+    queue_process_events(drawq(),  TIMEOUT);  \
+    uv_run(eventloop(), UV_RUN_NOWAIT);       \
+  }                                           \
+
 void event_wakeup(void);
 bool mainloop_busy();
 
 void queue_push(Queue *queue, Event event);
 void queue_put_event(Queue *queue, Event event);
 bool queue_empty(Queue *queue);
+void queue_process_events(Queue *queue, int ms);
 
 void event_init(void);
 void event_cleanup(void);

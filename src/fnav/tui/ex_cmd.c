@@ -21,6 +21,7 @@ static void ex_killword();
 static void ex_killline();
 static void ex_hist();
 static void ex_cmdinvert();
+static void ex_menuhints();
 
 #define STACK_MIN 10
 #define CURS_MIN -1
@@ -38,6 +39,7 @@ static fn_key key_defaults[] = {
   {Ctrl_W,   ex_killword,      0,       0},
   {Ctrl_U,   ex_killline,      0,       0},
   {Ctrl_L,   ex_cmdinvert,     0,       0},
+  {Ctrl_G,   ex_menuhints,     0,       0},
 };
 static fn_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
@@ -242,26 +244,31 @@ static void ex_hist(void *none, Keyarg *arg)
   if (arg->arg == FORWARD)
     ret = hist_next(EXCMD_HIST());
   if (ret) {
-    if (ex_state == EX_CMD_STATE) {
-      ex_cmd_pop(-1);
-      menu_rebuild(menu);
-    }
-    free(line);
-
-    if (strlen(ret) < 1)
-      line = calloc(maxpos, sizeof(char*));
-    else
-      line = strdup(ret);
-
-    curpos = strlen(line) - 1;
+    ex_cmd_populate(ret);
     mflag = EX_HIST;
   }
 }
 
-static void ex_car()
+void ex_cmd_populate(const char *newline)
 {
   if (ex_state == EX_CMD_STATE) {
-    cmd_eval(cmd.line);
+    ex_cmd_pop(-1);
+    menu_rebuild(menu);
+  }
+  free(line);
+  if (strlen(newline) < 1)
+    line = calloc(maxpos, sizeof(char*));
+  else
+    line = strdup(newline);
+
+  curpos = strlen(line) - 1;
+}
+
+static void ex_car()
+{
+  log_msg("EXCMD", "excar %s", line);
+  if (ex_state == EX_CMD_STATE) {
+    cmd_eval(line);
     cmd_flush();
   }
 
@@ -350,6 +357,11 @@ static void ex_cmdinvert()
   }
 }
 
+static void ex_menuhints()
+{
+  menu_toggle_hints(menu);
+}
+
 static void ex_check_pipe()
 {
   Cmdstr *cur = ex_cmd_curcmd();
@@ -405,6 +417,9 @@ static void ex_onkey()
 void ex_input(int key)
 {
   log_msg("EXCMD", "input");
+  if (menu_hints_enabled(menu))
+    return menu_input(menu, key);
+
   Keyarg ca;
   int idx = find_command(&key_tbl, key);
   ca.arg = key_defaults[idx].cmd_arg;
@@ -490,6 +505,11 @@ Token* ex_cmd_curtok()
   int ed = curpos + 1;
   Token *tok = cmdline_tokbtwn(&cmd, st, ed);
   return tok;
+}
+
+char* ex_cmd_line()
+{
+  return line;
 }
 
 char* ex_cmd_curstr()

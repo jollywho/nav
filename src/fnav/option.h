@@ -31,14 +31,10 @@ typedef struct {
 } fn_func;
 
 typedef struct {
+  UT_hash_handle hh;
   char *key;
   char *rhs;
 } fn_bind;
-
-typedef struct {
-  char *key;
-  char *value;
-} fn_option;
 
 void option_init();
 void option_cleanup();
@@ -48,5 +44,6 @@ void set_var(fn_var *var);
 char* opt_var(const char *name);
 void set_func(fn_func *fn);
 fn_func* opt_func(const char *name);
+void* get_opt(const char *name);
 
 #endif
