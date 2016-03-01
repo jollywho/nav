@@ -7,6 +7,7 @@
 #include "fnav/cmdline.h"
 #include "fnav/cmd.h"
 #include "fnav/info.h"
+#include "fnav/event/input.h"
 
 static void* edit_setting();
 static void* edit_color();
@@ -273,12 +274,20 @@ static void* edit_variable(List *args, Cmdarg *ca)
     .var = strdup(str),
   };
   set_var(&var);
-
   return 0;
 }
 
 static void* edit_mapping(List *args)
 {
+  Token *lhs = tok_arg(args, 1);
+  Token *rhs = tok_arg(args, 2);
+  if (!lhs || !rhs
+      || lhs->var.v_type != VAR_STRING
+      || rhs->var.v_type != VAR_STRING)
+    return 0;
+  char *from = token_val(lhs, VAR_STRING);
+  char *to   = token_val(rhs, VAR_STRING);
+  set_map(from, to);
   return 0;
 }
 

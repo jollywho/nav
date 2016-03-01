@@ -57,6 +57,15 @@ static fn_reg reg_tbl[] = {
   {'_',  NULL},
 };
 
+typedef struct fn_map fn_map;
+struct fn_map {
+  char *lhs;
+  char *rhs;
+  int len;
+};
+
+static fn_map *key_maps[2][256];
+
 int get_special_key_code(char *name)
 {
   char  *table_name;
@@ -96,6 +105,14 @@ void input_init(void)
 
 void input_cleanup(void)
 {
+  for (int j = 0; j < 2; j++)
+  for (int i = 0; i < 256; i++) {
+    if (!key_maps[j][i])
+      continue;
+    free(key_maps[j][i]->lhs);
+    free(key_maps[j][i]->rhs);
+    free(key_maps[j][i]);
+  }
   termkey_destroy(tk);
 }
 
@@ -125,6 +142,72 @@ int extract_modifiers(int key, int *modp)
   return key;
 }
 
+static int trans_special(char **bp)
+{
+  if (*bp[0] != '<')
+    return **bp;
+  char *end = strstr(*bp, ">");
+  if (!end)
+    return **bp;
+
+  (*bp)++;
+  *end = '\0';
+
+  int newkey = get_special_key_code(*bp);
+  int keycode = *(*bp+2);
+  if (newkey)
+    keycode = newkey;
+  else if (strcasecmp(HC_S_TAB, *bp) == 0)
+    keycode = K_S_TAB;
+
+  int mask = 0x0;
+  mask |= name_to_mod_mask(*bp[0]);
+
+  if (!IS_SPECIAL(keycode))
+    keycode  = extract_modifiers(keycode, &mask);
+
+  *end = '>';
+  *bp = (end);
+  return keycode;
+}
+
+static int replace_termcodes(char **to, char *from)
+{
+  int len = strlen(from);
+  char buf[len];
+  int i = 0;
+  while (*from) {
+    buf[i] = trans_special(&from);
+    i++;
+    from++;
+  }
+  *to = malloc((i)*sizeof(char*));
+  strncpy(*to, buf, i);
+  return i;
+}
+
+void set_map(char *from, char *to)
+{
+  log_msg("INPUT", "<<-- from: %s to: %s", from, to);
+  fn_map *mp = malloc(sizeof(fn_map));
+  replace_termcodes(&mp->lhs, from);
+  mp->len = replace_termcodes(&mp->rhs, to);
+
+  key_maps[0][(int)mp->lhs[0]] = mp;
+}
+
+bool input_map_exists(int key)
+{
+  return key_maps[0][key];
+}
+
+void do_map(int key)
+{
+  log_msg("INPUT", "<<<<<<<<<<<<<<<<<<");
+  for (int i = 0; i < key_maps[0][key]->len; i++)
+    window_input(key_maps[0][key]->rhs[i]);
+}
+
 void input_check()
 {
   log_msg("INPUT", ">>>>>>>>>>>>>>>>>>>>>>>>>");
@@ -144,12 +227,11 @@ void input_check()
       bp++;
       bp[len - 2] = '\0';
       int newkey = get_special_key_code(bp);
-      if (newkey) {
+      if (newkey)
         key.code.number = newkey;
-      }
-      else if (strcasecmp(HC_S_TAB, bp) == 0) {
+      else if (strcasecmp(HC_S_TAB, bp) == 0)
         key.code.number = K_S_TAB;
-      }
+
       if (key.modifiers) {
         int mask = 0x0;
         mask |= name_to_mod_mask(*bp);

@@ -241,6 +241,7 @@ static void* cmd_endblock(List *args, Cmdarg *ca)
 {
   if (fndef.key) {
     set_func(&fndef);
+    cmd_flush();
   }
   else {
     cur = cur->parent;

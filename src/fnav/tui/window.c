@@ -168,6 +168,9 @@ void window_input(int key)
   if (win.ex)
     return ex_input(key);
 
+  if (input_map_exists(key))
+    return do_map(key);
+
   int ret = 0;
   if (window_get_focus())
     ret = buf_input(layout_buf(&win.layout), &win.ca);

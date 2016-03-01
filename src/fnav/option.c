@@ -5,11 +5,11 @@
 #include "fnav/cmdline.h"
 #include "fnav/cmd.h"
 #include "fnav/vt/vt.h"
+#include "fnav/event/input.h"
 
 static fn_color  *hi_colors;
 static fn_var    *gbl_vars;
 static fn_func   *gbl_funcs;
-static fn_bind   *key_syms;
 
 static struct fn_option {
   char *key;
