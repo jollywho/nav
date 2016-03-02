@@ -24,6 +24,7 @@ static void buf_del();
 static void buf_gen_event();
 static void buf_draw(void **);
 
+/* BUF_GEN_EVENTS */
 #define EV_PASTE  0
 #define EV_REMOVE 1
 #define EV_LEFT   2
@@ -63,6 +64,7 @@ static fn_key key_defaults[] = {
 
 static fn_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
+static const int SZ_LEN = 6;
 
 void buf_init()
 {
@@ -86,6 +88,7 @@ Buffer* buf_new()
   buf->col_select = attr_color("BufSelected");
   buf->col_text = attr_color("BufText");
   buf->col_dir = attr_color("BufDir");
+  buf->col_sz = attr_color("BufSz");
   return buf;
 }
 
@@ -217,6 +220,22 @@ static void draw_cur_line(Buffer *buf, Model *m)
   wattroff(buf->nc_win, A_REVERSE);
 }
 
+char* readable_fs(double size/*in bytes*/, char *buf) {
+  int i = 0;
+  const char* units[] = {"B", "K", "M", "G", "T", "P"};
+  while (size > 1024) {
+    size /= 1024;
+    i++;
+  }
+  if (size > 99)
+    sprintf(buf, " %.0lf %s", size, units[i]);
+  else if (size > 9)
+    sprintf(buf, "%.1f %s", size, units[i]);
+  else
+    sprintf(buf, "%.2f %s", size, units[i]);
+  return buf;
+}
+
 static void draw_lines(Buffer *buf, Model *m)
 {
   for (int i = 0; i < buf->b_size.lnum; ++i) {
@@ -226,10 +245,14 @@ static void draw_lines(Buffer *buf, Model *m)
 
     // TODO: plugin CB to filter string
     char *path = model_fld_line(m, "fullpath", buf->top + i);
+    char szbuf[SZ_LEN];
+    char *sz = readable_fs(fs_vt_sz_resolv(path), szbuf);
     if (isdir(path))
       DRAW_STR(buf, nc_win, i, 0, it, col_dir);
     else
       DRAW_STR(buf, nc_win, i, 0, it, col_text);
+    // TODO: show item count when type is directory
+    DRAW_STR(buf, nc_win, i, buf->b_size.col-SZ_LEN, sz, col_sz);
   }
 }
 

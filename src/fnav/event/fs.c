@@ -188,10 +188,17 @@ static void stat_read_cb(uv_fs_t *req)
 
 void* fs_vt_stat_resolv(fn_rec *rec, const char *key)
 {
-  char *str1 = (char *)rec_fld(rec, "fullpath");
+  char *str1 = (char*)rec_fld(rec, "fullpath");
   ventry *ent = fnd_val("fm_stat", "fullpath", str1);
   struct stat *stat = (struct stat*)rec_fld(ent->rec, "stat");
   return &stat->st_mtim.tv_sec;
+}
+
+long fs_vt_sz_resolv(const char *key)
+{
+  ventry *ent = fnd_val("fm_stat", "fullpath", key);
+  struct stat *stat = (struct stat*)rec_fld(ent->rec, "stat");
+  return stat->st_size;
 }
 
 void fs_signal_handle(void **data)
@@ -261,7 +268,7 @@ static int send_stat(fentry *ent, const char *dir, int upd)
   *cupd = upd;
 
   trans_rec *r = mk_trans_rec(tbl_fld_count("fm_stat"));
-  edit_trans(r, "fullpath", (char *)dir, NULL);
+  edit_trans(r, "fullpath", (char*)dir, NULL);
   edit_trans(r, "update",   NULL,        cupd);
   edit_trans(r, "stat",     NULL,        cstat);
   CREATE_EVENT(eventq(), commit, 2, "fm_stat", r);
@@ -276,16 +283,16 @@ static void scan_cb(uv_fs_t *req)
   fentry *ent = req->data;
 
   /* clear outdated records */
-  tbl_del_val("fm_files", "dir",      (char *)req->path);
-  tbl_del_val("fm_stat",  "fullpath", (char *)req->path);
+  tbl_del_val("fm_files", "dir",      (char*)req->path);
+  tbl_del_val("fm_stat",  "fullpath", (char*)req->path);
 
   send_stat(ent, ent->key, 1);
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
     int err = 0;
     trans_rec *r = mk_trans_rec(tbl_fld_count("fm_files"));
-    edit_trans(r, "name", (char *)dent.name, NULL);
-    edit_trans(r, "dir",  (char *)req->path, NULL);
+    edit_trans(r, "name", (char*)dent.name, NULL);
+    edit_trans(r, "dir",  (char*)req->path, NULL);
     char *full = conspath(req->path, dent.name);
 
     ventry *vent = fnd_val("fm_stat", "fullpath", full);
@@ -294,14 +301,13 @@ static void scan_cb(uv_fs_t *req)
       err = send_stat(ent, full, 0);
     }
 
-    edit_trans(r, "fullpath", (char *)full,   NULL);
+    edit_trans(r, "fullpath", (char*)full,   NULL);
     free(full);
 
     if (err)
       clear_trans(r, 1);
-    else {
+    else
       CREATE_EVENT(eventq(), commit, 2, "fm_files", r);
-    }
   }
   uv_fs_req_cleanup(&ent->uv_fs);
   fs_close_req(ent);
