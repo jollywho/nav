@@ -342,7 +342,7 @@ void menu_input(Menu *mnu, int key)
   if (key == ESC)
     return menu_toggle_hints(mnu);
 
-  char *hints = get_opt(0);
+  char *hints = get_opt_str("hintkeys");
   char *str = NULL;
   fn_compl *cmpl = mnu->cx->cmpl;
   for (int i = 0; i < ROW_MAX; i++) {
@@ -424,7 +424,7 @@ void menu_draw(Menu *mnu)
   fn_compl *cmpl = mnu->cx->cmpl;
   char *hints = ">>>>>";
   if (mnu->hints)
-    hints = get_opt(0);
+    hints = get_opt_str("hintkeys");
 
   for (int i = 0; i < ROW_MAX && i < cmpl->matchcount; i++) {
 

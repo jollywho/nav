@@ -38,6 +38,7 @@ void set_var(fn_var *var);
 char* opt_var(const char *name);
 void set_func(fn_func *fn);
 fn_func* opt_func(const char *name);
-void* get_opt(const char *name);
+void set_opt(const char *name, const char *val);
+char* get_opt_str(const char *name);
 
 #endif

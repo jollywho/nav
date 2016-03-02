@@ -79,6 +79,6 @@ Cmdstr* cmdline_getcmd(Cmdline *cmdline);
 void* token_val(Token *token, char v_type);
 void* list_arg(List *lst, int argc, char v_type);
 void* tok_arg(List *lst, int argc);
-int str_num(char *, int *);
+int str_num(const char *, int *);
 
 #endif

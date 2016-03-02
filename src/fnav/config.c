@@ -222,13 +222,20 @@ bool config_read(FILE *file)
   return 1;
 }
 
-static void* edit_setting(List *args)
+static void* edit_setting(List *args, Cmdarg *ca)
 {
   log_msg("CONFIG", "edit_setting");
+  char *name = list_arg(args, 1, VAR_STRING);
+  Token *oper = tok_arg(args, 2);
+  Token *rhs = tok_arg(args, 3);
+  if (!name|| !oper || !rhs)
+    return 0;
+  char *value = cmdline_line_from(ca->cmdline, 3);
+  set_opt(name, value);
   return 0;
 }
 
-static void* edit_color(List *args)
+static void* edit_color(List *args, Cmdarg *ca)
 {
   log_msg("CONFIG", "edit_color");
   if (utarray_len(args->items) < 3)

@@ -60,7 +60,7 @@ static UT_icd list_icd = { sizeof(Token),  NULL };
 static UT_icd cmd_icd  = { sizeof(Cmdstr), NULL, NULL, cmdret_dtor };
 static UT_icd chld_icd = { sizeof(Cmdstr), NULL, cmdstr_copy, cmdstr_dtor };
 
-int str_num(char *str, int *tmp)
+int str_num(const char *str, int *tmp)
 {
   return sscanf(str, "%d", tmp);
 }

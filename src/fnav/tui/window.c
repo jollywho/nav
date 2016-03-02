@@ -58,7 +58,7 @@ static const Cmd_T cmdtable[] = {
   {"call",    cmd_call,    0},
 };
 
-static char * compl_cmds[] = {
+static char *compl_cmds[] = {
   "q;window:string:wins",
   "close;window:string:wins",
   "au;event:string:events",
@@ -73,7 +73,7 @@ static char * compl_cmds[] = {
   "cd;path:string:paths",
   "mark;label:string:marklbls",
 };
-static char * compl_args[][2] = {
+static char *compl_args[][2] = {
   {"plugin", "fm;path:string:paths"},
   {"plugin", "img;window:number:wins"},
   {"plugin", "dt;path:string:paths"},

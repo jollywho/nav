@@ -7,17 +7,26 @@
 #include "fnav/vt/vt.h"
 #include "fnav/event/input.h"
 
-static fn_color  *hi_colors;
-static fn_var    *gbl_vars;
-static fn_func   *gbl_funcs;
+enum opt_type { OPTION_STRING, OPTION_INTEGER };
 
+static int dummy = 0;
+static char *hintkeys = "wasgd";
+
+typedef struct fn_option fn_option;
 static struct fn_option {
   char *key;
-  int flags;
+  enum opt_type type;
   void *value;
-} options[] = {
-  {"hintkeys",  VAR_STRING,  "waesg"},
+  UT_hash_handle hh;
+} default_options[] = {
+  {"hintkeys",      OPTION_STRING,   &hintkeys},
+  {"dummy",         OPTION_INTEGER,  &dummy},
 };
+
+static fn_color   *hi_colors;
+static fn_var     *gbl_vars;
+static fn_func    *gbl_funcs;
+static fn_option  *options;
 
 #define FLUSH_OLD_OPT(type,opt,str,expr)       \
   do {                                         \
@@ -46,6 +55,11 @@ static struct fn_option {
 void option_init()
 {
   init_pair(0, 0, 0);
+  for (int i = 0; i < LENGTH(default_options); i++) {
+    fn_option *opt = malloc(sizeof(fn_option));
+    memmove(opt, &default_options[i], sizeof(fn_option));
+    HASH_ADD_STR(options, key, opt);
+  }
 }
 
 void option_cleanup()
@@ -114,8 +128,30 @@ fn_func* opt_func(const char *name)
   return fn;
 }
 
-void* get_opt(const char *name)
+void set_opt(const char *name, const char *val)
 {
-  //FIXME: for test only
-  return (void*)options[0].value;
+  fn_option *opt;
+  HASH_FIND_STR(options, name, opt);
+  if (!opt)
+    return;
+
+  log_msg("CONFIG", "%s :: %s", opt->key, val);
+  if (opt->type == OPTION_STRING)
+    SWAP_ALLOC_PTR(opt->value, strdup(val));
+  else if (opt->type == OPTION_INTEGER) {
+    int v_int;
+    if (!str_num(val, &v_int))
+      return;
+    *(int*)opt->value = v_int;
+  }
+}
+
+char* get_opt_str(const char *name)
+{
+  fn_option *opt;
+  HASH_FIND_STR(options, name, opt);
+  if (opt->type == OPTION_STRING)
+    return opt->value;
+  else
+    return NULL;
 }
