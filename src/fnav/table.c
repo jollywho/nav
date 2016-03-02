@@ -535,12 +535,12 @@ void field_list(List *args)
   fn_fld *it;
   int i = 0;
   for (it = t->fields; it != NULL; it = it->hh.next) {
-    compl_set_index(i, 0, NULL, "%s", it->key);
+    compl_set_key(i, "%s", it->key);
     i++;
   }
   fn_vt_fld *vit;
   for (vit = t->vtfields; vit != NULL; vit = vit->hh.next) {
-    compl_set_index(i, 0, NULL, "%s", vit->key);
+    compl_set_key(i, "%s", vit->key);
     i++;
   }
 }

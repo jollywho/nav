@@ -428,7 +428,7 @@ void cmd_list(List *args)
   compl_new(HASH_COUNT(cmd_table) - (LENGTH(builtins) - 1), COMPL_STATIC);
   for (it = cmd_table; it != NULL; it = it->hh.next) {
     if (ctl_cmd(it->name) == -1) {
-      compl_set_index(i, 0, NULL, "%s", it->name);
+      compl_set_key(i, "%s", it->name);
       i++;
     }
   }

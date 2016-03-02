@@ -52,7 +52,8 @@ void compl_destroy(fn_context *cx);
 
 void compl_new(int size, int dynamic);
 void compl_delete(fn_compl *cmpl);
-void compl_set_index(int idx, int count, char *, char *fmt, ...);
+void compl_set_key(int idx, char *fmt, ...);
+void compl_set_col(int idx, char *fmt, ...);
 
 fn_compl* compl_match_index(int idx);
 fn_context* find_context(fn_context *cx, char *);

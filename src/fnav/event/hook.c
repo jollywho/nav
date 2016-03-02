@@ -197,6 +197,6 @@ void event_list(List *args)
 {
   compl_new(LENGTH(events_list), COMPL_STATIC);
   for (int i = 0; i < LENGTH(events_list); i++) {
-    compl_set_index(i, 0, NULL, "%s", events_list[i]);
+    compl_set_key(i, "%s", events_list[i]);
   }
 }

@@ -214,7 +214,6 @@ bool config_read(FILE *file)
       free(line);
       continue;
     }
-    log_msg("CONFIG", "pump");
     cmd_eval(line);
     free(line);
   }

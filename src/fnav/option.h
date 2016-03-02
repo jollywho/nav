@@ -40,5 +40,6 @@ void set_func(fn_func *fn);
 fn_func* opt_func(const char *name);
 void set_opt(const char *name, const char *val);
 char* get_opt_str(const char *name);
+void options_list(List *args);
 
 #endif

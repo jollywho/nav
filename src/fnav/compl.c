@@ -7,6 +7,7 @@
 #include "fnav/table.h"
 #include "fnav/info.h"
 #include "fnav/event/hook.h"
+#include "fnav/option.h"
 
 typedef struct {
   char *key;
@@ -23,6 +24,7 @@ static compl_entry compl_defaults[] = {
   { "marks",     mark_list     },
   { "marklbls",  marklbl_list  },
   { "events",    event_list    },
+  { "options",   options_list  },
 };
 
 static compl_entry *compl_table;
@@ -264,6 +266,8 @@ void compl_delete(fn_compl *cmpl)
     return;
   for (int i = 0; i < cmpl->rowcount; i++) {
     free(cmpl->rows[i]->key);
+    if (cmpl->rows[i]->colcount)
+      free(cmpl->rows[i]->columns);
     free(cmpl->rows[i]);
   }
 
@@ -281,7 +285,7 @@ void compl_destroy(fn_context *cx)
   cx->cmpl = NULL;
 }
 
-void compl_set_index(int idx, int count, char *cols, char *fmt, ...)
+void compl_set_key(int idx, char *fmt, ...)
 {
   fn_compl *cmpl = cur_cx->cmpl;
   cmpl->rows[idx] = malloc(sizeof(compl_item));
@@ -290,8 +294,18 @@ void compl_set_index(int idx, int count, char *cols, char *fmt, ...)
   va_start(args, fmt);
   vasprintf(&cmpl->rows[idx]->key, fmt, args);
   va_end(args);
-  cmpl->rows[idx]->colcount = count;
-  cmpl->rows[idx]->columns = cols;
+  cmpl->rows[idx]->colcount = 0;
+}
+
+void compl_set_col(int idx, char *fmt, ...)
+{
+  fn_compl *cmpl = cur_cx->cmpl;
+
+  va_list args;
+  va_start(args, fmt);
+  vasprintf(&cmpl->rows[idx]->columns, fmt, args);
+  va_end(args);
+  cmpl->rows[idx]->colcount = 1;
 }
 
 static int count_subgrps(char *str, char *fnd)

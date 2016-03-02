@@ -63,7 +63,8 @@ void marklbl_list(List *args)
   fn_mark *it;
   int i = 0;
   for (it = lbl_marks; it != NULL; it = it->hh.next) {
-    compl_set_index(i, 1, it->path, "%s", it->key);
+    compl_set_key(i, "%s", it->key);
+    compl_set_col(i, "%s", it->path);
     i++;
   }
 }
@@ -77,7 +78,7 @@ static void mark_del(fn_mark **mrk, fn_mark **tbl)
   free((*mrk));
 }
 
-char * mark_path(const char *key)
+char *mark_path(const char *key)
 {
   fn_mark *mrk;
   HASH_FIND_STR(lbl_marks, key, mrk);
@@ -87,10 +88,10 @@ char * mark_path(const char *key)
   return NULL;
 }
 
-char * mark_str(int chr)
+char *mark_str(int chr)
 {
   fn_mark *mrk;
-  char * key;
+  char *key;
   asprintf(&key, "'%c", chr);
 
   HASH_FIND_STR(chr_marks, key, mrk);
@@ -104,12 +105,12 @@ char * mark_str(int chr)
 void mark_label_dir(char *label, const char *dir)
 {
   log_msg("INFO", "mark_label_dir");
-  char * key;
+  char *key;
   if (label[0] == '@')
     label = &label[1];
   asprintf(&key, "@%s", label);
 
-  char * tmp = strdup(dir);
+  char *tmp = strdup(dir);
   fn_mark *mrk;
   HASH_FIND_STR(lbl_marks, key, mrk);
   if (mrk)
@@ -130,10 +131,10 @@ void mark_strchr_str(const char *str, const char *dir)
 void mark_chr_str(int chr, const char *dir)
 {
   log_msg("FM", "mark_key_str");
-  char * key;
+  char *key;
   asprintf(&key, "'%c", chr);
 
-  char * tmp = strdup(dir);
+  char *tmp = strdup(dir);
   fn_mark *mrk;
   HASH_FIND_STR(chr_marks, key, mrk);
   if (mrk)

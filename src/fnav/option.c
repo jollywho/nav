@@ -6,11 +6,11 @@
 #include "fnav/cmd.h"
 #include "fnav/vt/vt.h"
 #include "fnav/event/input.h"
+#include "fnav/compl.h"
 
 enum opt_type { OPTION_STRING, OPTION_INTEGER };
 
 static int dummy = 0;
-static char *hintkeys = "wasgd";
 
 typedef struct fn_option fn_option;
 static struct fn_option {
@@ -19,7 +19,7 @@ static struct fn_option {
   void *value;
   UT_hash_handle hh;
 } default_options[] = {
-  {"hintkeys",      OPTION_STRING,   &hintkeys},
+  {"hintkeys",      OPTION_STRING,   "wasgd"},
   {"dummy",         OPTION_INTEGER,  &dummy},
 };
 
@@ -58,6 +58,8 @@ void option_init()
   for (int i = 0; i < LENGTH(default_options); i++) {
     fn_option *opt = malloc(sizeof(fn_option));
     memmove(opt, &default_options[i], sizeof(fn_option));
+    if (default_options[i].type == OPTION_STRING)
+      opt->value = strdup(default_options[i].value);
     HASH_ADD_STR(options, key, opt);
   }
 }
@@ -154,4 +156,21 @@ char* get_opt_str(const char *name)
     return opt->value;
   else
     return NULL;
+}
+
+void options_list(List *args)
+{
+  log_msg("INFO", "setting_list");
+  unsigned int count = HASH_COUNT(options);
+  compl_new(count, COMPL_STATIC);
+  fn_option *it;
+  int i = 0;
+  for (it = options; it != NULL; it = it->hh.next) {
+    compl_set_key(i, "%s", it->key);
+    if (it->type == OPTION_STRING)
+      compl_set_col(i, "%s", (char*)it->value);
+    else if (it->type == OPTION_INTEGER)
+      compl_set_col(i, "%d", *(int*)it->value);
+    i++;
+  }
 }
