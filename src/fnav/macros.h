@@ -41,20 +41,20 @@
   } while (0)                 \
 
 #define DRAW_BUFLN(obj,win,ln,col,str,color,wbuf,max)  \
-  int cnt = mbstowcs(wbuf, str, max);                  \
+  int cnt = mbstowcs(wbuf, str, (max)+1);              \
   if (cnt == -1)                                       \
     DRAW_STR(obj,win,ln,col,str,color);                \
   else {                                               \
-    wbuf[cnt] = '\0';                                  \
+    (wbuf)[cnt] = '\0';                                \
     int len = 0, cell = 0;                             \
     for (cell = 0; cell < cnt; cell++) {               \
-      len += MAX(wcwidth(wbuf[cell]), 0);              \
-      if (len > maxlen) {                              \
-        wbuf[cell - 1] = '~';                          \
+      len += MAX(wcwidth((wbuf)[cell]), 0);            \
+      if (len > (max)) {                               \
+        (wbuf)[cell - 1] = '~';                        \
         break;                                         \
       }                                                \
     }                                                  \
-    wbuf[cell] = '\0';                                 \
+    (wbuf)[cell] = '\0';                               \
     wattron((obj)->win, COLOR_PAIR((obj)->color));     \
     mvwaddwstr((obj)->win, ln, col, wbuf);             \
     wattroff((obj)->win, COLOR_PAIR((obj)->color));    \

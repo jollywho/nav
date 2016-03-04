@@ -64,8 +64,9 @@ static fn_key key_defaults[] = {
 
 static fn_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
-static const int SZ_LEN = 6;
+#define SZ_LEN 6
 static wchar_t wbuf[PATH_MAX];
+static char szbuf[SZ_LEN];
 
 void buf_init()
 {
@@ -223,7 +224,7 @@ static void draw_cur_line(Buffer *buf, Model *m, int maxlen)
   wattroff(buf->nc_win, A_REVERSE);
 }
 
-char* readable_fs(double size/*in bytes*/, char *buf)
+void readable_fs(double size/*in bytes*/, char buf[])
 {
   int i = 0;
   const char* units[] = {"B", "K", "M", "G", "T", "P"};
@@ -237,7 +238,6 @@ char* readable_fs(double size/*in bytes*/, char *buf)
     sprintf(buf, "%.1f %s", size, units[i]);
   else
     sprintf(buf, "%4.0f %s", size, units[i]);
-  return buf;
 }
 
 static void draw_lines(Buffer *buf, Model *m, int maxlen)
@@ -249,8 +249,7 @@ static void draw_lines(Buffer *buf, Model *m, int maxlen)
 
     // TODO: plugin CB to filter string
     char *path = model_fld_line(m, "fullpath", buf->top + i);
-    char szbuf[SZ_LEN];
-    char *sz = readable_fs(fs_vt_sz_resolv(path), szbuf);
+    readable_fs(fs_vt_sz_resolv(path), szbuf);
     if (isdir(path)) {
       DRAW_BUFLN(buf, nc_win, i, 0, it, col_dir, wbuf, maxlen);
       DRAW_STR(buf, nc_win, i, 1 + maxlen, "     /", col_sz);
@@ -258,7 +257,7 @@ static void draw_lines(Buffer *buf, Model *m, int maxlen)
     else {
       DRAW_BUFLN(buf, nc_win, i, 0, it, col_text, wbuf, maxlen);
       // TODO: show item count when type is directory
-      DRAW_STR(buf, nc_win, i, 1 + maxlen, sz, col_sz);
+      DRAW_STR(buf, nc_win, i, 1 + maxlen, szbuf, col_sz);
     }
   }
 }
