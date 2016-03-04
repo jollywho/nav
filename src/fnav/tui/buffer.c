@@ -65,6 +65,7 @@ static fn_key key_defaults[] = {
 static fn_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
 static const int SZ_LEN = 6;
+static wchar_t wbuf[PATH_MAX];
 
 void buf_init()
 {
@@ -212,11 +213,31 @@ void buf_refresh(Buffer *buf)
   window_req_draw(buf, buf_draw);
 }
 
-static void draw_cur_line(Buffer *buf, Model *m)
+static void compress_line(wchar_t wbuf[], char *line, int maxlen)
+{
+  int cnt = mbstowcs(wbuf, line, strlen(line));
+  wbuf[cnt] = '\0';
+  int len = 0, cell = 0;
+  for (cell = 0; cell < cnt; cell++) {
+    int w = wcwidth(wbuf[cell]);
+    if (w > 0)
+      len += w;
+    if (len > maxlen) {
+      wbuf[cell - 1] = '~';
+      break;
+    }
+  }
+  wbuf[cell] = '\0';
+}
+
+static void draw_cur_line(Buffer *buf, Model *m, wchar_t wbuf[], int maxlen)
 {
   char *it = model_str_line(m, buf->top + buf->lnum);
+  if (!it)
+    return;
+  compress_line(wbuf, it, maxlen);
   TOGGLE_ATTR(!buf->focused, buf->nc_win, A_REVERSE);
-  DRAW_STR(buf, nc_win, buf->lnum, 0, it, col_select);
+  DRAW_WSTR(buf, nc_win, buf->lnum, 0, wbuf, col_select);
   wattroff(buf->nc_win, A_REVERSE);
 }
 
@@ -236,23 +257,28 @@ char* readable_fs(double size/*in bytes*/, char *buf) {
   return buf;
 }
 
-static void draw_lines(Buffer *buf, Model *m)
+static void draw_lines(Buffer *buf, Model *m, wchar_t wbuf[], int maxlen)
 {
   for (int i = 0; i < buf->b_size.lnum; ++i) {
     char *it = model_str_line(m, buf->top + i);
     if (!it)
       break;
 
+    compress_line(wbuf, it, maxlen);
+
     // TODO: plugin CB to filter string
     char *path = model_fld_line(m, "fullpath", buf->top + i);
     char szbuf[SZ_LEN];
     char *sz = readable_fs(fs_vt_sz_resolv(path), szbuf);
-    if (isdir(path))
-      DRAW_STR(buf, nc_win, i, 0, it, col_dir);
-    else
-      DRAW_STR(buf, nc_win, i, 0, it, col_text);
-    // TODO: show item count when type is directory
-    DRAW_STR(buf, nc_win, i, buf->b_size.col-SZ_LEN, sz, col_sz);
+    if (isdir(path)) {
+      DRAW_WSTR(buf, nc_win, i, 0, wbuf, col_dir);
+      DRAW_STR(buf, nc_win, i, 1 + maxlen, "     /", col_sz);
+    }
+    else {
+      DRAW_WSTR(buf, nc_win, i, 0, wbuf, col_text);
+      // TODO: show item count when type is directory
+      DRAW_STR(buf, nc_win, i, 1 + maxlen, sz, col_sz);
+    }
   }
 }
 
@@ -276,9 +302,9 @@ void buf_draw(void **argv)
   overlay_lnum(buf->ov, buf_index(buf), model_count(buf->hndl->model));
 
   Model *m = buf->hndl->model;
-  draw_lines(buf, m);
-  draw_cur_line(buf, m);
-
+  int maxlen = (buf->b_size.col - SZ_LEN) - 1;
+  draw_lines(buf, m, wbuf, maxlen);
+  draw_cur_line(buf, m, wbuf, maxlen);
   wnoutrefresh(buf->nc_win);
 }
 
