@@ -213,31 +213,13 @@ void buf_refresh(Buffer *buf)
   window_req_draw(buf, buf_draw);
 }
 
-static void compress_line(wchar_t wbuf[], char *line, int maxlen)
-{
-  int cnt = mbstowcs(wbuf, line, strlen(line));
-  wbuf[cnt] = '\0';
-  int len = 0, cell = 0;
-  for (cell = 0; cell < cnt; cell++) {
-    int w = wcwidth(wbuf[cell]);
-    if (w > 0)
-      len += w;
-    if (len > maxlen) {
-      wbuf[cell - 1] = '~';
-      break;
-    }
-  }
-  wbuf[cell] = '\0';
-}
-
-static void draw_cur_line(Buffer *buf, Model *m, wchar_t wbuf[], int maxlen)
+static void draw_cur_line(Buffer *buf, Model *m, int maxlen)
 {
   char *it = model_str_line(m, buf->top + buf->lnum);
   if (!it)
     return;
-  compress_line(wbuf, it, maxlen);
   TOGGLE_ATTR(!buf->focused, buf->nc_win, A_REVERSE);
-  DRAW_WSTR(buf, nc_win, buf->lnum, 0, wbuf, col_select);
+  DRAW_BUFLN(buf, nc_win, buf->lnum, 0, it, col_select, wbuf, maxlen);
   wattroff(buf->nc_win, A_REVERSE);
 }
 
@@ -257,25 +239,23 @@ char* readable_fs(double size/*in bytes*/, char *buf) {
   return buf;
 }
 
-static void draw_lines(Buffer *buf, Model *m, wchar_t wbuf[], int maxlen)
+static void draw_lines(Buffer *buf, Model *m, int maxlen)
 {
   for (int i = 0; i < buf->b_size.lnum; ++i) {
     char *it = model_str_line(m, buf->top + i);
     if (!it)
       break;
 
-    compress_line(wbuf, it, maxlen);
-
     // TODO: plugin CB to filter string
     char *path = model_fld_line(m, "fullpath", buf->top + i);
     char szbuf[SZ_LEN];
     char *sz = readable_fs(fs_vt_sz_resolv(path), szbuf);
     if (isdir(path)) {
-      DRAW_WSTR(buf, nc_win, i, 0, wbuf, col_dir);
+      DRAW_BUFLN(buf, nc_win, i, 0, it, col_dir, wbuf, maxlen);
       DRAW_STR(buf, nc_win, i, 1 + maxlen, "     /", col_sz);
     }
     else {
-      DRAW_WSTR(buf, nc_win, i, 0, wbuf, col_text);
+      DRAW_BUFLN(buf, nc_win, i, 0, it, col_text, wbuf, maxlen);
       // TODO: show item count when type is directory
       DRAW_STR(buf, nc_win, i, 1 + maxlen, sz, col_sz);
     }
@@ -303,8 +283,8 @@ void buf_draw(void **argv)
 
   Model *m = buf->hndl->model;
   int maxlen = (buf->b_size.col - SZ_LEN) - 1;
-  draw_lines(buf, m, wbuf, maxlen);
-  draw_cur_line(buf, m, wbuf, maxlen);
+  draw_lines(buf, m, maxlen);
+  draw_cur_line(buf, m, maxlen);
   wnoutrefresh(buf->nc_win);
 }
 

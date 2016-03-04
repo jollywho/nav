@@ -33,18 +33,31 @@
     wattroff((obj)->win, COLOR_PAIR((obj)->color)); \
   } while (0)
 
-#define DRAW_WSTR(obj,win,ln,col,str,color)          \
-  do {                                              \
-    wattron((obj)->win, COLOR_PAIR((obj)->color));  \
-    mvwaddwstr((obj)->win, ln, col, str);            \
-    wattroff((obj)->win, COLOR_PAIR((obj)->color)); \
-  } while (0)
-
 #define SWAP_ALLOC_PTR(a,b)   \
   do {                        \
     char *_tmp_str = (b);    \
     free(a);                  \
     (a) = _tmp_str;           \
   } while (0)                 \
+
+#define DRAW_BUFLN(obj,win,ln,col,str,color,wbuf,max)  \
+  int cnt = mbstowcs(wbuf, str, max);                  \
+  if (cnt == -1)                                       \
+    DRAW_STR(obj,win,ln,col,str,color);                \
+  else {                                               \
+    wbuf[cnt] = '\0';                                  \
+    int len = 0, cell = 0;                             \
+    for (cell = 0; cell < cnt; cell++) {               \
+      len += MAX(wcwidth(wbuf[cell]), 0);              \
+      if (len > maxlen) {                              \
+        wbuf[cell - 1] = '~';                          \
+        break;                                         \
+      }                                                \
+    }                                                  \
+    wbuf[cell] = '\0';                                 \
+    wattron((obj)->win, COLOR_PAIR((obj)->color));     \
+    mvwaddwstr((obj)->win, ln, col, wbuf);             \
+    wattroff((obj)->win, COLOR_PAIR((obj)->color));    \
+  }
 
 #endif
