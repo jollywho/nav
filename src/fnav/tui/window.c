@@ -34,6 +34,7 @@ static void* win_cd();
 static void* win_mark();
 static void* win_autocmd();
 static void* win_echo();
+static void* win_reload();
 static void win_layout();
 static void window_ex_cmd();
 static void window_update(uv_timer_t *);
@@ -56,6 +57,7 @@ static const Cmd_T cmdtable[] = {
   {"delm",    win_mark,    1},
   {"echo",    win_echo,    0},
   {"call",    cmd_call,    0},
+  {"reload",  win_reload,  0},
 };
 
 static char *compl_cmds[] = {
@@ -223,7 +225,6 @@ int window_focus_attached()
 static void* win_cd(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_cd");
-
   char *path = list_arg(args, 1, VAR_STRING);
   Plugin *plugin = buf_plugin(layout_buf(&win.layout));
   if (plugin)
@@ -276,9 +277,17 @@ static void* win_echo(List *args, Cmdarg *ca)
 static void* win_sort(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_sort");
-
   char *fld = list_arg(args, 1, VAR_STRING);
   buf_sort(layout_buf(&win.layout), fld, ca->cmdstr->rev);
+  return 0;
+}
+
+static void* win_reload(List *args, Cmdarg *ca)
+{
+  log_msg("WINDOW", "win_reload");
+  Plugin *plugin = buf_plugin(layout_buf(&win.layout));
+  if (plugin)
+    send_hook_msg("open", plugin, NULL, &(HookArg){NULL,window_cur_dir()});
   return 0;
 }
 
