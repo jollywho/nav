@@ -223,19 +223,20 @@ static void draw_cur_line(Buffer *buf, Model *m, int maxlen)
   wattroff(buf->nc_win, A_REVERSE);
 }
 
-char* readable_fs(double size/*in bytes*/, char *buf) {
+char* readable_fs(double size/*in bytes*/, char *buf)
+{
   int i = 0;
   const char* units[] = {"B", "K", "M", "G", "T", "P"};
   while (size > 1024) {
     size /= 1024;
     i++;
   }
-  if (size > 99)
-    sprintf(buf, " %.0lf %s", size, units[i]);
-  else if (size > 9)
+  if (size < 10)
+    sprintf(buf, "%.2f %s", size, units[i]);
+  else if (size < 100)
     sprintf(buf, "%.1f %s", size, units[i]);
   else
-    sprintf(buf, "%.2f %s", size, units[i]);
+    sprintf(buf, "%4.0f %s", size, units[i]);
   return buf;
 }
 

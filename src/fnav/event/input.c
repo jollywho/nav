@@ -435,7 +435,7 @@ void reg_set(int ch, char *value)
   find->value = strdup(value);
 
   char *cpy;
-  asprintf(&cpy, "echo -n %s | xclip", value);
+  asprintf(&cpy, "echo -n \"%s\" | xclip", value);
   system(cpy);
   free(cpy);
 }
