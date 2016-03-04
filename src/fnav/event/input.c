@@ -426,8 +426,10 @@ void reg_set(int ch, char *value)
   fn_reg *find = reg_get(ch);
   if (!find)
     return;
-  if (find->value)
+  if (find->value) {
     free(find->value);
+    find->value = NULL;
+  }
   if (!value)
     return;
   find->value = strdup(value);
