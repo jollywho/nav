@@ -16,6 +16,7 @@ static char *default_groups[] = {
 };
 
 static int dummy = 0;
+static int default_syn_color;
 
 typedef struct fn_option fn_option;
 static struct fn_option {
@@ -71,6 +72,7 @@ void option_init()
   for (int i = 0; i < LENGTH(default_groups); i++) {
     set_group(default_groups[i]);
   }
+  default_syn_color = vt_color_get(NULL, 8, -1);
 }
 
 void option_cleanup()
@@ -135,7 +137,7 @@ int get_syn_colpair(const char *name)
 {
   fn_syn *sy = get_syn(name);
   if (!sy)
-    return get_group("BufText")->colorpair;
+    return default_syn_color;
   return sy->group->colorpair;
 }
 

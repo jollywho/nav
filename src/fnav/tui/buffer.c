@@ -11,6 +11,7 @@
 #include "fnav/info.h"
 #include "fnav/event/input.h"
 #include "fnav/event/fs.h"
+#include "fnav/util.h"
 
 static void buf_oper();
 static void buf_mv_page();
@@ -65,8 +66,9 @@ static fn_key key_defaults[] = {
 static fn_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
 #define SZ_LEN 6
-static wchar_t wbuf[PATH_MAX];
-static char szbuf[SZ_LEN];
+#define MAX_POS(x) ((x)-(SZ_LEN+1))
+static cchar_t wbuf[PATH_MAX];
+static char szbuf[SZ_LEN*2];
 
 void buf_init()
 {
@@ -214,54 +216,35 @@ void buf_refresh(Buffer *buf)
   window_req_draw(buf, buf_draw);
 }
 
-static void draw_cur_line(Buffer *buf, Model *m, int maxlen)
+
+static void draw_cur_line(Buffer *buf)
 {
-  char *it = model_str_line(m, buf->top + buf->lnum);
-  if (!it)
-    return;
-  TOGGLE_ATTR(!buf->focused, buf->nc_win, A_REVERSE);
-  DRAW_BUFLN(buf, nc_win, buf->lnum, 0, it, buf->col_select, wbuf, maxlen);
-  wattroff(buf->nc_win, A_REVERSE);
+  mvwchgat(buf->nc_win, buf->lnum, 0, -1, A_NORMAL, buf->col_select, NULL);
 }
 
-void readable_fs(double size/*in bytes*/, char buf[])
-{
-  int i = 0;
-  const char* units[] = {"B", "K", "M", "G", "T", "P"};
-  while (size > 1024) {
-    size /= 1024;
-    i++;
-  }
-  if (size < 10)
-    sprintf(buf, "%.2f %s", size, units[i]);
-  else if (size < 100)
-    sprintf(buf, "%.1f %s", size, units[i]);
-  else
-    sprintf(buf, "%4.0f %s", size, units[i]);
-}
-
-static void draw_lines(Buffer *buf, Model *m, int maxlen)
+static void draw_lines(Buffer *buf, Model *m)
 {
   for (int i = 0; i < buf->b_size.lnum; ++i) {
     char *it = model_str_line(m, buf->top + i);
     if (!it)
       break;
 
-    // file_ext(it)
-    // search ext in syn groups
-    // search hilight from group name
-
     char *path = model_fld_line(m, "fullpath", buf->top + i);
     readable_fs(fs_vt_sz_resolv(path), szbuf);
+
+    int max = MAX_POS(buf->b_size.col);
+    trans_str_wide(it, wbuf, max - 2);
+    mvwadd_wchstr(buf->nc_win, i, 0, wbuf);
+
     if (fs_vt_isdir_resolv(path)) {
-      DRAW_BUFLN(buf, nc_win, i, 0, it, buf->col_dir, wbuf, maxlen);
-      DRAW_STR(buf, nc_win, i, 1 + maxlen, "     /", col_sz);
+      mvwchgat(buf->nc_win, i, 0, -1, A_NORMAL, buf->col_dir, NULL);
+      DRAW_STR(buf, nc_win, i, buf->b_size.col - 1, "/", col_sz);
     }
     else {
       // TODO: show item count when type is directory
       int col = get_syn_colpair(file_ext(it));
-      DRAW_BUFLN(buf, nc_win, i, 0, it, col, wbuf, maxlen);
-      DRAW_STR(buf, nc_win, i, 1 + maxlen, szbuf, col_sz);
+      mvwchgat(buf->nc_win, i, 0, -1, A_NORMAL, col, NULL);
+      DRAW_STR(buf, nc_win, i, 2+max, szbuf, col_sz);
     }
   }
 }
@@ -286,9 +269,8 @@ void buf_draw(void **argv)
   overlay_lnum(buf->ov, buf_index(buf), model_count(buf->hndl->model));
 
   Model *m = buf->hndl->model;
-  int maxlen = (buf->b_size.col - SZ_LEN) - 1;
-  draw_lines(buf, m, maxlen);
-  draw_cur_line(buf, m, maxlen);
+  draw_lines(buf, m);
+  draw_cur_line(buf);
   wnoutrefresh(buf->nc_win);
 }
 
