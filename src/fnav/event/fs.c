@@ -186,6 +186,12 @@ static void stat_read_cb(uv_fs_t *req)
   }
 }
 
+const char* file_ext(const char *filename)
+{
+  const char *d = strrchr(filename, '.');
+  return (d != NULL) ? d + 1 : "";
+}
+
 void* fs_vt_stat_resolv(fn_rec *rec, const char *key)
 {
   char *str1 = (char*)rec_fld(rec, "fullpath");
@@ -199,6 +205,13 @@ long fs_vt_sz_resolv(const char *key)
   ventry *ent = fnd_val("fm_stat", "fullpath", key);
   struct stat *stat = (struct stat*)rec_fld(ent->rec, "stat");
   return stat->st_size;
+}
+
+bool fs_vt_isdir_resolv(const char *path)
+{
+  ventry *ent = fnd_val("fm_stat", "fullpath", path);
+  struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
+  return (S_ISDIR(st->st_mode));
 }
 
 void fs_signal_handle(void **data)

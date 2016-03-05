@@ -29,12 +29,12 @@ struct Overlay {
   char name[SZ_NAMEBOX];
   char lineno[SZ_LNUMBOX];
 
-  int color_namebox;
-  int color_argsbox;
-  int color_sep;
-  int color_line;
-  int color_text;
-  int color_bufno;
+  short color_namebox;
+  short color_argsbox;
+  short color_sep;
+  short color_line;
+  short color_text;
+  short color_bufno;
 };
 
 Overlay* overlay_new()

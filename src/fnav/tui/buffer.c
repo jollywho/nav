@@ -220,7 +220,7 @@ static void draw_cur_line(Buffer *buf, Model *m, int maxlen)
   if (!it)
     return;
   TOGGLE_ATTR(!buf->focused, buf->nc_win, A_REVERSE);
-  DRAW_BUFLN(buf, nc_win, buf->lnum, 0, it, col_select, wbuf, maxlen);
+  DRAW_BUFLN(buf, nc_win, buf->lnum, 0, it, buf->col_select, wbuf, maxlen);
   wattroff(buf->nc_win, A_REVERSE);
 }
 
@@ -247,16 +247,20 @@ static void draw_lines(Buffer *buf, Model *m, int maxlen)
     if (!it)
       break;
 
-    // TODO: plugin CB to filter string
+    // file_ext(it)
+    // search ext in syn groups
+    // search hilight from group name
+
     char *path = model_fld_line(m, "fullpath", buf->top + i);
     readable_fs(fs_vt_sz_resolv(path), szbuf);
-    if (isdir(path)) {
-      DRAW_BUFLN(buf, nc_win, i, 0, it, col_dir, wbuf, maxlen);
+    if (fs_vt_isdir_resolv(path)) {
+      DRAW_BUFLN(buf, nc_win, i, 0, it, buf->col_dir, wbuf, maxlen);
       DRAW_STR(buf, nc_win, i, 1 + maxlen, "     /", col_sz);
     }
     else {
-      DRAW_BUFLN(buf, nc_win, i, 0, it, col_text, wbuf, maxlen);
       // TODO: show item count when type is directory
+      int col = get_syn_colpair(file_ext(it));
+      DRAW_BUFLN(buf, nc_win, i, 0, it, col, wbuf, maxlen);
       DRAW_STR(buf, nc_win, i, 1 + maxlen, szbuf, col_sz);
     }
   }

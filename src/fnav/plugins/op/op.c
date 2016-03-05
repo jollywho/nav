@@ -69,14 +69,6 @@ static void create_proc(Op *op, char *path)
   uv_unref((uv_handle_t*) &proc);
 }
 
-const char* file_ext(const char *filename)
-{
-  const char *dot = strrchr(filename, '.');
-  if (!dot || dot == filename)
-    return "";
-  return dot + 1;
-}
-
 static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("OP", "fileopen_cb");

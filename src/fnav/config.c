@@ -244,15 +244,12 @@ static void* edit_color(List *args, Cmdarg *ca)
   int ret = 0;
   ret += str_num(list_arg(args, 2, VAR_STRING), &fg);
   ret += str_num(list_arg(args, 3, VAR_STRING), &bg);
-  if (!ret)
+  char *group = list_arg(args, 1, VAR_STRING);
+  if (!ret || !group)
     return 0;
 
-  fn_color col = {
-    .key = strdup(list_arg(args, 1, VAR_STRING)),
-    .fg = fg,
-    .bg = bg,
-  };
-  set_color(&col);
+  fn_group *grp = get_group(group);
+  set_color(grp, fg, bg);
   //TODO: refresh cached colors
   return 0;
 }
@@ -260,6 +257,34 @@ static void* edit_color(List *args, Cmdarg *ca)
 static void* edit_syntax(List *args)
 {
   log_msg("CONFIG", "edit_syntax");
+  char *group = list_arg(args, 1, VAR_STRING);
+  List *words = list_arg(args, 2, VAR_LIST);
+  char *single = list_arg(args, 2, VAR_STRING);
+  if (!group && (!words || !single))
+    return 0;
+
+  fn_group *grp = get_group(group);
+  if (!grp)
+    grp = set_group(group);
+
+  if (single) {
+    fn_syn syn = {
+      .key = strdup(single),
+      .group = grp,
+    };
+    set_syn(&syn);
+    return 0;
+  }
+
+  log_msg("CONFIG", "# %d", utarray_len(words->items));
+  for (int i = 0; i < utarray_len(words->items); i++) {
+    log_msg("CONFIG", ">>> %s", list_arg(words, i, VAR_STRING));
+    fn_syn syn = {
+      .key = strdup(list_arg(words, i, VAR_STRING)),
+      .group = grp,
+    };
+    set_syn(&syn);
+  }
   return 0;
 }
 

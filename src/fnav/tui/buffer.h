@@ -27,10 +27,10 @@ struct Buffer {
   bool nodraw;
   bool focused;
 
-  int col_select;
-  int col_text;
-  int col_dir;
-  int col_sz;
+  short col_select;
+  short col_text;
+  short col_dir;
+  short col_sz;
 };
 
 enum move_dir { MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT };

@@ -10,13 +10,19 @@ extern char *p_cp;          /* 'copy   cmd' */
 extern char *p_mv;          /* 'move   cmd' */
 extern char *p_rm;          /* 'remove cmd' */
 
-typedef struct {
+typedef struct fn_group fn_group;
+typedef struct fn_syn fn_syn;
+struct fn_group {
   UT_hash_handle hh;
-  int pair;
-  int fg;
-  int bg;
   char *key;
-} fn_color;
+  short colorpair;
+};
+
+struct fn_syn {
+  UT_hash_handle hh;
+  char *key;
+  fn_group *group;
+};
 
 typedef struct {
   UT_hash_handle hh;
@@ -32,8 +38,15 @@ typedef struct {
 
 void option_init();
 void option_cleanup();
-void set_color(fn_color *color);
-int attr_color(const char *);
+void set_color(fn_group *grp, int fg, int bg);
+short attr_color(const char *);
+
+fn_group* set_group(const char *name);
+fn_group* get_group(const char *);
+void set_syn(fn_syn *syn);
+fn_syn* get_syn(const char *);
+int get_syn_colpair(const char *name);
+
 void set_var(fn_var *var);
 char* opt_var(const char *name);
 void set_func(fn_func *fn);

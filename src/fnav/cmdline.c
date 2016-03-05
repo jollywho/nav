@@ -457,9 +457,8 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
       case ':':
         break;
       case ',':
-        push(*word, stack);
+        break;
       case ']':
-        /*FALLTHROUGH*/
         pop(stack);
         break;
       case '[':

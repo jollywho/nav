@@ -9,6 +9,11 @@
 #include "fnav/compl.h"
 
 enum opt_type { OPTION_STRING, OPTION_INTEGER };
+static char *default_groups[] = {
+  "BufSelected", "BufText", "BufDir", "BufSz", "OverlaySep",
+  "OverlayLine", "OverlayBufNo", "OverlayInactiveBufNo", "OverlayActive",
+  "OverlayArgs", "OverlayInactive", "OverlayTextInactive", "ComplText",
+};
 
 static int dummy = 0;
 
@@ -23,10 +28,11 @@ static struct fn_option {
   {"dummy",         OPTION_INTEGER,  &dummy},
 };
 
-static fn_color   *hi_colors;
-static fn_var     *gbl_vars;
-static fn_func    *gbl_funcs;
-static fn_option  *options;
+static fn_group     *groups;
+static fn_syn       *syntaxes;
+static fn_var       *gbl_vars;
+static fn_func      *gbl_funcs;
+static fn_option    *options;
 
 #define FLUSH_OLD_OPT(type,opt,str,expr)       \
   do {                                         \
@@ -62,35 +68,75 @@ void option_init()
       opt->value = strdup(default_options[i].value);
     HASH_ADD_STR(options, key, opt);
   }
+  for (int i = 0; i < LENGTH(default_groups); i++) {
+    set_group(default_groups[i]);
+  }
 }
 
 void option_cleanup()
 {
-  CLEAR_OPT(fn_color, hi_colors, {});
   CLEAR_OPT(fn_var,   gbl_vars,  {});
   CLEAR_OPT(fn_func,  gbl_funcs, utarray_free(it->lines));
 }
 
-void set_color(fn_color *color)
+void set_color(fn_group *grp, int fg, int bg)
 {
   log_msg("OPTION", "set_color");
-  fn_color *col = malloc(sizeof(fn_color));
-  memmove(col, color, sizeof(fn_color));
-
-  FLUSH_OLD_OPT(fn_color, hi_colors, col->key, {});
-
-  col->pair = vt_color_get(NULL, col->fg, col->bg);
-  color_set(col->pair, NULL);
-  HASH_ADD_STR(hi_colors, key, col);
+  grp->colorpair = vt_color_get(NULL, fg, bg);
 }
 
-int attr_color(const char *name)
+short attr_color(const char *name)
 {
-  fn_color *color;
-  HASH_FIND_STR(hi_colors, name, color);
-  if (!color)
+  fn_group *grp;
+  HASH_FIND_STR(groups, name, grp);
+  if (!grp)
     return 0;
-  return color->pair;
+  return grp->colorpair;
+}
+
+fn_group* set_group(const char *name)
+{
+  fn_group *syg = malloc(sizeof(fn_group));
+  syg->key = strdup(name);
+  syg->colorpair = 0;
+
+  FLUSH_OLD_OPT(fn_group, groups, syg->key, {});
+  HASH_ADD_STR(groups, key, syg);
+  return syg;
+}
+
+fn_group* get_group(const char *name)
+{
+  fn_group *grp;
+  HASH_FIND_STR(groups, name, grp);
+  if (!grp)
+    return 0;
+  return grp;
+}
+
+void set_syn(fn_syn *syn)
+{
+  fn_syn *sy = malloc(sizeof(fn_syn));
+  memmove(sy, syn, sizeof(fn_syn));
+  FLUSH_OLD_OPT(fn_syn, syntaxes, sy->key, {});
+  HASH_ADD_STR(syntaxes, key, sy);
+}
+
+fn_syn* get_syn(const char *name)
+{
+  fn_syn *sy;
+  HASH_FIND_STR(syntaxes, name, sy);
+  if (!sy)
+    return 0;
+  return sy;
+}
+
+int get_syn_colpair(const char *name)
+{
+  fn_syn *sy = get_syn(name);
+  if (!sy)
+    return get_group("BufText")->colorpair;
+  return sy->group->colorpair;
 }
 
 void set_var(fn_var *variable)

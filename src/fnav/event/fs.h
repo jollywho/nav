@@ -36,7 +36,9 @@ char* fs_expand_path(const char *);
 char* fs_parent_dir(char *);
 void* fs_vt_stat_resolv(fn_rec *rec, const char *);
 long fs_vt_sz_resolv(const char *key);
+bool fs_vt_isdir_resolv(const char *path);
 char* conspath(const char *, const char *);
+const char* file_ext(const char *filename);
 
 char* fs_current_dir();
 
