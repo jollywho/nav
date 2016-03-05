@@ -16,9 +16,6 @@
 #define TOUPPER_ASC(c) (((c) < 'a' || (c) > 'z') ? (c) : (c) - ('a' - 'A'))
 #define TOLOWER_ASC(c) (((c) < 'A' || (c) > 'Z') ? (c) : (c) + ('a' - 'A'))
 
-#define TOGGLE_ATTR(var,win,attr)  \
-  if (var) wattron(win, attr);
-
 #define DRAW_CH(obj,win,ln,col,str,color)           \
   do {                                              \
     wattron((obj)->win, COLOR_PAIR((obj)->color));  \

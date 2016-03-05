@@ -194,13 +194,21 @@ void buf_set_status(Buffer *buf, char *name, char *usr, char *in)
   overlay_edit(buf->ov, name, usr, in);
 }
 
+static void set_focus_col(Buffer *buf, int focus)
+{
+  if (focus)
+    buf->focus_attr = A_NORMAL;
+  else
+    buf->focus_attr = A_REVERSE;
+}
+
 void buf_toggle_focus(Buffer *buf, int focus)
 {
   log_msg("BUFFER", "buf_toggle_focus %d", focus);
   if (!buf)
     return;
 
-  buf->focused = focus;
+  set_focus_col(buf, focus);
   if (buf->plugin && buf->plugin->_focus && focus)
     buf->plugin->_focus(buf->plugin);
 
@@ -219,7 +227,7 @@ void buf_refresh(Buffer *buf)
 
 static void draw_cur_line(Buffer *buf)
 {
-  mvwchgat(buf->nc_win, buf->lnum, 0, -1, A_NORMAL, buf->col_select, NULL);
+  mvwchgat(buf->nc_win, buf->lnum, 0, -1, buf->focus_attr, buf->col_select, NULL);
 }
 
 static void draw_lines(Buffer *buf, Model *m)
