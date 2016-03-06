@@ -10,7 +10,8 @@
 
 enum opt_type { OPTION_STRING, OPTION_INTEGER };
 static char *default_groups[] = {
-  "BufSelected", "BufText", "BufDir", "BufSz", "OverlaySep",
+  "BufSelActive", "BufSelInactive",
+  "BufText", "BufDir", "BufSz", "OverlaySep",
   "OverlayLine", "OverlayBufNo", "OverlayInactiveBufNo", "OverlayActive",
   "OverlayArgs", "OverlayInactive", "OverlayTextInactive", "ComplText",
 };
@@ -72,7 +73,7 @@ void option_init()
   for (int i = 0; i < LENGTH(default_groups); i++) {
     set_group(default_groups[i]);
   }
-  default_syn_color = vt_color_get(NULL, 8, -1);
+  default_syn_color = vt_color_get(NULL, 231, -1);
 }
 
 void option_cleanup()

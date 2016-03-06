@@ -89,7 +89,7 @@ Buffer* buf_new()
   Buffer *buf = malloc(sizeof(Buffer));
   memset(buf, 0, sizeof(Buffer));
   buf->nc_win = newwin(1,1,0,0);
-  buf->col_select = attr_color("BufSelected");
+  buf->col_focus = attr_color("BufSelActive");
   buf->col_text = attr_color("BufText");
   buf->col_dir = attr_color("BufDir");
   buf->col_sz = attr_color("BufSz");
@@ -197,9 +197,9 @@ void buf_set_status(Buffer *buf, char *name, char *usr, char *in)
 static void set_focus_col(Buffer *buf, int focus)
 {
   if (focus)
-    buf->focus_attr = A_NORMAL;
+    buf->col_focus = attr_color("BufSelActive");
   else
-    buf->focus_attr = A_REVERSE;
+    buf->col_focus = attr_color("BufSelInactive");
 }
 
 void buf_toggle_focus(Buffer *buf, int focus)
@@ -227,7 +227,7 @@ void buf_refresh(Buffer *buf)
 
 static void draw_cur_line(Buffer *buf)
 {
-  mvwchgat(buf->nc_win, buf->lnum, 0, -1, buf->focus_attr, buf->col_select, NULL);
+  mvwchgat(buf->nc_win, buf->lnum, 0, -1, A_NORMAL, buf->col_focus, NULL);
 }
 
 static void draw_lines(Buffer *buf, Model *m)
