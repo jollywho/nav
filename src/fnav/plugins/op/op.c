@@ -1,28 +1,29 @@
 #include <sys/wait.h>
 #include <errno.h>
+
+#include "fnav/lib/utarray.h"
 #include "fnav/plugins/op/op.h"
 #include "fnav/log.h"
-#include "fnav/table.h"
 #include "fnav/model.h"
 #include "fnav/event/hook.h"
 #include "fnav/event/event.h"
 
-//we want a single mpv process shared across all cntlr instances
-//so basically, create an op_cntlr once on the first init call. return
-//a pointer to this after. reference count on cleanup and do actual
-//cleanup on count of 0. this mess can be properly managed when the real
-//cntlr is made.
+static Op op;
+static UT_array *procs;
 
-static Op *op_default;
-static uv_process_t proc;
-static uv_process_options_t opts;
+typedef struct {
+  uv_process_t proc;
+  uv_process_options_t opts;
+} op_proc;
+
+static UT_icd proc_icd = { sizeof(op_proc),  NULL };
 
 static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal)
 {
   log_msg("OP", "exit_cb");
   uv_close((uv_handle_t*) req, NULL);
-  Op *op = (Op*)req->data;
-  op->ready = true;
+  op.ready = true;
+  utarray_erase(procs, 0, 1);
   system("pkill compton");
 }
 
@@ -40,33 +41,41 @@ static void chld_handler(uv_signal_t *handle, int signum)
     return;
 }
 
+static void del_proc(uv_handle_t *hndl)
+{
+  utarray_erase(procs, 0, 1);
+}
+
 static void create_proc(Op *op, char *path)
 {
   log_msg("OP", "create_proc");
-  opts.flags = UV_PROCESS_DETACHED;
-  opts.exit_cb = exit_cb;
+  utarray_extend_back(procs);
+  op_proc *proc = (op_proc*)utarray_back(procs);
+  proc->opts.flags = UV_PROCESS_DETACHED;
+  proc->opts.exit_cb = exit_cb;
   char *rv[] = {"mpv", "--fs", path, NULL};
-  opts.file = rv[0];
-  opts.args = rv;
-  proc.data = op;
-
+  proc->opts.file = rv[0];
+  proc->opts.args = rv;
   if (!op->ready) {
     log_msg("OP", "kill");
-    uv_kill(proc.pid, SIGKILL);
-    uv_close((uv_handle_t*)&proc, NULL);
-    uv_run(eventloop(), UV_RUN_NOWAIT);
+    op_proc *prev = (op_proc*)utarray_front(procs);
+    if (prev) {
+      uv_kill(prev->proc.pid, SIGKILL);
+      uv_close((uv_handle_t*)&prev->proc, del_proc);
+    }
   }
 
   log_msg("OP", "spawn");
   uv_signal_start(&mainloop()->children_watcher, chld_handler, SIGCHLD);
   uv_disable_stdio_inheritance();
-  int ret = uv_spawn(eventloop(), &proc, &opts);
+  int ret = uv_spawn(eventloop(), &proc->proc, &proc->opts);
   op->ready = false;
 
   if (ret < 0)
     log_msg("?", "file: |%s|, %s", path, uv_strerror(ret));
 
-  uv_unref((uv_handle_t*) &proc);
+
+  uv_unref((uv_handle_t*) &proc->proc);
 }
 
 static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
@@ -83,11 +92,11 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
 void op_new(Plugin *plugin, Buffer *buf, void *arg)
 {
   log_msg("OP", "INIT");
-  op_default = malloc(sizeof(Op));
-  op_default->base = plugin;
-  plugin->top = op_default;
+  utarray_new(procs, &proc_icd);
+  op.base = plugin;
+  plugin->top = &op;
   plugin->name = "op";
-  op_default->ready = true;
+  op.ready = true;
   hook_init_host(plugin);
   hook_add_intl(plugin, plugin, fileopen_cb, "fileopen");
   hook_set_tmp("fileopen");

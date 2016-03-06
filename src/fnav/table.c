@@ -81,7 +81,7 @@ bool tbl_mk(const char *name)
   return true;
 }
 
-void tbl_del(const char*name)
+void tbl_del(const char *name)
 {
   log_msg("CLEANUP", "deleting table {%s} ...", name);
   fn_tbl *t = get_tbl(name);

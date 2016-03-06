@@ -534,7 +534,7 @@ static char* do_expansion(char *line)
     tail = "";
 
   char *out;
-  asprintf(&out, "%s%s%s%s", head, body, quote, tail);
+  asprintf(&out, "%s\"%s\"%s%s", head, body, quote, tail);
   return out;
 }
 
