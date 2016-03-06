@@ -249,6 +249,9 @@ static void* edit_color(List *args, Cmdarg *ca)
     return 0;
 
   fn_group *grp = get_group(group);
+  if (!grp)
+    return 0;
+  //TODO: error msg
   set_color(grp, fg, bg);
   //TODO: refresh cached colors
   return 0;
