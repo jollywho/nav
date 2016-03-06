@@ -36,6 +36,7 @@ struct Model {
 #define REV_FN(cond,fn,a,b) ((cond) ? (fn((b),(a))) : (fn((a),(b))))
 
 static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
+#define intcmp(a,b) ((a) - (b))
 
 static int date_cmp(const void *a, const void *b, void *arg)
 {
@@ -54,6 +55,17 @@ static int str_cmp(const void *a, const void *b, void *arg)
   char *s1 = rec_fld(l1.rec, "name");
   char *s2 = rec_fld(l2.rec, "name");
   return REV_FN(*(int*)arg, strcmp, s1, s2);
+}
+
+static int dir_cmp(const void *a, const void *b, void *arg)
+{
+  fn_line l1 = *(fn_line*)a;
+  fn_line l2 = *(fn_line*)b;
+  char *s1 = rec_fld(l1.rec, "fullpath");
+  char *s2 = rec_fld(l2.rec, "fullpath");
+  int b1 = fs_vt_isdir_resolv(s1);
+  int b2 = fs_vt_isdir_resolv(s2);
+  return REV_FN(*(int*)arg, intcmp, b2, b1);
 }
 
 void model_init(fn_handle *hndl)
@@ -130,6 +142,8 @@ static void try_old_val(Model *m, fn_lis *lis, ventry *it)
 
   if (strcmp(m->sort_type, "mtime") == 0)
     find = (fn_line*)utarray_find(m->lines, &ln, date_cmp, &m->sort_rev);
+  else if (strcmp(m->sort_type, "dir") == 0)
+    find = (fn_line*)utarray_find(m->lines, &ln, dir_cmp, &m->sort_rev);
   else
     find = (fn_line*)utarray_find(m->lines, &ln, str_cmp, &m->sort_rev);
 
@@ -170,6 +184,8 @@ void model_sort(Model *m, const char *fld, int flags)
 
   if (strcmp(m->sort_type, "mtime") == 0)
     utarray_sort(m->lines, date_cmp, &m->sort_rev);
+  else if (strcmp(m->sort_type, "dir") == 0)
+    utarray_sort(m->lines, dir_cmp, &m->sort_rev);
   else if (strcmp(m->sort_type, "name") == 0)
     utarray_sort(m->lines, str_cmp, &m->sort_rev);
 

@@ -345,7 +345,7 @@ void menu_input(Menu *mnu, int key)
   char *hints = get_opt_str("hintkeys");
   char *str = NULL;
   fn_compl *cmpl = mnu->cx->cmpl;
-  for (int i = 0; i < ROW_MAX; i++) {
+  for (int i = 0; i < cmpl->matchcount; i++) {
     if (hints[i] == key)
       str = cmpl->matches[i]->key;
   }

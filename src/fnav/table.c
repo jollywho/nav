@@ -118,6 +118,11 @@ fn_tbl* get_tbl(const char *tn)
   return ret;
 }
 
+int fld_sort(fn_fld *a, fn_fld *b)
+{
+  return strcmp(a->key, b->key);
+}
+
 void tbl_mk_fld(const char *tn, const char *name, tFldType typ)
 {
   log_msg("TABLE", "making {%s} field {%s} ...", tn, name);
@@ -128,6 +133,7 @@ void tbl_mk_fld(const char *tn, const char *name, tFldType typ)
   fld->type = typ;
   t->count++;
   HASH_ADD_STR(t->fields, key, fld);
+  HASH_SORT(t->fields, fld_sort);
   log_msg("TABLE", "made %s", fld->key);
 }
 
