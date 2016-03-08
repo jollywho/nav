@@ -33,6 +33,8 @@ static int lvl;
 static int maxpos;
 static char *lncont;
 static int lvlcont;
+static int fndefopen;
+static int parse_error;
 static fn_func fndef;
 
 static const Cmd_T builtins[] = {
@@ -68,6 +70,8 @@ void cmd_reset()
   lncont = NULL;
   fndef.key = NULL;
   lvlcont = 0;
+  fndefopen = 0;
+  parse_error = 0;
   lvl = 0;
   pos = -1;
   maxpos = BUFSIZ;
@@ -99,14 +103,20 @@ void cmd_flush()
   log_msg("CMD", "flush");
 
   //TODO: force parse errors
-  if (fndef.key)
-    free(fndef.key);
+  //TODO: error open
+  if (fndefopen) {
+    log_err("CMD", "parse error: open definition not closed!");
+    utarray_free(fndef.lines);
+  }
   if (lvl > 0)
-    log_msg("CMD", "parse error: open block not closed!");
+    log_err("CMD", "parse error: open block not closed!");
   if (lvlcont > 0)
-    log_msg("CMD", "parse error: open '(' not closed!");
+    log_err("CMD", "parse error: open '(' not closed!");
   for (int i = 0; tape[i].line; i++)
     free(tape[i].line);
+
+  if (fndef.key)
+    free(fndef.key);
   free(tape);
   free(lncont);
   cmd_reset();
@@ -196,6 +206,9 @@ static int ctl_cmd(const char *line)
 
 void cmd_eval(char *line)
 {
+  if (parse_error)
+    return;
+
   if ((lvl < 1 && !fndef.key) || ctl_cmd(line) != -1)
     cmd_do(line);
   else
@@ -239,8 +252,9 @@ static void* cmd_elseblock(List *args, Cmdarg *ca)
 
 static void* cmd_endblock(List *args, Cmdarg *ca)
 {
-  if (fndef.key) {
+  if (fndefopen /* TODO: && fndef.lvl */) {
     set_func(&fndef);
+    fndefopen = 0;
     cmd_flush();
   }
   else {
@@ -258,13 +272,16 @@ static void* cmd_endblock(List *args, Cmdarg *ca)
 static void* cmd_funcblock(List *args, Cmdarg *ca)
 {
   const char *name = list_arg(args, 1, VAR_STRING);
-  if (!name)
+  if (!name || fndefopen) {
+    parse_error = 1;
     return 0;
+  }
   if (ca->cmdstr->rev) {
     utarray_new(fndef.lines, &ut_str_icd);
     fndef.key = strdup(name);
+    fndefopen = 1;
   }
-  else {
+  else { /* print */
     fn_func *fn = opt_func(name);
     for (int i = 0; i < utarray_len(fn->lines); i++)
       log_msg("CMD", "%s", *(char**)utarray_eltptr(fn->lines, i));

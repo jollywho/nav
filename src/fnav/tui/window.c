@@ -230,6 +230,7 @@ static void* win_cd(List *args, Cmdarg *ca)
   char *path = ca->cmdline->line + strlen("cd ");
   if (plugin)
     send_hook_msg("open", plugin, NULL, &(HookArg){NULL,path});
+  //TODO: store curdir separate from FM. empty plugin bufs need curdirs.
   return 0;
 }
 
@@ -304,7 +305,9 @@ static void* win_new(List *args, Cmdarg *ca)
   if (!(ca->pflag & BUFFER))
     window_add_buffer(ca->flags);
   Token *cmd = tok_arg(args, 2);
-  char *path = ca->cmdline->line + cmd->start;
+  char *path = NULL;
+  if (cmd)
+    path = ca->cmdline->line + cmd->start;
   return plugin_open(name, layout_buf(&win.layout), path);
 }
 

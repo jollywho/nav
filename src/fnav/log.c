@@ -7,6 +7,7 @@
 
 #define _C  "\033[33m"
 #define _R  "\033[0m"
+#define _E  "\033[31m"
 
 #define LOG_FILENAME ".fnavlog"
 FILE *log_file;
@@ -33,6 +34,20 @@ void log_msg(const char *obj, const char *fmt, ...)
     return;
 
   fprintf(log_file, "[" _C "%s" _R "] ", obj);
+  va_list args;
+  va_start(args, fmt);
+  vfprintf(log_file, fmt, args);
+  va_end(args);
+  fputc('\n', log_file);
+  fflush(log_file);
+}
+
+void log_err(const char *obj, const char *fmt, ...)
+{
+  if (listen_obj && strcmp(listen_obj, obj) != 0)
+    return;
+
+  fprintf(log_file, "[" _E "%s" _R "] ", obj);
   va_list args;
   va_start(args, fmt);
   vfprintf(log_file, fmt, args);
