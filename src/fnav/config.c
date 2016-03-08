@@ -14,6 +14,7 @@ static void* edit_color();
 static void* edit_syntax();
 static void* edit_variable();
 static void* edit_mapping();
+static void* edit_op();
 static void* add_source();
 
 static const Cmd_T cmdtable[] = {
@@ -23,6 +24,7 @@ static const Cmd_T cmdtable[] = {
   {"let",    edit_variable,  0},
   {"map",    edit_mapping,   0},
   {"so",     add_source,     0},
+  {"op",     edit_op,       0},
   {"source", add_source,     0},
 };
 
@@ -318,6 +320,23 @@ static void* edit_mapping(List *args, Cmdarg *ca)
   *to = '\0';
   set_map(from, to+1);
   free(from);
+  return 0;
+}
+
+static void* edit_op(List *args, Cmdarg *ca)
+{
+  log_msg("CONFIG", "edit_op");
+  char *group  = list_arg(args, 1, VAR_STRING);
+  char *before = list_arg(args, 2, VAR_STRING);
+  char *after  = list_arg(args, 3, VAR_STRING);
+  if (!group || !before || !after)
+    return 0;
+
+  fn_group *grp = get_group(group);
+  if (!grp)
+    return 0;
+
+  grp->opgrp = op_newgrp(before, after);
   return 0;
 }
 

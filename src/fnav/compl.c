@@ -25,6 +25,7 @@ static compl_entry compl_defaults[] = {
   { "marklbls",  marklbl_list  },
   { "events",    event_list    },
   { "options",   options_list  },
+  { "groups",    groups_list  },
 };
 
 static compl_entry *compl_table;

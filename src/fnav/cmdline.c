@@ -507,7 +507,7 @@ void cmdline_build(Cmdline *cmdline, char *line)
   }
 }
 
-static char* do_expansion(char *line)
+char* do_expansion(char *line)
 {
   log_msg("CMDLINE", "do_expansion");
   if (!strstr(line, "%:"))

@@ -92,7 +92,7 @@ static void fm_right(Plugin *host, Plugin *caller, HookArg *hka)
   if (isdir(path))
     fm_opendir(host, path, FORWARD);
   else
-    send_hook_msg("fileopen", host, NULL, NULL);
+    send_hook_msg("fileopen", host, NULL, &(HookArg){NULL,path});
 }
 
 static void fm_ch_dir(void **args)

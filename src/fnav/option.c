@@ -100,6 +100,7 @@ short attr_color(const char *name)
 fn_group* set_group(const char *name)
 {
   fn_group *syg = malloc(sizeof(fn_group));
+  memset(syg, 0, sizeof(fn_group));
   syg->key = strdup(name);
   syg->colorpair = 0;
 
@@ -220,6 +221,19 @@ void options_list(List *args)
       compl_set_col(i, "%s", (char*)it->value);
     else if (it->type == OPTION_INTEGER)
       compl_set_col(i, "%d", *(int*)it->value);
+    i++;
+  }
+}
+
+void groups_list(List *args)
+{
+  log_msg("INFO", "setting_list");
+  unsigned int count = HASH_COUNT(groups);
+  compl_new(count, COMPL_STATIC);
+  fn_group *it;
+  int i = 0;
+  for (it = groups; it != NULL; it = it->hh.next) {
+    compl_set_key(i, "%s", it->key);
     i++;
   }
 }

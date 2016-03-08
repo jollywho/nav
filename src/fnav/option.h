@@ -4,6 +4,7 @@
 #include "fnav/fnav.h"
 #include "fnav/lib/uthash.h"
 #include "fnav/lib/utarray.h"
+#include "fnav/plugins/op/op.h"
 
 extern char *p_sh;          /* 'shell' */
 extern char *p_cp;          /* 'copy   cmd' */
@@ -11,13 +12,14 @@ extern char *p_mv;          /* 'move   cmd' */
 extern char *p_rm;          /* 'remove cmd' */
 
 typedef struct fn_group fn_group;
-typedef struct fn_syn fn_syn;
 struct fn_group {
   UT_hash_handle hh;
   char *key;
   short colorpair;
+  Op_group *opgrp; /* make array if support > 1 binding per group */
 };
 
+typedef struct fn_syn fn_syn;
 struct fn_syn {
   UT_hash_handle hh;
   char *key;
@@ -54,5 +56,6 @@ fn_func* opt_func(const char *name);
 void set_opt(const char *name, const char *val);
 char* get_opt_str(const char *name);
 void options_list(List *args);
+void groups_list(List *args);
 
 #endif

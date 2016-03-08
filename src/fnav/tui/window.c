@@ -75,6 +75,7 @@ static char *compl_cmds[] = {
   "cd;path:string:paths",
   "mark;label:string:marklbls",
   "set;option:string:options",
+  "op;group:string:groups",
 };
 static char *compl_args[][2] = {
   {"plugin", "fm;path:string:paths"},
