@@ -49,7 +49,7 @@ typedef struct {
 void plugin_init();
 int plugin_isloaded(const char *);
 
-Plugin* plugin_open(const char *, Buffer *buf, List *args);
+Plugin* plugin_open(const char *name, Buffer *buf, char *line);
 void plugin_close(Plugin *plugin);
 
 Plugin* focus_plugin();

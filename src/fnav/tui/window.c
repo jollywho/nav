@@ -226,8 +226,8 @@ int window_focus_attached()
 static void* win_cd(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_cd");
-  char *path = list_arg(args, 1, VAR_STRING);
   Plugin *plugin = buf_plugin(layout_buf(&win.layout));
+  char *path = ca->cmdline->line + strlen("cd ");
   if (plugin)
     send_hook_msg("open", plugin, NULL, &(HookArg){NULL,path});
   return 0;
@@ -303,7 +303,9 @@ static void* win_new(List *args, Cmdarg *ca)
 
   if (!(ca->pflag & BUFFER))
     window_add_buffer(ca->flags);
-  return plugin_open(name, layout_buf(&win.layout), args);
+  Token *cmd = tok_arg(args, 2);
+  char *path = ca->cmdline->line + cmd->start;
+  return plugin_open(name, layout_buf(&win.layout), path);
 }
 
 static void* win_close(List *args, Cmdarg *ca)

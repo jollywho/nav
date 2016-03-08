@@ -573,7 +573,7 @@ static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd, Cmdstr *prev)
   if (prev->ret_t == PLUGIN && cmd->ret_t == PLUGIN)
     return do_pipe(prev, cmd);
 
-  cmd->ret = plugin_open(arg, NULL, args);
+  cmd->ret = plugin_open(arg, NULL, cmdline->line);
   log_msg("CMDLINE", "%p %d %p %d",
       prev->ret,
       prev->ret_t,
