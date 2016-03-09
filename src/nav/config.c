@@ -173,8 +173,9 @@ void config_load(const char *file)
 void config_load_defaults()
 {
   config_load(NULL);
-
   FILE *f = config_open(NULL, info_paths, "r");
+  if (!f)
+    return;
   info_read(f);
   fclose(f);
 }
@@ -183,6 +184,8 @@ void config_write_info()
 {
   log_msg("CONFIG", "config_write_info");
   FILE *f = config_open(NULL, info_paths, "w");
+  if (!f)
+    return;
   info_write_file(f);
   fclose(f);
 }
