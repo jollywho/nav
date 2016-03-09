@@ -219,7 +219,7 @@ static void* cmd_ifblock(List *args, Cmdarg *ca)
   log_msg("CMD", "%d", lvl);
   if (lvl == 0)
     cmd_flush();
-  stack_push(ca->cmdline->line + strlen("if"));
+  stack_push(cmdline_line_from(ca->cmdline, 1));
   cur = &tape[pos];
   cur->st = pos;
   tape[pos].type = CTL_IF;
@@ -232,7 +232,7 @@ static void* cmd_elseifblock(List *args, Cmdarg *ca)
   int st = cur->st;
   cur = cur->parent;
   cur->st = st;
-  stack_push(ca->cmdline->line + strlen("elseif"));
+  stack_push(cmdline_line_from(ca->cmdline, 1));
   tape[pos].type = CTL_ELSEIF;
   cur = &tape[pos];
   return 0;
@@ -243,7 +243,7 @@ static void* cmd_elseblock(List *args, Cmdarg *ca)
   int st = cur->st;
   cur = cur->parent;
   cur->st = st;
-  stack_push(ca->cmdline->line + strlen("else"));
+  stack_push(cmdline_line_from(ca->cmdline, 1));
   tape[pos].type = CTL_ELSE;
   cur = &tape[pos];
   return 0;
@@ -258,7 +258,7 @@ static void* cmd_endblock(List *args, Cmdarg *ca)
   }
   else {
     cur = cur->parent;
-    stack_push(ca->cmdline->line + strlen("end"));
+    stack_push(cmdline_line_from(ca->cmdline, 1));
     tape[cur->st].end = &tape[pos];
     tape[pos].type = CTL_END;
     --lvl;

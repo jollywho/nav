@@ -318,9 +318,15 @@ static void* edit_variable(List *args, Cmdarg *ca)
 
 static void* edit_mapping(List *args, Cmdarg *ca)
 {
-  char *from = strdup(ca->cmdline->line + strlen("map "));
+  if (strlen(ca->cmdline->line) < strlen("map ") + 3)
+    return 0;
+  char *line = ca->cmdline->line + strlen("map ");
+  if (!line)
+    return 0;
+  char *from = strdup(line);
   char *to = strchr(from, ' ');
   *to = '\0';
+  log_msg("CONFIG", "%s -> %s", from, to);
   set_map(from, to+1);
   free(from);
   return 0;
@@ -345,7 +351,7 @@ static void* edit_op(List *args, Cmdarg *ca)
 
 static void* add_source(List *args, Cmdarg *ca)
 {
-  char *file = ca->cmdline->line + strlen("source ");
+  char *file = cmdline_line_from(ca->cmdline, 1);
   if (!file)
     return 0;
 

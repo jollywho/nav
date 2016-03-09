@@ -227,7 +227,7 @@ static void* win_cd(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_cd");
   Plugin *plugin = buf_plugin(layout_buf(&win.layout));
-  char *path = ca->cmdline->line + strlen("cd ");
+  char *path = cmdline_line_from(ca->cmdline, 1);
   if (plugin)
     send_hook_msg("open", plugin, NULL, &(HookArg){NULL,path});
   //TODO: store curdir separate from FM. empty plugin bufs need curdirs.
@@ -269,9 +269,7 @@ static void* win_autocmd(List *args, Cmdarg *ca)
 static void* win_echo(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_echo");
-  if (!tok_arg(args, 1))
-    return NULL;
-  char *out = ca->cmdline->line + strlen("echo ");
+  char *out = cmdline_line_from(ca->cmdline, 1);
   log_msg(">", "%s", out);
   return out;
 }
