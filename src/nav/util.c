@@ -70,3 +70,19 @@ void readable_fs(double size/*in bytes*/, char buf[])
   else
     sprintf(buf, "%4.0f%s", size, units[i]);
 }
+
+void expand_escapes(char *dest, const char *src)
+{
+  char c;
+  while ((c = *(src++))) {
+    switch(c) {
+      case ' ':
+        *(dest++) = '\\';
+        *(dest++) = ' ';
+        break;
+      default:
+        *(dest++) = c;
+    }
+  }
+  *dest = '\0';
+}

@@ -10,6 +10,7 @@
 #include "nav/tui/menu.h"
 #include "nav/option.h"
 #include "nav/event/input.h"
+#include "nav/util.h"
 
 static void cmdline_draw();
 static void ex_esc();
@@ -204,8 +205,8 @@ static void ex_esc()
 static void ex_tab(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "TAB");
-  const char *key = menu_next(menu, arg->arg);
-  if (!key)
+  const char *str = menu_next(menu, arg->arg);
+  if (!str)
     return;
 
   cmd_part *part = cmd_stack[cur_part];
@@ -214,7 +215,10 @@ static void ex_tab(void *none, Keyarg *arg)
   if (st > 0)
     st++;
 
+  char key[strlen(str) + 2];
+  expand_escapes(key, str);
   int len = strlen(key);
+
   if (st + len >= maxpos - 1) {
     char *newline = strdup(line);
     maxpos = 2 * (len+maxpos);
@@ -227,9 +231,8 @@ static void ex_tab(void *none, Keyarg *arg)
   int i;
   for (i = st; i < ed + 2; i++)
     line[i] = ' ';
-  for (i = 0; i < len; i++) {
+  for (i = 0; i < len; i++)
     line[st + i] = key[i];
-  }
 
   curpos = st + i - 1;
   mflag = EX_CYCLE;
