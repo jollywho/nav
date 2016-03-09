@@ -8,6 +8,7 @@
 #include "nav/cmd.h"
 #include "nav/info.h"
 #include "nav/event/input.h"
+#include "nav/event/fs.h"
 
 static void* edit_setting();
 static void* edit_color();
@@ -23,8 +24,8 @@ static const Cmd_T cmdtable[] = {
   {"syn",    edit_syntax,    0},
   {"let",    edit_variable,  0},
   {"map",    edit_mapping,   0},
+  {"op",     edit_op,        0},
   {"so",     add_source,     0},
-  {"op",     edit_op,       0},
   {"source", add_source,     0},
 };
 
@@ -342,20 +343,17 @@ static void* edit_op(List *args, Cmdarg *ca)
   return 0;
 }
 
-static void* add_source(List *args)
+static void* add_source(List *args, Cmdarg *ca)
 {
-  char *file = list_arg(args, 1, VAR_STRING);
+  char *file = ca->cmdline->line + strlen("source ");
   if (!file)
     return 0;
 
-  wordexp_t p;
-  char *path;
+  char *path = fs_expand_path(file);
+  if (path && file_exists(path))
+    config_load(path);
+  if (path)
+    free(path);
 
-  if (wordexp(file, &p, 0) == 0) {
-    path = p.we_wordv[0];
-    if (file_exists(path)) {
-      config_load(path);
-    }
-  }
   return 0;
 }

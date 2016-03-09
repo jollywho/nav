@@ -603,6 +603,8 @@ void cmdline_req_run(Cmdline *cmdline)
   if (!cmdline->cmds)
     return;
 
+  //TODO:switch on exp_type flag
+
   while (NEXT_CMD(cmdline, cmd)) {
     if (cmd->flag & (PIPE_LEFT|PIPE_RIGHT))
       continue;
