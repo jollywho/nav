@@ -155,20 +155,20 @@ void set_var(fn_var *variable, fn_func *blk)
   memmove(var, variable, sizeof(fn_var));
 
   log_msg("CONFIG", "%s := %s", var->key, var->var);
-  FLUSH_OLD_OPT(fn_var, gbl_vars, var->key, free(find->var));
   fn_var **container = &gbl_vars;
   if (blk)
     container = &blk->locals;
-  HASH_ADD_STR((*container), key, var);
+  FLUSH_OLD_OPT(fn_var, *container, var->key, free(find->var));
+  HASH_ADD_STR(*container, key, var);
 }
 
 char* opt_var(const char *name, fn_func *blk)
 {
-  fn_var *var;
-  fn_var *container = gbl_vars;
+  fn_var *var = NULL;
   if (blk)
-    container = blk->locals;
-  HASH_FIND_STR(container, name, var);
+    HASH_FIND_STR(blk->locals, name, var);
+  if (!var)
+    HASH_FIND_STR(gbl_vars, name, var);
   if (!var)
     return " ";
   return var->var;
