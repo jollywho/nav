@@ -3,6 +3,7 @@
 
 #include "nav/lib/uthash.h"
 #include "nav/cmdline.h"
+#include "nav/option.h"
 
 #define WORD      0x01
 #define BUFFER    0x02
@@ -43,5 +44,6 @@ void* cmd_call();
 Cmd_T* cmd_find(const char *);
 void cmd_list(List *args);
 void cmd_eval(char *line);
+fn_func* cmd_callstack();
 
 #endif

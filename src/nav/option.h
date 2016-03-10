@@ -35,6 +35,7 @@ typedef struct {
 typedef struct {
   UT_hash_handle hh;
   UT_array *lines;
+  fn_var *locals;
   int argc;
   char **argv;
   char *key;
@@ -51,9 +52,10 @@ void set_syn(fn_syn *syn);
 fn_syn* get_syn(const char *);
 int get_syn_colpair(const char *name);
 
-void set_var(fn_var *var);
-char* opt_var(const char *name);
+void set_var(fn_var *variable, fn_func *blk);
+char* opt_var(const char *name, fn_func *blk);
 void set_func(fn_func *fn);
+void clear_locals(fn_func *func);
 fn_func* opt_func(const char *name);
 void set_opt(const char *name, const char *val);
 char* get_opt_str(const char *name);

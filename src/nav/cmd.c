@@ -18,12 +18,19 @@ struct Symb {
   char *line;
 };
 
+typedef struct Cmdblock Cmdblock;
+struct Cmdblock {
+  Cmdblock *parent;
+  fn_func *func;
+};
+
 static void* cmd_ifblock();
 static void* cmd_elseifblock();
 static void* cmd_elseblock();
 static void* cmd_endblock();
 static void* cmd_funcblock();
 
+//TODO: wrap these into cmdblock
 static Cmd_T *cmd_table;
 static Symb *tape;
 static Symb *cur;
@@ -36,6 +43,8 @@ static int lvlcont;
 static int fndefopen;
 static int parse_error;
 static fn_func fndef;
+
+static Cmdblock *callstack;
 
 static const Cmd_T builtins[] = {
   {NULL,          NULL,               0},
@@ -199,7 +208,7 @@ static void cmd_vars(Cmdline *cmdline)
   for (int i = 0; i < count; i++) {
     Token *word = (Token*)utarray_eltptr(cmdline->vars, i);
     char *name = token_val(word, VAR_STRING);
-    char *var = opt_var(name+1);
+    char *var = opt_var(name+1, callstack->func);
     len_lst[i] = strlen(var);
     var_lst[i] = var;
     tok_lst[i] = word;
@@ -346,12 +355,11 @@ static void* cmd_endblock(List *args, Cmdarg *ca)
   return 0;
 }
 
-static void mk_param_list(Cmdarg *ca)
+static int mk_param_list(Cmdarg *ca, char ***dest)
 {
-  char **params = NULL;
   Cmdstr *substr = (Cmdstr*)utarray_front(ca->cmdstr->chlds);
   if (!substr)
-    return;
+    return 0;
 
   char *line = ca->cmdline->line;
   char pline[strlen(line)];
@@ -368,23 +376,22 @@ static void mk_param_list(Cmdarg *ca)
   if (count < 1)
     goto cleanup;
 
-  params = malloc(count * sizeof(char*));
+  (*dest) = malloc(count * sizeof(char*));
 
   for (int i = 0; i < count; i++) {
     char *name = list_arg(args, i, VAR_STRING);
     if (!name)
       goto type_error;
-    params[i] = strdup(name);
+    (*dest)[i] = strdup(name);
   }
 
-  fndef.argv = params;
-  fndef.argc = count;
   goto cleanup;
 type_error:
   log_err("CMD", "parse error: invalid function argument!");
-  free(params);
+  free(dest);
 cleanup:
   cmdline_cleanup(&cmd);
+  return count;
 }
 
 static void* cmd_funcblock(List *args, Cmdarg *ca)
@@ -396,7 +403,7 @@ static void* cmd_funcblock(List *args, Cmdarg *ca)
   }
 
   if (ca->cmdstr->rev) {
-    mk_param_list(ca);
+    fndef.argc = mk_param_list(ca, &fndef.argv);
     utarray_new(fndef.lines, &ut_str_icd);
     fndef.key = strdup(name);
     fndefopen = 1;
@@ -409,27 +416,53 @@ static void* cmd_funcblock(List *args, Cmdarg *ca)
   return 0;
 }
 
+static void push_callstack(Cmdblock *blk, fn_func *fn)
+{
+  if (!callstack)
+    callstack = blk;
+  blk->parent = callstack;
+  blk->func = fn;
+  callstack = blk;
+}
+
+static void pop_callstack()
+{
+  clear_locals(callstack->func);
+  callstack = callstack->parent;
+  cmd_flush();
+}
+
 void* cmd_call(List *args, Cmdarg *ca)
 {
   log_msg("CMD", "cmd_call");
   fn_func *fn = opt_func(list_arg(args, 1, VAR_STRING));
   if (!fn)
     return 0;
-  if (utarray_len(args->items) != fn->argc) {
+  char **params = NULL;
+  int argv = mk_param_list(ca, &params);
+  if (argv != fn->argc) {
     log_err("CMD", "incorrect arguments to call; expected %d!", fn->argc);
-    return 0;
+    goto cleanup;
   }
-  for (int i = 0; i < fn->argc; i++) {
-    log_msg("CMD", "- %s", fn->argv[i]);
-    //TODO:
-    //set argv to local block
-    //fn->argv[i] = list_arg(args, i, VAR_STRING)
+  Cmdblock blk;
+  push_callstack(&blk, fn);
+
+  for (int i = 0; i < argv; i++) {
+    fn_var var = {
+      .key = strdup(fn->argv[i]),
+      .var = strdup(params[i]),
+    };
+    set_var(&var, callstack->func);
   }
   for (int i = 0; i < utarray_len(fn->lines); i++) {
     char *line = *(char**)utarray_eltptr(fn->lines, i);
     cmd_do(line);
-    cmd_flush();
   }
+cleanup:
+  for (int i = 0; i < argv; i++)
+    free(params[i]);
+  free(params);
+  pop_callstack();
   return 0;
 }
 
@@ -488,6 +521,11 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
   cmdstr->ret_t = PLUGIN;
   Cmdarg flags = {fun->flags, 0, cmdstr, cmdline};
   cmdstr->ret = fun->cmd_func(args, &flags);
+}
+
+fn_func* cmd_callstack()
+{
+  return callstack->func;
 }
 
 void cmd_list(List *args)

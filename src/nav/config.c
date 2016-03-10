@@ -313,7 +313,10 @@ static void* edit_variable(List *args, Cmdarg *ca)
     .key = strdup(key),
     .var = strdup(str),
   };
-  set_var(&var);
+  fn_func *blk = cmd_callstack();
+  if (!ca->flags)
+    blk = NULL;
+  set_var(&var, blk);
   return 0;
 }
 

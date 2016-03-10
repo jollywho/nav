@@ -82,6 +82,12 @@ void option_cleanup()
   CLEAR_OPT(fn_func,  gbl_funcs, utarray_free(it->lines));
 }
 
+void clear_locals(fn_func *func)
+{
+  CLEAR_OPT(fn_var, func->locals, free(it->var));
+  func->locals = NULL;
+}
+
 void set_color(fn_group *grp, int fg, int bg)
 {
   log_msg("OPTION", "set_color");
@@ -143,20 +149,26 @@ int get_syn_colpair(const char *name)
   return sy->group->colorpair;
 }
 
-void set_var(fn_var *variable)
+void set_var(fn_var *variable, fn_func *blk)
 {
   fn_var *var = malloc(sizeof(fn_var));
   memmove(var, variable, sizeof(fn_var));
 
   log_msg("CONFIG", "%s := %s", var->key, var->var);
   FLUSH_OLD_OPT(fn_var, gbl_vars, var->key, free(find->var));
-  HASH_ADD_STR(gbl_vars, key, var);
+  fn_var **container = &gbl_vars;
+  if (blk)
+    container = &blk->locals;
+  HASH_ADD_STR((*container), key, var);
 }
 
-char* opt_var(const char *name)
+char* opt_var(const char *name, fn_func *blk)
 {
   fn_var *var;
-  HASH_FIND_STR(gbl_vars, name, var);
+  fn_var *container = gbl_vars;
+  if (blk)
+    container = blk->locals;
+  HASH_FIND_STR(container, name, var);
   if (!var)
     return " ";
   return var->var;
@@ -167,6 +179,7 @@ void set_func(fn_func *func)
   fn_func *fn = malloc(sizeof(fn_func));
   memmove(fn, func, sizeof(fn_func));
   fn->key = strdup(func->key);
+  fn->locals = NULL;
 
   FLUSH_OLD_OPT(fn_func, gbl_funcs, fn->key, utarray_free(find->lines));
   HASH_ADD_STR(gbl_funcs, key, fn);
