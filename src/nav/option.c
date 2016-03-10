@@ -168,7 +168,6 @@ void set_func(fn_func *func)
   memmove(fn, func, sizeof(fn_func));
   fn->key = strdup(func->key);
 
-  log_msg("CONFIG", "%s :: %s", fn->key, *(char**)utarray_front(fn->lines));
   FLUSH_OLD_OPT(fn_func, gbl_funcs, fn->key, utarray_free(find->lines));
   HASH_ADD_STR(gbl_funcs, key, fn);
 }

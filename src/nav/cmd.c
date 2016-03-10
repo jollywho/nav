@@ -43,7 +43,8 @@ static const Cmd_T builtins[] = {
   {"else",        cmd_elseblock,      0},
   {"elseif",      cmd_elseifblock,    0},
   {"end",         cmd_endblock,       0},
-  {"function",    cmd_funcblock,      0},
+  {"function",    cmd_funcblock,      0, 1},
+  {"call",        cmd_call,           0, 1},
 };
 
 static void stack_push(char *line)
@@ -142,201 +143,6 @@ static void cmd_do(char *line)
   cmdline_cleanup(&cmd);
 }
 
-static int cond_do(char *line)
-{
-  int cond = 0;
-  Cmdline cmd;
-  cmdline_build(&cmd, line);
-  cmdline_req_run(&cmd);
-  cond = cmdline_getcmd(&cmd)->ret ? 1 : 0;
-  cmdline_cleanup(&cmd);
-  return cond;
-}
-
-static Symb* cmd_next(Symb *node)
-{
-  Symb *n = STAILQ_NEXT(node, ent);
-  if (!n)
-    n = node->parent->end;
-  return n;
-}
-
-//TODO: make ret a arg struct
-//TODO: handle bracketed expr
-static void cmd_start()
-{
-  Symb *it = STAILQ_FIRST(&root.childs);
-  int cond;
-  while (it) {
-    switch (it->type) {
-      case CTL_IF:
-      case CTL_ELSEIF:
-        cond = cond_do(it->line);
-        if (cond)
-          it = STAILQ_FIRST(&it->childs);
-        else
-          it = cmd_next(it);
-        break;
-      case CTL_ELSE:
-        it = STAILQ_FIRST(&it->childs);
-        break;
-      case CTL_END:
-        if (it->parent == &root)
-          it = NULL;
-        else
-          it++;
-        break;
-      default:
-        cmd_do(it->line);
-        it = cmd_next(it);
-    }
-  }
-}
-
-static int ctl_cmd(const char *line)
-{
-  for (int i = 1; i < LENGTH(builtins); i++) {
-    char *str = builtins[i].name;
-    if (!strncmp(str, line, strlen(str)))
-      return i;
-  }
-  return -1;
-}
-
-void cmd_eval(char *line)
-{
-  if (parse_error)
-    return;
-
-  if ((lvl < 1 && !fndef.key) || ctl_cmd(line) != -1)
-    cmd_do(line);
-  else
-    stack_push(line);
-}
-
-static void* cmd_ifblock(List *args, Cmdarg *ca)
-{
-  log_msg("CMD", "%d", lvl);
-  if (lvl == 0)
-    cmd_flush();
-  stack_push(cmdline_line_from(ca->cmdline, 1));
-  cur = &tape[pos];
-  cur->st = pos;
-  tape[pos].type = CTL_IF;
-  ++lvl;
-  return 0;
-}
-
-static void* cmd_elseifblock(List *args, Cmdarg *ca)
-{
-  int st = cur->st;
-  cur = cur->parent;
-  cur->st = st;
-  stack_push(cmdline_line_from(ca->cmdline, 1));
-  tape[pos].type = CTL_ELSEIF;
-  cur = &tape[pos];
-  return 0;
-}
-
-static void* cmd_elseblock(List *args, Cmdarg *ca)
-{
-  int st = cur->st;
-  cur = cur->parent;
-  cur->st = st;
-  stack_push(cmdline_line_from(ca->cmdline, 1));
-  tape[pos].type = CTL_ELSE;
-  cur = &tape[pos];
-  return 0;
-}
-
-static void* cmd_endblock(List *args, Cmdarg *ca)
-{
-  if (fndefopen /* TODO: && fndef.lvl */) {
-    set_func(&fndef);
-    fndefopen = 0;
-    cmd_flush();
-  }
-  else {
-    cur = cur->parent;
-    stack_push(cmdline_line_from(ca->cmdline, 1));
-    tape[cur->st].end = &tape[pos];
-    tape[pos].type = CTL_END;
-    --lvl;
-    if (lvl < 1)
-      cmd_start();
-  }
-  return 0;
-}
-
-static void* cmd_funcblock(List *args, Cmdarg *ca)
-{
-  const char *name = list_arg(args, 1, VAR_STRING);
-  if (!name || fndefopen) {
-    parse_error = 1;
-    return 0;
-  }
-  if (ca->cmdstr->rev) {
-    utarray_new(fndef.lines, &ut_str_icd);
-    fndef.key = strdup(name);
-    fndefopen = 1;
-  }
-  else { /* print */
-    fn_func *fn = opt_func(name);
-    for (int i = 0; i < utarray_len(fn->lines); i++)
-      log_msg("CMD", "%s", *(char**)utarray_eltptr(fn->lines, i));
-  }
-  return 0;
-}
-
-void* cmd_call(List *args, Cmdarg *ca)
-{
-  log_msg("CMD", "cmd_call");
-  fn_func *fn = opt_func(list_arg(args, 1, VAR_STRING));
-  if (!fn)
-    return 0;
-  for (int i = 0; i < utarray_len(fn->lines); i++) {
-    char *line = *(char**)utarray_eltptr(fn->lines, i);
-    cmd_do(line);
-    cmd_flush();
-  }
-  return 0;
-}
-
-void cmd_clearall()
-{
-  log_msg("CMD", "cmd_clearall");
-  Cmd_T *it, *tmp;
-  HASH_ITER(hh, cmd_table, it, tmp) {
-    HASH_DEL(cmd_table, it);
-    free(it);
-  }
-}
-
-int name_sort(Cmd_T *a, Cmd_T *b)
-{
-  return strcmp(a->name, b->name);
-}
-
-void cmd_add(Cmd_T *cmd)
-{
-  HASH_ADD_STR(cmd_table, name, cmd);
-  HASH_SORT(cmd_table, name_sort);
-}
-
-void cmd_remove(const char *name)
-{
-}
-
-Cmd_T* cmd_find(const char *name)
-{
-  Cmd_T *cmd;
-  if (!name)
-    return NULL;
-
-  HASH_FIND_STR(cmd_table, name, cmd);
-  return cmd;
-}
-
 static void* cmd_do_sub(Cmdline *cmdline, char *line)
 {
   cmdline_build(cmdline, line);
@@ -412,19 +218,265 @@ static void cmd_vars(Cmdline *cmdline)
   cmd_do(base);
 }
 
+static int cond_do(char *line)
+{
+  int cond = 0;
+  Cmdline cmd;
+  cmdline_build(&cmd, line);
+  cmdline_req_run(&cmd);
+  cond = cmdline_getcmd(&cmd)->ret ? 1 : 0;
+  cmdline_cleanup(&cmd);
+  return cond;
+}
+
+static Symb* cmd_next(Symb *node)
+{
+  Symb *n = STAILQ_NEXT(node, ent);
+  if (!n)
+    n = node->parent->end;
+  return n;
+}
+
+//TODO: make ret a arg struct
+//TODO: handle bracketed expr
+static void cmd_start()
+{
+  Symb *it = STAILQ_FIRST(&root.childs);
+  int cond;
+  while (it) {
+    switch (it->type) {
+      case CTL_IF:
+      case CTL_ELSEIF:
+        cond = cond_do(it->line);
+        if (cond)
+          it = STAILQ_FIRST(&it->childs);
+        else
+          it = cmd_next(it);
+        break;
+      case CTL_ELSE:
+        it = STAILQ_FIRST(&it->childs);
+        break;
+      case CTL_END:
+        if (it->parent == &root)
+          it = NULL;
+        else
+          it++;
+        break;
+      default:
+        cmd_do(it->line);
+        it = cmd_next(it);
+    }
+  }
+}
+
+static int ctl_cmd(const char *line)
+{
+  for (int i = 1; i < LENGTH(builtins) - 1; i++) {
+    char *str = builtins[i].name;
+    if (!strncmp(str, line, strlen(str)))
+      return i;
+  }
+  return -1;
+}
+
+void cmd_eval(char *line)
+{
+  if (parse_error)
+    return;
+
+  if ((lvl < 1 && !fndef.key) || ctl_cmd(line) != -1)
+    cmd_do(line);
+  else
+    stack_push(line);
+}
+
+static void* cmd_ifblock(List *args, Cmdarg *ca)
+{
+  log_msg("CMD", "%d", lvl);
+  if (lvl == 0)
+    cmd_flush();
+  stack_push(cmdline_line_from(ca->cmdline, 1));
+  cur = &tape[pos];
+  cur->st = pos;
+  tape[pos].type = CTL_IF;
+  ++lvl;
+  return 0;
+}
+
+static void* cmd_elseifblock(List *args, Cmdarg *ca)
+{
+  int st = cur->st;
+  cur = cur->parent;
+  cur->st = st;
+  stack_push(cmdline_line_from(ca->cmdline, 1));
+  tape[pos].type = CTL_ELSEIF;
+  cur = &tape[pos];
+  return 0;
+}
+
+static void* cmd_elseblock(List *args, Cmdarg *ca)
+{
+  int st = cur->st;
+  cur = cur->parent;
+  cur->st = st;
+  stack_push(cmdline_line_from(ca->cmdline, 1));
+  tape[pos].type = CTL_ELSE;
+  cur = &tape[pos];
+  return 0;
+}
+
+static void* cmd_endblock(List *args, Cmdarg *ca)
+{
+  if (fndefopen /* TODO: && fndef.lvl */) {
+    set_func(&fndef);
+    fndefopen = 0;
+    cmd_flush();
+  }
+  else {
+    cur = cur->parent;
+    stack_push(cmdline_line_from(ca->cmdline, 1));
+    tape[cur->st].end = &tape[pos];
+    tape[pos].type = CTL_END;
+    --lvl;
+    if (lvl < 1)
+      cmd_start();
+  }
+  return 0;
+}
+
+static void mk_param_list(Cmdarg *ca)
+{
+  char **params = NULL;
+  Cmdstr *substr = (Cmdstr*)utarray_front(ca->cmdstr->chlds);
+  if (!substr)
+    return;
+
+  char *line = ca->cmdline->line;
+  char pline[strlen(line)];
+  int len = (substr->ed - substr->st) - 1;
+  strncpy(pline, line+substr->st + 1, len);
+  pline[len] = '\0';
+  log_msg("___", "%s", pline);
+
+  Cmdline cmd;
+  cmdline_build(&cmd, pline);
+  Cmdstr *cmdstr = (Cmdstr*)utarray_front(cmd.cmds);
+  List *args = token_val(&cmdstr->args, VAR_LIST);
+  int count = utarray_len(args->items);
+  if (count < 1)
+    goto cleanup;
+
+  params = malloc(count * sizeof(char*));
+
+  for (int i = 0; i < count; i++) {
+    char *name = list_arg(args, i, VAR_STRING);
+    if (!name)
+      goto type_error;
+    params[i] = strdup(name);
+  }
+
+  fndef.argv = params;
+  fndef.argc = count;
+  goto cleanup;
+type_error:
+  log_err("CMD", "parse error: invalid function argument!");
+  free(params);
+cleanup:
+  cmdline_cleanup(&cmd);
+}
+
+static void* cmd_funcblock(List *args, Cmdarg *ca)
+{
+  const char *name = list_arg(args, 1, VAR_STRING);
+  if (!name || fndefopen) {
+    parse_error = 1;
+    return 0;
+  }
+
+  if (ca->cmdstr->rev) {
+    mk_param_list(ca);
+    utarray_new(fndef.lines, &ut_str_icd);
+    fndef.key = strdup(name);
+    fndefopen = 1;
+  }
+  else { /* print */
+    fn_func *fn = opt_func(name);
+    for (int i = 0; i < utarray_len(fn->lines); i++)
+      log_msg("CMD", "%s", *(char**)utarray_eltptr(fn->lines, i));
+  }
+  return 0;
+}
+
+void* cmd_call(List *args, Cmdarg *ca)
+{
+  log_msg("CMD", "cmd_call");
+  fn_func *fn = opt_func(list_arg(args, 1, VAR_STRING));
+  if (!fn)
+    return 0;
+  if (utarray_len(args->items) != fn->argc) {
+    log_err("CMD", "incorrect arguments to call; expected %d!", fn->argc);
+    return 0;
+  }
+  for (int i = 0; i < fn->argc; i++) {
+    log_msg("CMD", "- %s", fn->argv[i]);
+    //TODO:
+    //set argv to local block
+    //fn->argv[i] = list_arg(args, i, VAR_STRING)
+  }
+  for (int i = 0; i < utarray_len(fn->lines); i++) {
+    char *line = *(char**)utarray_eltptr(fn->lines, i);
+    cmd_do(line);
+    cmd_flush();
+  }
+  return 0;
+}
+
+void cmd_clearall()
+{
+  log_msg("CMD", "cmd_clearall");
+  Cmd_T *it, *tmp;
+  HASH_ITER(hh, cmd_table, it, tmp) {
+    HASH_DEL(cmd_table, it);
+    free(it);
+  }
+}
+
+int name_sort(Cmd_T *a, Cmd_T *b)
+{
+  return strcmp(a->name, b->name);
+}
+
+void cmd_add(Cmd_T *cmd)
+{
+  HASH_ADD_STR(cmd_table, name, cmd);
+  HASH_SORT(cmd_table, name_sort);
+}
+
+void cmd_remove(const char *name)
+{
+}
+
+Cmd_T* cmd_find(const char *name)
+{
+  Cmd_T *cmd;
+  HASH_FIND_STR(cmd_table, name, cmd);
+  return cmd;
+}
+
 void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
 {
   log_msg("CMD", "cmd_run");
   List *args = token_val(&cmdstr->args, VAR_LIST);
 
-  if (utarray_len(cmdstr->chlds) > 0)
+  char *word = list_arg(args, 0, VAR_STRING);
+  Cmd_T *fun = cmd_find(word);
+
+  if (utarray_len(cmdstr->chlds) > 0 && !fun->isfunc)
     return cmd_sub(cmdstr, cmdline);
 
   if (utarray_len(cmdline->vars) > 0)
     return cmd_vars(cmdline);
 
-  char *word = list_arg(args, 0, VAR_STRING);
-  Cmd_T *fun = cmd_find(word);
   if (!fun) {
     cmdstr->ret_t = WORD;
     cmdstr->ret = cmdline->line;
@@ -441,7 +493,7 @@ void cmd_list(List *args)
   log_msg("CMD", "compl cmd_list");
   int i = 0;
   Cmd_T *it;
-  compl_new(HASH_COUNT(cmd_table) - (LENGTH(builtins) - 1), COMPL_STATIC);
+  compl_new(HASH_COUNT(cmd_table) - (LENGTH(builtins) - 2), COMPL_STATIC);
   for (it = cmd_table; it != NULL; it = it->hh.next) {
     if (ctl_cmd(it->name) == -1) {
       compl_set_key(i, "%s", it->name);

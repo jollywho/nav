@@ -35,6 +35,8 @@ typedef struct {
 typedef struct {
   UT_hash_handle hh;
   UT_array *lines;
+  int argc;
+  char **argv;
   char *key;
 } fn_func;
 

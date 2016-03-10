@@ -21,6 +21,7 @@ struct Cmd_T {
   char *name;
   Cmd_Func_T cmd_func;
   int flags;
+  int isfunc;
   UT_hash_handle hh;
 };
 
