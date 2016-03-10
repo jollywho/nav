@@ -7,6 +7,7 @@
 #include "nav/vt/vt.h"
 #include "nav/event/input.h"
 #include "nav/compl.h"
+#include "nav/util.h"
 
 enum opt_type { OPTION_STRING, OPTION_INTEGER };
 static char *default_groups[] = {
@@ -79,7 +80,10 @@ void option_init()
 void option_cleanup()
 {
   CLEAR_OPT(fn_var,   gbl_vars,  free(it->var));
-  CLEAR_OPT(fn_func,  gbl_funcs, utarray_free(it->lines));
+  CLEAR_OPT(fn_func,  gbl_funcs,  {
+    del_param_list(it->argv, it->argc);
+    utarray_free(it->lines);
+    clear_locals(it);});
 }
 
 void clear_locals(fn_func *func)
@@ -176,12 +180,8 @@ char* opt_var(const char *name, fn_func *blk)
 
 void set_func(fn_func *func)
 {
-  fn_func *fn = malloc(sizeof(fn_func));
-  memmove(fn, func, sizeof(fn_func));
-  fn->key = strdup(func->key);
+  fn_func *fn = func;
   fn->locals = NULL;
-
-  FLUSH_OLD_OPT(fn_func, gbl_funcs, fn->key, utarray_free(find->lines));
   HASH_ADD_STR(gbl_funcs, key, fn);
 }
 
@@ -190,6 +190,14 @@ fn_func* opt_func(const char *name)
   fn_func *fn;
   HASH_FIND_STR(gbl_funcs, name, fn);
   return fn;
+}
+
+static void del_func(fn_func *fn)
+{
+  HASH_DEL(gbl_funcs, fn);
+  del_param_list(fn->argv, fn->argc);
+  utarray_free(fn->lines);
+  clear_locals(fn);
 }
 
 void set_opt(const char *name, const char *val)

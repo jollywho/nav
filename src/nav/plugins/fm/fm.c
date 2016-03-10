@@ -166,7 +166,7 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
   char *oper = p_cp;
   char *arg = "-r";
   fn_reg *reg = reg_dcur();
-  if (!reg)
+  if (!reg || !reg->value)
     return;
   if (reg->key == '1') {
     oper = p_mv;

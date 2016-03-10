@@ -86,3 +86,12 @@ void expand_escapes(char *dest, const char *src)
   }
   *dest = '\0';
 }
+
+void del_param_list(char **params, int argc)
+{
+  if (argc > 0) {
+    for (int i = 0; i < argc; i++)
+      free(params[i]);
+    free(params);
+  }
+}

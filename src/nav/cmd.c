@@ -4,6 +4,7 @@
 #include "nav/compl.h"
 #include "nav/table.h"
 #include "nav/option.h"
+#include "nav/util.h"
 
 enum CTLCMD { CTL_NOP, CTL_IF, CTL_ELSEIF, CTL_ELSE, CTL_END, CTL_FUNC, };
 
@@ -42,8 +43,8 @@ static char *lncont;
 static int lvlcont;
 static int fndefopen;
 static int parse_error;
-static fn_func fndef;
 
+static fn_func *fndef;
 static Cmdblock *callstack;
 
 static const Cmd_T builtins[] = {
@@ -58,9 +59,9 @@ static const Cmd_T builtins[] = {
 
 static void stack_push(char *line)
 {
-  if (fndef.key) {
+  if (fndef) {
     log_msg("CMD", "push : %s", line);
-    utarray_push_back(fndef.lines, &line);
+    utarray_push_back(fndef->lines, &line);
     return;
   }
   if (pos + 2 > maxpos) {
@@ -78,7 +79,7 @@ static void stack_push(char *line)
 void cmd_reset()
 {
   lncont = NULL;
-  fndef.key = NULL;
+  fndef = NULL;
   lvlcont = 0;
   fndefopen = 0;
   parse_error = 0;
@@ -115,7 +116,10 @@ void cmd_flush()
   //TODO: force parse errors
   if (fndefopen) {
     log_err("CMD", "parse error: open definition not closed!");
-    utarray_free(fndef.lines);
+    del_param_list(fndef->argv, fndef->argc);
+    utarray_free(fndef->lines);
+    free(fndef->key);
+    free(fndef);
   }
   if (lvl > 0)
     log_err("CMD", "parse error: open block not closed!");
@@ -124,8 +128,6 @@ void cmd_flush()
   for (int i = 0; tape[i].line; i++)
     free(tape[i].line);
 
-  if (fndef.key)
-    free(fndef.key);
   free(tape);
   free(lncont);
   cmd_reset();
@@ -295,7 +297,7 @@ void cmd_eval(char *line)
   if (parse_error)
     return;
 
-  if ((lvl < 1 && !fndef.key) || ctl_cmd(line) != -1)
+  if ((lvl < 1 && !fndefopen) || ctl_cmd(line) != -1)
     cmd_do(line);
   else
     stack_push(line);
@@ -338,8 +340,8 @@ static void* cmd_elseblock(List *args, Cmdarg *ca)
 
 static void* cmd_endblock(List *args, Cmdarg *ca)
 {
-  if (fndefopen /* TODO: && fndef.lvl */) {
-    set_func(&fndef);
+  if (fndefopen && lvl == 0) {
+    set_func(fndef);
     fndefopen = 0;
     cmd_flush();
   }
@@ -366,19 +368,18 @@ static int mk_param_list(Cmdarg *ca, char ***dest)
   int len = (substr->ed - substr->st) - 1;
   strncpy(pline, line+substr->st + 1, len);
   pline[len] = '\0';
-  log_msg("___", "%s", pline);
 
   Cmdline cmd;
   cmdline_build(&cmd, pline);
   Cmdstr *cmdstr = (Cmdstr*)utarray_front(cmd.cmds);
   List *args = token_val(&cmdstr->args, VAR_LIST);
-  int count = utarray_len(args->items);
-  if (count < 1)
+  int argc = utarray_len(args->items);
+  if (argc < 1)
     goto cleanup;
 
-  (*dest) = malloc(count * sizeof(char*));
+  (*dest) = malloc(argc * sizeof(char*));
 
-  for (int i = 0; i < count; i++) {
+  for (int i = 0; i < argc; i++) {
     char *name = list_arg(args, i, VAR_STRING);
     if (!name)
       goto type_error;
@@ -388,24 +389,25 @@ static int mk_param_list(Cmdarg *ca, char ***dest)
   goto cleanup;
 type_error:
   log_err("CMD", "parse error: invalid function argument!");
-  free(dest);
+  del_param_list(*dest, argc);
 cleanup:
   cmdline_cleanup(&cmd);
-  return count;
+  return argc;
 }
 
 static void* cmd_funcblock(List *args, Cmdarg *ca)
 {
   const char *name = list_arg(args, 1, VAR_STRING);
-  if (!name || fndefopen) {
+  if (!name || fndefopen || lvl > 0) {
     parse_error = 1;
     return 0;
   }
 
   if (ca->cmdstr->rev) {
-    fndef.argc = mk_param_list(ca, &fndef.argv);
-    utarray_new(fndef.lines, &ut_str_icd);
-    fndef.key = strdup(name);
+    fndef = malloc(sizeof(fn_func));
+    fndef->argc = mk_param_list(ca, &fndef->argv);
+    utarray_new(fndef->lines, &ut_str_icd);
+    fndef->key = strdup(name);
     fndefopen = 1;
   }
   else { /* print */
@@ -439,15 +441,16 @@ void* cmd_call(List *args, Cmdarg *ca)
   if (!fn)
     return 0;
   char **params = NULL;
-  int argv = mk_param_list(ca, &params);
-  if (argv != fn->argc) {
-    log_err("CMD", "incorrect arguments to call; expected %d!", fn->argc);
+  int argc = mk_param_list(ca, &params);
+  if (argc != fn->argc) {
+    log_err("CMD", "incorrect arguments to call: expected %d, got %d!",
+        fn->argc, argc);
     goto cleanup;
   }
   Cmdblock blk;
   push_callstack(&blk, fn);
 
-  for (int i = 0; i < argv; i++) {
+  for (int i = 0; i < argc; i++) {
     fn_var var = {
       .key = strdup(fn->argv[i]),
       .var = strdup(params[i]),
@@ -459,9 +462,7 @@ void* cmd_call(List *args, Cmdarg *ca)
     cmd_do(line);
   }
 cleanup:
-  for (int i = 0; i < argv; i++)
-    free(params[i]);
-  free(params);
+  del_param_list(params, argc);
   pop_callstack();
   return 0;
 }
