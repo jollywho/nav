@@ -215,6 +215,8 @@ static void cmd_vars(Cmdline *cmdline)
     strcpy(base+pos, var_lst[i]);
     pos += len_lst[i];
   }
+  strcpy(base+pos, &cmdline->line[prevst]);
+  log_msg("CMD", "cmd_vars %s", base);
   cmd_do(base);
 }
 

@@ -268,6 +268,7 @@ static void* win_autocmd(List *args, Cmdarg *ca)
 static void* win_echo(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_echo");
+  //TODO: print from cmdstr, not tokens or raw
   char *out = cmdline_line_from(ca->cmdline, 1);
   log_msg(">", "%s", out);
   return out;

@@ -78,7 +78,7 @@ void option_init()
 
 void option_cleanup()
 {
-  CLEAR_OPT(fn_var,   gbl_vars,  {});
+  CLEAR_OPT(fn_var,   gbl_vars,  free(it->var));
   CLEAR_OPT(fn_func,  gbl_funcs, utarray_free(it->lines));
 }
 
@@ -158,7 +158,7 @@ char* opt_var(const char *name)
   fn_var *var;
   HASH_FIND_STR(gbl_vars, name, var);
   if (!var)
-    return 0;
+    return " ";
   return var->var;
 }
 

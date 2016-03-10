@@ -23,6 +23,7 @@ static const Cmd_T cmdtable[] = {
   {"hi",     edit_color,     0},
   {"syn",    edit_syntax,    0},
   {"let",    edit_variable,  0},
+  {"local",  edit_variable,  1},
   {"map",    edit_mapping,   0},
   {"op",     edit_op,        0},
   {"so",     add_source,     0},
