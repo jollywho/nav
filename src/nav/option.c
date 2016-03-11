@@ -192,14 +192,6 @@ fn_func* opt_func(const char *name)
   return fn;
 }
 
-static void del_func(fn_func *fn)
-{
-  HASH_DEL(gbl_funcs, fn);
-  del_param_list(fn->argv, fn->argc);
-  utarray_free(fn->lines);
-  clear_locals(fn);
-}
-
 void set_opt(const char *name, const char *val)
 {
   fn_option *opt;

@@ -86,6 +86,12 @@ void* token_val(Token *token, char v_type)
   }
 }
 
+List* cmdline_lst(Cmdline *cmd)
+{
+  Cmdstr *root = (Cmdstr*)utarray_front(cmd->cmds);
+  return token_val(&root->args, VAR_LIST);
+}
+
 void* list_arg(List *lst, int argc, char v_type)
 {
   if (!lst || utarray_len(lst->items) < argc)
@@ -432,7 +438,9 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
 
   check_if_exec(cmdline, &cmd, word);
 
+  int idx = -1;
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
+    idx++;
     char *str = token_val(word, VAR_STRING);
 
     switch(ch = str[0]) {
@@ -449,6 +457,8 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
       case '(':
         cmdline->lvl++;
         word = cmdline_parse(cmdline, word, cmd.chlds);
+        Cmdstr *pcmd = (Cmdstr*)utarray_back(cmd.chlds);
+        pcmd->idx = idx;
         if (!word)
           goto breakout;
         break;

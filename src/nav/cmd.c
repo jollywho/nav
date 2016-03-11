@@ -53,8 +53,7 @@ static const Cmd_T builtins[] = {
   {"else",        cmd_elseblock,      0},
   {"elseif",      cmd_elseifblock,    0},
   {"end",         cmd_endblock,       0},
-  {"function",    cmd_funcblock,      0, 1},
-  {"call",        cmd_call,           0, 1},
+  {"function",    cmd_funcblock,      0},
 };
 
 static void stack_push(char *line)
@@ -95,6 +94,7 @@ void cmd_reset()
 void cmd_init()
 {
   cmd_reset();
+  callstack = NULL;
   for (int i = 1; i < LENGTH(builtins); i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
     cmd = memmove(cmd, &builtins[i], sizeof(Cmd_T));
@@ -133,6 +133,24 @@ void cmd_flush()
   cmd_reset();
 }
 
+static void push_callstack(Cmdblock *blk, fn_func *fn)
+{
+  if (!callstack)
+    callstack = blk;
+  blk->parent = callstack;
+  blk->func = fn;
+  callstack = blk;
+}
+
+static void pop_callstack()
+{
+  clear_locals(callstack->func);
+  callstack = callstack->parent;
+  if (callstack == callstack->parent)
+    callstack = NULL;
+  cmd_flush();
+}
+
 static void cmd_do(char *line)
 {
   if (lvlcont > 0) {
@@ -152,6 +170,41 @@ static void cmd_do(char *line)
     SWAP_ALLOC_PTR(lncont, strdup(line));
 
   cmdline_cleanup(&cmd);
+}
+
+static void* cmd_call(fn_func *fn, char *line)
+{
+  log_msg("CMD", "cmd_call");
+  Cmdline cmd;
+  cmdline_build(&cmd, line);
+  List *args = cmdline_lst(&cmd);
+  int argc = utarray_len(args->items);
+  if (argc != fn->argc) {
+    log_err("CMD", "incorrect arguments to call: expected %d, got %d!",
+        fn->argc, argc);
+    goto cleanup;
+  }
+  Cmdblock blk;
+  push_callstack(&blk, fn);
+
+  for (int i = 0; i < argc; i++) {
+    char *param = list_arg(args, i, VAR_STRING);
+    if (!param)
+      continue;
+    fn_var var = {
+      .key = strdup(fn->argv[i]),
+      .var = strdup(param),
+    };
+    set_var(&var, cmd_callstack());
+  }
+  for (int i = 0; i < utarray_len(fn->lines); i++) {
+    char *line = *(char**)utarray_eltptr(fn->lines, i);
+    cmd_do(line);
+  }
+cleanup:
+  cmdline_cleanup(&cmd);
+  pop_callstack();
+  return 0;
 }
 
 static void* cmd_do_sub(Cmdline *cmdline, char *line)
@@ -180,6 +233,20 @@ static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
 
     Cmdline newcmd;
     void *retp = cmd_do_sub(&newcmd, subline);
+
+
+    List *args = cmdline_lst(cmdline);
+    char *symb = list_arg(args, cmd->idx - 1, VAR_STRING);
+    log_msg("CMD", "--- %s", symb);
+    if (symb) {
+      fn_func *fn = opt_func(symb);
+      if (fn)
+        cmd_call(fn, retp);
+      // after expansion,
+      // if idx - 1 is function, call it with retp
+      // then, pos -= (word->end - word->start)
+    }
+
     if (retp) {
       char *retline = retp;
       strcpy(base+pos, retline);
@@ -210,7 +277,7 @@ static void cmd_vars(Cmdline *cmdline)
   for (int i = 0; i < count; i++) {
     Token *word = (Token*)utarray_eltptr(cmdline->vars, i);
     char *name = token_val(word, VAR_STRING);
-    char *var = opt_var(name+1, callstack->func);
+    char *var = opt_var(name+1, cmd_callstack());
     len_lst[i] = strlen(var);
     var_lst[i] = var;
     tok_lst[i] = word;
@@ -250,8 +317,6 @@ static Symb* cmd_next(Symb *node)
   return n;
 }
 
-//TODO: make ret a arg struct
-//TODO: handle bracketed expr
 static void cmd_start()
 {
   Symb *it = STAILQ_FIRST(&root.childs);
@@ -418,55 +483,6 @@ static void* cmd_funcblock(List *args, Cmdarg *ca)
   return 0;
 }
 
-static void push_callstack(Cmdblock *blk, fn_func *fn)
-{
-  if (!callstack)
-    callstack = blk;
-  blk->parent = callstack;
-  blk->func = fn;
-  callstack = blk;
-}
-
-static void pop_callstack()
-{
-  clear_locals(callstack->func);
-  callstack = callstack->parent;
-  cmd_flush();
-}
-
-void* cmd_call(List *args, Cmdarg *ca)
-{
-  log_msg("CMD", "cmd_call");
-  fn_func *fn = opt_func(list_arg(args, 1, VAR_STRING));
-  if (!fn)
-    return 0;
-  char **params = NULL;
-  int argc = mk_param_list(ca, &params);
-  if (argc != fn->argc) {
-    log_err("CMD", "incorrect arguments to call: expected %d, got %d!",
-        fn->argc, argc);
-    goto cleanup;
-  }
-  Cmdblock blk;
-  push_callstack(&blk, fn);
-
-  for (int i = 0; i < argc; i++) {
-    fn_var var = {
-      .key = strdup(fn->argv[i]),
-      .var = strdup(params[i]),
-    };
-    set_var(&var, callstack->func);
-  }
-  for (int i = 0; i < utarray_len(fn->lines); i++) {
-    char *line = *(char**)utarray_eltptr(fn->lines, i);
-    cmd_do(line);
-  }
-cleanup:
-  del_param_list(params, argc);
-  pop_callstack();
-  return 0;
-}
-
 void cmd_clearall()
 {
   log_msg("CMD", "cmd_clearall");
@@ -502,17 +518,20 @@ Cmd_T* cmd_find(const char *name)
 void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
 {
   log_msg("CMD", "cmd_run");
+  log_msg("CMD", "%s", cmdline->line);
   List *args = token_val(&cmdstr->args, VAR_LIST);
-
   char *word = list_arg(args, 0, VAR_STRING);
-  Cmd_T *fun = cmd_find(word);
+  if (!word)
+    word = "";
+  int isdef = !strcmp(word, "function");
 
-  if (utarray_len(cmdstr->chlds) > 0 && !fun->isfunc)
+  if (utarray_len(cmdstr->chlds) > 0 && !isdef)
     return cmd_sub(cmdstr, cmdline);
 
   if (utarray_len(cmdline->vars) > 0)
     return cmd_vars(cmdline);
 
+  Cmd_T *fun = cmd_find(word);
   if (!fun) {
     cmdstr->ret_t = WORD;
     cmdstr->ret = cmdline->line;
@@ -526,7 +545,9 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
 
 fn_func* cmd_callstack()
 {
-  return callstack->func;
+  if (callstack)
+    return callstack->func;
+  return NULL;
 }
 
 void cmd_list(List *args)

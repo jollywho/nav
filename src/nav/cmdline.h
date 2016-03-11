@@ -48,6 +48,7 @@ struct Cmdstr {
   void *ret;
   int st;
   int ed;
+  int idx;
   UT_array *chlds;  /* Cmdstr */
 };
 
@@ -75,6 +76,7 @@ Token* cmdline_tokindex(Cmdline *cmdline, int idx);
 Token* cmdline_last(Cmdline *cmdline);
 char* cmdline_line_from(Cmdline *cmdline, int idx);
 Cmdstr* cmdline_getcmd(Cmdline *cmdline);
+List* cmdline_lst(Cmdline *cmd);
 
 void* token_val(Token *token, char v_type);
 void* list_arg(List *lst, int argc, char v_type);
