@@ -200,6 +200,7 @@ static void* cmd_call(fn_func *fn, char *line)
   for (int i = 0; i < utarray_len(fn->lines); i++) {
     char *line = *(char**)utarray_eltptr(fn->lines, i);
     cmd_do(line);
+    //TODO: return value from block
   }
 cleanup:
   cmdline_cleanup(&cmd);
@@ -240,11 +241,11 @@ static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
     log_msg("CMD", "--- %s", symb);
     if (symb) {
       fn_func *fn = opt_func(symb);
-      if (fn)
+      if (fn) {
         cmd_call(fn, retp);
-      // after expansion,
-      // if idx - 1 is function, call it with retp
-      // then, pos -= (word->end - word->start)
+        Token *word = tok_arg(args, cmd->idx - 1);
+        pos = word->start;
+      }
     }
 
     if (retp) {
@@ -287,7 +288,7 @@ static void cmd_vars(Cmdline *cmdline)
   char base[size];
   int pos = 0, prevst = 0;
   for (int i = 0; i < count; i++) {
-    strncpy(base+pos, &cmdline->line[prevst], tok_lst[i]->start);
+    strncpy(base+pos, &cmdline->line[prevst], tok_lst[i]->start - prevst);
     pos += tok_lst[i]->start - prevst;
     prevst = tok_lst[i]->end;
     strcpy(base+pos, var_lst[i]);
