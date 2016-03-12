@@ -44,43 +44,51 @@ static int lvlcont;
 static int fndefopen;
 static int parse_error;
 
+#define IS_READ  (fndefopen)
+#define IS_SEEK  (lvl > 0 && !IS_READ)
+#define IS_PARSE (IS_READ || IS_SEEK)
+
 static fn_func *fndef;
 static Cmdblock *callstack;
 
 static const Cmd_T builtins[] = {
-  {NULL,          NULL,               0},
-  {"if",          cmd_ifblock,        0},
-  {"else",        cmd_elseblock,      0},
-  {"elseif",      cmd_elseifblock,    0},
-  {"end",         cmd_endblock,       0},
-  {"function",    cmd_funcblock,      0},
+  {NULL,          NULL,               0, 0},
+  {"if",          cmd_ifblock,        0, 1},
+  {"else",        cmd_elseblock,      0, 1},
+  {"elseif",      cmd_elseifblock,    0, 1},
+  {"end",         cmd_endblock,       0, 1},
+  {"function",    cmd_funcblock,      0, 2},
 };
 
 static void stack_push(char *line)
 {
-  if (fndef) {
-    log_msg("CMD", "push : %s", line);
-    utarray_push_back(fndef->lines, &line);
-    return;
-  }
   if (pos + 2 > maxpos) {
     maxpos *= 2;
     tape = realloc(tape, maxpos*sizeof(Symb));
     for (int i = pos+1; i < maxpos; i++)
       memset(&tape[i], 0, sizeof(Symb));
   }
+  if (!line)
+    line = "";
   tape[++pos].line = strdup(line);
   tape[pos].parent = cur;
   STAILQ_INIT(&tape[pos].childs);
   STAILQ_INSERT_TAIL(&cur->childs, &tape[pos], ent);
 }
 
-void cmd_reset()
+static void read_line(char *line)
 {
+  utarray_push_back(fndef->lines, &line);
+}
+
+static void cmd_reset()
+{
+  if (!IS_READ || parse_error) {
+    fndef = NULL;
+    fndefopen = 0;
+  }
   lncont = NULL;
-  fndef = NULL;
   lvlcont = 0;
-  fndefopen = 0;
   parse_error = 0;
   lvl = 0;
   pos = -1;
@@ -113,8 +121,7 @@ void cmd_flush()
 {
   log_msg("CMD", "flush");
 
-  //TODO: force parse errors
-  if (fndefopen) {
+  if (parse_error && fndefopen) {
     log_err("CMD", "parse error: open definition not closed!");
     del_param_list(fndef->argv, fndef->argc);
     utarray_free(fndef->lines);
@@ -145,10 +152,10 @@ static void push_callstack(Cmdblock *blk, fn_func *fn)
 static void pop_callstack()
 {
   clear_locals(callstack->func);
-  callstack = callstack->parent;
   if (callstack == callstack->parent)
     callstack = NULL;
-  cmd_flush();
+  else
+    callstack = callstack->parent;
 }
 
 static void cmd_do(char *line)
@@ -199,9 +206,14 @@ static void* cmd_call(fn_func *fn, char *line)
   }
   for (int i = 0; i < utarray_len(fn->lines); i++) {
     char *line = *(char**)utarray_eltptr(fn->lines, i);
-    cmd_do(line);
+    cmd_eval(line);
     //TODO: return value from block
+    //
+    //global state switch from inside, set by eval of return expr
+    //*or*
+    //inspect state while iterating lines
   }
+  log_msg("CMD", "call fin--");
 cleanup:
   cmdline_cleanup(&cmd);
   pop_callstack();
@@ -363,27 +375,37 @@ void cmd_eval(char *line)
   if (parse_error)
     return;
 
-  if ((lvl < 1 && !fndefopen) || ctl_cmd(line) != -1)
-    cmd_do(line);
-  else
+  if (!IS_PARSE || ctl_cmd(line) != -1)
+    return cmd_do(line);
+  if (IS_READ)
+    return read_line(line);
+  if (IS_SEEK)
     stack_push(line);
 }
 
 static void* cmd_ifblock(List *args, Cmdarg *ca)
 {
-  log_msg("CMD", "%d", lvl);
-  if (lvl == 0)
+  if (IS_READ) {
+    ++lvl;
+    read_line(ca->cmdline->line);
+    return 0;
+  }
+  if (lvl == 1)
     cmd_flush();
+  ++lvl;
   stack_push(cmdline_line_from(ca->cmdline, 1));
   cur = &tape[pos];
   cur->st = pos;
   tape[pos].type = CTL_IF;
-  ++lvl;
   return 0;
 }
 
 static void* cmd_elseifblock(List *args, Cmdarg *ca)
 {
+  if (IS_READ) {
+    read_line(ca->cmdline->line);
+    return 0;
+  }
   int st = cur->st;
   cur = cur->parent;
   cur->st = st;
@@ -395,6 +417,10 @@ static void* cmd_elseifblock(List *args, Cmdarg *ca)
 
 static void* cmd_elseblock(List *args, Cmdarg *ca)
 {
+  if (IS_READ) {
+    read_line(ca->cmdline->line);
+    return 0;
+  }
   int st = cur->st;
   cur = cur->parent;
   cur->st = st;
@@ -406,20 +432,23 @@ static void* cmd_elseblock(List *args, Cmdarg *ca)
 
 static void* cmd_endblock(List *args, Cmdarg *ca)
 {
-  if (fndefopen && lvl == 0) {
+  --lvl;
+  if (IS_READ && lvl == 0) {
     set_func(fndef);
     fndefopen = 0;
     cmd_flush();
+    return 0;
   }
-  else {
-    cur = cur->parent;
-    stack_push(cmdline_line_from(ca->cmdline, 1));
-    tape[cur->st].end = &tape[pos];
-    tape[pos].type = CTL_END;
-    --lvl;
-    if (lvl < 1)
-      cmd_start();
+  if (IS_READ) {
+    read_line(ca->cmdline->line);
+    return 0;
   }
+  cur = cur->parent;
+  stack_push("");
+  tape[cur->st].end = &tape[pos];
+  tape[pos].type = CTL_END;
+  if (!IS_SEEK)
+    cmd_start();
   return 0;
 }
 
@@ -464,12 +493,13 @@ cleanup:
 static void* cmd_funcblock(List *args, Cmdarg *ca)
 {
   const char *name = list_arg(args, 1, VAR_STRING);
-  if (!name || fndefopen || lvl > 0) {
+  if (!name || IS_PARSE) {
     parse_error = 1;
     return 0;
   }
 
   if (ca->cmdstr->rev) {
+    ++lvl;
     fndef = malloc(sizeof(fn_func));
     fndef->argc = mk_param_list(ca, &fndef->argv);
     utarray_new(fndef->lines, &ut_str_icd);
@@ -511,6 +541,8 @@ void cmd_remove(const char *name)
 
 Cmd_T* cmd_find(const char *name)
 {
+  if (!name)
+    return NULL;
   Cmd_T *cmd;
   HASH_FIND_STR(cmd_table, name, cmd);
   return cmd;
@@ -522,17 +554,16 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
   log_msg("CMD", "%s", cmdline->line);
   List *args = token_val(&cmdstr->args, VAR_LIST);
   char *word = list_arg(args, 0, VAR_STRING);
-  if (!word)
-    word = "";
-  int isdef = !strcmp(word, "function");
-
-  if (utarray_len(cmdstr->chlds) > 0 && !isdef)
-    return cmd_sub(cmdstr, cmdline);
-
-  if (utarray_len(cmdline->vars) > 0)
-    return cmd_vars(cmdline);
-
   Cmd_T *fun = cmd_find(word);
+
+  if (!fun || !fun->bflags) {
+    if (utarray_len(cmdstr->chlds) > 0)
+      return cmd_sub(cmdstr, cmdline);
+
+    if (utarray_len(cmdline->vars) > 0)
+      return cmd_vars(cmdline);
+  }
+
   if (!fun) {
     cmdstr->ret_t = WORD;
     cmdstr->ret = cmdline->line;
