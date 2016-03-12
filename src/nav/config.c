@@ -19,15 +19,14 @@ static void* edit_op();
 static void* add_source();
 
 static const Cmd_T cmdtable[] = {
-  {"set",    edit_setting,   0},
-  {"hi",     edit_color,     0},
-  {"syn",    edit_syntax,    0},
-  {"let",    edit_variable,  0},
-  {"local",  edit_variable,  1},
-  {"map",    edit_mapping,   0},
-  {"op",     edit_op,        0},
-  {"so",     add_source,     0},
-  {"source", add_source,     0},
+  {"set",0,       edit_setting,   0},
+  {"hi",0,        edit_color,     0},
+  {"syn",0,       edit_syntax,    0},
+  {"let",0,       edit_variable,  0},
+  {"local",0,     edit_variable,  1},
+  {"map",0,       edit_mapping,   0},
+  {"op",0,        edit_op,        0},
+  {"source","so", add_source,     0},
 };
 
 static const char *config_paths[] = {

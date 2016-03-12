@@ -19,6 +19,12 @@ struct Symb {
   char *line;
 };
 
+typedef struct {
+  char *name;
+  Cmd_T *cmd;
+  UT_hash_handle hh;
+} Cmd_alt;
+
 typedef struct Cmdblock Cmdblock;
 struct Cmdblock {
   Cmdblock *parent;
@@ -30,9 +36,11 @@ static void* cmd_elseifblock();
 static void* cmd_elseblock();
 static void* cmd_endblock();
 static void* cmd_funcblock();
+static void* cmd_returnblock();
 
 //TODO: wrap these into cmdblock
 static Cmd_T *cmd_table;
+static Cmd_alt *alt_tbl;
 static Symb *tape;
 static Symb *cur;
 static Symb root;
@@ -52,12 +60,13 @@ static fn_func *fndef;
 static Cmdblock *callstack;
 
 static const Cmd_T builtins[] = {
-  {NULL,          NULL,               0, 0},
-  {"if",          cmd_ifblock,        0, 1},
-  {"else",        cmd_elseblock,      0, 1},
-  {"elseif",      cmd_elseifblock,    0, 1},
-  {"end",         cmd_endblock,       0, 1},
-  {"function",    cmd_funcblock,      0, 2},
+  {NULL,             NULL,               0, 0},
+  {"if",0,           cmd_ifblock,        0, 1},
+  {"else","el",      cmd_elseblock,      0, 1},
+  {"elseif","elsei", cmd_elseifblock,    0, 1},
+  {"end","en",       cmd_endblock,       0, 1},
+  {"function","fu",  cmd_funcblock,      0, 2},
+  {"return","ret",   cmd_returnblock,    0, 0},
 };
 
 static void stack_push(char *line)
@@ -208,11 +217,12 @@ static void* cmd_call(fn_func *fn, char *line)
     char *line = *(char**)utarray_eltptr(fn->lines, i);
     cmd_eval(line);
     //TODO: return value from block
+    //return cmd access callstck function. set condition
     //
-    //global state switch from inside, set by eval of return expr
-    //*or*
-    //inspect state while iterating lines
+    //if (callstack()->returned)
+    // break;
   }
+    //in sub replacement, use callstack()->ret
   log_msg("CMD", "call fin--");
 cleanup:
   cmdline_cleanup(&cmd);
@@ -253,6 +263,7 @@ static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
     log_msg("CMD", "--- %s", symb);
     if (symb) {
       fn_func *fn = opt_func(symb);
+      //TODO: error here unless symb is '$'
       if (fn) {
         cmd_call(fn, retp);
         Token *word = tok_arg(args, cmd->idx - 1);
@@ -514,6 +525,12 @@ static void* cmd_funcblock(List *args, Cmdarg *ca)
   return 0;
 }
 
+static void* cmd_returnblock(List *args, Cmdarg *ca)
+{
+  log_msg("CMD", "cmd_return %p", cmd_callstack());
+  return cmdline_line_from(ca->cmdline, 1);
+}
+
 void cmd_clearall()
 {
   log_msg("CMD", "cmd_clearall");
@@ -533,6 +550,12 @@ void cmd_add(Cmd_T *cmd)
 {
   HASH_ADD_STR(cmd_table, name, cmd);
   HASH_SORT(cmd_table, name_sort);
+  if (cmd->alt) {
+    Cmd_alt *alt = malloc(sizeof(Cmd_alt));
+    alt->name = cmd->alt;
+    alt->cmd = cmd;
+    HASH_ADD_STR(alt_tbl, name, alt);
+  }
 }
 
 void cmd_remove(const char *name)
@@ -545,6 +568,13 @@ Cmd_T* cmd_find(const char *name)
     return NULL;
   Cmd_T *cmd;
   HASH_FIND_STR(cmd_table, name, cmd);
+  if (cmd)
+    return cmd;
+
+  Cmd_alt *alt;
+  HASH_FIND_STR(alt_tbl, name, alt);
+  if (alt)
+    cmd = alt->cmd;
   return cmd;
 }
 
@@ -587,11 +617,9 @@ void cmd_list(List *args)
   log_msg("CMD", "compl cmd_list");
   int i = 0;
   Cmd_T *it;
-  compl_new(HASH_COUNT(cmd_table) - (LENGTH(builtins) - 2), COMPL_STATIC);
+  compl_new(HASH_COUNT(cmd_table), COMPL_STATIC);
   for (it = cmd_table; it != NULL; it = it->hh.next) {
-    if (ctl_cmd(it->name) == -1) {
-      compl_set_key(i, "%s", it->name);
-      i++;
-    }
+    compl_set_key(i, "%s", it->name);
+    i++;
   }
 }

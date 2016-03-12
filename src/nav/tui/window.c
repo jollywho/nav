@@ -40,23 +40,19 @@ static void window_ex_cmd();
 static void window_update(uv_timer_t *);
 
 static const Cmd_T cmdtable[] = {
-  {"qa",      win_shut,    0},
-  {"q",       win_close,   0},
-  {"close",   win_close,   0},
-  {"au",      win_autocmd, 0},
-  {"autocmd", win_autocmd, 0},
-  {"bu",      win_buf,     0},
-  {"buffer",  win_buf,     0},
-  {"bd"    ,  win_bdel,    0},
-  {"bdelete", win_bdel,    0},
-  {"new",     win_new,     MOVE_UP},
-  {"vnew",    win_new,     MOVE_LEFT},
-  {"sort",    win_sort,    1},
-  {"cd",      win_cd,      0},
-  {"mark",    win_mark,    0},
-  {"delm",    win_mark,    1},
-  {"echo",    win_echo,    0},
-  {"reload",  win_reload,  0},
+  {"qa",0,          win_shut,    0},
+  {"close","q",     win_close,   0},
+  {"autocmd","au",  win_autocmd, 0},
+  {"buffer","bu",   win_buf,     0},
+  {"bdelete","bd",  win_bdel,    0},
+  {"new",0,         win_new,     MOVE_UP},
+  {"vnew","vne",    win_new,     MOVE_LEFT},
+  {"sort","sor",    win_sort,    1},
+  {"cd",0,          win_cd,      0},
+  {"mark",0,        win_mark,    0},
+  {"delm",0,        win_mark,    1},
+  {"echo","ec",     win_echo,    0},
+  {"reload","rel",  win_reload,  0},
 };
 
 static char *compl_cmds[] = {
