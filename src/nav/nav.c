@@ -49,6 +49,7 @@ void init(void)
   config_load_defaults();
 
   ex_cmd_init();
+  cmd_sort_cmds();
   log_msg("INIT", "INIT_END");
 }
 

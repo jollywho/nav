@@ -29,6 +29,7 @@ typedef struct Cmdblock Cmdblock;
 struct Cmdblock {
   Cmdblock *parent;
   fn_func *func;
+  int brk;
 };
 
 static void* cmd_ifblock();
@@ -48,6 +49,7 @@ static int pos;
 static int lvl;
 static int maxpos;
 static char *lncont;
+static void *gret;
 static int lvlcont;
 static int fndefopen;
 static int parse_error;
@@ -112,11 +114,22 @@ void cmd_init()
 {
   cmd_reset();
   callstack = NULL;
+  gret = 0;
   for (int i = 1; i < LENGTH(builtins); i++) {
     Cmd_T *cmd = malloc(sizeof(Cmd_T));
     cmd = memmove(cmd, &builtins[i], sizeof(Cmd_T));
     cmd_add(cmd);
   }
+}
+
+int name_sort(Cmd_T *a, Cmd_T *b)
+{
+  return strcmp(a->name, b->name);
+}
+
+void cmd_sort_cmds()
+{
+  HASH_SORT(cmd_table, name_sort);
 }
 
 void cmd_cleanup()
@@ -151,6 +164,10 @@ void cmd_flush()
 
 static void push_callstack(Cmdblock *blk, fn_func *fn)
 {
+  if (gret) {
+    free(gret);
+    gret = 0;
+  }
   if (!callstack)
     callstack = blk;
   blk->parent = callstack;
@@ -191,6 +208,7 @@ static void cmd_do(char *line)
 static void* cmd_call(fn_func *fn, char *line)
 {
   log_msg("CMD", "cmd_call");
+  log_msg("CMD", "%s", line);
   Cmdline cmd;
   cmdline_build(&cmd, line);
   List *args = cmdline_lst(&cmd);
@@ -200,7 +218,7 @@ static void* cmd_call(fn_func *fn, char *line)
         fn->argc, argc);
     goto cleanup;
   }
-  Cmdblock blk;
+  Cmdblock blk = {.brk = 0};
   push_callstack(&blk, fn);
 
   for (int i = 0; i < argc; i++) {
@@ -216,13 +234,9 @@ static void* cmd_call(fn_func *fn, char *line)
   for (int i = 0; i < utarray_len(fn->lines); i++) {
     char *line = *(char**)utarray_eltptr(fn->lines, i);
     cmd_eval(line);
-    //TODO: return value from block
-    //return cmd access callstck function. set condition
-    //
-    //if (callstack()->returned)
-    // break;
+    if (callstack->brk)
+      break;
   }
-    //in sub replacement, use callstack()->ret
   log_msg("CMD", "call fin--");
 cleanup:
   cmdline_cleanup(&cmd);
@@ -268,6 +282,7 @@ static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
         cmd_call(fn, retp);
         Token *word = tok_arg(args, cmd->idx - 1);
         pos = word->start;
+        retp = gret;
       }
     }
 
@@ -528,7 +543,11 @@ static void* cmd_funcblock(List *args, Cmdarg *ca)
 static void* cmd_returnblock(List *args, Cmdarg *ca)
 {
   log_msg("CMD", "cmd_return %p", cmd_callstack());
-  return cmdline_line_from(ca->cmdline, 1);
+  callstack->brk = 1;
+  char *out = cmdline_line_from(ca->cmdline, 1);
+  if (out)
+    gret = strdup(out);
+  return 0;
 }
 
 void cmd_clearall()
@@ -541,15 +560,9 @@ void cmd_clearall()
   }
 }
 
-int name_sort(Cmd_T *a, Cmd_T *b)
-{
-  return strcmp(a->name, b->name);
-}
-
 void cmd_add(Cmd_T *cmd)
 {
   HASH_ADD_STR(cmd_table, name, cmd);
-  HASH_SORT(cmd_table, name_sort);
   if (cmd->alt) {
     Cmd_alt *alt = malloc(sizeof(Cmd_alt));
     alt->name = cmd->alt;
