@@ -38,6 +38,7 @@ struct HookHandler {
 static const char *events_list[] = {
   "open", "fileopen", "cursor_change", "window_resize", "diropen",
   "pipe_left", "pipe_right", "left", "right", "paste", "remove",
+  "execopen", "execclose",
 };
 
 static UT_icd hook_icd = { sizeof(Hook),NULL,NULL,NULL };
@@ -124,6 +125,10 @@ void hook_set_tmp(char *msg)
 {
   EventHandler *evh;
   HASH_FIND_STR(events_tbl, msg, evh);
+  if (!evh) {
+    log_err("HOOK", "not a supported event: %s", msg);
+    return;
+  }
   Hook *hk = (Hook*)utarray_back(evh->hooks);
   hk->type = HK_TMP;
 }

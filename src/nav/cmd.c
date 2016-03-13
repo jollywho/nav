@@ -115,11 +115,8 @@ void cmd_init()
   cmd_reset();
   callstack = NULL;
   gret = 0;
-  for (int i = 1; i < LENGTH(builtins); i++) {
-    Cmd_T *cmd = malloc(sizeof(Cmd_T));
-    cmd = memmove(cmd, &builtins[i], sizeof(Cmd_T));
-    cmd_add(cmd);
-  }
+  for (int i = 1; i < LENGTH(builtins); i++)
+    cmd_add(&builtins[i]);
 }
 
 int name_sort(Cmd_T *a, Cmd_T *b)
@@ -542,7 +539,7 @@ static void* cmd_funcblock(List *args, Cmdarg *ca)
 
 static void* cmd_returnblock(List *args, Cmdarg *ca)
 {
-  log_msg("CMD", "cmd_return %p", cmd_callstack());
+  log_msg("CMD", "cmd_return");
   callstack->brk = 1;
   char *out = cmdline_line_from(ca->cmdline, 1);
   if (out)
@@ -560,8 +557,11 @@ void cmd_clearall()
   }
 }
 
-void cmd_add(Cmd_T *cmd)
+void cmd_add(const Cmd_T *cmd_src)
 {
+  Cmd_T *cmd = malloc(sizeof(Cmd_T));
+  memmove(cmd, cmd_src, sizeof(Cmd_T));
+
   HASH_ADD_STR(cmd_table, name, cmd);
   if (cmd->alt) {
     Cmd_alt *alt = malloc(sizeof(Cmd_alt));
@@ -594,7 +594,6 @@ Cmd_T* cmd_find(const char *name)
 void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
 {
   log_msg("CMD", "cmd_run");
-  log_msg("CMD", "%s", cmdline->line);
   List *args = token_val(&cmdstr->args, VAR_LIST);
   char *word = list_arg(args, 0, VAR_STRING);
   Cmd_T *fun = cmd_find(word);

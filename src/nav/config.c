@@ -48,11 +48,8 @@ char *p_rm = "rm";
 
 void config_init()
 {
-  for (int i = 0; i < LENGTH(cmdtable); i++) {
-    Cmd_T *cmd = malloc(sizeof(Cmd_T));
-    cmd = memmove(cmd, &cmdtable[i], sizeof(Cmd_T));
-    cmd_add(cmd);
-  }
+  for (int i = 0; i < LENGTH(cmdtable); i++)
+    cmd_add(&cmdtable[i]);
 }
 
 static bool file_exists(const char *path)

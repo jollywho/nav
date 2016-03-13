@@ -121,11 +121,8 @@ void window_init(void)
   signal(SIGWINCH, sig_resize);
   layout_init(&win.layout);
 
-  for (int i = 0; i < LENGTH(cmdtable); i++) {
-    Cmd_T *cmd = malloc(sizeof(Cmd_T));
-    memmove(cmd, &cmdtable[i], sizeof(Cmd_T));
-    cmd_add(cmd);
-  }
+  for (int i = 0; i < LENGTH(cmdtable); i++)
+    cmd_add(&cmdtable[i]);
   for (int i = 0; i < LENGTH(compl_cmds); i++)
     compl_add_context(compl_cmds[i]);
   for (int i = 0; i < LENGTH(compl_args); i++)

@@ -1,6 +1,7 @@
 #include "nav/event/shell.h"
 #include "nav/event/wstream.h"
 #include "nav/event/event.h"
+#include "nav/event/hook.h"
 #include "nav/log.h"
 #include "nav/option.h"
 
@@ -8,7 +9,7 @@ static void out_data_cb(Stream *, RBuffer *, size_t, void *,  bool);
 static void shell_write_cb(Stream *, void *, int);
 static void shell_default_stdout_cb(Plugin *, char *);
 
-static char* args[4];
+static char *args[4];
 
 static void process_early_exit(Process *proc, int status, void *data)
 {
@@ -21,6 +22,7 @@ static void process_exit(Process *proc, int status, void *data)
 {
   log_msg("SHELL", "fin");
   Shell *sh = data;
+  int pid = sh->uvproc.process.pid;
   if (!sh)
     return;
 
@@ -32,6 +34,7 @@ static void process_exit(Process *proc, int status, void *data)
   }
   if (sh->reg)
     free(sh);
+  send_hook_msg("execclose", NULL, NULL, &(HookArg){NULL,&pid});
 }
 
 Shell* shell_new(Plugin *plugin)
@@ -199,4 +202,7 @@ void shell_exec(char *line, shell_status_cb cb, char *cwd, Plugin *caller)
   shell_args(sh, args, shell_default_stdout_cb);
   shell_start(sh);
   free(rv);
+
+  int pid = sh->uvproc.process.pid;
+  send_hook_msg("execopen", NULL, NULL, &(HookArg){NULL,&pid});
 }

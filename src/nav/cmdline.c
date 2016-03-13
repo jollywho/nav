@@ -548,7 +548,7 @@ char* do_expansion(char *line)
   return out;
 }
 
-static int exec_line(char *line, Cmdstr *cmd)
+int exec_line(char *line, Cmdstr *cmd)
 {
   if (!cmd->exec || strlen(line) < 2)
     return 0;

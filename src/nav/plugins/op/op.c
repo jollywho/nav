@@ -10,9 +10,11 @@
 #include "nav/event/event.h"
 #include "nav/event/fs.h"
 #include "nav/cmdline.h"
+#include "nav/cmd.h"
 
 static Op op;
 static UT_array *procs; // replace with opgrp
+static UT_array *pids;
 
 typedef struct {
   uv_process_t proc;
@@ -42,6 +44,21 @@ static void chld_handler(uv_signal_t *handle, int signum)
 
   if (pid <= 0)
     return;
+}
+
+static void add_pid(int pid)
+{
+  log_msg("OP", "add pid %d", pid);
+  utarray_push_back(pids, &pid);
+}
+
+static void remove_pid(int pid)
+{
+  log_msg("OP", "remove pid %d", pid);
+  for (int i = 0; i < utarray_len(pids); i++) {
+    if (*(int*)utarray_eltptr(pids, i) == pid)
+      utarray_erase(pids, i, 1);
+  }
 }
 
 static void del_proc(uv_handle_t *hndl)
@@ -115,6 +132,27 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
   //system("mpv_i");
 }
 
+static void execopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
+{
+  log_msg("OP", "exec_cb");
+  if (!hka->arg)
+    return;
+  add_pid(*(int*)hka->arg);
+}
+
+static void execclose_cb(Plugin *host, Plugin *caller, HookArg *hka)
+{
+  log_msg("OP", "exec_cb");
+  if (!hka->arg)
+    return;
+  remove_pid(*(int*)hka->arg);
+}
+
+static void* op_kill()
+{
+  return 0;
+}
+
 Op_group* op_newgrp(const char *before, const char *after)
 {
   Op_group *opgrp = malloc(sizeof(Op_group));
@@ -129,13 +167,21 @@ void op_new(Plugin *plugin, Buffer *buf, void *arg)
 {
   log_msg("OP", "INIT");
   utarray_new(procs, &proc_icd);
+  utarray_new(pids,  &ut_int_icd);
   op.base = plugin;
   plugin->top = &op;
   plugin->name = "op";
   op.ready = true;
   hook_init_host(plugin);
-  hook_add_intl(plugin, plugin, fileopen_cb, "fileopen");
+  hook_add_intl(plugin, plugin, fileopen_cb,  "fileopen");
+  hook_add_intl(plugin, plugin, execopen_cb,  "execopen");
+  hook_add_intl(plugin, plugin, execclose_cb, "execclose");
   hook_set_tmp("fileopen");
+  hook_set_tmp("execopen");
+  hook_set_tmp("execclose");
+
+  Cmd_T killcmd = {"kill",0, op_kill, 0};
+  cmd_add(&killcmd);
 }
 
 void op_delete(Plugin *cntlr)
