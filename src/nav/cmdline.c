@@ -557,6 +557,8 @@ int exec_line(char *line, Cmdstr *cmd)
   ++str;
   str = do_expansion(str);
   shell_exec(str, NULL, focus_dir(), NULL);
+  //TODO: 'pidof !cmd' for var assignment
+  //TODO: hook output + block for output
   free(str);
   return 1;
 }

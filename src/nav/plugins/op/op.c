@@ -14,7 +14,6 @@
 
 static Op op;
 static UT_array *procs; // replace with opgrp
-static UT_array *pids;
 
 typedef struct {
   uv_process_t proc;
@@ -46,24 +45,31 @@ static void chld_handler(uv_signal_t *handle, int signum)
     return;
 }
 
-static void add_pid(int pid)
+static void add_pid(char *name, int pid)
 {
   log_msg("OP", "add pid %d", pid);
-  utarray_push_back(pids, &pid);
+  char *pidstr;
+  asprintf(&pidstr, "%d", pid);
+  trans_rec *r = mk_trans_rec(tbl_fld_count("op_procs"));
+  edit_trans(r, "group", name,   NULL);
+  edit_trans(r, "pid",   pidstr,  NULL);
+  CREATE_EVENT(eventq(), commit, 2, "op_procs", r);
+  free(pidstr);
 }
 
-static void remove_pid(int pid)
+static void remove_pid(char *name, int pid)
 {
   log_msg("OP", "remove pid %d", pid);
-  for (int i = 0; i < utarray_len(pids); i++) {
-    if (*(int*)utarray_eltptr(pids, i) == pid)
-      utarray_erase(pids, i, 1);
-  }
+  char *pidstr;
+  asprintf(&pidstr, "%d", pid);
+  tbl_del_val("op_procs", "pid", pidstr);
+  free(pidstr);
 }
 
 static void del_proc(uv_handle_t *hndl)
 {
-  utarray_erase(procs, 0, 1);
+  Op_proc *proc = hndl->data;
+  log_msg("OP", "del proc %d", proc->proc.pid);
 }
 
 static void create_proc(Op_group *opgrp, char *path)
@@ -92,6 +98,7 @@ static void create_proc(Op_group *opgrp, char *path)
     Op_proc *prev = (Op_proc*)utarray_front(procs);
     if (prev) {
       uv_kill(prev->proc.pid, SIGKILL);
+      prev->proc.data = proc;
       uv_close((uv_handle_t*)&prev->proc, del_proc);
     }
   }
@@ -155,7 +162,7 @@ static void execopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("OP", "exec_cb");
   if (!hka->arg)
     return;
-  add_pid(*(int*)hka->arg);
+  add_pid("", *(int*)hka->arg);
 }
 
 static void execclose_cb(Plugin *host, Plugin *caller, HookArg *hka)
@@ -163,16 +170,23 @@ static void execclose_cb(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("OP", "exec_cb");
   if (!hka->arg)
     return;
-  remove_pid(*(int*)hka->arg);
+  remove_pid("", *(int*)hka->arg);
 }
 
 static void* op_kill(List *args, Cmdarg *ca)
 {
   log_msg("OP", "kill");
-  //char *pidstr = list_arg(args, 1, VAR_STRING);
-  //int pid = str_num(pidstr);
-  //find pid in pids
-  //if found, call uv_kill
+  int pid;
+  char *pidstr = list_arg(args, 1, VAR_STRING);
+  if (!pidstr || !str_num(pidstr, &pid))
+    return 0;
+
+  ventry *vent = fnd_val("op_procs", "pid", pidstr);
+  if (!vent) {
+    log_msg("OP", "pid %s not found", pidstr);
+    return 0;
+  }
+  uv_kill(pid, SIGKILL);
   //default handling should cause correct closing
   return 0;
 }
@@ -183,7 +197,6 @@ Op_group* op_newgrp(const char *before, const char *after)
   utarray_new(opgrp->procs, &proc_icd);
   opgrp->before = strdup(before);
   opgrp->after = strdup(after);
-  //utarray_new(opgrp->locals, &proc_icd);
   return opgrp;
 }
 
@@ -191,7 +204,6 @@ void op_new(Plugin *plugin, Buffer *buf, void *arg)
 {
   log_msg("OP", "INIT");
   utarray_new(procs, &proc_icd);
-  utarray_new(pids,  &ut_int_icd);
   op.base = plugin;
   plugin->top = &op;
   plugin->name = "op";
@@ -205,9 +217,7 @@ void op_new(Plugin *plugin, Buffer *buf, void *arg)
   hook_set_tmp("execclose");
   if (tbl_mk("op_procs")) {
     tbl_mk_fld("op_procs", "group", typSTRING);
-    tbl_mk_fld("op_procs", "all",   typSTRING);
-    tbl_mk_fld("op_procs", "prev",  typSTRING);
-    tbl_mk_fld("op_procs", "next",  typSTRING);
+    tbl_mk_fld("op_procs", "pid",   typSTRING);
   }
 
   Cmd_T killcmd = {"kill",0, op_kill, 0};

@@ -313,7 +313,7 @@ static void* win_close(List *args, Cmdarg *ca)
     window_remove_buffer();
   else if (buf)
     buf_detach(buf);
-  return NULL;
+  return 0;
 }
 
 static void* win_buf(List *args, Cmdarg *ca)

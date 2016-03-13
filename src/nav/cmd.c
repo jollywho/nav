@@ -335,7 +335,7 @@ static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
   }
   strcpy(base+pos, &cmdline->line[prevst]);
   log_msg("CMD", "cmd_vars %s", base);
-  cmd_do(caller, base);
+  cmd_do(caller->caller, base);
 }
 
 static int cond_do(Cmdstr *caller, char *line)

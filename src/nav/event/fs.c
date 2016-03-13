@@ -281,7 +281,7 @@ static int send_stat(fentry *ent, const char *dir, int upd)
   *cupd = upd;
 
   trans_rec *r = mk_trans_rec(tbl_fld_count("fm_stat"));
-  edit_trans(r, "fullpath", (char*)dir, NULL);
+  edit_trans(r, "fullpath", (char*)dir,  NULL);
   edit_trans(r, "update",   NULL,        cupd);
   edit_trans(r, "stat",     NULL,        cstat);
   CREATE_EVENT(eventq(), commit, 2, "fm_stat", r);
