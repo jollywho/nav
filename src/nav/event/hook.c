@@ -166,7 +166,7 @@ void call_cmd_hook(Hook *hook, HookArg *hka)
     return;
   Cmdline cmd;
   cmdline_build(&cmd, hook->data.cmd);
-  cmdline_req_run(&cmd);
+  cmdline_req_run(NULL, &cmd);
   cmdline_cleanup(&cmd);
 }
 

@@ -271,7 +271,7 @@ static void ex_car()
 {
   log_msg("EXCMD", "excar %s", line);
   if (ex_state == EX_CMD_STATE) {
-    cmd_eval(line);
+    cmd_eval(NULL, line);
     cmd_flush();
   }
 

@@ -132,6 +132,15 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
   // add op_tbl to exptbl
   // cmd eval opgrp->before, before_cb
   // remove op_tbl
+
+  /* POC */
+  Cmdstr bfcmd;
+  char *line = grp->opgrp->before;
+  cmd_eval(&bfcmd, line);
+  log_msg("OP", "ret: %s", bfcmd.ret);
+  free(bfcmd.ret);
+
+  return;
   //
   // before_cb:
   //   if result is pid#, ski to (A)

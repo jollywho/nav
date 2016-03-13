@@ -181,7 +181,16 @@ static void pop_callstack()
     callstack = callstack->parent;
 }
 
-static void cmd_do(char *line)
+void ret2caller(Cmdstr *cmdstr, int ret_t, void *ret)
+{
+  if (!cmdstr || !cmdstr->caller)
+    return;
+  cmdstr->caller->ret_t = ret_t;
+  if (ret)
+    cmdstr->caller->ret = strdup(ret);
+}
+
+static void cmd_do(Cmdstr *caller, char *line)
 {
   if (lvlcont > 0) {
     char *str;
@@ -195,14 +204,14 @@ static void cmd_do(char *line)
   lvlcont = cmd.lvl;
 
   if (lvlcont == 0)
-    cmdline_req_run(&cmd);
+    cmdline_req_run(caller, &cmd);
   else
     SWAP_ALLOC_PTR(lncont, strdup(line));
 
   cmdline_cleanup(&cmd);
 }
 
-static void* cmd_call(fn_func *fn, char *line)
+static void* cmd_call(Cmdstr *rcmd, fn_func *fn, char *line)
 {
   log_msg("CMD", "cmd_call");
   log_msg("CMD", "%s", line);
@@ -230,7 +239,7 @@ static void* cmd_call(fn_func *fn, char *line)
   }
   for (int i = 0; i < utarray_len(fn->lines); i++) {
     char *line = *(char**)utarray_eltptr(fn->lines, i);
-    cmd_eval(line);
+    cmd_eval(rcmd, line);
     if (callstack->brk)
       break;
   }
@@ -241,10 +250,10 @@ cleanup:
   return 0;
 }
 
-static void* cmd_do_sub(Cmdline *cmdline, char *line)
+static void* cmd_do_sub(Cmdstr *caller, Cmdline *cmdline, char *line)
 {
   cmdline_build(cmdline, line);
-  cmdline_req_run(cmdline);
+  cmdline_req_run(caller, cmdline);
   return cmdline_getcmd(cmdline)->ret;
 }
 
@@ -265,9 +274,8 @@ static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
     strncpy(subline, &cmdline->line[cmd->st+1], len-1);
     subline[len-1] = '\0';
 
-    Cmdline newcmd;
-    void *retp = cmd_do_sub(&newcmd, subline);
-
+    cmd_do(cmd, subline);
+    void *retp = cmd->ret;
 
     List *args = cmdline_lst(cmdline);
     char *symb = list_arg(args, cmd->idx - 1, VAR_STRING);
@@ -276,7 +284,7 @@ static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
       fn_func *fn = opt_func(symb);
       //TODO: error here unless symb is '$'
       if (fn) {
-        cmd_call(fn, retp);
+        cmd_call(cmd, fn, retp);
         Token *word = tok_arg(args, cmd->idx - 1);
         pos = word->start;
         retp = gret;
@@ -288,20 +296,16 @@ static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
       strcpy(base+pos, retline);
       pos += strlen(retline);
     }
-    cmdline_cleanup(&newcmd);
   }
   Cmdstr *last = (Cmdstr*)utarray_back(cmdstr->chlds);
   strcpy(base+pos, &cmdline->line[last->ed+1]);
   Cmdline newcmd;
-  void *retp = cmd_do_sub(&newcmd, base);
-  if (retp) {
-    cmdstr->ret = strdup((char*)retp);
-    cmdstr->ret_t = STRING;
-  }
+  void *retp = cmd_do_sub(cmdstr, &newcmd, base);
+  ret2caller(cmdstr, STRING, retp);
   cmdline_cleanup(&newcmd);
 }
 
-static void cmd_vars(Cmdline *cmdline)
+static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
 {
   log_msg("CMD", "cmd_vars");
   int count = utarray_len(cmdline->vars);
@@ -331,15 +335,15 @@ static void cmd_vars(Cmdline *cmdline)
   }
   strcpy(base+pos, &cmdline->line[prevst]);
   log_msg("CMD", "cmd_vars %s", base);
-  cmd_do(base);
+  cmd_do(caller, base);
 }
 
-static int cond_do(char *line)
+static int cond_do(Cmdstr *caller, char *line)
 {
   int cond = 0;
   Cmdline cmd;
   cmdline_build(&cmd, line);
-  cmdline_req_run(&cmd);
+  cmdline_req_run(caller, &cmd);
   cond = cmdline_getcmd(&cmd)->ret ? 1 : 0;
   cmdline_cleanup(&cmd);
   return cond;
@@ -361,7 +365,7 @@ static void cmd_start()
     switch (it->type) {
       case CTL_IF:
       case CTL_ELSEIF:
-        cond = cond_do(it->line);
+        cond = cond_do(NULL, it->line);
         if (cond)
           it = STAILQ_FIRST(&it->childs);
         else
@@ -377,7 +381,7 @@ static void cmd_start()
           it++;
         break;
       default:
-        cmd_do(it->line);
+        cmd_do(NULL, it->line);
         it = cmd_next(it);
     }
   }
@@ -393,13 +397,13 @@ static int ctl_cmd(const char *line)
   return -1;
 }
 
-void cmd_eval(char *line)
+void cmd_eval(Cmdstr *caller, char *line)
 {
   if (parse_error)
     return;
 
   if (!IS_PARSE || ctl_cmd(line) != -1)
-    return cmd_do(line);
+    return cmd_do(caller, line);
   if (IS_READ)
     return read_line(line);
   if (IS_SEEK)
@@ -603,18 +607,14 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
       return cmd_sub(cmdstr, cmdline);
 
     if (utarray_len(cmdline->vars) > 0)
-      return cmd_vars(cmdline);
+      return cmd_vars(cmdstr, cmdline);
   }
 
-  if (!fun) {
-    cmdstr->ret_t = WORD;
-    cmdstr->ret = cmdline->line;
-    return;
-  }
+  if (!fun)
+    return ret2caller(cmdstr, WORD, cmdline->line);
 
-  cmdstr->ret_t = PLUGIN;
   Cmdarg flags = {fun->flags, 0, cmdstr, cmdline};
-  cmdstr->ret = fun->cmd_func(args, &flags);
+  return ret2caller(cmdstr, PLUGIN, fun->cmd_func(args, &flags));
 }
 
 fn_func* cmd_callstack()

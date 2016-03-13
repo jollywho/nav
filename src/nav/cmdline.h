@@ -49,6 +49,7 @@ struct Cmdstr {
   int st;
   int ed;
   int idx;
+  Cmdstr *caller;
   UT_array *chlds;  /* Cmdstr */
 };
 
@@ -66,7 +67,7 @@ struct Cmdline {
 };
 
 void cmdline_build(Cmdline *cmdline, char *line);
-void cmdline_req_run(Cmdline *cmdline);
+void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline);
 void cmdline_cleanup(Cmdline *cmdline);
 
 Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed);

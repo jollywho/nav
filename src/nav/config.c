@@ -217,7 +217,7 @@ bool config_read(FILE *file)
       free(line);
       continue;
     }
-    cmd_eval(line);
+    cmd_eval(NULL, line);
     free(line);
   }
   cmd_flush();

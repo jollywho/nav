@@ -39,12 +39,13 @@ void cmdstr_copy(void *_dst, const void *_src)
   memcpy(dst, src, sizeof(Cmdstr));
   dst->chlds = src->chlds;
   dst->args = src->args;
+  dst->ret = src->ret;
 }
 
 void cmdret_dtor(void *_elt)
 {
   Cmdstr *elt = (Cmdstr*)_elt;
-  if (elt->ret_t == STRING)
+  if (elt->ret)
     free(elt->ret);
 }
 
@@ -606,7 +607,7 @@ static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd, Cmdstr *prev)
   }
 }
 
-void cmdline_req_run(Cmdline *cmdline)
+void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
 {
   Cmdstr *cmd = NULL;
   Cmdstr *prev = NULL;
@@ -621,6 +622,7 @@ void cmdline_req_run(Cmdline *cmdline)
     if (exec_line(cmdline->line, cmd))
       continue;
 
+    cmd->caller = caller;
     cmd_run(cmd, cmdline);
 
     if (prev && (prev->flag & (PIPE_LEFT|PIPE_RIGHT)))
