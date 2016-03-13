@@ -69,11 +69,7 @@ static void del_proc(uv_handle_t *hndl)
 static void create_proc(Op_group *opgrp, char *path)
 {
   log_msg("OP", "create_proc");
-  //run before group so config can decide what to do with existing procs
-  //if before returns a number, get proc from shell by id
-  //if before returns a string, try to run it and store the proc
 
-  //TEST: assume block ran and returned string
   log_msg("OP", "%s", opgrp->before);
   utarray_extend_back(procs);
   Op_proc *proc = (Op_proc*)utarray_back(procs);
@@ -123,13 +119,26 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
   char *name = model_curs_value(host->hndl->model, "name");
   log_msg("OP", "path %s %s", path, name);
   log_msg("OP", "ext %s ", file_ext(name));
-  fn_group *grp = get_syn(file_ext(path))->group;
+  fn_syn *syn = get_syn(file_ext(path));
+  if (!syn)
+    return;
+
+  fn_group *grp = syn->group;
   log_msg("OP", "%s", grp->key);
   if (!grp->opgrp)
     return;
 
+  // get pids for group
+  // add op_tbl to exptbl
+  // cmd eval opgrp->before, before_cb
+  // remove op_tbl
+  //
+  // before_cb:
+  //   if result is pid#, ski to (A)
+  //   else result string sent to create_proc
+  //   (A) pid added to %:prev and %:all
+
   create_proc(grp->opgrp, path);
-  //system("mpv_i");
 }
 
 static void execopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
@@ -148,8 +157,14 @@ static void execclose_cb(Plugin *host, Plugin *caller, HookArg *hka)
   remove_pid(*(int*)hka->arg);
 }
 
-static void* op_kill()
+static void* op_kill(List *args, Cmdarg *ca)
 {
+  log_msg("OP", "kill");
+  //char *pidstr = list_arg(args, 1, VAR_STRING);
+  //int pid = str_num(pidstr);
+  //find pid in pids
+  //if found, call uv_kill
+  //default handling should cause correct closing
   return 0;
 }
 
@@ -179,6 +194,12 @@ void op_new(Plugin *plugin, Buffer *buf, void *arg)
   hook_set_tmp("fileopen");
   hook_set_tmp("execopen");
   hook_set_tmp("execclose");
+  if (tbl_mk("op_procs")) {
+    tbl_mk_fld("op_procs", "group", typSTRING);
+    tbl_mk_fld("op_procs", "all",   typSTRING);
+    tbl_mk_fld("op_procs", "prev",  typSTRING);
+    tbl_mk_fld("op_procs", "next",  typSTRING);
+  }
 
   Cmd_T killcmd = {"kill",0, op_kill, 0};
   cmd_add(&killcmd);

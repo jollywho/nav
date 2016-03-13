@@ -16,7 +16,7 @@
 
 typedef struct Cmd_T Cmd_T;
 typedef struct Cmdarg Cmdarg;
-typedef void* (*Cmd_Func_T)(const List *, Cmdarg *);
+typedef void* (*Cmd_Func_T)(List *, Cmdarg *);
 
 struct Cmd_T {
   char *name;

@@ -16,16 +16,16 @@
 void fm_init()
 {
   if (tbl_mk("fm_files")) {
-    tbl_mk_fld("fm_files", "name", typSTRING);
-    tbl_mk_fld("fm_files", "dir", typSTRING);
+    tbl_mk_fld("fm_files", "name",     typSTRING);
+    tbl_mk_fld("fm_files", "dir",      typSTRING);
     tbl_mk_fld("fm_files", "fullpath", typSTRING);
     tbl_mk_vt_fld("fm_files", "mtime", fs_vt_stat_resolv);
   }
 
   if (tbl_mk("fm_stat")) {
     tbl_mk_fld("fm_stat", "fullpath", typSTRING);
-    tbl_mk_fld("fm_stat", "update", typVOID);
-    tbl_mk_fld("fm_stat", "stat", typVOID);
+    tbl_mk_fld("fm_stat", "update",   typVOID);
+    tbl_mk_fld("fm_stat", "stat",     typVOID);
   }
 }
 
