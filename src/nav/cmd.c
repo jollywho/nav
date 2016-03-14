@@ -268,15 +268,14 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
     cmd_do(cmd, subline);
 
     List *args = cmdline_lst(cmdline);
-    char *symb = list_arg(args, cmd->idx - 1, VAR_STRING);
+    char *symb = list_arg(args, cmd->idx, VAR_STRING);
     if (symb) {
       fn_func *fn = opt_func(symb);
       //TODO: error here unless symb is '$'
       if (fn) {
         Cmdstr rstr;
         cmd_call(&rstr, fn, cmd->ret);
-        Token *word = tok_arg(args, cmd->idx - 1);
-        pos = word->start;
+        pos -= strlen(symb);
         if (rstr.ret)
           SWAP_ALLOC_PTR(cmd->ret, rstr.ret);
       }

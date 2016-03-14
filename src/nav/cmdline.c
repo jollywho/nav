@@ -462,7 +462,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         cmdline->lvl++;
         word = cmdline_parse(cmdline, word, cmd.chlds);
         Cmdstr *pcmd = (Cmdstr*)utarray_back(cmd.chlds);
-        pcmd->idx = idx;
+        pcmd->idx = --idx;
         if (!word)
           goto breakout;
         break;
