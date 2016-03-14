@@ -119,6 +119,22 @@ static void create_proc(Op_group *opgrp, char *path)
   free(line);
 }
 
+static char* expand_field(char *name, char *key)
+{
+  log_msg("OP", "expand_field");
+  char *val = model_str_expansion(name, NULL);
+  if (val)
+    return val;
+
+  ventry *vent = fnd_val("op_procs", "group", key);
+  if (!vent)
+    return NULL;
+
+  char *ret = rec_fld(vent->rec, "pid");
+  log_msg("OP", "%d", tbl_ent_count(vent));
+  return ret;
+}
+
 static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("OP", "fileopen_cb");
@@ -135,17 +151,16 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
   if (!grp->opgrp)
     return;
 
-  // get pids for group
-  // add op_tbl to exptbl
-  // cmd eval opgrp->before, before_cb
-  // remove op_tbl
-
-  /* POC */
+  Exparg exparg = {.expfn = expand_field, .key = grp->key};
+  set_exparg(&exparg);
   Cmdstr bfcmd;
+
   char *line = grp->opgrp->before;
   cmd_eval(&bfcmd, line);
+  cmd_flush();
   log_msg("OP", "ret: %s", bfcmd.ret);
   free(bfcmd.ret);
+  set_exparg(NULL);
 
   return;
   //

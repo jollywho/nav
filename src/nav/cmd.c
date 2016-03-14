@@ -30,6 +30,7 @@ struct Cmdblock {
   Cmdblock *parent;
   fn_func *func;
   int brk;
+  void *ret;
 };
 
 static void* cmd_ifblock();
@@ -49,7 +50,6 @@ static int pos;
 static int lvl;
 static int maxpos;
 static char *lncont;
-static void *gret;
 static int lvlcont;
 static int fndefopen;
 static int parse_error;
@@ -114,7 +114,6 @@ void cmd_init()
 {
   cmd_reset();
   callstack = NULL;
-  gret = 0;
   for (int i = 1; i < LENGTH(builtins); i++)
     cmd_add(&builtins[i]);
 }
@@ -161,10 +160,6 @@ void cmd_flush()
 
 static void push_callstack(Cmdblock *blk, fn_func *fn)
 {
-  if (gret) {
-    free(gret);
-    gret = 0;
-  }
   if (!callstack)
     callstack = blk;
   blk->parent = callstack;
@@ -211,10 +206,12 @@ static void cmd_do(Cmdstr *caller, char *line)
   cmdline_cleanup(&cmd);
 }
 
-static void* cmd_call(Cmdstr *rcmd, fn_func *fn, char *line)
+static void* cmd_call(Cmdstr *caller, fn_func *fn, char *line)
 {
   log_msg("CMD", "cmd_call");
   log_msg("CMD", "%s", line);
+  if (!line)
+    line = "";
   Cmdline cmd;
   cmdline_build(&cmd, line);
   List *args = cmdline_lst(&cmd);
@@ -239,10 +236,11 @@ static void* cmd_call(Cmdstr *rcmd, fn_func *fn, char *line)
   }
   for (int i = 0; i < utarray_len(fn->lines); i++) {
     char *line = *(char**)utarray_eltptr(fn->lines, i);
-    cmd_eval(rcmd, line);
+    cmd_eval(NULL, line);
     if (callstack->brk)
       break;
   }
+  caller->ret = callstack->ret;
   log_msg("CMD", "call fin--");
 cleanup:
   cmdline_cleanup(&cmd);
@@ -250,21 +248,14 @@ cleanup:
   return 0;
 }
 
-static void* cmd_do_sub(Cmdstr *caller, Cmdline *cmdline, char *line)
-{
-  cmdline_build(cmdline, line);
-  cmdline_req_run(caller, cmdline);
-  return cmdline_getcmd(cmdline)->ret;
-}
-
-static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
+static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
 {
   Cmdstr *cmd = NULL;
   char base[strlen(cmdline->line)];
   int pos = 0;
   int prevst = 0;
 
-  while ((cmd = (Cmdstr*)utarray_next(cmdstr->chlds, cmd))) {
+  while ((cmd = (Cmdstr*)utarray_next(caller->chlds, cmd))) {
     strncpy(base+pos, &cmdline->line[prevst], cmd->st);
     pos += cmd->st - prevst;
     prevst = cmd->ed + 1;
@@ -275,34 +266,32 @@ static void cmd_sub(Cmdstr *cmdstr, Cmdline *cmdline)
     subline[len-1] = '\0';
 
     cmd_do(cmd, subline);
-    void *retp = cmd->ret;
 
     List *args = cmdline_lst(cmdline);
     char *symb = list_arg(args, cmd->idx - 1, VAR_STRING);
-    log_msg("CMD", "--- %s", symb);
     if (symb) {
       fn_func *fn = opt_func(symb);
       //TODO: error here unless symb is '$'
       if (fn) {
-        cmd_call(cmd, fn, retp);
+        Cmdstr rstr;
+        cmd_call(&rstr, fn, cmd->ret);
         Token *word = tok_arg(args, cmd->idx - 1);
         pos = word->start;
-        retp = gret;
+        if (rstr.ret)
+          SWAP_ALLOC_PTR(cmd->ret, rstr.ret);
       }
     }
 
-    if (retp) {
-      char *retline = retp;
+    if (cmd->ret) {
+      char *retline = cmd->ret;
       strcpy(base+pos, retline);
       pos += strlen(retline);
     }
   }
-  Cmdstr *last = (Cmdstr*)utarray_back(cmdstr->chlds);
+  Cmdstr *last = (Cmdstr*)utarray_back(caller->chlds);
   strcpy(base+pos, &cmdline->line[last->ed+1]);
-  Cmdline newcmd;
-  void *retp = cmd_do_sub(cmdstr, &newcmd, base);
-  ret2caller(cmdstr, STRING, retp);
-  cmdline_cleanup(&newcmd);
+
+  cmd_do(caller->caller, base);
 }
 
 static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
@@ -546,8 +535,7 @@ static void* cmd_returnblock(List *args, Cmdarg *ca)
   log_msg("CMD", "cmd_return");
   callstack->brk = 1;
   char *out = cmdline_line_from(ca->cmdline, 1);
-  if (out)
-    gret = strdup(out);
+  callstack->ret = strdup(out);
   return 0;
 }
 

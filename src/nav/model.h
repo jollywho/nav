@@ -24,6 +24,6 @@ void* model_curs_value(Model *m, const char *fld);
 void model_set_curs(Model *m, int index);
 int model_count(Model *m);
 
-char* model_str_expansion(char* val);
+char* model_str_expansion(char* val, char *key);
 
 #endif

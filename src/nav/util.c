@@ -2,7 +2,7 @@
 #include <wchar.h>
 #include <string.h>
 #include <malloc.h>
-#include "nav.h"
+#include "nav/util.h"
 
 #define init_mb(state) memset(&state, 0, sizeof(state))
 #define reset_mbytes(state) init_mb(state)
@@ -11,6 +11,17 @@
 	(int) mbrtowc(&wch, buffer, length, &state)
 
 static wchar_t wstr[CCHARW_MAX + 1];
+static Exparg *gexp;
+
+void set_exparg(Exparg *exparg)
+{
+  gexp = exparg;
+}
+
+bool exparg_isset()
+{
+  return gexp;
+}
 
 void trans_str_wide(char *src, cchar_t dst[], int max)
 {
@@ -96,7 +107,7 @@ void del_param_list(char **params, int argc)
   }
 }
 
-char* do_expansion(char *line, char* (*expfn)(char*))
+char* do_expansion(char *line)
 {
   if (!strstr(line, "%:"))
     return strdup(line);
@@ -114,7 +125,7 @@ char* do_expansion(char *line, char* (*expfn)(char*))
   name = strtok(name, delim);
   char *tail = strtok(NULL, delim);
 
-  char *body = expfn(name);
+  char *body = gexp->expfn(name, gexp->key);
   if (!body)
     return strdup(line);
 

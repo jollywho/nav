@@ -5,6 +5,7 @@
 #include "nav/plugins/plugin.h"
 #include "nav/lib/queue.h"
 #include "nav/lib/utarray.h"
+#include "nav/util.h"
 
 typedef struct {
   char v_type;              /* see below: VAR_NUMBER, VAR_STRING, etc. */
@@ -49,7 +50,7 @@ struct Cmdstr {
   int st;
   int ed;
   int idx;
-  char* (*expfn)(char*);
+  Exparg *exparg;
   Cmdstr *caller;
   UT_array *chlds;  /* Cmdstr */
 };

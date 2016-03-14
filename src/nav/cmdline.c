@@ -453,6 +453,8 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         cmd.rev = 1;
         break;
       case ')':
+        if (cmdline->lvl < 1)
+          break;
         cmdline->lvl--;
         cmd.ed = word->start;
         goto breakout;
@@ -525,11 +527,14 @@ int exec_line(char *line, Cmdstr *cmd)
     return 0;
   char *str = strstr(line, "!");
   ++str;
-  str = do_expansion(str, model_str_expansion);
+  Exparg exparg = {.expfn = model_str_expansion, .key = NULL};
+  set_exparg(&exparg);
+  str = do_expansion(str);
   shell_exec(str, NULL, focus_dir(), NULL);
   //TODO: 'pidof !cmd' for var assignment
   //TODO: hook output + block for output
   free(str);
+  set_exparg(NULL);
   return 1;
 }
 
@@ -581,8 +586,8 @@ static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd, Cmdstr *prev)
 
 static void check_expansions(Cmdline *cmdline, Cmdstr *cmd)
 {
-  if (cmd->expfn) {
-    char *newl = do_expansion(cmdline->line, cmd->expfn);
+  if (exparg_isset()) {
+    char *newl = do_expansion(cmdline->line);
     SWAP_ALLOC_PTR(cmdline->line, newl);
   }
 }
@@ -593,8 +598,6 @@ void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
   Cmdstr *prev = NULL;
   if (!cmdline->cmds)
     return;
-
-  //TODO:switch on exp_type flag
 
   while (NEXT_CMD(cmdline, cmd)) {
     check_expansions(cmdline, cmd);

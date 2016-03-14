@@ -286,7 +286,7 @@ void model_set_curs(Model *m, int index)
   }
 }
 
-char* model_str_expansion(char *val)
+char* model_str_expansion(char* val, char *key)
 {
   Buffer *buf = window_get_focus();
   if (!buf || !buf_attached(buf))
