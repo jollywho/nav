@@ -95,3 +95,33 @@ void del_param_list(char **params, int argc)
     free(params);
   }
 }
+
+char* do_expansion(char *line, char* (*expfn)(char*))
+{
+  if (!strstr(line, "%:"))
+    return strdup(line);
+
+  char *head = strtok(line, "%:");
+  char *name = strtok(NULL, "%:");
+
+  char *quote = "\"";
+  char *delim = strchr(name, '"');
+  if (!delim) {
+    delim = " ";
+    quote = "";
+  }
+
+  name = strtok(name, delim);
+  char *tail = strtok(NULL, delim);
+
+  char *body = expfn(name);
+  if (!body)
+    return strdup(line);
+
+  if (!tail)
+    tail = "";
+
+  char *out;
+  asprintf(&out, "%s\"%s\"%s%s", head, body, quote, tail);
+  return out;
+}

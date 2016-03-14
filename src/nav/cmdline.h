@@ -49,6 +49,7 @@ struct Cmdstr {
   int st;
   int ed;
   int idx;
+  char* (*expfn)(char*);
   Cmdstr *caller;
   UT_array *chlds;  /* Cmdstr */
 };
@@ -83,6 +84,5 @@ void* token_val(Token *token, char v_type);
 void* list_arg(List *lst, int argc, char v_type);
 void* tok_arg(List *lst, int argc);
 int str_num(const char *, int *);
-char* do_expansion(char *line);
 
 #endif

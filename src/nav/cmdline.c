@@ -12,6 +12,7 @@
 #include "nav/ascii.h"
 #include "nav/log.h"
 #include "nav/macros.h"
+#include "nav/util.h"
 
 typedef struct {
   Token item;
@@ -518,44 +519,13 @@ void cmdline_build(Cmdline *cmdline, char *line)
   }
 }
 
-char* do_expansion(char *line)
-{
-  log_msg("CMDLINE", "do_expansion");
-  if (!strstr(line, "%:"))
-    return strdup(line);
-
-  char *head = strtok(line, "%:");
-  char *name = strtok(NULL, "%:");
-
-  char *quote = "\"";
-  char *delim = strchr(name, '"');
-  if (!delim) {
-    delim = " ";
-    quote = "";
-  }
-
-  name = strtok(name, delim);
-  char *tail = strtok(NULL, delim);
-
-  char *body = model_str_expansion(name);
-  if (!body)
-    return strdup(line);
-
-  if (!tail)
-    tail = "";
-
-  char *out;
-  asprintf(&out, "%s\"%s\"%s%s", head, body, quote, tail);
-  return out;
-}
-
 int exec_line(char *line, Cmdstr *cmd)
 {
   if (!cmd->exec || strlen(line) < 2)
     return 0;
   char *str = strstr(line, "!");
   ++str;
-  str = do_expansion(str);
+  str = do_expansion(str, model_str_expansion);
   shell_exec(str, NULL, focus_dir(), NULL);
   //TODO: 'pidof !cmd' for var assignment
   //TODO: hook output + block for output
@@ -609,6 +579,14 @@ static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd, Cmdstr *prev)
   }
 }
 
+static void check_expansions(Cmdline *cmdline, Cmdstr *cmd)
+{
+  if (cmd->expfn) {
+    char *newl = do_expansion(cmdline->line, cmd->expfn);
+    SWAP_ALLOC_PTR(cmdline->line, newl);
+  }
+}
+
 void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
 {
   Cmdstr *cmd = NULL;
@@ -619,6 +597,7 @@ void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
   //TODO:switch on exp_type flag
 
   while (NEXT_CMD(cmdline, cmd)) {
+    check_expansions(cmdline, cmd);
     if (cmd->flag & (PIPE_LEFT|PIPE_RIGHT))
       continue;
     if (exec_line(cmdline->line, cmd))
