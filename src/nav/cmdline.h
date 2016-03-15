@@ -50,7 +50,6 @@ struct Cmdstr {
   int st;
   int ed;
   int idx;
-  Exparg *exparg;
   Cmdstr *caller;
   UT_array *chlds;  /* Cmdstr */
 };

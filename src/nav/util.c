@@ -107,7 +107,7 @@ void del_param_list(char **params, int argc)
   }
 }
 
-char* do_expansion(char *src)
+char* do_expansion(char *src, Exparg *arg)
 {
   char *line = strdup(src);
   if (!strstr(line, "%:"))
@@ -128,7 +128,11 @@ char* do_expansion(char *src)
   name = strtok(name, delim);
   char *tail = strtok(NULL, delim);
 
-  char *body = gexp->expfn(name, gexp->key);
+  Exparg *exparg = arg;
+  if (!exparg)
+    exparg = gexp;
+
+  char *body = exparg->expfn(name, exparg->key);
   if (!body)
     return line;
 

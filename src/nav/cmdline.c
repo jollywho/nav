@@ -529,13 +529,11 @@ int exec_line(char *line, Cmdstr *cmd)
   char *str = strstr(line, "!");
   ++str;
   Exparg exparg = {.expfn = model_str_expansion, .key = NULL};
-  set_exparg(&exparg);
-  str = do_expansion(str);
+  str = do_expansion(str, &exparg);
   shell_exec(str, NULL, focus_dir(), NULL);
   //TODO: 'pidof !cmd' for var assignment
   //TODO: hook output + block for output
   free(str);
-  set_exparg(NULL);
   return 1;
 }
 

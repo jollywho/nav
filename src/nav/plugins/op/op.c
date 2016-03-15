@@ -71,7 +71,7 @@ static void chld_handler(uv_signal_t *handle, int signum)
 }
 static void create_proc(char *name, char *line)
 {
-  log_msg("OP", "create_proc");
+  log_msg("OP", "create_proc %s", line);
 
   Op_proc *proc = malloc(sizeof(Op_proc));
   memset(proc, 0, sizeof(Op_proc));
@@ -111,7 +111,10 @@ static char* expand_field(char *name, char *key)
   if (!vent)
     return NULL;
 
+  //if prev
   ventry *head = ent_head(vent);
+  //if next
+  //ent_head()->next
   char *ret = rec_fld(head->rec, "pid");
   log_msg("OP", "%s", ret);
   return ret;
@@ -140,7 +143,6 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
 
   cmd_eval(&bfcmd, line);
   set_exparg(NULL);
-  log_msg("OP", "ret: %s", bfcmd.ret);
   create_proc(grp->key, bfcmd.ret);
   free(bfcmd.ret);
 }
@@ -205,7 +207,8 @@ void op_new(Plugin *plugin, Buffer *buf, void *arg)
     tbl_mk_fld("op_procs", "pid",   typSTRING);
   }
 
-  Cmd_T killcmd = {"kill",0, op_kill, 0};
+  Cmd_T killcmd = {"kill", 0, op_kill, 0};
+  //pidof
   cmd_add(&killcmd);
 }
 

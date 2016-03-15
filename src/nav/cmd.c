@@ -190,7 +190,7 @@ static void cmd_do(Cmdstr *caller, char *line)
   char *swap = NULL;
   if (exparg_isset()) {
     swap = line;
-    line = do_expansion(line);
+    line = do_expansion(line, NULL);
   }
 
   if (lvlcont > 0) {
