@@ -8,17 +8,14 @@ typedef struct Op Op;
 typedef struct Op_group Op_group;
 
 struct Op_group {
-  UT_array *procs;  /* Op_proc */
   UT_array *locals; /* fn_var  */
   char *before;
   char *after;
-  /* bool ready ? */
 };
 
 struct Op {
   Plugin *base;
   fn_handle *hndl;
-  bool ready;
 };
 
 void op_new(Plugin *plugin, Buffer *buf, void *arg);

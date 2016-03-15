@@ -107,10 +107,11 @@ void del_param_list(char **params, int argc)
   }
 }
 
-char* do_expansion(char *line)
+char* do_expansion(char *src)
 {
+  char *line = strdup(src);
   if (!strstr(line, "%:"))
-    return strdup(line);
+    return line;
 
   char *head = strtok(line, "%:");
   char *name = strtok(NULL, "%:");
@@ -129,12 +130,13 @@ char* do_expansion(char *line)
 
   char *body = gexp->expfn(name, gexp->key);
   if (!body)
-    return strdup(line);
+    return line;
 
   if (!tail)
     tail = "";
 
   char *out;
   asprintf(&out, "%s\"%s\"%s%s", head, body, quote, tail);
+  free(line);
   return out;
 }
