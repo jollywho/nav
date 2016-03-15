@@ -12,13 +12,35 @@
 #include "nav/cmdline.h"
 #include "nav/cmd.h"
 
+static void create_proc(fn_group *, char *);
+
 static Op op;
 
 typedef struct {
   uv_process_t proc;
   uv_process_options_t opts;
-  char *name;
+  fn_group *grp;
 } Op_proc;
+
+static char* expand_field(char *name, char *key)
+{
+  log_msg("OP", "expand_field");
+  char *val = model_str_expansion(name, NULL);
+  if (val)
+    return val;
+
+  ventry *vent = fnd_val("op_procs", "group", key);
+  if (!vent)
+    return NULL;
+
+  //if prev
+  ventry *head = ent_head(vent);
+  //if next
+  //ent_head()->next
+  char *ret = rec_fld(head->rec, "pid");
+  log_msg("OP", "%s", ret);
+  return ret;
+}
 
 static void add_pid(char *name, int pid)
 {
@@ -50,10 +72,17 @@ static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal)
 {
   log_msg("OP", "exit_cb");
   Op_proc *proc = req->data;
-  remove_pid(proc->name, proc->proc.pid);
+  fn_group *grp = proc->grp;
+  remove_pid(grp->key, proc->proc.pid);
   uv_close((uv_handle_t*) req, del_proc);
 
-  //TODO: call before cmd
+  if (!proc->proc.status) {
+    Exparg exparg = {.expfn = expand_field, .key = proc->grp->key};
+    set_exparg(&exparg);
+    char *line = grp->opgrp->after;
+    cmd_eval(NULL, line);
+    set_exparg(NULL);
+  }
 }
 
 static void chld_handler(uv_signal_t *handle, int signum)
@@ -69,7 +98,8 @@ static void chld_handler(uv_signal_t *handle, int signum)
   if (pid <= 0)
     return;
 }
-static void create_proc(char *name, char *line)
+
+static void create_proc(fn_group *grp, char *line)
 {
   log_msg("OP", "create_proc %s", line);
 
@@ -77,6 +107,7 @@ static void create_proc(char *name, char *line)
   memset(proc, 0, sizeof(Op_proc));
   proc->opts.flags = UV_PROCESS_DETACHED;
   proc->opts.exit_cb = exit_cb;
+  proc->grp = grp;
 
   char* args[4];
   args[0] = p_sh;
@@ -97,27 +128,7 @@ static void create_proc(char *name, char *line)
     return;
   }
   uv_unref((uv_handle_t*)&proc->proc);
-  add_pid(name, proc->proc.pid);
-}
-
-static char* expand_field(char *name, char *key)
-{
-  log_msg("OP", "expand_field");
-  char *val = model_str_expansion(name, NULL);
-  if (val)
-    return val;
-
-  ventry *vent = fnd_val("op_procs", "group", key);
-  if (!vent)
-    return NULL;
-
-  //if prev
-  ventry *head = ent_head(vent);
-  //if next
-  //ent_head()->next
-  char *ret = rec_fld(head->rec, "pid");
-  log_msg("OP", "%s", ret);
-  return ret;
+  add_pid(grp->key, proc->proc.pid);
 }
 
 static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
@@ -143,7 +154,7 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
 
   cmd_eval(&bfcmd, line);
   set_exparg(NULL);
-  create_proc(grp->key, bfcmd.ret);
+  create_proc(grp, bfcmd.ret);
   free(bfcmd.ret);
 }
 
@@ -176,8 +187,8 @@ static void* op_kill(List *args, Cmdarg *ca)
     log_msg("OP", "pid %s not found", pidstr);
     return 0;
   }
+
   uv_kill(pid, SIGKILL);
-  //default handling should cause correct closing
   return 0;
 }
 
@@ -203,8 +214,9 @@ void op_new(Plugin *plugin, Buffer *buf, void *arg)
   hook_set_tmp("execopen");
   hook_set_tmp("execclose");
   if (tbl_mk("op_procs")) {
-    tbl_mk_fld("op_procs", "group", typSTRING);
-    tbl_mk_fld("op_procs", "pid",   typSTRING);
+    tbl_mk_fld("op_procs", "group",  typSTRING);
+    tbl_mk_fld("op_procs", "pid",    typSTRING);
+    //tbl_mk_fld("op_procs", "status", typSTRING);
   }
 
   Cmd_T killcmd = {"kill", 0, op_kill, 0};
