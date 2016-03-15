@@ -78,6 +78,7 @@ Token* list_tokbtwn(List *lst, int st, int ed);
 Token* cmdline_tokindex(Cmdline *cmdline, int idx);
 Token* cmdline_last(Cmdline *cmdline);
 char* cmdline_line_from(Cmdline *cmdline, int idx);
+char* cmdline_line_after(Cmdline *cmdline, int idx);
 Cmdstr* cmdline_getcmd(Cmdline *cmdline);
 List* cmdline_lst(Cmdline *cmd);
 

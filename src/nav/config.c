@@ -351,7 +351,7 @@ static void* edit_op(List *args, Cmdarg *ca)
 
 static void* add_source(List *args, Cmdarg *ca)
 {
-  char *file = cmdline_line_from(ca->cmdline, 1);
+  char *file = cmdline_line_after(ca->cmdline, 0);
   if (!file)
     return 0;
 

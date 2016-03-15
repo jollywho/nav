@@ -354,15 +354,8 @@ Token* cmdline_tokindex(Cmdline *cmdline, int idx)
 {
   if (!cmdline->cmds)
     return NULL;
-  Cmdstr *cmd = NULL;
-  NEXT_CMD(cmdline, cmd);
-
-  List *list = cmd->args.var.vval.v_list;
-  UT_array *arr = list->items;
-  Token *word = NULL;
-
-  word = (Token*)utarray_eltptr(arr, idx);
-  return word;
+  List *args = cmdline_lst(cmdline);
+  return (Token*)utarray_eltptr(args->items, idx);
 }
 
 Token* cmdline_last(Cmdline *cmdline)
@@ -379,6 +372,14 @@ char* cmdline_line_from(Cmdline *cmdline, int idx)
   if (!word)
     return NULL;
   return &cmdline->line[word->start];
+}
+
+char* cmdline_line_after(Cmdline *cmdline, int idx)
+{
+  Token *word = cmdline_tokindex(cmdline, idx);
+  if (!word || idx >= utarray_len(cmdline->tokens))
+    return NULL;
+  return &cmdline->line[word->end];
 }
 
 static void pop(QUEUE *stack)

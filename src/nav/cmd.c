@@ -187,13 +187,11 @@ void ret2caller(Cmdstr *cmdstr, int ret_t, void *ret)
 
 static void cmd_do(Cmdstr *caller, char *line)
 {
-  log_msg("CMD", "do %s", line);
   char *swap = NULL;
   if (exparg_isset()) {
     swap = line;
     line = do_expansion(line);
   }
-  log_msg("CMD", "do %s", line);
 
   if (lvlcont > 0) {
     char *str;
@@ -219,7 +217,6 @@ static void cmd_do(Cmdstr *caller, char *line)
 static void* cmd_call(Cmdstr *caller, fn_func *fn, char *line)
 {
   log_msg("CMD", "cmd_call");
-  log_msg("CMD", "%s", line);
   if (!line)
     line = "";
   Cmdline cmd;
@@ -341,18 +338,19 @@ static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
     pos += len_lst[i];
   }
   strcpy(base+pos, &cmdline->line[prevst]);
-  log_msg("CMD", "cmd_vars %s", base);
   cmd_do(caller->caller, base);
 }
 
-static int cond_do(Cmdstr *caller, char *line)
+static int cond_do(char *line)
 {
+  log_msg("CMD", "cond");
   int cond = 0;
-  Cmdline cmd;
-  cmdline_build(&cmd, line);
-  cmdline_req_run(caller, &cmd);
-  cond = cmdline_getcmd(&cmd)->ret ? 1 : 0;
-  cmdline_cleanup(&cmd);
+  Cmdstr nstr;
+  cmd_eval(&nstr, line);
+  if (nstr.ret) {
+    cond = 1;
+    free(nstr.ret);
+  }
   return cond;
 }
 
@@ -366,13 +364,14 @@ static Symb* cmd_next(Symb *node)
 
 static void cmd_start()
 {
+  log_msg("CMD", "start");
   Symb *it = STAILQ_FIRST(&root.childs);
   int cond;
   while (it) {
     switch (it->type) {
       case CTL_IF:
       case CTL_ELSEIF:
-        cond = cond_do(NULL, it->line);
+        cond = cond_do(it->line);
         if (cond)
           it = STAILQ_FIRST(&it->childs);
         else
@@ -408,6 +407,7 @@ void cmd_eval(Cmdstr *caller, char *line)
 {
   if (parse_error)
     return;
+  log_msg("CMD", ": %s", line);
 
   if (!IS_PARSE || ctl_cmd(line) != -1)
     return cmd_do(caller, line);
@@ -419,15 +419,16 @@ void cmd_eval(Cmdstr *caller, char *line)
 
 static void* cmd_ifblock(List *args, Cmdarg *ca)
 {
+  log_msg("CMD", "ifblock");
   if (IS_READ) {
     ++lvl;
     read_line(ca->cmdline->line);
     return 0;
   }
-  if (lvl == 1)
+  if (!IS_SEEK)
     cmd_flush();
   ++lvl;
-  stack_push(cmdline_line_from(ca->cmdline, 1));
+  stack_push(cmdline_line_after(ca->cmdline, 0));
   cur = &tape[pos];
   cur->st = pos;
   tape[pos].type = CTL_IF;
@@ -443,7 +444,7 @@ static void* cmd_elseifblock(List *args, Cmdarg *ca)
   int st = cur->st;
   cur = cur->parent;
   cur->st = st;
-  stack_push(cmdline_line_from(ca->cmdline, 1));
+  stack_push(cmdline_line_after(ca->cmdline, 0));
   tape[pos].type = CTL_ELSEIF;
   cur = &tape[pos];
   return 0;
@@ -458,7 +459,7 @@ static void* cmd_elseblock(List *args, Cmdarg *ca)
   int st = cur->st;
   cur = cur->parent;
   cur->st = st;
-  stack_push(cmdline_line_from(ca->cmdline, 1));
+  stack_push(cmdline_line_after(ca->cmdline, 0));
   tape[pos].type = CTL_ELSE;
   cur = &tape[pos];
   return 0;
@@ -466,6 +467,7 @@ static void* cmd_elseblock(List *args, Cmdarg *ca)
 
 static void* cmd_endblock(List *args, Cmdarg *ca)
 {
+  log_msg("CMD", "endblock");
   --lvl;
   if (IS_READ && lvl == 0) {
     set_func(fndef);
@@ -481,8 +483,10 @@ static void* cmd_endblock(List *args, Cmdarg *ca)
   stack_push("");
   tape[cur->st].end = &tape[pos];
   tape[pos].type = CTL_END;
-  if (!IS_SEEK)
+  if (!IS_SEEK) {
     cmd_start();
+    lvl = 0;
+  }
   return 0;
 }
 
