@@ -117,6 +117,8 @@ char* do_expansion(char *line)
 
   char *quote = "\"";
   char *delim = strchr(name, '"');
+  //FIXME: misses remaining string after first delimit
+  //some token/cmdstr context would be nice
   if (!delim) {
     delim = " ";
     quote = "";

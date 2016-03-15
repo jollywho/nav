@@ -157,7 +157,6 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
 
   char *line = grp->opgrp->before;
   cmd_eval(&bfcmd, line);
-  cmd_flush();
   log_msg("OP", "ret: %s", bfcmd.ret);
   free(bfcmd.ret);
   set_exparg(NULL);

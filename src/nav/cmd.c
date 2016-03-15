@@ -187,6 +187,14 @@ void ret2caller(Cmdstr *cmdstr, int ret_t, void *ret)
 
 static void cmd_do(Cmdstr *caller, char *line)
 {
+  log_msg("CMD", "do %s", line);
+  char *swap = NULL;
+  if (exparg_isset()) {
+    swap = line;
+    line = do_expansion(line);
+  }
+  log_msg("CMD", "do %s", line);
+
   if (lvlcont > 0) {
     char *str;
     asprintf(&str, "%s%s", lncont, line);
@@ -204,6 +212,8 @@ static void cmd_do(Cmdstr *caller, char *line)
     SWAP_ALLOC_PTR(lncont, strdup(line));
 
   cmdline_cleanup(&cmd);
+  if (swap)
+    free(line);
 }
 
 static void* cmd_call(Cmdstr *caller, fn_func *fn, char *line)
@@ -241,7 +251,6 @@ static void* cmd_call(Cmdstr *caller, fn_func *fn, char *line)
       break;
   }
   caller->ret = callstack->ret;
-  log_msg("CMD", "call fin--");
 cleanup:
   cmdline_cleanup(&cmd);
   pop_callstack();
@@ -251,13 +260,17 @@ cleanup:
 static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
 {
   Cmdstr *cmd = NULL;
-  char base[strlen(cmdline->line)];
+  int maxlen = strlen(cmdline->line);
+  char *base = malloc(maxlen);
   int pos = 0;
   int prevst = 0;
 
   while ((cmd = (Cmdstr*)utarray_next(caller->chlds, cmd))) {
+    int nlen = cmd->st - prevst;
+    if (maxlen < pos + nlen)
+      base = realloc(base, maxlen += nlen);
     strncpy(base+pos, &cmdline->line[prevst], cmd->st);
-    pos += cmd->st - prevst;
+    pos += nlen;
     prevst = cmd->ed + 1;
 
     size_t len = cmd->ed - cmd->st;
@@ -283,14 +296,20 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
 
     if (cmd->ret) {
       char *retline = cmd->ret;
+      int retlen = strlen(retline);
+      if (maxlen < pos + retlen)
+        base = realloc(base, maxlen += retlen);
       strcpy(base+pos, retline);
-      pos += strlen(retline);
+      pos += retlen;
     }
   }
-  Cmdstr *last = (Cmdstr*)utarray_back(caller->chlds);
-  strcpy(base+pos, &cmdline->line[last->ed+1]);
+  int nlen = caller->ed;
+  if (maxlen < pos + nlen)
+    base = realloc(base, maxlen += nlen);
+  strcpy(base+pos, &cmdline->line[prevst]);
 
   cmd_do(caller->caller, base);
+  free(base);
 }
 
 static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
@@ -534,6 +553,7 @@ static void* cmd_returnblock(List *args, Cmdarg *ca)
   log_msg("CMD", "cmd_return");
   callstack->brk = 1;
   char *out = cmdline_line_from(ca->cmdline, 1);
+  log_msg("CMD", "return %s", out);
   callstack->ret = strdup(out);
   return 0;
 }

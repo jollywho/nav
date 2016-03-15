@@ -584,14 +584,6 @@ static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd, Cmdstr *prev)
   }
 }
 
-static void check_expansions(Cmdline *cmdline, Cmdstr *cmd)
-{
-  if (exparg_isset()) {
-    char *newl = do_expansion(cmdline->line);
-    SWAP_ALLOC_PTR(cmdline->line, newl);
-  }
-}
-
 void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
 {
   Cmdstr *cmd = NULL;
@@ -600,7 +592,6 @@ void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
     return;
 
   while (NEXT_CMD(cmdline, cmd)) {
-    check_expansions(cmdline, cmd);
     if (cmd->flag & (PIPE_LEFT|PIPE_RIGHT))
       continue;
     if (exec_line(cmdline->line, cmd))
