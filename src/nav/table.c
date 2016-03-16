@@ -46,8 +46,15 @@ struct fn_tbl {
   fn_vt_fld *vtfields;
   int count;
   int rec_count;
+  UT_array *recs;
   UT_hash_handle hh;
 };
+
+typedef struct {
+  fn_rec *rec;
+} tbl_rec;
+
+static UT_icd rec_icd = { sizeof(tbl_rec),  NULL };
 
 static fn_tbl *FN_MASTER;
 
@@ -78,6 +85,7 @@ bool tbl_mk(const char *name)
   memset(t, 0, sizeof(fn_tbl));
   t->key = strdup(name);
   HASH_ADD_STR(FN_MASTER, key, t);
+  utarray_new(t->recs, &rec_icd);
   return true;
 }
 
@@ -88,14 +96,34 @@ void tbl_del(const char *name)
   if (!t)
     return;
 
+  for (int i = 0; i < t->rec_count; i++) {
+    tbl_rec *tbrec = (tbl_rec*)utarray_eltptr(t->recs, i);
+    fn_rec *rec = tbrec->rec;
+    for (int itf = 0; itf < rec->fld_count; itf++) {
+      fn_fld *fld = rec->vals[itf]->fld;
+      fn_val *val = rec->vals[itf];
+
+      val->count--;
+      free(rec->vlist[itf]);
+      if (val->count < 1) {
+        if (fld->type == typVOID)
+          free(val->data);
+        else {
+          HASH_DEL(fld->vals, val);
+          free(val->key);
+        }
+        free(val);
+      }
+    }
+    free(rec->vlist);
+    free(rec->vals);
+    free(rec);
+  }
+
   fn_fld *f, *ftmp;
   HASH_ITER(hh, t->fields, f, ftmp) {
     HASH_DEL(t->fields, f);
     log_msg("CLEANUP", "deleting field {%s} ...", f->key);
-    //TODO: del val
-    //TODO: del lis
-    //TODO: del ent
-    //TODO: del rec
     free(f->key);
     free(f);
   }
@@ -107,6 +135,7 @@ void tbl_del(const char *name)
     free(vf);
   }
   HASH_DEL(FN_MASTER, t);
+  utarray_free(t->recs);
 }
 
 fn_tbl* get_tbl(const char *tn)
@@ -417,6 +446,8 @@ static void tbl_insert(fn_tbl *t, trans_rec *trec)
 
     check_set_lis(f, rec->vals[i]->key, rec);
   }
+  tbl_rec tblrec = {rec};
+  utarray_push_back(t->recs, &tblrec);
 }
 
 static void del_fldval(fn_fld *fld, fn_val *val)

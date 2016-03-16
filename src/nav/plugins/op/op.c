@@ -33,12 +33,12 @@ static char* expand_field(char *name, char *key)
   if (!vent)
     return NULL;
 
-  if (strcmp(name, "next") || strcmp(name, "prev"))
-    return NULL;
+  //if (strcmp(name, "next") || strcmp(name, "prev"))
+  //  return NULL;
 
   ventry *head = ent_head(vent);
-  if (!strcmp(name, "next"))
-    head = head->next;
+  //if (!strcmp(name, "next"))
+  //  head = head->next;
 
   char *ret = rec_fld(head->rec, "pid");
   log_msg("OP", "%s", ret);

@@ -61,7 +61,7 @@ void cleanup(void)
   compl_cleanup();
   input_cleanup();
   event_cleanup();
-  //tables_cleanup();
+  tables_cleanup();
   option_cleanup();
   cmd_cleanup();
   vt_shutdown();
