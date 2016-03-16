@@ -5,6 +5,8 @@
 #include "nav/table.h"
 #include "nav/option.h"
 #include "nav/util.h"
+#include "nav/model.h"
+#include "nav/event/shell.h"
 
 enum CTLCMD { CTL_NOP, CTL_IF, CTL_ELSEIF, CTL_ELSE, CTL_END, CTL_FUNC, };
 
@@ -176,7 +178,7 @@ static void pop_callstack()
     callstack = callstack->parent;
 }
 
-void ret2caller(Cmdstr *cmdstr, int ret_t, void *ret)
+static void ret2caller(Cmdstr *cmdstr, int ret_t, void *ret)
 {
   if (!cmdstr || !cmdstr->caller)
     return;
@@ -606,6 +608,22 @@ Cmd_T* cmd_find(const char *name)
   return cmd;
 }
 
+void exec_line(Cmdstr *cmd, char *line)
+{
+  char *str = strstr(line, "!");
+  ++str;
+  Exparg exparg = {.expfn = model_str_expansion, .key = NULL};
+  str = do_expansion(str, &exparg);
+  char *pidstr;
+  int pid = shell_exec(str, NULL, focus_dir(), NULL);
+  asprintf(&pidstr, "%d", pid);
+
+  //TODO: hook output + block for output
+  free(str);
+  ret2caller(cmd, STRING, pidstr);
+  free(pidstr);
+}
+
 void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
 {
   log_msg("CMD", "cmd_run");
@@ -620,6 +638,9 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
     if (utarray_len(cmdline->vars) > 0)
       return cmd_vars(cmdstr, cmdline);
   }
+
+  if (cmdline_can_exec(cmdstr, word))
+    return exec_line(cmdstr, cmdline->line);
 
   if (!fun)
     return ret2caller(cmdstr, WORD, cmdline->line);

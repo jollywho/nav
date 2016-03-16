@@ -166,7 +166,7 @@ static void shell_default_stdout_cb(Plugin *plugin, char *out)
   log_msg("SHELL", "stdout: %s", out);
 }
 
-void shell_exec(char *line, shell_status_cb cb, char *cwd, Plugin *caller)
+int shell_exec(char *line, shell_status_cb cb, char *cwd, Plugin *caller)
 {
   log_msg("SHELL", "shell_exec");
   log_msg("SHELL", "%s", line);
@@ -205,4 +205,5 @@ void shell_exec(char *line, shell_status_cb cb, char *cwd, Plugin *caller)
 
   int pid = sh->uvproc.process.pid;
   send_hook_msg("execopen", NULL, NULL, &(HookArg){NULL,&pid});
+  return pid;
 }

@@ -5,9 +5,7 @@
 #include "nav/lib/queue.h"
 #include "nav/plugins/plugin.h"
 #include "nav/event/hook.h"
-#include "nav/event/shell.h"
 #include "nav/cmdline.h"
-#include "nav/model.h"
 #include "nav/cmd.h"
 #include "nav/ascii.h"
 #include "nav/log.h"
@@ -522,19 +520,9 @@ void cmdline_build(Cmdline *cmdline, char *line)
   }
 }
 
-int exec_line(char *line, Cmdstr *cmd)
+int cmdline_can_exec(Cmdstr *cmd, char *line)
 {
-  if (!cmd->exec || strlen(line) < 2)
-    return 0;
-  char *str = strstr(line, "!");
-  ++str;
-  Exparg exparg = {.expfn = model_str_expansion, .key = NULL};
-  str = do_expansion(str, &exparg);
-  shell_exec(str, NULL, focus_dir(), NULL);
-  //TODO: 'pidof !cmd' for var assignment
-  //TODO: hook output + block for output
-  free(str);
-  return 1;
+  return !(!cmd->exec || strlen(line) < 2);
 }
 
 static void do_pipe(Cmdstr *lhs, Cmdstr *rhs)
@@ -592,8 +580,6 @@ void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
 
   while (NEXT_CMD(cmdline, cmd)) {
     if (cmd->flag & (PIPE_LEFT|PIPE_RIGHT))
-      continue;
-    if (exec_line(cmdline->line, cmd))
       continue;
 
     cmd->caller = caller;

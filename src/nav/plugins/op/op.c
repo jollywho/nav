@@ -33,10 +33,13 @@ static char* expand_field(char *name, char *key)
   if (!vent)
     return NULL;
 
-  //if prev
+  if (strcmp(name, "next") || strcmp(name, "prev"))
+    return NULL;
+
   ventry *head = ent_head(vent);
-  //if next
-  //ent_head()->next
+  if (!strcmp(name, "next"))
+    head = head->next;
+
   char *ret = rec_fld(head->rec, "pid");
   log_msg("OP", "%s", ret);
   return ret;
@@ -48,7 +51,7 @@ static void add_pid(char *name, int pid)
   char *pidstr;
   asprintf(&pidstr, "%d", pid);
   trans_rec *r = mk_trans_rec(tbl_fld_count("op_procs"));
-  edit_trans(r, "group", name,   NULL);
+  edit_trans(r, "group", name,    NULL);
   edit_trans(r, "pid",   pidstr,  NULL);
   CREATE_EVENT(eventq(), commit, 2, "op_procs", r);
   free(pidstr);
@@ -214,13 +217,12 @@ void op_new(Plugin *plugin, Buffer *buf, void *arg)
   hook_set_tmp("execopen");
   hook_set_tmp("execclose");
   if (tbl_mk("op_procs")) {
-    tbl_mk_fld("op_procs", "group",  typSTRING);
-    tbl_mk_fld("op_procs", "pid",    typSTRING);
+    tbl_mk_fld("op_procs", "group", typSTRING);
+    tbl_mk_fld("op_procs", "pid",   typSTRING);
     //tbl_mk_fld("op_procs", "status", typSTRING);
   }
 
-  Cmd_T killcmd = {"kill", 0, op_kill, 0};
-  //pidof
+  Cmd_T killcmd  = {"kill",  0, op_kill,  0};
   cmd_add(&killcmd);
 }
 
