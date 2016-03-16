@@ -253,6 +253,7 @@ static void draw_lines(Buffer *buf, Model *m)
       int col = get_syn_colpair(file_ext(it));
       mvwchgat(buf->nc_win, i, 0, -1, A_NORMAL, col, NULL);
       DRAW_STR(buf, nc_win, i, 2+max, szbuf, col_sz);
+      mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, A_NORMAL, buf->col_text,0);
     }
   }
 }
