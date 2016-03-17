@@ -222,7 +222,13 @@ static void* win_cd(List *args, Cmdarg *ca)
   char *path = cmdline_line_from(ca->cmdline, 1);
   if (plugin)
     send_hook_msg("open", plugin, NULL, &(HookArg){NULL,path});
-  //TODO: store curdir separate from FM. empty plugin bufs need curdirs.
+  else {
+    char *newpath = valid_full_path(window_cur_dir(), path);
+    if (newpath) {
+      window_ch_dir(newpath);
+      free(newpath);
+    }
+  }
   return 0;
 }
 
