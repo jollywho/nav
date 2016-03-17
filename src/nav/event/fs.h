@@ -33,6 +33,7 @@ bool fs_blocking(fn_fs *fs);
 
 bool isdir(const char *);
 char* fs_expand_path(const char *);
+char* valid_full_path(char *, char *);
 char* fs_parent_dir(char *);
 void* fs_vt_stat_resolv(fn_rec *rec, const char *);
 long fs_vt_sz_resolv(const char *key);

@@ -10,6 +10,7 @@
 #include "nav/log.h"
 #include "nav/table.h"
 #include "nav/tui/buffer.h"
+#include "nav/info.h"
 
 static void fs_close_req(fentry *);
 static void fs_reopen(fentry *);
@@ -144,6 +145,29 @@ char* fs_expand_path(const char *path)
 char* fs_current_dir()
 {
   return get_current_dir_name();
+}
+
+char* valid_full_path(char *base, char *path)
+{
+  if (!path)
+    return strdup(base);
+
+  char *dir = fs_expand_path(path);
+  if (path[0] == '@') {
+    char *tmp = mark_path(dir);
+    if (tmp)
+      SWAP_ALLOC_PTR(dir, strdup(tmp));
+  }
+  if (dir[0] != '/')
+    SWAP_ALLOC_PTR(dir, conspath(base, dir));
+
+  char *valid = realpath(dir, NULL);
+  if (!valid) {
+    free(dir);
+    return strdup(base);
+  }
+  SWAP_ALLOC_PTR(dir, valid);
+  return dir;
 }
 
 bool isdir(const char *path)

@@ -103,29 +103,6 @@ static void fm_ch_dir(void **args)
   fm_opendir(plugin, path, FORWARD);
 }
 
-static char* valid_full_path(char *base, char *path)
-{
-  if (!path)
-    return strdup(base);
-
-  char *dir = fs_expand_path(path);
-  if (path[0] == '@') {
-    char *tmp = mark_path(dir);
-    if (tmp)
-      SWAP_ALLOC_PTR(dir, strdup(tmp));
-  }
-  if (dir[0] != '/')
-    SWAP_ALLOC_PTR(dir, conspath(window_cur_dir(), dir));
-
-  char *valid = realpath(dir, NULL);
-  if (!valid) {
-    free(dir);
-    return strdup(base);
-  }
-  SWAP_ALLOC_PTR(dir, valid);
-  return dir;
-}
-
 static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_req_dir");
