@@ -2,11 +2,12 @@
 #include <string.h>
 #include <malloc.h>
 
+#include "nav/lib/sys_queue.h"
 #include "nav/table.h"
 #include "nav/log.h"
 #include "nav/compl.h"
 
-static ventry* tbl_del_rec(fn_rec *rec, ventry *cur);
+static ventry* tbl_del_rec(fn_tbl *t, fn_rec *rec, ventry *cur);
 static void tbl_insert(fn_tbl *t, trans_rec *trec);
 
 struct fn_val {
@@ -24,6 +25,7 @@ struct fn_rec {
   fn_val **vals;
   ventry **vlist;
   int fld_count;
+  LIST_ENTRY(fn_rec) ent;
 };
 
 struct fn_fld {
@@ -46,15 +48,9 @@ struct fn_tbl {
   fn_vt_fld *vtfields;
   int count;
   int rec_count;
-  UT_array *recs;
+  LIST_HEAD(Rec, fn_rec) recs;
   UT_hash_handle hh;
 };
-
-typedef struct {
-  fn_rec *rec;
-} tbl_rec;
-
-static UT_icd rec_icd = { sizeof(tbl_rec),  NULL };
 
 static fn_tbl *FN_MASTER;
 
@@ -85,7 +81,6 @@ bool tbl_mk(const char *name)
   memset(t, 0, sizeof(fn_tbl));
   t->key = strdup(name);
   HASH_ADD_STR(FN_MASTER, key, t);
-  utarray_new(t->recs, &rec_icd);
   return true;
 }
 
@@ -96,15 +91,14 @@ void tbl_del(const char *name)
   if (!t)
     return;
 
-  for (int i = 0; i < t->rec_count; i++) {
-    tbl_rec *tbrec = (tbl_rec*)utarray_eltptr(t->recs, i);
-    fn_rec *rec = tbrec->rec;
-    for (int itf = 0; itf < rec->fld_count; itf++) {
-      fn_fld *fld = rec->vals[itf]->fld;
-      fn_val *val = rec->vals[itf];
+  while (!LIST_EMPTY(&t->recs)) {
+    fn_rec *it = LIST_FIRST(&t->recs);
+    for (int itf = 0; itf < it->fld_count; itf++) {
+      fn_fld *fld = it->vals[itf]->fld;
+      fn_val *val = it->vals[itf];
 
       val->count--;
-      free(rec->vlist[itf]);
+      free(it->vlist[itf]);
       if (val->count < 1) {
         if (fld->type == typVOID)
           free(val->data);
@@ -115,9 +109,10 @@ void tbl_del(const char *name)
         free(val);
       }
     }
-    free(rec->vlist);
-    free(rec->vals);
-    free(rec);
+    LIST_REMOVE(it, ent);
+    free(it->vlist);
+    free(it->vals);
+    free(it);
   }
 
   fn_fld *f, *ftmp;
@@ -135,7 +130,6 @@ void tbl_del(const char *name)
     free(vf);
   }
   HASH_DEL(FN_MASTER, t);
-  utarray_free(t->recs);
 }
 
 fn_tbl* get_tbl(const char *tn)
@@ -318,7 +312,7 @@ void tbl_del_val(const char *tn, const char *fld, const char *val)
   ventry *it = v->rlist;
   int count = v->count;
   for (int i = 0; i < count; i++)
-    it = tbl_del_rec(it->rec, it);
+    it = tbl_del_rec(t, it->rec, it);
 }
 
 void tbl_add_lis(const char *tn, const char *fld, const char *key)
@@ -446,8 +440,7 @@ static void tbl_insert(fn_tbl *t, trans_rec *trec)
 
     check_set_lis(f, rec->vals[i]->key, rec);
   }
-  tbl_rec tblrec = {rec};
-  utarray_push_back(t->recs, &tblrec);
+  LIST_INSERT_HEAD(&t->recs, rec, ent);
 }
 
 static void del_fldval(fn_fld *fld, fn_val *val)
@@ -483,7 +476,7 @@ static void pop_ventry(ventry *it, fn_val *val, ventry **cur)
   it = NULL;
 }
 
-static ventry* tbl_del_rec(fn_rec *rec, ventry *cur)
+static ventry* tbl_del_rec(fn_tbl *t, fn_rec *rec, ventry *cur)
 {
   log_msg("TABLE", "delete_rec()");
   for(int i = 0; i < rec->fld_count; i++) {
@@ -513,6 +506,7 @@ static ventry* tbl_del_rec(fn_rec *rec, ventry *cur)
         pop_ventry(it, val, &cur);
     }
   }
+  LIST_REMOVE(rec, ent);
   free(rec->vals);
   free(rec->vlist);
   free(rec);
