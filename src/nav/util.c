@@ -1,5 +1,5 @@
-#include <ncurses.h>
 #include <wchar.h>
+#include <limits.h>
 #include <string.h>
 #include <malloc.h>
 #include "nav/util.h"
@@ -11,6 +11,7 @@
 	(int) mbrtowc(&wch, buffer, length, &state)
 
 static wchar_t wstr[CCHARW_MAX + 1];
+static cchar_t wbuf[PATH_MAX];
 static Exparg *gexp;
 
 void set_exparg(Exparg *exparg)
@@ -23,7 +24,7 @@ bool exparg_isset()
   return gexp;
 }
 
-void trans_str_wide(char *src, cchar_t dst[], int max)
+void draw_wide(WINDOW *win, int row, int col, char *src, int max)
 {
   unsigned len = strlen(src);
   unsigned j, k;
@@ -44,7 +45,7 @@ void trans_str_wide(char *src, cchar_t dst[], int max)
     if ((width > 0 && l > 0) || l == CCHARW_MAX) {
       wstr[l] = L'\0';
       l = 0;
-      if (setcchar(dst + k, wstr, 0, 0, NULL) != OK)
+      if (setcchar(wbuf + k, wstr, 0, 0, NULL) != OK)
         break;
       ++k;
       cnt += width;
@@ -59,11 +60,12 @@ void trans_str_wide(char *src, cchar_t dst[], int max)
   }
   if (l > 0) {
     wstr[l] = L'\0';
-    if (setcchar(dst + k, wstr, 0, 0, NULL) == OK)
+    if (setcchar(wbuf + k, wstr, 0, 0, NULL) == OK)
       ++k;
   }
   wstr[0] = L'\0';
-  setcchar(dst + k, wstr, 0, 0, NULL);
+  setcchar(wbuf + k, wstr, 0, 0, NULL);
+  mvwadd_wchstr(win, row, col, wbuf);
 }
 
 void readable_fs(double size/*in bytes*/, char buf[])

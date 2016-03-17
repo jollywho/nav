@@ -67,7 +67,6 @@ static fn_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
 #define SZ_LEN 6
 #define MAX_POS(x) ((x)-(SZ_LEN+1))
-static cchar_t wbuf[PATH_MAX];
 static char szbuf[SZ_LEN*2];
 
 void buf_init()
@@ -241,8 +240,7 @@ static void draw_lines(Buffer *buf, Model *m)
     readable_fs(fs_vt_sz_resolv(path), szbuf);
 
     int max = MAX_POS(buf->b_size.col);
-    trans_str_wide(it, wbuf, max - 2);
-    mvwadd_wchstr(buf->nc_win, i, 0, wbuf);
+    draw_wide(buf->nc_win, i, 0, it, max - 2);
 
     if (fs_vt_isdir_resolv(path)) {
       mvwchgat(buf->nc_win, i, 0, -1, A_NORMAL, buf->col_dir, NULL);

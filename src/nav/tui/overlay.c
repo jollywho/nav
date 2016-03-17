@@ -10,7 +10,8 @@
 #define SZ_ARGSBOX 8
 #define SZ_LNUMBOX 10
 #define ST_USRARG() (SZ_NAMEBOX)
-#define ST_ARGBOX(ov) ((ov) - ((SZ_ARGSBOX)-1))
+#define ST_LNUMBOX(col) ((col) - ((SZ_ARGSBOX)-1))
+#define SZ_USR(col) ((col) - (SZ_BUFBOX + SZ_NAMEBOX + SZ_LNUMBOX))
 #define NAME_FMT " %-"STR(SZ_NAMEBOX)"s"
 #define SEPCHAR "╬"
 
@@ -163,7 +164,7 @@ void overlay_bufno(Overlay *ov, int id)
 void overlay_lnum(Overlay *ov, int lnum, int max)
 {
   snprintf(ov->lineno, SZ_LNUMBOX, " %*d:%-*d ", 3, lnum+1, 3, max);
-  int pos = ST_ARGBOX(ov->ov_size.col) - 2;
+  int pos = ST_LNUMBOX(ov->ov_size.col) - 2;
   DRAW_STR(ov, nc_st, 0, pos, ov->lineno, color_namebox);
   wnoutrefresh(ov->nc_st);
 }
@@ -204,9 +205,11 @@ void overlay_draw(void **argv)
     DRAW_CH(ov, nc_sep, i, 0, ' ', color_line);
   }
 
-  DRAW_STR(ov, nc_st, 0, ST_USRARG(), ov->usr_arg, color_text);
-  int pos = ST_ARGBOX(ov->ov_size.col) - 2;
-  DRAW_STR(ov, nc_st, 0, pos, ov->lineno, color_namebox);
+  //TODO: if usr_arg exceeds SZ_USR() then compress /*/*/ to fit
+  int max = ST_LNUMBOX(ov->ov_size.col) - 2;
+  draw_wide(ov->nc_st, 0, ST_USRARG(), ov->usr_arg, SZ_USR(ov->ov_size.col));
+  mvwchgat (ov->nc_st, 0, ST_USRARG(), max, A_NORMAL, ov->color_text, NULL);
+  DRAW_STR(ov, nc_st, 0, max, ov->lineno, color_namebox);
 
   wnoutrefresh(ov->nc_st);
   if (ov->separator)
