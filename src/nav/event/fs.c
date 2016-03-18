@@ -242,8 +242,10 @@ void fs_signal_handle(void **data)
 {
   log_msg("FS", "fs_signal_handle");
   fentry *ent = data[0];
-  //if ent->canceled
-  //delete values
+  if (ent->cancel) {
+    tbl_del_val("fm_files", "dir",      (char*)ent->key);
+    tbl_del_val("fm_stat",  "fullpath", (char*)ent->key);
+  }
 
   fn_fs *it = NULL;
   for (it = ent->listeners; it != NULL; it = it->hh.next) {
@@ -317,6 +319,7 @@ static int send_stat(fentry *ent, const char *dir, int upd)
 void fs_cancel(fn_fs *fs)
 {
   fs->ent->cancel = true;
+  uv_cancel((uv_req_t*)&fs->ent->uv_fs);
 }
 
 static void scan_cb(uv_fs_t *req)
