@@ -22,12 +22,12 @@ static void watch_cb(uv_fs_event_t *, const char *, int, int);
 struct fentry {
   char *key;
   uv_fs_event_t watcher;
-  uv_fs_t uv_fs; //data->req_handle
+  uv_fs_t uv_fs;
   uv_timer_t watcher_timer;
-  bool cancel;
   bool running;
   bool fastreq;
   bool flush;
+  bool cancel;
   int refs;
   fn_fs *listeners;
   UT_hash_handle hh;
@@ -42,9 +42,9 @@ static fentry* fs_mux(fn_fs *fs)
   if (!ent) {
     ent = malloc(sizeof(fentry));
     ent->running = false;
-    ent->cancel = false;
     ent->fastreq = false;
     ent->flush = false;
+    ent->cancel = false;
     ent->listeners = NULL;
     ent->key = strdup(fs->path);
     ent->refs = 2;
@@ -242,6 +242,8 @@ void fs_signal_handle(void **data)
 {
   log_msg("FS", "fs_signal_handle");
   fentry *ent = data[0];
+  //if ent->canceled
+  //delete values
 
   fn_fs *it = NULL;
   for (it = ent->listeners; it != NULL; it = it->hh.next) {
@@ -312,6 +314,11 @@ static int send_stat(fentry *ent, const char *dir, int upd)
   return 0;
 }
 
+void fs_cancel(fn_fs *fs)
+{
+  fs->ent->cancel = true;
+}
+
 static void scan_cb(uv_fs_t *req)
 {
   log_msg("FS", "--scan--");
@@ -325,7 +332,7 @@ static void scan_cb(uv_fs_t *req)
 
   send_stat(ent, ent->key, 1);
 
-  while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
+  while (UV_EOF != uv_fs_scandir_next(req, &dent) && (!ent->cancel)) {
     int err = 0;
     trans_rec *r = mk_trans_rec(tbl_fld_count("fm_files"));
     edit_trans(r, "name", (char*)dent.name, NULL);

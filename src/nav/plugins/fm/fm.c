@@ -37,6 +37,8 @@ void fm_cleanup()
 void plugin_cancel(Plugin *plugin)
 {
   log_msg("FM", "<|_CANCEL_|>");
+  FM *self = (FM*)plugin->top;
+  fs_cancel(self->fs);
 }
 
 void plugin_focus(Plugin *plugin)

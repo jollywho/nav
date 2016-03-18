@@ -33,7 +33,7 @@ void init(void)
   use_default_colors();
   noecho();
   nonl();
-  raw();
+  //raw();
   vt_init(term);
 
   cmd_init();
@@ -70,7 +70,7 @@ void cleanup(void)
   //logger
 }
 
-void sig_handler(int sig)
+void sigsegv_handler(int sig)
 {
   endwin();
   signal(sig, SIG_DFL);
@@ -80,7 +80,7 @@ void sig_handler(int sig)
 int main(int argc, char **argv)
 {
 #ifdef DEBUG
-  signal(SIGSEGV, sig_handler);
+  signal(SIGSEGV, sigsegv_handler);
 #endif
   init();
   start_event_loop();

@@ -93,7 +93,7 @@ static const uint64_t RFSH_RATE = 10;
 static Window win;
 static char *cur_dir;
 
-void sig_resize(int sig)
+void sigwinch_handler(int sig)
 {
   log_msg("WINDOW", "Signal received: **term resize**");
   clear();
@@ -101,6 +101,14 @@ void sig_resize(int sig)
   refresh();
   event_wakeup();
   window_update(&win.draw_timer);
+}
+
+void sigint_handler(int sig)
+{
+  log_msg("WINDOW", "Signal received: **sig int**");
+  Plugin *plugin = window_get_plugin();
+  if (plugin && plugin->_cancel)
+    plugin->_cancel(plugin);
 }
 
 void window_init(void)
@@ -118,7 +126,8 @@ void window_init(void)
   win.dirty = false;
   win.refs = 0;
 
-  signal(SIGWINCH, sig_resize);
+  signal(SIGINT,   sigint_handler);
+  signal(SIGWINCH, sigwinch_handler);
   layout_init(&win.layout);
 
   for (int i = 0; i < LENGTH(cmdtable); i++)
@@ -129,7 +138,7 @@ void window_init(void)
     compl_add_arg(compl_args[i][0], compl_args[i][1]);
 
   curs_set(0);
-  sig_resize(0);
+  sigwinch_handler(0);
   plugin_init();
   buf_init();
 }
