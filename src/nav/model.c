@@ -238,8 +238,8 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
 static void generate_lines(Model *m)
 {
   /* generate hash set of index,line. */
-  ventry *it = m->head->next;
-  for (int i = 0; i < tbl_ent_count(m->head); ++i) {
+  ventry *it = m->head;
+  for (int i = 0; i < tbl_ent_count(m->head); i++) {
     fn_line ln;
     ln.rec = it->rec;
     utarray_push_back(m->lines, &ln);
