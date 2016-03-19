@@ -173,7 +173,7 @@ char* valid_full_path(char *base, char *path)
 bool isdir(const char *path)
 {
   if (!path) return false;
-  ventry *ent = fnd_val("fm_stat", "fullpath", path);
+  ventry *ent = fnd_val("fm_files", "fullpath", path);
   if (!ent) return false;
   struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
   if (!st) return false;
@@ -216,25 +216,27 @@ const char* file_ext(const char *filename)
   return (d != NULL) ? d + 1 : "";
 }
 
-void* fs_vt_stat_resolv(fn_rec *rec, const char *key)
+bool isrecdir(fn_rec *rec)
 {
-  char *str1 = (char*)rec_fld(rec, "fullpath");
-  ventry *ent = fnd_val("fm_stat", "fullpath", str1);
-  struct stat *stat = (struct stat*)rec_fld(ent->rec, "stat");
-  return &stat->st_mtim.tv_sec;
+  struct stat *st = (struct stat*)rec_fld(rec, "stat");
+  return (S_ISDIR(st->st_mode));
 }
 
-long fs_vt_sz_resolv(const char *key)
+time_t rec_mtime(fn_rec *rec)
 {
-  ventry *ent = fnd_val("fm_stat", "fullpath", key);
-  struct stat *stat = (struct stat*)rec_fld(ent->rec, "stat");
+  struct stat *stat = (struct stat*)rec_fld(rec, "stat");
+  return stat->st_mtim.tv_sec;
+}
+
+long rec_stsize(fn_rec *rec)
+{
+  struct stat *stat = (struct stat*)rec_fld(rec, "stat");
   return stat->st_size;
 }
 
-bool fs_vt_isdir_resolv(const char *path)
+bool fs_vt_isdir_resolv(fn_rec *rec)
 {
-  ventry *ent = fnd_val("fm_stat", "fullpath", path);
-  struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
+  struct stat *st = (struct stat*)rec_fld(rec, "stat");
   return (S_ISDIR(st->st_mode));
 }
 
@@ -244,7 +246,7 @@ void fs_signal_handle(void **data)
   fentry *ent = data[0];
   if (ent->cancel) {
     tbl_del_val("fm_files", "dir",      (char*)ent->key);
-    tbl_del_val("fm_stat",  "fullpath", (char*)ent->key);
+    tbl_del_val("fm_files", "fullpath", (char*)ent->key);
   }
 
   fn_fs *it = NULL;
@@ -297,7 +299,7 @@ void fs_close(fn_fs *fs)
   fs_demux(fs);
 }
 
-static int send_stat(fentry *ent, const char *dir, int upd)
+static int edit_trans_stat(trans_rec *r, const char *dir, int upd)
 {
   struct stat s;
   if (stat(dir, &s) == -1)
@@ -308,12 +310,24 @@ static int send_stat(fentry *ent, const char *dir, int upd)
   int *cupd = malloc(sizeof(int));
   *cupd = upd;
 
-  trans_rec *r = mk_trans_rec(tbl_fld_count("fm_stat"));
-  edit_trans(r, "fullpath", (char*)dir,  NULL);
-  edit_trans(r, "update",   NULL,        cupd);
+  edit_trans(r, "opened",   NULL,        cupd);
   edit_trans(r, "stat",     NULL,        cstat);
-  CREATE_EVENT(eventq(), commit, 2, "fm_stat", r);
   return 0;
+}
+
+static void send_head(trans_rec *r, const char *path)
+{
+  char *full = strdup(path);
+  char *base = strdup(basename(full));
+  char *dir =  strdup(dirname(full));
+
+  edit_trans(r, "name", (char*)base, NULL);
+  edit_trans(r, "dir",  (char*)dir, NULL);
+  edit_trans(r, "fullpath", (char*)path,   NULL);
+  free(base);
+  free(dir);
+  free(full);
+  CREATE_EVENT(eventq(), commit, 2, "fm_files", r);
 }
 
 void fs_cancel(fn_fs *fs)
@@ -331,9 +345,11 @@ static void scan_cb(uv_fs_t *req)
 
   /* clear outdated records */
   tbl_del_val("fm_files", "dir",      (char*)req->path);
-  tbl_del_val("fm_stat",  "fullpath", (char*)req->path);
+  tbl_del_val("fm_files", "fullpath", (char*)req->path);
 
-  send_stat(ent, ent->key, 1);
+  trans_rec *rh = mk_trans_rec(tbl_fld_count("fm_files"));
+  edit_trans_stat(rh, req->path, 1);
+  send_head(rh, req->path);
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent) && (!ent->cancel)) {
     int err = 0;
@@ -342,11 +358,7 @@ static void scan_cb(uv_fs_t *req)
     edit_trans(r, "dir",  (char*)req->path, NULL);
     char *full = conspath(req->path, dent.name);
 
-    ventry *vent = fnd_val("fm_stat", "fullpath", full);
-    if (!vent) {
-      log_msg("FS", "--fresh stat-- %s", full);
-      err = send_stat(ent, full, 0);
-    }
+    err = edit_trans_stat(r, full, 0);
 
     edit_trans(r, "fullpath", (char*)full,   NULL);
     free(full);
@@ -367,16 +379,12 @@ static void stat_cb(uv_fs_t *req)
   uv_stat_t stat = req->statbuf;
   int nop = 0;
 
-  ventry *vent = fnd_val("fm_files", "dir", ent->key);
+  ventry *vent = fnd_val("fm_files", "fullpath", ent->key);
 
   if (!vent || ent->flush)
     goto scandir;
 
-  vent = fnd_val("fm_stat", "fullpath", ent->key);
-  if (!vent)
-    goto scandir;
-
-  int *upd = (int*)rec_fld(vent->rec, "update");
+  int *upd = (int*)rec_fld(vent->rec, "opened");
   if (!*upd)
     goto scandir;
 

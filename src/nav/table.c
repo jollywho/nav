@@ -39,7 +39,6 @@ struct fn_fld {
 struct fn_vt_fld {
   char *key;
   int type;
-  tbl_vt_cb cb;
   UT_hash_handle hh;
 };
 
@@ -48,6 +47,7 @@ struct fn_tbl {
   fn_fld *fields;
   fn_vt_fld *vtfields;
   int rec_count;
+  int vis_fld_count;
   LIST_HEAD(Rec, fn_rec) recs;
   UT_hash_handle hh;
 };
@@ -154,20 +154,23 @@ void tbl_mk_fld(const char *tn, const char *name, int type)
   memset(fld, 0, sizeof(fn_fld));
   fld->key = strdup(name);
   fld->type = type;
+  if (type != TYP_VOID)
+    t->vis_fld_count++;
   HASH_ADD_STR(t->fields, key, fld);
   HASH_SORT(t->fields, fld_sort);
   log_msg("TABLE", "made %s", fld->key);
 }
 
-void tbl_mk_vt_fld(const char *tn, const char *name, tbl_vt_cb cb, int type)
+void tbl_mk_vt_fld(const char *tn, const char *name, int type)
 {
   log_msg("TABLE", "making {%s} vt_field {%s} ...", tn, name);
   fn_tbl *t = get_tbl(tn);
   fn_vt_fld *fld = malloc(sizeof(fn_vt_fld));
   memset(fld, 0, sizeof(fn_vt_fld));
   fld->key = strdup(name);
-  fld->cb = cb;
   fld->type = type;
+  if (type != TYP_VOID)
+    t->vis_fld_count++;
   HASH_ADD_STR(t->vtfields, key, fld);
   log_msg("TABLE", "made %s", fld->key);
 }
@@ -283,14 +286,6 @@ int fld_type(const char *tn, const char *fld)
     return vf->type;
 
   return 0;
-}
-
-void* rec_vt_fld(const char *tn, fn_rec *rec, const char *fld)
-{
-  fn_tbl *t = get_tbl(tn);
-  fn_vt_fld *f;
-  HASH_FIND_STR(t->vtfields, fld, f);
-  return f->cb(rec, fld);
 }
 
 int tbl_fld_count(const char *tn)
@@ -569,27 +564,25 @@ void clear_trans(trans_rec *r, int flush)
   free(r);
 }
 
-//TODO: cntlr has list of tables it own
-// get current focus cntlr
-// get cntlr's table list
-// iterate list of tables
-// add field to compl
 void field_list(List *args)
 {
   if (HASH_COUNT(FN_MASTER) < 1) return;
   fn_tbl *t = get_tbl("fm_files");
-  unsigned int count = HASH_COUNT(t->fields);
-  count += HASH_COUNT(t->vtfields);
+  unsigned int count = t->vis_fld_count;
 
   compl_new(count, COMPL_STATIC);
   fn_fld *it;
   int i = 0;
   for (it = t->fields; it != NULL; it = it->hh.next) {
+    if (it->type == TYP_VOID)
+      continue;
     compl_set_key(i, "%s", it->key);
     i++;
   }
   fn_vt_fld *vit;
   for (vit = t->vtfields; vit != NULL; vit = vit->hh.next) {
+    if (vit->type == TYP_VOID)
+      continue;
     compl_set_key(i, "%s", vit->key);
     i++;
   }

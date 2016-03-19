@@ -50,6 +50,8 @@ static struct Sort_T {
   //{SRT_TYPE, cmp_type},
   {SRT_DIR,  cmp_dir},
 };
+//TODO: remove field name from cmp functions:
+//field name can be passed into each cmp fn within an arg struct.
 
 #define REV_FN(cond,fn,a,b) ((cond) ? (fn((b),(a))) : (fn((a),(b))))
 #define intcmp(a,b) ((a) - (b))
@@ -58,10 +60,9 @@ static int cmp_time(const void *a, const void *b, void *arg)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
-
-  time_t *t1 = fs_vt_stat_resolv(l1.rec, "mtime");
-  time_t *t2 = fs_vt_stat_resolv(l2.rec, "mtime");
-  return REV_FN(*(int*)arg, difftime, *t2, *t1);
+  time_t t1 = rec_mtime(l1.rec);
+  time_t t2 = rec_mtime(l2.rec);
+  return REV_FN(*(int*)arg, difftime, t2, t1);
 }
 
 static int cmp_str(const void *a, const void *b, void *arg)
@@ -77,10 +78,8 @@ static int cmp_dir(const void *a, const void *b, void *arg)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
-  char *s1 = rec_fld(l1.rec, "fullpath");
-  char *s2 = rec_fld(l2.rec, "fullpath");
-  int b1 = fs_vt_isdir_resolv(s1);
-  int b2 = fs_vt_isdir_resolv(s2);
+  int b1 = isrecdir(l1.rec);
+  int b2 = isrecdir(l2.rec);
   return REV_FN(*(int*)arg, intcmp, b2, b1);
 }
 
@@ -90,6 +89,7 @@ static void sort_by_type(Model *m)
     int row_type = sort_tbl[i].val;
     if ((m->sort_type & row_type) == row_type) {
       utarray_sort(m->lines, sort_tbl[i].cmp, &m->sort_rev);
+      break;
     }
   }
 }
@@ -291,6 +291,12 @@ void* model_fld_line(Model *m, const char *fld, int index)
 {
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
   return rec_fld(res->rec, fld);
+}
+
+fn_rec* model_rec_line(Model *m, int index)
+{
+  fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
+  return res->rec;
 }
 
 void model_set_curs(Model *m, int index)

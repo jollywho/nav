@@ -64,8 +64,6 @@ void tbl_del_val(const char *, const char *, const char *);
 int tbl_fld_count(const char *);
 int tbl_ent_count(ventry *e);
 
-typedef void* (*tbl_vt_cb)(fn_rec *rec, const char *key);
-
 typedef struct {
   int count;
   int max;
@@ -74,8 +72,7 @@ typedef struct {
   void **data;
 } trans_rec;
 
-void tbl_mk_vt_fld(const char *, const char *, tbl_vt_cb cb, int);
-void* rec_vt_fld(const char *, fn_rec *rec, const char *);
+void tbl_mk_vt_fld(const char *, const char *, int);
 
 trans_rec* mk_trans_rec(int fld_count);
 void edit_trans(trans_rec *r, char *, char *, void *data);

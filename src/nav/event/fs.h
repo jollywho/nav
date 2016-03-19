@@ -33,12 +33,12 @@ void fs_fastreq(fn_fs *fs);
 bool fs_blocking(fn_fs *fs);
 
 bool isdir(const char *);
+bool isrecdir(fn_rec *);
+time_t rec_mtime(fn_rec *rec);
+long rec_stsize(fn_rec *rec);
 char* fs_expand_path(const char *);
 char* valid_full_path(char *, char *);
 char* fs_parent_dir(char *);
-void* fs_vt_stat_resolv(fn_rec *rec, const char *);
-long fs_vt_sz_resolv(const char *key);
-bool fs_vt_isdir_resolv(const char *path);
 char* conspath(const char *, const char *);
 const char* file_ext(const char *filename);
 

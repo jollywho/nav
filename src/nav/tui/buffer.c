@@ -236,13 +236,14 @@ static void draw_lines(Buffer *buf, Model *m)
     if (!it)
       break;
 
-    char *path = model_fld_line(m, "fullpath", buf->top + i);
-    readable_fs(fs_vt_sz_resolv(path), szbuf);
+    fn_rec *rec = model_rec_line(m, buf->top + i);
+
+    readable_fs(rec_stsize(rec), szbuf);
 
     int max = MAX_POS(buf->b_size.col);
     draw_wide(buf->nc_win, i, 0, it, max - 2);
 
-    if (fs_vt_isdir_resolv(path)) {
+    if (isrecdir(rec)) {
       mvwchgat(buf->nc_win, i, 0, -1, A_NORMAL, buf->col_dir, NULL);
       DRAW_STR(buf, nc_win, i, buf->b_size.col - 1, "/", col_sz);
     }
@@ -450,7 +451,6 @@ void buf_sort(Buffer *buf, char *fld, int flags)
     return;
   DO_EVENTS_UNTIL(!model_blocking(buf->hndl));
   int type = fld_type(buf->hndl->tn, fld);
-  log_msg("BUFFER", "%s %d", fld, type);
   model_sort(buf->hndl->model, type, flags);
 }
 
