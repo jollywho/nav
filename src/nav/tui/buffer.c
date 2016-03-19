@@ -449,7 +449,9 @@ void buf_sort(Buffer *buf, char *fld, int flags)
   if (!buf->hndl)
     return;
   DO_EVENTS_UNTIL(!model_blocking(buf->hndl));
-  model_sort(buf->hndl->model, fld, flags);
+  int type = fld_type(buf->hndl->tn, fld);
+  log_msg("BUFFER", "%s %d", fld, type);
+  model_sort(buf->hndl->model, type, flags);
 }
 
 /* public fields */

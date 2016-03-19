@@ -11,7 +11,7 @@ void model_open(fn_handle *hndl);
 void model_close(fn_handle *hndl);
 bool model_blocking(fn_handle *hndl);
 
-void model_sort(Model *m, const char *fld, int flags);
+void model_sort(Model *m, int sort_type, int flags);
 void model_recv(Model *m);
 void refind_line(Model *m);
 

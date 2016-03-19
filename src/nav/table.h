@@ -12,13 +12,14 @@ typedef struct fn_lis fn_lis;
 typedef struct tentry tentry;
 typedef struct ventry ventry;
 
-typedef enum {
-  typVOID,
-  typINT,
-  typSTRING,
-  typUINT64_T,
-  //typTABLE /* record format for lists of tables */
-} tFldType;
+#define TYP_VOID     0
+#define TYP_STR      1
+#define TYP_INT      2
+#define SRT_STR     16
+#define SRT_INT     32
+#define SRT_TIME    64
+#define SRT_TYPE   128
+#define SRT_DIR    256
 
 struct ventry {
   ventry *prev;
@@ -42,7 +43,7 @@ void tables_init();
 void tables_cleanup();
 bool tbl_mk(const char *);
 void tbl_del(const char *);
-void tbl_mk_fld(const char *, const char *, tFldType);
+void tbl_mk_fld(const char *, const char *, int);
 
 fn_tbl* get_tbl(const char *tn);
 void tbl_add_lis(const char *, const char *, const char *);
@@ -56,6 +57,7 @@ void* rec_fld(fn_rec *rec, const char *);
 char* ent_str(ventry *ent);
 ventry* ent_head(ventry *ent);
 ventry* ent_rec(fn_rec *rec, const char *);
+int fld_type(const char *, const char *);
 
 void tbl_del_val(const char *, const char *, const char *);
 
@@ -72,7 +74,7 @@ typedef struct {
   void **data;
 } trans_rec;
 
-void tbl_mk_vt_fld(const char *, const char *, tbl_vt_cb cb);
+void tbl_mk_vt_fld(const char *, const char *, tbl_vt_cb cb, int);
 void* rec_vt_fld(const char *, fn_rec *rec, const char *);
 
 trans_rec* mk_trans_rec(int fld_count);

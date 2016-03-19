@@ -217,8 +217,8 @@ void op_new(Plugin *plugin, Buffer *buf, void *arg)
   hook_set_tmp("execopen");
   hook_set_tmp("execclose");
   if (tbl_mk("op_procs")) {
-    tbl_mk_fld("op_procs", "group", typSTRING);
-    tbl_mk_fld("op_procs", "pid",   typSTRING);
+    tbl_mk_fld("op_procs", "group", TYP_STR);
+    tbl_mk_fld("op_procs", "pid",   TYP_STR);
     //tbl_mk_fld("op_procs", "status", typSTRING);
   }
 

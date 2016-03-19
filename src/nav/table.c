@@ -30,7 +30,7 @@ struct fn_rec {
 
 struct fn_fld {
   char *key;
-  tFldType type;
+  int type;
   fn_val *vals;
   fn_lis *lis;
   UT_hash_handle hh;
@@ -38,6 +38,7 @@ struct fn_fld {
 
 struct fn_vt_fld {
   char *key;
+  int type;
   tbl_vt_cb cb;
   UT_hash_handle hh;
 };
@@ -46,7 +47,6 @@ struct fn_tbl {
   char *key;
   fn_fld *fields;
   fn_vt_fld *vtfields;
-  int count;
   int rec_count;
   LIST_HEAD(Rec, fn_rec) recs;
   UT_hash_handle hh;
@@ -100,7 +100,7 @@ void tbl_del(const char *name)
       val->count--;
       free(it->vlist[itf]);
       if (val->count < 1) {
-        if (fld->type == typVOID)
+        if (fld->type == TYP_VOID)
           free(val->data);
         else {
           HASH_DEL(fld->vals, val);
@@ -146,21 +146,20 @@ int fld_sort(fn_fld *a, fn_fld *b)
   return strcmp(a->key, b->key);
 }
 
-void tbl_mk_fld(const char *tn, const char *name, tFldType typ)
+void tbl_mk_fld(const char *tn, const char *name, int type)
 {
   log_msg("TABLE", "making {%s} field {%s} ...", tn, name);
   fn_tbl *t = get_tbl(tn);
   fn_fld *fld = malloc(sizeof(fn_fld));
   memset(fld, 0, sizeof(fn_fld));
   fld->key = strdup(name);
-  fld->type = typ;
-  t->count++;
+  fld->type = type;
   HASH_ADD_STR(t->fields, key, fld);
   HASH_SORT(t->fields, fld_sort);
   log_msg("TABLE", "made %s", fld->key);
 }
 
-void tbl_mk_vt_fld(const char *tn, const char *name, tbl_vt_cb cb)
+void tbl_mk_vt_fld(const char *tn, const char *name, tbl_vt_cb cb, int type)
 {
   log_msg("TABLE", "making {%s} vt_field {%s} ...", tn, name);
   fn_tbl *t = get_tbl(tn);
@@ -168,6 +167,7 @@ void tbl_mk_vt_fld(const char *tn, const char *name, tbl_vt_cb cb)
   memset(fld, 0, sizeof(fn_vt_fld));
   fld->key = strdup(name);
   fld->cb = cb;
+  fld->type = type;
   HASH_ADD_STR(t->vtfields, key, fld);
   log_msg("TABLE", "made %s", fld->key);
 }
@@ -175,9 +175,9 @@ void tbl_mk_vt_fld(const char *tn, const char *name, tbl_vt_cb cb)
 fn_rec* mk_rec(fn_tbl *t)
 {
   fn_rec *rec = malloc(sizeof(fn_rec));
-  rec->vals  = malloc(t->count * sizeof(fn_val*));
-  rec->vlist = malloc(t->count * sizeof(fn_val*));
-  rec->fld_count = t->count;
+  rec->vals  = malloc(HASH_COUNT(t->fields) * sizeof(fn_val*));
+  rec->vlist = malloc(HASH_COUNT(t->fields) * sizeof(fn_val*));
+  rec->fld_count = HASH_COUNT(t->fields);
   return rec;
 }
 
@@ -244,7 +244,7 @@ void* rec_fld(fn_rec *rec, const char *fld)
     if (strcmp(val->fld->key, fld) != 0)
       continue;
 
-    if (val->fld->type == typSTRING)
+    if (val->fld->type == TYP_STR)
       return val->key;
     else
       return val->data;
@@ -252,7 +252,7 @@ void* rec_fld(fn_rec *rec, const char *fld)
   return NULL;
 }
 
-ventry* ent_rec(fn_rec *rec, const char* fld)
+ventry* ent_rec(fn_rec *rec, const char *fld)
 {
   for(int i = 0; i < rec->fld_count; i++) {
     fn_val *val = rec->vals[i];
@@ -266,6 +266,25 @@ ventry* ent_rec(fn_rec *rec, const char* fld)
   return NULL;
 }
 
+int fld_type(const char *tn, const char *fld)
+{
+  fn_tbl *t = get_tbl(tn);
+  if (!tn)
+    return 0;
+
+  fn_fld *f;
+  HASH_FIND_STR(t->fields, fld, f);
+  if (f)
+    return f->type;
+
+  fn_vt_fld *vf;
+  HASH_FIND_STR(t->vtfields, fld, vf);
+  if (vf)
+    return vf->type;
+
+  return 0;
+}
+
 void* rec_vt_fld(const char *tn, fn_rec *rec, const char *fld)
 {
   fn_tbl *t = get_tbl(tn);
@@ -276,7 +295,7 @@ void* rec_vt_fld(const char *tn, fn_rec *rec, const char *fld)
 
 int tbl_fld_count(const char *tn)
 {
-  return get_tbl(tn)->count;
+  return HASH_COUNT(get_tbl(tn)->fields);
 }
 
 int tbl_ent_count(ventry *e)
@@ -423,7 +442,7 @@ static void tbl_insert(fn_tbl *t, trans_rec *trec)
     fn_fld *f;
     HASH_FIND_STR(t->fields, trec->flds[i], f);
 
-    if (f->type == typVOID) {
+    if (f->type == TYP_VOID) {
       rec->vals[i] = new_entry(rec, f, data, 1, i);
       rec->vlist[i] = NULL;
       continue;
@@ -455,7 +474,7 @@ static void del_fldval(fn_fld *fld, fn_val *val)
   if (ll)
     ll->rec = NULL;
 
-  if (fld->type == typVOID)
+  if (fld->type == TYP_VOID)
     free(val->data);
   free(val->key);
   val->rlist = NULL;
@@ -482,7 +501,7 @@ static ventry* tbl_del_rec(fn_tbl *t, fn_rec *rec, ventry *cur)
   for(int i = 0; i < rec->fld_count; i++) {
     ventry *it = rec->vlist[i];
     if (!it) {
-      if (rec->vals[i]->fld->type == typVOID)
+      if (rec->vals[i]->fld->type == TYP_VOID)
         free(rec->vals[i]->data);
       free(rec->vals[i]);
     }

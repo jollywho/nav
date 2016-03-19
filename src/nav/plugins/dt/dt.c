@@ -33,8 +33,8 @@ void dt_new(Plugin *plugin, Buffer *buf, void *arg)
   dt->filename = strdup(arg);
 
   if (tbl_mk("filename")) {
-    tbl_mk_fld("filename", "name", typSTRING);
-    tbl_mk_fld("filename", "line", typSTRING);
+    tbl_mk_fld("filename", "name", TYP_STR);
+    tbl_mk_fld("filename", "line", TYP_STR);
   }
 
   model_init(hndl);

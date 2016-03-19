@@ -20,6 +20,7 @@ static void generate_lines(Model *m);
 struct fn_line {
   fn_rec *rec;
 };
+static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
 
 struct Model {
   fn_handle *hndl;
@@ -28,17 +29,32 @@ struct Model {
   ventry *head;
   bool blocking;
   bool opened;
-  char *sort_type;
+  int sort_type;
   int sort_rev;
   UT_array *lines;
 };
 
-#define REV_FN(cond,fn,a,b) ((cond) ? (fn((b),(a))) : (fn((a),(b))))
+//static int cmp_int(const void *, const void *, void *);
+static int cmp_str(const void *, const void *, void *);
+static int cmp_time(const void *, const void *, void *);
+//static int cmp_type(const void *, const void *, void *);
+static int cmp_dir(const void *, const void *, void *);
+typedef struct Sort_T Sort_T;
+static struct Sort_T {
+  int val;
+  int (*cmp)(const void *, const void *, void *);
+} sort_tbl[] = {
+  {SRT_STR,  cmp_str},
+  //{SRT_INT,  cmp_int},
+  {SRT_TIME, cmp_time},
+  //{SRT_TYPE, cmp_type},
+  {SRT_DIR,  cmp_dir},
+};
 
-static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
+#define REV_FN(cond,fn,a,b) ((cond) ? (fn((b),(a))) : (fn((a),(b))))
 #define intcmp(a,b) ((a) - (b))
 
-static int date_cmp(const void *a, const void *b, void *arg)
+static int cmp_time(const void *a, const void *b, void *arg)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
@@ -48,7 +64,7 @@ static int date_cmp(const void *a, const void *b, void *arg)
   return REV_FN(*(int*)arg, difftime, *t2, *t1);
 }
 
-static int str_cmp(const void *a, const void *b, void *arg)
+static int cmp_str(const void *a, const void *b, void *arg)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
@@ -57,7 +73,7 @@ static int str_cmp(const void *a, const void *b, void *arg)
   return REV_FN(*(int*)arg, strcmp, s1, s2);
 }
 
-static int dir_cmp(const void *a, const void *b, void *arg)
+static int cmp_dir(const void *a, const void *b, void *arg)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
@@ -68,13 +84,33 @@ static int dir_cmp(const void *a, const void *b, void *arg)
   return REV_FN(*(int*)arg, intcmp, b2, b1);
 }
 
+static void sort_by_type(Model *m)
+{
+  for (int i = 0; i < LENGTH(sort_tbl); i++) {
+    int row_type = sort_tbl[i].val;
+    if ((m->sort_type & row_type) == row_type) {
+      utarray_sort(m->lines, sort_tbl[i].cmp, &m->sort_rev);
+    }
+  }
+}
+
+static fn_line* find_by_type(Model *m, fn_line *ln)
+{
+  for (int i = 0; i < LENGTH(sort_tbl); i++) {
+    int row_type = sort_tbl[i].val;
+    if ((m->sort_type & row_type) == row_type) {
+      return utarray_find(m->lines, ln, sort_tbl[i].cmp, &m->sort_rev);
+    }
+  }
+  return NULL;
+}
+
 void model_init(fn_handle *hndl)
 {
   Model *model = malloc(sizeof(Model));
   memset(model, 0, sizeof(Model));
   model->hndl = hndl;
   hndl->model = model;
-  model->sort_type = strdup("");
   model->sort_rev = 1;
   model->blocking = true;
   utarray_new(model->lines, &icd);
@@ -87,7 +123,6 @@ void model_cleanup(fn_handle *hndl)
   Model *m = hndl->model;
   regex_destroy(hndl);
   utarray_free(m->lines);
-  free(m->sort_type);
   free(m);
 }
 
@@ -121,7 +156,7 @@ static void refit(Model *m, fn_lis *lis, Buffer *buf)
     lis->lnum += dif;
   }
   if (pos >= model_count(m))
-    lis->lnum = model_count(m) - lis->index - 1;
+    lis->lnum = (model_count(m) - lis->index) - 1;
 }
 
 static int try_old_pos(Model *m, fn_lis *lis, int pos)
@@ -130,7 +165,7 @@ static int try_old_pos(Model *m, fn_lis *lis, int pos)
   ln = (fn_line*)utarray_eltptr(m->lines, pos);
   if (!ln)
     return 0;
-  return (strcmp(lis->fval, rec_fld(ln->rec, m->hndl->kname)) == 0);
+  return (!strcmp(lis->fval, rec_fld(ln->rec, m->hndl->kname)));
 }
 
 static void try_old_val(Model *m, fn_lis *lis, ventry *it)
@@ -140,13 +175,7 @@ static void try_old_val(Model *m, fn_lis *lis, ventry *it)
   it = ent_rec(it->rec, "dir");
   fn_line ln = { .rec = it->rec };
 
-  if (strcmp(m->sort_type, "mtime") == 0)
-    find = (fn_line*)utarray_find(m->lines, &ln, date_cmp, &m->sort_rev);
-  else if (strcmp(m->sort_type, "dir") == 0)
-    find = (fn_line*)utarray_find(m->lines, &ln, dir_cmp, &m->sort_rev);
-  else
-    find = (fn_line*)utarray_find(m->lines, &ln, str_cmp, &m->sort_rev);
-
+  find = find_by_type(m, &ln);
   if (!find)
     return;
 
@@ -168,26 +197,18 @@ void refind_line(Model *m)
   if (try_old_pos(m, lis, lis->index + lis->lnum))
     return;
 
-  //FIXME: use one struct and one comparison fn
-  //atm, similar timestamps produce incorrect results
   try_old_val(m, lis, it);
 }
 
-void model_sort(Model *m, const char *fld, int flags)
+void model_sort(Model *m, int sort_type, int flags)
 {
   log_msg("MODEL", "model_sort");
-  if (fld) {
-    free(m->sort_type);
-    m->sort_type = strdup(fld);
-  }
+  if (sort_type != -1)
+    m->sort_type = sort_type;
+
   m->sort_rev = flags;
 
-  if (strcmp(m->sort_type, "mtime") == 0)
-    utarray_sort(m->lines, date_cmp, &m->sort_rev);
-  else if (strcmp(m->sort_type, "dir") == 0)
-    utarray_sort(m->lines, dir_cmp, &m->sort_rev);
-  else if (strcmp(m->sort_type, "name") == 0)
-    utarray_sort(m->lines, str_cmp, &m->sort_rev);
+  sort_by_type(m);
 
   refind_line(m);
   refit(m, m->lis, m->hndl->buf);
@@ -230,7 +251,7 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   m->cur = head->rec;
   h->model->lis = lis;
   generate_lines(m);
-  model_sort(m, NULL, 0);
+  model_sort(m, -1, 0);
   m->blocking = false;
   m->opened = true;
 }
