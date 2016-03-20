@@ -405,16 +405,20 @@ static void buf_g(Buffer *buf, Keyarg *ca)
 
 static void buf_yank(Buffer *buf, Keyarg *ca)
 {
-  char *val = model_curs_value(buf->hndl->model, "fullpath");
-  reg_set(NUL, val);
-  reg_set('0', val);
+  fn_handle *h = buf->hndl;
+  char *val = model_curs_value(h->model, "fullpath");
+  char *shw = model_curs_value(h->model, h->fname);
+  reg_set(NUL, val, shw);
+  reg_set('0', val, shw);
 }
 
 static void buf_del(Buffer *buf, Keyarg *ca)
 {
-  char *val = model_curs_value(buf->hndl->model, "fullpath");
-  reg_set(NUL, val);
-  reg_set('1', val);
+  fn_handle *h = buf->hndl;
+  char *val = model_curs_value(h->model, "fullpath");
+  char *shw = model_curs_value(h->model, h->fname);
+  reg_set(NUL, val, shw);
+  reg_set('1', val, shw);
 }
 
 static void buf_mark(Buffer *buf, Keyarg *ca)

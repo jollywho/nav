@@ -417,10 +417,10 @@ fn_reg* reg_dcur()
 
 void reg_clear_dcur()
 {
-  reg_set(NUL, NULL);
+  reg_set(NUL, NULL, NULL);
 }
 
-void reg_set(int ch, char *value)
+void reg_set(int ch, char *value, char *show)
 {
   log_msg("model", "reg_set");
   fn_reg *find = reg_get(ch);
@@ -434,8 +434,10 @@ void reg_set(int ch, char *value)
     return;
   find->value = strdup(value);
 
-  char *cpy;
-  asprintf(&cpy, "echo -n \"%s\" | xclip", value);
-  system(cpy);
-  free(cpy);
+  if (ch == '0') {
+    char *cpy;
+    asprintf(&cpy, "echo -n \"%s\" | xclip", show);
+    system(cpy);
+    free(cpy);
+  }
 }

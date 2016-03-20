@@ -83,6 +83,6 @@ struct fn_reg {
 fn_reg* reg_get(int ch);
 fn_reg* reg_dcur();
 void reg_clear_dcur();
-void reg_set(int ch, char *fld);
+void reg_set(int ch, char *value, char *show);
 
 #endif
