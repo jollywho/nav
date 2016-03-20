@@ -7,13 +7,6 @@
 
 #define NSUBEXP  5
 
-#define NEXT_OR_WRAP(match,l) \
-  l = (int*)utarray_next(match, l); \
-  l = l ? l : (int*)utarray_next(match, l);
-#define PREV_OR_WRAP(match,l) \
-  l = (int*)utarray_prev(match, l); \
-  l = l ? l : (int*)utarray_prev(match, l);
-
 struct Pattern {
   pcre *pcre;
   pcre_extra *extra;
@@ -28,6 +21,7 @@ struct LineMatch {
 };
 
 static char* gcomp; /* shared regex for all buffers */
+static int gregsign;
 
 LineMatch* regex_new(fn_handle *hndl)
 {
@@ -44,6 +38,11 @@ void regex_destroy(fn_handle *hndl)
   if (lm->lines)
     utarray_free(lm->lines);
   free(lm);
+}
+
+void regex_setsign(int sign)
+{
+  gregsign = sign;
 }
 
 static void regex_compile(const char *comp, pcre **pcre, pcre_extra **extra)
@@ -234,14 +233,15 @@ void regex_hover(LineMatch *lm)
   if (ret)
     regex_focus(lm, *ret, line);
   else {
-    NEXT_OR_WRAP(lm->lines, ret);
+    ret = (int*)utarray_next(lm->lines, ret); \
+    ret = ret ? ret : (int*)utarray_next(lm->lines, ret);
     regex_focus(lm, *ret, line);
   }
 }
 
 // pivot buffernode focus to closest match.
 // varies by direction: '/', '?'
-void regex_next(LineMatch *lm, int line)
+void regex_next(LineMatch *lm, int line, int dir)
 {
   log_msg("REGEX", "regex_next");
   get_or_make_matches(lm);
@@ -249,20 +249,15 @@ void regex_next(LineMatch *lm, int line)
     return;
 
   int *ret = nearest_next_match(lm->lines, line);
-  if (ret && *ret == line)
-    NEXT_OR_WRAP(lm->lines, ret);
-  regex_focus(lm, *ret, line);
-}
-
-void regex_prev(LineMatch *lm, int line)
-{
-  log_msg("REGEX", "regex_prev");
-  get_or_make_matches(lm);
-  if (!lm->lines || utarray_len(lm->lines) < 1)
-    return;
-
-  int *ret = nearest_next_match(lm->lines, line);
-  if (ret && *ret >= line)
-    PREV_OR_WRAP(lm->lines, ret);
+  if (ret && *ret == line) {
+    if (gregsign * dir > 0) {
+      ret = (int*)utarray_next(lm->lines, ret); \
+      ret = ret ? ret : (int*)utarray_next(lm->lines, ret);
+    }
+    else {
+      ret = (int*)utarray_prev(lm->lines, ret); \
+      ret = ret ? ret : (int*)utarray_prev(lm->lines, ret);
+    }
+  }
   regex_focus(lm, *ret, line);
 }

@@ -59,8 +59,9 @@ static Menu *menu;
 static fn_hist *hist_cmds;
 static fn_hist *hist_regs;
 static LineMatch *lm;
+static int reg_dir;
 
-static const char state_symbol[] = {'/',':'};
+static char state_symbol;
 static int ex_state;
 static int col_text;
 static int mflag;
@@ -84,10 +85,11 @@ void ex_cmd_cleanup()
   menu_delete(menu);
 }
 
-void start_ex_cmd(int state)
+void start_ex_cmd(char symbol, int state)
 {
   log_msg("EXCMD", "start");
   ex_state = state;
+  state_symbol = symbol;
   pos_T max = layout_size();
   nc_win = newwin(1, 0, max.lnum - 1, 0);
   curpos = CURS_MIN;
@@ -173,7 +175,7 @@ static void cmdline_draw()
     menu_draw(menu);
 
   wattron(nc_win, COLOR_PAIR(col_text));
-  mvwaddch(nc_win, 0, 0, state_symbol[ex_state]);
+  mvwaddch(nc_win, 0, 0, state_symbol);
   gen_output_str();
   mvwprintw(nc_win, 0, 1, fmt_out);
   wattroff(nc_win, COLOR_PAIR(col_text));

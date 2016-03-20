@@ -106,6 +106,8 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   FM *self = plugin->top;
   if (!hka->arg)
     hka->arg = "~";
+  if (hka->flag == 1)
+    fs_fastreq(self->fs);
 
   DO_EVENTS_UNTIL(!fs_blocking(self->fs));
 

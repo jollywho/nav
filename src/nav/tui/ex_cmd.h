@@ -29,7 +29,7 @@ typedef struct {
 
 void ex_cmd_init();
 void ex_cmd_cleanup();
-void start_ex_cmd(int ex_state);
+void start_ex_cmd(char, int);
 void stop_ex_cmd();
 
 void ex_input(int key);

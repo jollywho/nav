@@ -37,6 +37,7 @@ static void* win_echo();
 static void* win_reload();
 static void win_layout();
 static void window_ex_cmd();
+static void window_reg_cmd();
 static void window_update(uv_timer_t *);
 
 static const Cmd_T cmdtable[] = {
@@ -80,7 +81,8 @@ static char *compl_args[][2] = {
 
 static fn_key key_defaults[] = {
   {':',     window_ex_cmd,   0,           EX_CMD_STATE},
-  {'/',     window_ex_cmd,   0,           EX_REG_STATE},
+  {'?',     window_reg_cmd,  0,           BACKWARD},
+  {'/',     window_reg_cmd,  0,           FORWARD},
   {'H',     win_layout,      0,           MOVE_LEFT},
   {'J',     win_layout,      0,           MOVE_DOWN},
   {'K',     win_layout,      0,           MOVE_UP},
@@ -295,7 +297,7 @@ static void* win_reload(List *args, Cmdarg *ca)
   log_msg("WINDOW", "win_reload");
   Plugin *plugin = buf_plugin(layout_buf(&win.layout));
   if (plugin)
-    send_hook_msg("open", plugin, NULL, &(HookArg){NULL,window_cur_dir()});
+    send_hook_msg("open", plugin, NULL, &(HookArg){NULL,window_cur_dir(),1});
   return 0;
 }
 
@@ -362,7 +364,14 @@ static void window_ex_cmd(Window *_w, Keyarg *arg)
   if (!window_focus_attached() && arg->arg == EX_REG_STATE)
     return;
   win.ex = true;
-  start_ex_cmd(arg->arg);
+  start_ex_cmd(arg->key, arg->arg);
+}
+
+static void window_reg_cmd(Window *_w, Keyarg *arg)
+{
+  regex_setsign(arg->arg);
+  arg->arg = EX_REG_STATE;
+  window_ex_cmd(_w, arg);
 }
 
 void window_ex_cmd_end()

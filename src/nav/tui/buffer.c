@@ -318,10 +318,7 @@ void buf_scroll(Buffer *buf, int y, int max)
 static void buf_search(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_search");
-  if (ca->arg == FORWARD)
-    regex_next(buf->matches, buf->top + buf->lnum);
-  if (ca->arg == BACKWARD)
-    regex_prev(buf->matches, buf->top + buf->lnum);
+  regex_next(buf->matches, buf->top + buf->lnum, ca->arg);
 }
 
 void buf_move(Buffer *buf, int y, int x)
