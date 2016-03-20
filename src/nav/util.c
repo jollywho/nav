@@ -42,13 +42,13 @@ void draw_wide(WINDOW *win, int row, int col, char *src, int max)
     j += rc - 1;
     if ((width = wcwidth(wch)) < 0)
       break;
+    cnt += width;
     if ((width > 0 && l > 0) || l == CCHARW_MAX) {
       wstr[l] = L'\0';
       l = 0;
       if (setcchar(wbuf + k, wstr, 0, 0, NULL) != OK)
         break;
       ++k;
-      cnt += width;
     }
     if (width == 0 && l == 0)
       wstr[l++] = L' ';

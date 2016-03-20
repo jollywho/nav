@@ -241,7 +241,7 @@ static void draw_lines(Buffer *buf, Model *m)
     readable_fs(rec_stsize(rec), szbuf);
 
     int max = MAX_POS(buf->b_size.col);
-    draw_wide(buf->nc_win, i, 0, it, max - 2);
+    draw_wide(buf->nc_win, i, 0, it, max - 1);
 
     if (isrecdir(rec)) {
       mvwchgat(buf->nc_win, i, 0, -1, A_NORMAL, buf->col_dir, NULL);
