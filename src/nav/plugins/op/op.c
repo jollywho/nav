@@ -235,7 +235,7 @@ void op_new(Plugin *plugin, Buffer *buf, void *arg)
   cmd_add(&killcmd);
 }
 
-void op_delete(Plugin *cntlr)
+void op_delete(Plugin *plugin)
 {
-  log_msg("OP", "op_cleanup");
+  log_err("OP", "op_cleanup");
 }

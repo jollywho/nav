@@ -47,6 +47,7 @@ typedef struct {
 } pos_T;
 
 void plugin_init();
+void plugin_cleanup();
 int plugin_isloaded(const char *);
 
 Plugin* plugin_open(const char *name, Buffer *buf, char *line);

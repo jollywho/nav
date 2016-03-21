@@ -54,6 +54,12 @@ void plugin_init()
   }
 }
 
+void plugin_cleanup()
+{
+  fs_clr_all_cache();
+  //TODO: need way to access bg plugin for close
+}
+
 static int find_plugin(const char *name)
 {
   if (!name)
@@ -64,16 +70,6 @@ static int find_plugin(const char *name)
       return i;
   }
   return -1;
-}
-
-static Plugin* find_loaded_plugin(char *name)
-{
-  Cid *it;
-  for (it = id_table; it != NULL; it = it->hh.next) {
-    if (strcmp(it->plugin->name, name) == 0)
-      return it->plugin;
-  }
-  return NULL;
 }
 
 static void set_cid(Plugin *plugin)
@@ -119,13 +115,6 @@ int plugin_requires_buf(const char *name)
   return !plugin_table[ret].type_bg;
 }
 
-static Plugin* plugin_in_bkgrnd(plugin_ent *ent)
-{
-  if (!ent->type_bg)
-    return NULL;
-  return find_loaded_plugin(ent->name);
-}
-
 Plugin* plugin_open(const char *name, Buffer *buf, char *line)
 {
   int i = find_plugin(name);
@@ -133,13 +122,10 @@ Plugin* plugin_open(const char *name, Buffer *buf, char *line)
     return NULL;
 
   log_msg("PLUG", "%s", plugin_table[i].name);
-  Plugin *plugin = plugin_in_bkgrnd(&plugin_table[i]);
-  if (!plugin) {
-    plugin = calloc(1, sizeof(Plugin));
-    if (buf)
-      set_cid(plugin);
-    plugin_table[i].open_cb(plugin, buf, line);
-  }
+  Plugin *plugin = calloc(1, sizeof(Plugin));
+  if (buf)
+    set_cid(plugin);
+  plugin_table[i].open_cb(plugin, buf, line);
   return plugin;
 }
 

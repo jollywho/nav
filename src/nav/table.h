@@ -48,6 +48,7 @@ void tbl_mk_fld(const char *, const char *, int);
 
 fn_tbl* get_tbl(const char *tn);
 void tbl_add_lis(const char *, const char *, const char *);
+void tbl_del_fld_lis(fn_fld *);
 void commit(void **data);
 
 ventry* fnd_val(const char *, const char *, const char *);

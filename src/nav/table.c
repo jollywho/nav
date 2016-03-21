@@ -119,6 +119,7 @@ void tbl_del(const char *name)
   HASH_ITER(hh, t->fields, f, ftmp) {
     HASH_DEL(t->fields, f);
     log_msg("CLEANUP", "deleting field {%s} ...", f->key);
+    tbl_del_fld_lis(f);
     free(f->key);
     free(f);
   }
@@ -339,30 +340,41 @@ void tbl_add_lis(const char *tn, const char *fld, const char *key)
   log_msg("TABLE", "SET LIS %s|%s", fld, key);
 
   fn_tbl *t = get_tbl(tn);
-  fn_fld *ff;
-  HASH_FIND_STR(t->fields, fld, ff);
-  if (!ff)
+  fn_fld *f;
+  HASH_FIND_STR(t->fields, fld, f);
+  if (!f)
     return;
 
   /* don't create listener is already exists */
-  fn_lis *ll;
-  HASH_FIND_STR(ff->lis, key, ll);
-  if (ll)
+  fn_lis *l;
+  HASH_FIND_STR(f->lis, key, l);
+  if (l)
     return;
 
   /* create new listener */
   log_msg("TABLE", "new lis");
-  ll = calloc(1, sizeof(fn_lis));
-  ll->key = strdup(key);
-  ll->key_fld = ff;
-  ll->fval = strdup("");
-  HASH_ADD_STR(ff->lis, key, ll);
+  l = calloc(1, sizeof(fn_lis));
+  l->key = strdup(key);
+  l->key_fld = f;
+  l->fval = strdup("");
+  HASH_ADD_STR(f->lis, key, l);
 
   /* check if value exists and attach */
   fn_val *val;
-  HASH_FIND_STR(ff->vals, key, val);
+  HASH_FIND_STR(f->vals, key, val);
   if (val)
-    ll->rec = val->rlist->rec;
+    l->rec = val->rlist->rec;
+}
+
+void tbl_del_fld_lis(fn_fld *f)
+{
+  fn_lis *it, *tmp;
+  HASH_ITER(hh, f->lis, it, tmp) {
+    HASH_DEL(f->lis, it);
+    free(it->key);
+    free(it->fval);
+    free(it);
+  }
 }
 
 void commit(void **data)
