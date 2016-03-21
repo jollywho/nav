@@ -120,6 +120,14 @@ void cmd_init()
     cmd_add(&builtins[i]);
 }
 
+void cmd_cleanup()
+{
+  for (int i = 0; tape[i].line; i++)
+    free(tape[i].line);
+  free(tape);
+  cmd_clearall();
+}
+
 int name_sort(Cmd_T *a, Cmd_T *b)
 {
   return strcmp(a->name, b->name);
@@ -128,13 +136,6 @@ int name_sort(Cmd_T *a, Cmd_T *b)
 void cmd_sort_cmds()
 {
   HASH_SORT(cmd_table, name_sort);
-}
-
-void cmd_cleanup()
-{
-  for (int i = 0; tape[i].line; i++)
-    free(tape[i].line);
-  free(tape);
 }
 
 void cmd_flush()
@@ -571,6 +572,11 @@ void cmd_clearall()
   HASH_ITER(hh, cmd_table, it, tmp) {
     HASH_DEL(cmd_table, it);
     free(it);
+  }
+  Cmd_alt *ait, *atmp;
+  HASH_ITER(hh, alt_tbl, ait, atmp) {
+    HASH_DEL(alt_tbl, ait);
+    free(ait);
   }
 }
 

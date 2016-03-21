@@ -35,13 +35,25 @@ void info_parse(char *line)
   }
 }
 
-static void write_mark_info(FILE *f, fn_mark *mrk)
+static void mark_del(fn_mark **mrk, fn_mark **tbl)
 {
-  if (!mrk)
+  log_msg("INFO", "MARKDEL");
+  HASH_DEL(*tbl, *mrk);
+  free((*mrk)->key);
+  free((*mrk)->path);
+  free((*mrk));
+}
+
+static void write_mark_info(FILE *f, fn_mark *tbl)
+{
+  if (!tbl)
     return;
 
-  for (; mrk != NULL; mrk = mrk->hh.next)
-    fprintf(f, "%s %s\n", mrk->key, mrk->path);
+  fn_mark *it, *tmp;
+  HASH_ITER(hh, tbl, it, tmp) {
+    fprintf(f, "%s %s\n", it->key, it->path);
+    mark_del(&it, &tbl);
+  }
 }
 
 void info_write_file(FILE *file)
@@ -69,16 +81,7 @@ void marklbl_list(List *args)
   }
 }
 
-static void mark_del(fn_mark **mrk, fn_mark **tbl)
-{
-  log_msg("INFO", "MARKDEL");
-  HASH_DEL(*tbl, *mrk);
-  free((*mrk)->key);
-  free((*mrk)->path);
-  free((*mrk));
-}
-
-char *mark_path(const char *key)
+char* mark_path(const char *key)
 {
   fn_mark *mrk;
   HASH_FIND_STR(lbl_marks, key, mrk);
@@ -88,7 +91,7 @@ char *mark_path(const char *key)
   return NULL;
 }
 
-char *mark_str(int chr)
+char* mark_str(int chr)
 {
   fn_mark *mrk;
   char *key;

@@ -149,7 +149,6 @@ void window_cleanup(void)
 {
   log_msg("CLEANUP", "window_cleanup");
   fs_clr_all_cache();
-  cmd_clearall();
   layout_cleanup(&win.layout);
   buf_cleanup();
 }
