@@ -1,8 +1,26 @@
 cmake_minimum_required(VERSION 3.3.1)
 project(nav)
 set(CMAKE_C_FLAGS "-g")
-add_definitions("-std=c99 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -Wno-sign-compare")
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-sign-compare")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-missing-field-initializers")
 add_definitions(-D_GNU_SOURCE)
+
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+	execute_process(
+		COMMAND git describe --always
+		OUTPUT_VARIABLE GIT_COMMIT_HASH
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+		)
+endif()
+add_definitions(-DNAV_VERSION=\"${GIT_COMMIT_HASH}\")
+
+string(TIMESTAMP CURRENT_DATE "%Y-%m-%d" UTC)
+add_definitions(-DNAV_DATE=\"${CURRENT_DATE}\")
 
 set( CMAKE_EXPORT_COMPILE_COMMANDS 1 )
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
@@ -27,8 +45,3 @@ target_link_libraries(nav ${PCRE_LIBRARY})
 target_link_libraries(nav ${LIBUV_LIBRARIES})
 target_link_libraries(nav ${LIBTERMKEY_LIBRARIES})
 target_link_libraries(nav util)
-
-set_target_properties(nav PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")

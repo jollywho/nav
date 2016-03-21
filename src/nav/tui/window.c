@@ -24,6 +24,7 @@ struct Window {
   Plugin *term;
 };
 
+static void* win_version();
 static void* win_new();
 static void* win_shut();
 static void* win_close();
@@ -41,6 +42,7 @@ static void window_reg_cmd();
 static void window_update(uv_timer_t *);
 
 static const Cmd_T cmdtable[] = {
+  {"version",0,     win_version, 0},
   {"qa",0,          win_shut,    0},
   {"close","q",     win_close,   0},
   {"autocmd","au",  win_autocmd, 0},
@@ -301,6 +303,12 @@ static void* win_reload(List *args, Cmdarg *ca)
   if (plugin)
     send_hook_msg("open", plugin, NULL, &(HookArg){NULL,path});
   return 0;
+}
+
+static void* win_version(List *args, Cmdarg *ca)
+{
+  log_err("-", "%s", NAV_LONG_VERSION);
+  return NAV_LONG_VERSION;
 }
 
 static void* win_new(List *args, Cmdarg *ca)

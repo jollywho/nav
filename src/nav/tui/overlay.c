@@ -3,8 +3,6 @@
 #include "nav/tui/buffer.h"
 #include "nav/tui/window.h"
 
-#define STRINGIFY(s) #s
-#define STR(s) STRINGIFY(s)
 #define SZ_BUFBOX  3
 #define SZ_NAMEBOX 8
 #define SZ_ARGSBOX 8
