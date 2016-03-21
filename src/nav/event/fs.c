@@ -33,7 +33,14 @@ struct fentry {
   UT_hash_handle hh;
 };
 
-static fentry *ent_tbl;
+typedef struct {
+  char *key;
+  time_t mtimesec;
+  UT_hash_handle hh;
+} cachedir;
+
+static fentry   *ent_tbl;
+static cachedir *cache_tbl;
 
 static fentry* fs_mux(fn_fs *fs)
 {
@@ -113,6 +120,14 @@ void fs_cleanup(fn_fs *fs)
   log_msg("FS", "cleanup");
   fs_close(fs);
   free(fs);
+}
+
+void fs_clr_cache(char *path)
+{
+  cachedir *cache;
+  HASH_FIND_STR(cache_tbl, path, cache);
+  if (cache)
+    cache->mtimesec = -1;
 }
 
 char* conspath(const char *str1, const char *str2)
@@ -228,7 +243,7 @@ time_t rec_mtime(fn_rec *rec)
   return stat->st_mtim.tv_sec;
 }
 
-long rec_stsize(fn_rec *rec)
+off_t rec_stsize(fn_rec *rec)
 {
   struct stat *stat = (struct stat*)rec_fld(rec, "stat");
   return stat->st_size;
@@ -245,8 +260,8 @@ void fs_signal_handle(void **data)
   log_msg("FS", "fs_signal_handle");
   fentry *ent = data[0];
   if (ent->cancel) {
-    tbl_del_val("fm_files", "dir",      (char*)ent->key);
-    tbl_del_val("fm_files", "fullpath", (char*)ent->key);
+    tbl_del_val("fm_files", "dir", ent->key);
+    fs_clr_cache(ent->key);
   }
 
   fn_fs *it = NULL;
@@ -299,35 +314,28 @@ void fs_close(fn_fs *fs)
   fs_demux(fs);
 }
 
-static int edit_trans_stat(trans_rec *r, const char *dir, int upd)
+static int edit_trans_stat(trans_rec *r, const char *path, int upd)
 {
   struct stat s;
-  if (stat(dir, &s) == -1)
+  if (stat(path, &s) == -1)
     return 1;
 
   struct stat *cstat = malloc(sizeof(struct stat));
   *cstat = s;
-  int *cupd = malloc(sizeof(int));
-  *cupd = upd;
-
-  edit_trans(r, "opened",   NULL,        cupd);
   edit_trans(r, "stat",     NULL,        cstat);
   return 0;
 }
 
-static void send_head(trans_rec *r, const char *path)
+static void add_dir(const char *path, uv_stat_t stat)
 {
-  char *full = strdup(path);
-  char *base = strdup(basename(full));
-  char *dir =  strdup(dirname(full));
-
-  edit_trans(r, "name", (char*)base, NULL);
-  edit_trans(r, "dir",  (char*)dir, NULL);
-  edit_trans(r, "fullpath", (char*)path,   NULL);
-  free(base);
-  free(dir);
-  free(full);
-  CREATE_EVENT(eventq(), commit, 2, "fm_files", r);
+  cachedir *cache;
+  HASH_FIND_STR(cache_tbl, path, cache);
+  if (!cache) {
+    cache = malloc(sizeof(cachedir));
+    cache->key = strdup(path);
+    HASH_ADD_STR(cache_tbl, key, cache);
+  }
+  cache->mtimesec = stat.st_mtim.tv_sec;
 }
 
 void fs_cancel(fn_fs *fs)
@@ -345,11 +353,8 @@ static void scan_cb(uv_fs_t *req)
 
   /* clear outdated records */
   tbl_del_val("fm_files", "dir",      (char*)req->path);
-  tbl_del_val("fm_files", "fullpath", (char*)req->path);
 
-  trans_rec *rh = mk_trans_rec(tbl_fld_count("fm_files"));
-  edit_trans_stat(rh, req->path, 1);
-  send_head(rh, req->path);
+  add_dir(req->path, req->statbuf);
 
   while (UV_EOF != uv_fs_scandir_next(req, &dent) && (!ent->cancel)) {
     int err = 0;
@@ -357,10 +362,9 @@ static void scan_cb(uv_fs_t *req)
     edit_trans(r, "name", (char*)dent.name, NULL);
     edit_trans(r, "dir",  (char*)req->path, NULL);
     char *full = conspath(req->path, dent.name);
+    edit_trans(r, "fullpath", (char*)full,   NULL);
 
     err = edit_trans_stat(r, full, 0);
-
-    edit_trans(r, "fullpath", (char*)full,   NULL);
     free(full);
 
     if (err)
@@ -379,17 +383,13 @@ static void stat_cb(uv_fs_t *req)
   uv_stat_t stat = req->statbuf;
   int nop = 0;
 
-  ventry *vent = fnd_val("fm_files", "fullpath", ent->key);
+  cachedir *cache;
+  HASH_FIND_STR(cache_tbl, req->path, cache);
 
-  if (!vent || ent->flush)
+  if (!cache || ent->flush)
     goto scandir;
 
-  int *upd = (int*)rec_fld(vent->rec, "opened");
-  if (!*upd)
-    goto scandir;
-
-  struct stat *st = (struct stat*)rec_fld(vent->rec, "stat");
-  if (stat.st_ctim.tv_sec == st->st_ctim.tv_sec) {
+  if (stat.st_ctim.tv_sec == cache->mtimesec) {
     log_msg("FS", "STAT:NOP");
     nop = 1;
   }

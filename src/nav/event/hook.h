@@ -6,7 +6,6 @@
 typedef struct {
   Keyarg *ka;
   void *arg;
-  int flag;
 } HookArg;
 
 typedef void (*hook_cb)(Plugin *host, Plugin *caller, HookArg *hka);

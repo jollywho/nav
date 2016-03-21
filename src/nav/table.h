@@ -15,8 +15,9 @@ typedef struct ventry ventry;
 #define TYP_VOID     0
 #define TYP_STR      1
 #define TYP_INT      2
+#define SRT_DFLT     1
 #define SRT_STR     16
-#define SRT_INT     32
+#define SRT_NUM     32
 #define SRT_TIME    64
 #define SRT_TYPE   128
 #define SRT_DIR    256

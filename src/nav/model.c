@@ -34,27 +34,28 @@ struct Model {
   UT_array *lines;
 };
 
-//static int cmp_int(const void *, const void *, void *);
 static int cmp_str(const void *, const void *, void *);
 static int cmp_time(const void *, const void *, void *);
 //static int cmp_type(const void *, const void *, void *);
 static int cmp_dir(const void *, const void *, void *);
+static int cmp_num(const void *, const void *, void *);
 typedef struct Sort_T Sort_T;
 static struct Sort_T {
   int val;
   int (*cmp)(const void *, const void *, void *);
 } sort_tbl[] = {
-  {SRT_STR,  cmp_str},
-  //{SRT_INT,  cmp_int},
-  {SRT_TIME, cmp_time},
+  {SRT_DFLT,   cmp_str},
+  {SRT_STR,    cmp_str},
+  {SRT_TIME,   cmp_time},
   //{SRT_TYPE, cmp_type},
-  {SRT_DIR,  cmp_dir},
+  {SRT_DIR,    cmp_dir},
+  {SRT_NUM,    cmp_num},
 };
 //TODO: remove field name from cmp functions:
 //field name can be passed into each cmp fn within an arg struct.
 
 #define REV_FN(cond,fn,a,b) ((cond) ? (fn((b),(a))) : (fn((a),(b))))
-#define intcmp(a,b) ((a) - (b))
+#define numcmp(a,b) ((a) - (b))
 
 static int cmp_time(const void *a, const void *b, void *arg)
 {
@@ -80,7 +81,19 @@ static int cmp_dir(const void *a, const void *b, void *arg)
   fn_line l2 = *(fn_line*)b;
   int b1 = isrecdir(l1.rec);
   int b2 = isrecdir(l2.rec);
-  return REV_FN(*(int*)arg, intcmp, b2, b1);
+  return REV_FN(*(int*)arg, numcmp, b2, b1);
+}
+
+static int cmp_num(const void *a, const void *b, void *arg)
+{
+  fn_line l1 = *(fn_line*)a;
+  fn_line l2 = *(fn_line*)b;
+  off_t t1 = rec_stsize(l1.rec);
+  off_t t2 = rec_stsize(l2.rec);
+  off_t ret = REV_FN(*(int*)arg, numcmp, t2, t1);
+  if (ret < 0) return -1;
+  if (ret > 0) return 1;
+  return 0;
 }
 
 static void sort_by_type(Model *m)
@@ -203,10 +216,10 @@ void refind_line(Model *m)
 void model_sort(Model *m, int sort_type, int flags)
 {
   log_msg("MODEL", "model_sort");
-  if (sort_type != -1)
+  if (sort_type != -1) {
     m->sort_type = sort_type;
-
-  m->sort_rev = flags;
+    m->sort_rev = flags;
+  }
 
   sort_by_type(m);
 

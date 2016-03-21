@@ -16,12 +16,12 @@
 void fm_init()
 {
   if (tbl_mk("fm_files")) {
-    tbl_mk_fld("fm_files", "name",     TYP_STR|SRT_DIR|SRT_STR);
-    tbl_mk_fld("fm_files", "dir",      TYP_STR|SRT_DIR);
+    tbl_mk_fld("fm_files", "name",     TYP_STR|SRT_DIR);
+    tbl_mk_fld("fm_files", "dir",      SRT_DIR);
     tbl_mk_fld("fm_files", "fullpath", TYP_STR|SRT_DIR);
-    tbl_mk_fld("fm_files", "opened",   TYP_VOID);
     tbl_mk_fld("fm_files", "stat",     TYP_VOID);
     tbl_mk_vt_fld("fm_files", "mtime", SRT_TIME);
+    tbl_mk_vt_fld("fm_files", "size",  SRT_NUM);
   }
 }
 
@@ -106,8 +106,6 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   FM *self = plugin->top;
   if (!hka->arg)
     hka->arg = "~";
-  if (hka->flag == 1)
-    fs_fastreq(self->fs);
 
   DO_EVENTS_UNTIL(!fs_blocking(self->fs));
 

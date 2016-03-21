@@ -27,6 +27,7 @@ void fs_cleanup(fn_fs *fs);
 void fs_open(fn_fs *fs, const char *);
 void fs_close(fn_fs *fs);
 void fs_read(fn_fs *fs, const char *);
+void fs_clr_cache(char *);
 
 void fs_cancel(fn_fs *fs);
 void fs_fastreq(fn_fs *fs);
@@ -35,7 +36,7 @@ bool fs_blocking(fn_fs *fs);
 bool isdir(const char *);
 bool isrecdir(fn_rec *);
 time_t rec_mtime(fn_rec *rec);
-long rec_stsize(fn_rec *rec);
+off_t rec_stsize(fn_rec *rec);
 char* fs_expand_path(const char *);
 char* valid_full_path(char *, char *);
 char* fs_parent_dir(char *);

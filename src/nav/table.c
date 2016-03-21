@@ -322,6 +322,11 @@ void tbl_del_val(const char *tn, const char *fld, const char *val)
   if (!v)
     return;
 
+  fn_lis *l;
+  HASH_FIND_STR(f->lis, val, l);
+  if (l)
+    l->rec = NULL;
+
   /* iterate entries of val. */
   ventry *it = v->rlist;
   int count = v->count;
@@ -333,13 +338,13 @@ void tbl_add_lis(const char *tn, const char *fld, const char *key)
 {
   log_msg("TABLE", "SET LIS %s|%s", fld, key);
 
-  /* create listener for fn_val entry list */
   fn_tbl *t = get_tbl(tn);
   fn_fld *ff;
   HASH_FIND_STR(t->fields, fld, ff);
   if (!ff)
     return;
 
+  /* don't create listener is already exists */
   fn_lis *ll;
   HASH_FIND_STR(ff->lis, key, ll);
   if (ll)
