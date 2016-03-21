@@ -130,6 +130,16 @@ void fs_clr_cache(char *path)
     cache->mtimesec = -1;
 }
 
+void fs_clr_all_cache()
+{
+  cachedir *it, *tmp;
+  HASH_ITER(hh, cache_tbl, it, tmp) {
+    HASH_DEL(cache_tbl, it);
+    free(it->key);
+    free(it);
+  }
+}
+
 char* conspath(const char *str1, const char *str2)
 {
   char *result;

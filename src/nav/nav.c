@@ -58,6 +58,7 @@ void cleanup(void)
   log_msg("CLEANUP", "CLEANUP_START");
   ex_cmd_cleanup();
   window_cleanup();
+  hook_cleanup();
   compl_cleanup();
   input_cleanup();
   event_cleanup();

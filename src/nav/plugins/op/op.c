@@ -203,6 +203,15 @@ Op_group* op_newgrp(const char *before, const char *after)
   return opgrp;
 }
 
+void op_delgrp(Op_group *opgrp)
+{
+  if (!opgrp)
+    return;
+  free(opgrp->before);
+  free(opgrp->after);
+  free(opgrp);
+}
+
 void op_new(Plugin *plugin, Buffer *buf, void *arg)
 {
   log_msg("OP", "INIT");

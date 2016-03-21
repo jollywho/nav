@@ -27,8 +27,8 @@ static struct fn_option {
   void *value;
   UT_hash_handle hh;
 } default_options[] = {
-  {"hintkeys",      OPTION_STRING,   "wasgd"},
   {"dummy",         OPTION_INTEGER,  &dummy},
+  {"hintkeys",      OPTION_STRING,   "wasgd"},
 };
 
 static fn_group     *groups;
@@ -65,8 +65,7 @@ void option_init()
 {
   init_pair(0, 0, 0);
   for (int i = 0; i < LENGTH(default_options); i++) {
-    fn_option *opt = malloc(sizeof(fn_option));
-    memmove(opt, &default_options[i], sizeof(fn_option));
+    fn_option *opt = &default_options[i];
     if (default_options[i].type == OPTION_STRING)
       opt->value = strdup(default_options[i].value);
     HASH_ADD_STR(options, key, opt);
@@ -79,11 +78,21 @@ void option_init()
 
 void option_cleanup()
 {
+  CLEAR_OPT(fn_syn,   syntaxes,  {});
   CLEAR_OPT(fn_var,   gbl_vars,  free(it->var));
-  CLEAR_OPT(fn_func,  gbl_funcs,  {
+  CLEAR_OPT(fn_group, groups,    op_delgrp(it->opgrp));
+  CLEAR_OPT(fn_func,  gbl_funcs, {
     del_param_list(it->argv, it->argc);
     utarray_free(it->lines);
-    clear_locals(it);});
+    clear_locals(it);
+  });
+
+  fn_option *it, *tmp;
+  HASH_ITER(hh, options, it, tmp) {
+    HASH_DEL(options, it);
+    if (it->type == OPTION_STRING)
+      free(it->value);
+  }
 }
 
 void clear_locals(fn_func *func)

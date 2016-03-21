@@ -59,7 +59,6 @@ static Menu *menu;
 static fn_hist *hist_cmds;
 static fn_hist *hist_regs;
 static LineMatch *lm;
-static int reg_dir;
 
 static char state_symbol;
 static int ex_state;
