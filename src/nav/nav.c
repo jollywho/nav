@@ -11,6 +11,7 @@
 #include "nav/tui/ex_cmd.h"
 #include "nav/event/event.h"
 #include "nav/event/input.h"
+#include "nav/tui/history.h"
 #include "nav/table.h"
 #include "nav/compl.h"
 #include "nav/event/hook.h"
@@ -46,6 +47,7 @@ void init(void)
   window_init();
 
   config_init();
+  hist_init();
   config_load_defaults();
 
   ex_cmd_init();
@@ -57,6 +59,7 @@ void cleanup(void)
 {
   log_msg("CLEANUP", "CLEANUP_START");
   ex_cmd_cleanup();
+  hist_cleanup();
   window_cleanup();
   hook_cleanup();
   compl_cleanup();

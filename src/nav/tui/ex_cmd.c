@@ -26,7 +26,6 @@ static void ex_menuhints();
 
 #define STACK_MIN 10
 #define CURS_MIN -1
-#define EXCMD_HIST() ((ex_state) ? (hist_cmds) : (hist_regs))
 
 static fn_key key_defaults[] = {
   {ESC,      ex_esc,           0,       0},
@@ -56,8 +55,6 @@ static Cmdline cmd;
 static char *line;
 static char *fmt_out;
 static Menu *menu;
-static fn_hist *hist_cmds;
-static fn_hist *hist_regs;
 static LineMatch *lm;
 
 static char state_symbol;
@@ -71,16 +68,12 @@ void ex_cmd_init()
   key_tbl.cmd_idx = cmd_idx;
   key_tbl.maxsize = LENGTH(key_defaults);
   input_setup_tbl(&key_tbl);
-  hist_cmds = hist_new();
-  hist_regs = hist_new();
   menu = menu_new();
 }
 
 void ex_cmd_cleanup()
 {
   log_msg("CLEANUP", "ex_cmd_cleanup");
-  hist_delete(hist_cmds);
-  hist_delete(hist_regs);
   menu_delete(menu);
 }
 
@@ -111,7 +104,7 @@ void start_ex_cmd(char symbol, int state)
   line = calloc(max.col, sizeof(char*));
   cmd.cmds = NULL;
   cmd.line = NULL;
-  hist_push(EXCMD_HIST(), &cmd);
+  hist_push(state, &cmd);
   window_req_draw(NULL, NULL);
 }
 
@@ -199,7 +192,7 @@ static void ex_esc()
   if (ex_state == EX_REG_STATE)
     regex_pivot(lm);
 
-  hist_save(EXCMD_HIST());
+  hist_save();
   mflag = EX_QUIT;
 }
 
@@ -244,9 +237,9 @@ static void ex_hist(void *none, Keyarg *arg)
   const char *ret = NULL;
 
   if (arg->arg == BACKWARD)
-    ret = hist_prev(EXCMD_HIST());
+    ret = hist_prev();
   if (arg->arg == FORWARD)
-    ret = hist_next(EXCMD_HIST());
+    ret = hist_next();
   if (ret) {
     ex_cmd_populate(ret);
     mflag = EX_HIST;
@@ -276,7 +269,7 @@ static void ex_car()
     cmd_flush();
   }
 
-  hist_save(EXCMD_HIST());
+  hist_save();
   mflag = EX_QUIT;
 }
 
