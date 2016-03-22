@@ -6,6 +6,8 @@
 #include "nav/log.h"
 #include "nav/compl.h"
 #include "nav/tui/window.h"
+#include "nav/tui/history.h"
+#include "nav/tui/ex_cmd.h"
 
 typedef struct fn_mark fn_mark;
 struct fn_mark {
@@ -32,6 +34,9 @@ void info_parse(char *line)
       dir = strtok(NULL, " ");
       mark_strchr_str(label, dir);
       break;
+    case ':':
+      hist_insert(EX_CMD_STATE, &line[1]);
+      break;
   }
 }
 
@@ -56,11 +61,22 @@ static void write_mark_info(FILE *f, fn_mark *tbl)
   }
 }
 
+static void write_hist_info(FILE *f, int state)
+{
+  hist_set_state(state);
+  const char *line = hist_first();
+  while(line) {
+    fprintf(f, "%s%s\n", ":", line);
+    line = hist_next();
+  }
+}
+
 void info_write_file(FILE *file)
 {
   log_msg("INFO", "config_write_info");
   write_mark_info(file, lbl_marks);
   write_mark_info(file, chr_marks);
+  write_hist_info(file, EX_CMD_STATE);
 }
 
 void mark_list(List *args)

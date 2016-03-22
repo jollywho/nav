@@ -61,6 +61,14 @@ void hist_set_state(int state)
     cur = hist_cmds;
   else
     cur = hist_regs;
+  cur->cur = TAILQ_LAST(&cur->p, cont);
+}
+
+const char* hist_first()
+{
+  hist_item *first = TAILQ_FIRST(&cur->p);
+  cur->cur = first;
+  return first->line;
 }
 
 void hist_pop()
@@ -126,9 +134,10 @@ const char* hist_next()
 
 void hist_insert(int state, char *line)
 {
-  // get type based on line[0] from ex_cmd
-  //hist_item *item = malloc(sizeof(hist_item));
-  //hst->count++;
-  //item->line = strdup(line);
-  //TAILQ_INSERT_TAIL(&hst->p, item, ent);
+  hist_set_state(state);
+  hist_item *item = malloc(sizeof(hist_item));
+  cur->count++;
+  item->line = strdup(line);
+  cur->cur = item;
+  TAILQ_INSERT_HEAD(&cur->p, item, ent);
 }

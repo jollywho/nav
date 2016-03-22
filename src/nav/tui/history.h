@@ -14,6 +14,7 @@ void hist_pop();
 void hist_save();
 void hist_insert(int, char *);
 
+const char* hist_first();
 const char* hist_prev();
 const char* hist_next();
 
