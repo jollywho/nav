@@ -43,23 +43,24 @@ typedef struct {
 
 void option_init();
 void option_cleanup();
-void set_color(fn_group *grp, int fg, int bg);
+void set_color(fn_group *, int, int);
 short attr_color(const char *);
 
-fn_group* set_group(const char *name);
+fn_group* set_group(const char *);
 fn_group* get_group(const char *);
-void set_syn(fn_syn *syn);
+void set_syn(fn_syn *);
 fn_syn* get_syn(const char *);
-int get_syn_colpair(const char *name);
+int get_syn_colpair(const char *);
 
-void set_var(fn_var *variable, fn_func *blk);
-char* opt_var(const char *name, fn_func *blk);
-void set_func(fn_func *fn);
-void clear_locals(fn_func *func);
-fn_func* opt_func(const char *name);
-void set_opt(const char *name, const char *val);
-char* get_opt_str(const char *name);
-void options_list(List *args);
-void groups_list(List *args);
+void set_var(fn_var *, fn_func *);
+char* opt_var(const char *, fn_func *);
+void set_func(fn_func *);
+void clear_locals(fn_func *);
+fn_func* opt_func(const char *);
+void set_opt(const char *, const char *);
+char* get_opt_str(const char *);
+ulong get_opt_ulong(const char *);
+void options_list(List *);
+void groups_list(List *);
 
 #endif

@@ -9,7 +9,7 @@
 #include "nav/compl.h"
 #include "nav/util.h"
 
-enum opt_type { OPTION_STRING, OPTION_INTEGER };
+enum opt_type { OPTION_STRING, OPTION_INTEGER, OPTION_ULONG };
 static char *default_groups[] = {
   "BufSelActive", "BufSelInactive",
   "BufText", "BufDir", "BufSz", "OverlaySep",
@@ -18,6 +18,7 @@ static char *default_groups[] = {
 };
 
 static int dummy = 0;
+static ulong history = 50;
 static int default_syn_color;
 
 typedef struct fn_option fn_option;
@@ -28,6 +29,7 @@ static struct fn_option {
   UT_hash_handle hh;
 } default_options[] = {
   {"dummy",         OPTION_INTEGER,  &dummy},
+  {"history",       OPTION_ULONG,    &history},
   {"hintkeys",      OPTION_STRING,   "wasgd"},
 };
 
@@ -217,6 +219,12 @@ void set_opt(const char *name, const char *val)
       return;
     *(int*)opt->value = v_int;
   }
+  else if (opt->type == OPTION_ULONG) {
+    ulong v_long;
+    if (!str_tfmt(val, "%ld", &v_long))
+      return;
+    *(ulong*)opt->value = v_long;
+  }
 }
 
 char* get_opt_str(const char *name)
@@ -227,6 +235,16 @@ char* get_opt_str(const char *name)
     return opt->value;
   else
     return NULL;
+}
+
+ulong get_opt_ulong(const char *name)
+{
+  fn_option *opt;
+  HASH_FIND_STR(options, name, opt);
+  if (opt->type == OPTION_ULONG)
+    return *(ulong*)opt->value;
+  else
+    return 0;
 }
 
 void options_list(List *args)

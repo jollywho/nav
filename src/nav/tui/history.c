@@ -16,6 +16,7 @@ struct fn_hist {
   TAILQ_HEAD(cont, hist_item) p;
   hist_item *cur;
   int count;
+  ulong max;
   Cmdline *cmd;
 };
 
@@ -28,6 +29,7 @@ static fn_hist* hist_new()
   fn_hist *hst = malloc(sizeof(fn_hist));
   memset(hst, 0, sizeof(fn_hist));
   TAILQ_INIT(&hst->p);
+  hst->max = get_opt_ulong("history");
   return hst;
 }
 
@@ -71,6 +73,25 @@ const char* hist_first()
   return first->line;
 }
 
+static int hist_try_resize()
+{
+  cur->max = get_opt_ulong("history");
+  return cur->max > cur->count;
+}
+
+static void hst_chk_limits()
+{
+  if (cur->count < cur->max)
+    return;
+  if (!hist_try_resize()) {
+    hist_item *first = TAILQ_FIRST(&cur->p);
+    TAILQ_REMOVE(&cur->p, first, ent);
+    free(first->line);
+    free(first);
+    cur->count--;
+  }
+}
+
 void hist_pop()
 {
   log_msg("HIST", "hist_pop");
@@ -91,8 +112,7 @@ void hist_push(int state, Cmdline *cmd)
   item->line = strdup("");
   cur->cur = item;
   TAILQ_INSERT_TAIL(&cur->p, item, ent);
-  //if (count > SETTING_MAX)
-  //  pop from head
+  hst_chk_limits();
 }
 
 void hist_save()
@@ -114,7 +134,6 @@ void hist_save()
 
 const char* hist_prev()
 {
-  log_msg("HIST", "hist_prev");
   hist_item *item = TAILQ_PREV(cur->cur, cont, ent);
   if (!item)
     return NULL;
@@ -124,7 +143,6 @@ const char* hist_prev()
 
 const char* hist_next()
 {
-  log_msg("HIST", "hist_next");
   hist_item *item = TAILQ_NEXT(cur->cur, ent);
   if (!item)
     return NULL;
@@ -140,4 +158,5 @@ void hist_insert(int state, char *line)
   item->line = strdup(line);
   cur->cur = item;
   TAILQ_INSERT_HEAD(&cur->p, item, ent);
+  hst_chk_limits();
 }

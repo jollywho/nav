@@ -86,5 +86,6 @@ void* token_val(Token *token, char v_type);
 void* list_arg(List *lst, int argc, char v_type);
 void* tok_arg(List *lst, int argc);
 int str_num(const char *, int *);
+int str_tfmt(const char *str, char *fmt, void *tmp);
 
 #endif

@@ -65,6 +65,11 @@ int str_num(const char *str, int *tmp)
   return sscanf(str, "%d", tmp);
 }
 
+int str_tfmt(const char *str, char *fmt, void *tmp)
+{
+  return sscanf(str, fmt, tmp);
+}
+
 void* token_val(Token *token, char v_type)
 {
   if (!token)
