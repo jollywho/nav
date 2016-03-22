@@ -67,9 +67,10 @@ void hist_save(fn_hist *hst)
   if (!hst->cmd->line)
     return;
   hist_item *last = TAILQ_LAST(&hst->p, cont);
+  hist_item *prev = TAILQ_PREV(last, cont, ent);
 
-  //TODO:
-  // discard if line matches the one above it
+  if (prev && !strcmp(prev->line, hst->cmd->line))
+    return hist_pop(hst);
   if (hst->cmd->tokens && utarray_len(hst->cmd->tokens) < 1)
     return hist_pop(hst);
 
