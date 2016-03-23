@@ -12,6 +12,7 @@
 #include "nav/event/shell.h"
 #include "nav/info.h"
 #include "nav/tui/window.h"
+#include "nav/tui/message.h"
 
 void fm_init()
 {
@@ -179,6 +180,11 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("FM", "\"%s\"", path);
   if (!path)
     return;
+
+  if (get_opt_int("ask_delete")) {
+    if (!confirm("remove %s?", path))
+      return;
+  }
 
   char *cmdstr;
   asprintf(&cmdstr, "%s \"%s\"", p_rm, path);

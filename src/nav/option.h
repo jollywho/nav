@@ -60,6 +60,7 @@ fn_func* opt_func(const char *);
 void set_opt(const char *, const char *);
 char* get_opt_str(const char *);
 uint get_opt_uint(const char *);
+int get_opt_int(const char *);
 void options_list(List *);
 void groups_list(List *);
 

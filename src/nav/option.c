@@ -9,7 +9,7 @@
 #include "nav/compl.h"
 #include "nav/util.h"
 
-enum opt_type { OPTION_STRING, OPTION_INTEGER, OPTION_UINT };
+enum opt_type { OPTION_STRING, OPTION_INT, OPTION_UINT };
 static char *default_groups[] = {
   "BufSelActive", "BufSelInactive",
   "BufText", "BufDir", "BufSz", "OverlaySep",
@@ -20,6 +20,7 @@ static char *default_groups[] = {
 static int dummy = 0;
 static uint history = 50;
 static int default_syn_color;
+static int ask_delete = 1;
 
 typedef struct fn_option fn_option;
 static struct fn_option {
@@ -28,9 +29,10 @@ static struct fn_option {
   void *value;
   UT_hash_handle hh;
 } default_options[] = {
-  {"dummy",         OPTION_INTEGER,  &dummy},
-  {"history",       OPTION_UINT,     &history},
-  {"hintkeys",      OPTION_STRING,   "wasgd"},
+  {"dummy",         OPTION_INT,    &dummy},
+  {"ask_delete",    OPTION_INT,    &ask_delete},
+  {"history",       OPTION_UINT,   &history},
+  {"hintkeys",      OPTION_STRING, "wasgd"},
 };
 
 static fn_group     *groups;
@@ -213,7 +215,7 @@ void set_opt(const char *name, const char *val)
   log_msg("CONFIG", "%s :: %s", opt->key, val);
   if (opt->type == OPTION_STRING)
     SWAP_ALLOC_PTR(opt->value, strdup(val));
-  else if (opt->type == OPTION_INTEGER) {
+  else if (opt->type == OPTION_INT) {
     int v_int;
     if (!str_num(val, &v_int))
       return;
@@ -247,6 +249,16 @@ uint get_opt_uint(const char *name)
     return 0;
 }
 
+int get_opt_int(const char *name)
+{
+  fn_option *opt;
+  HASH_FIND_STR(options, name, opt);
+  if (opt->type == OPTION_INT)
+    return *(int*)opt->value;
+  else
+    return 0;
+}
+
 void options_list(List *args)
 {
   log_msg("INFO", "setting_list");
@@ -258,7 +270,7 @@ void options_list(List *args)
     compl_set_key(i, "%s", it->key);
     if (it->type == OPTION_STRING)
       compl_set_col(i, "%s", (char*)it->value);
-    else if (it->type == OPTION_INTEGER)
+    else if (it->type == OPTION_INT)
       compl_set_col(i, "%d", *(int*)it->value);
     i++;
   }

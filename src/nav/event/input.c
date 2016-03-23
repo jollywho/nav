@@ -208,6 +208,34 @@ void do_map(int key)
     window_input(key_maps[0][key]->rhs[i]);
 }
 
+static int process_key(TermKeyKey *key)
+{
+  size_t len;
+  char buf[64];
+  char *bp;
+  len = termkey_strfkey(tk, buf, sizeof(buf), key, TERMKEY_FORMAT_VIM);
+
+  if (buf[0] == '<') {
+    bp = buf;
+    bp++;
+    bp[len - 2] = '\0';
+    int newkey = get_special_key_code(bp);
+    if (newkey)
+      key->code.number = newkey;
+    else if (strcasecmp(HC_S_TAB, bp) == 0)
+      key->code.number = K_S_TAB;
+
+    if (key->modifiers) {
+      int mask = 0x0;
+      mask |= name_to_mod_mask(*bp);
+      int keycode = key->code.number;
+      if (!IS_SPECIAL(keycode))
+        key->code.number  = extract_modifiers(keycode, &mask);
+    }
+  }
+  return key->code.number;
+}
+
 void input_check()
 {
   log_msg("INPUT", ">>>>>>>>>>>>>>>>>>>>>>>>>");
@@ -217,31 +245,19 @@ void input_check()
   termkey_advisereadable(tk);
 
   while ((ret = termkey_getkey_force(tk, &key)) == TERMKEY_RES_KEY) {
-    size_t len;
-    char buf[64];
-    char *bp;
-    len = termkey_strfkey(tk, buf, sizeof(buf), &key, TERMKEY_FORMAT_VIM);
-
-    if (buf[0] == '<') {
-      bp = buf;
-      bp++;
-      bp[len - 2] = '\0';
-      int newkey = get_special_key_code(bp);
-      if (newkey)
-        key.code.number = newkey;
-      else if (strcasecmp(HC_S_TAB, bp) == 0)
-        key.code.number = K_S_TAB;
-
-      if (key.modifiers) {
-        int mask = 0x0;
-        mask |= name_to_mod_mask(*bp);
-        int keycode = key.code.number;
-        if (!IS_SPECIAL(keycode))
-          key.code.number  = extract_modifiers(keycode, &mask);
-      }
-    }
-    window_input(key.code.number);
+    window_input(process_key(&key));
   }
+}
+
+int input_waitkey()
+{
+  TermKeyKey key;
+  TermKeyResult ret;
+  while((ret = termkey_waitkey(tk, &key)) != TERMKEY_RES_EOF) {
+    if (ret == TERMKEY_RES_KEY)
+      return process_key(&key);
+  }
+  return NUL;
 }
 
 /*
