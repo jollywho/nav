@@ -71,7 +71,6 @@ void do_map(int key);
 int find_command(fn_keytbl *kt, int cmdchar);
 int find_do_cmd(fn_keytbl *kt, Keyarg *ca, void *obj);
 int find_do_op(fn_oper *kt, Keyarg *ca, void *obj);
-int input_waitkey();
 void input_check();
 void clearop(Keyarg *ca);
 bool op_pending(Keyarg *arg);

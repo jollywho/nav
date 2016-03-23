@@ -249,18 +249,6 @@ void input_check()
   }
 }
 
-int input_waitkey()
-{
-  TermKeyKey key;
-  TermKeyResult ret;
-  ret = termkey_waitkey(tk, &key);
-  //FIXME: polling should block
-  if (ret == TERMKEY_RES_KEY)
-    return process_key(&key);
-
-  return NUL;
-}
-
 /*
  * Compare functions for qsort() below, that checks the command character
  * through the index in nv_cmd_idx[].

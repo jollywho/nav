@@ -161,3 +161,11 @@ void queue_put_event(Queue *queue, Event event)
     uv_prepare_start(&mainloop()->event_prepare, prepare_events);
   }
 }
+
+void event_cycle_once()
+{
+  bool pstate = mainloop()->running;
+  mainloop()->running = false;
+  uv_run(eventloop(), UV_RUN_ONCE);
+  mainloop()->running = pstate;
+}

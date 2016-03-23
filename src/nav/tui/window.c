@@ -3,6 +3,7 @@
 #include "nav/tui/window.h"
 #include "nav/event/event.h"
 #include "nav/tui/layout.h"
+#include "nav/tui/message.h"
 #include "nav/cmd.h"
 #include "nav/compl.h"
 #include "nav/event/hook.h"
@@ -172,6 +173,8 @@ void window_input(int key)
 {
   log_msg("WINDOW", "input");
   win.ca.key = key;
+  if (dialog_pending)
+    return dialog_input(key);
   if (win.input_override)
     return term_keypress(win.term, key);
   if (win.ex)

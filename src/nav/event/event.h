@@ -70,6 +70,7 @@ static inline Event event_create(argv_callback cb, int argc, ...)
 
 void event_wakeup(void);
 bool mainloop_busy();
+void event_cycle_once();
 
 void queue_push(Queue *queue, Event event);
 void queue_put_event(Queue *queue, Event event);

@@ -6,7 +6,11 @@
 #include "nav/tui/layout.h"
 #include "nav/log.h"
 #include "nav/event/input.h"
+#include "nav/event/event.h"
 #include "nav/option.h"
+
+int dialog_pending;
+static int gch;
 
 static void message_draw(WINDOW *win, char *line, int color)
 {
@@ -18,12 +22,14 @@ static void message_draw(WINDOW *win, char *line, int color)
 
 static WINDOW* message_start()
 {
+  dialog_pending = 1;
   pos_T max = layout_size();
   return newwin(1, 0, max.lnum - 1, 0);
 }
 
-static void message_end(WINDOW *win)
+static void message_stop(WINDOW *win)
 {
+  dialog_pending = 0;
   werase(win);
   wnoutrefresh(win);
   doupdate();
@@ -43,13 +49,18 @@ int confirm(char *fmt, ...)
   WINDOW *win = message_start();
 
   message_draw(win, msg, color);
-  int ch = input_waitkey();
+  event_cycle_once();
   free(msg);
 
   int ret = 0;
-  if (ch == 'Y' || ch == 'y' || ch == CAR)
+  if (gch == 'Y' || gch == 'y' || gch == CAR)
     ret = 1;
 
-  message_end(win);
+  message_stop(win);
   return ret;
+}
+
+void dialog_input(int key)
+{
+  gch = key;
 }

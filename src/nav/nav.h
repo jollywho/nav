@@ -5,8 +5,8 @@
 #define STR(x) STR_(x)
 
 #ifndef NAV_VERSION
-#define NAV_VERSION unknown
-#define NAV_DATE    unknown
+#define NAV_VERSION "unknown"
+#define NAV_DATE    "unknown"
 #endif
 #ifndef NAV_LONG_VERSION
 #define NAV_LONG_VERSION "NAV-"NAV_VERSION
