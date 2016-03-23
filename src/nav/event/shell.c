@@ -195,7 +195,7 @@ int shell_exec(char *line, shell_status_cb cb, char *cwd, Plugin *caller)
     proc->fast_output = process_early_exit;
 
   char *rv = strdup(line);
-  args[0] = p_sh;
+  args[0] = get_opt_str("shell");
   args[1] = "-c";
   args[2] = rv;
   args[3] = NULL;

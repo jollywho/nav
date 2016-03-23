@@ -7,6 +7,7 @@
 #include "nav/tui/window.h"
 #include "nav/event/event.h"
 #include "nav/log.h"
+#include "nav/option.h"
 
 static uv_poll_t poll_handle;
 static TermKey *tk;
@@ -441,7 +442,7 @@ void reg_set(int ch, char *value, char *show)
 
   if (ch == '0') {
     char *cpy;
-    asprintf(&cpy, "echo -n \"%s\" | xclip", show);
+    asprintf(&cpy, "echo -n \"%s\" | %s", show, p_xc);
     system(cpy);
     free(cpy);
   }

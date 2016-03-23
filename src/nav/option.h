@@ -6,10 +6,10 @@
 #include "nav/lib/utarray.h"
 #include "nav/plugins/op/op.h"
 
-extern char *p_sh;          /* 'shell' */
-extern char *p_cp;          /* 'copy   cmd' */
-extern char *p_mv;          /* 'move   cmd' */
-extern char *p_rm;          /* 'remove cmd' */
+extern char *p_cp;          /* 'copy      cmd' */
+extern char *p_mv;          /* 'move      cmd' */
+extern char *p_rm;          /* 'remove    cmd' */
+extern char *p_xc;          /* 'clipboard cmd' */
 
 typedef struct fn_group fn_group;
 struct fn_group {

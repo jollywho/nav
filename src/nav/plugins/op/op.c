@@ -113,7 +113,7 @@ static void create_proc(fn_group *grp, char *line)
   proc->grp = grp;
 
   char* args[4];
-  args[0] = p_sh;
+  args[0] = get_opt_str("shell");
   args[1] = "-c";
   args[2] = line;
   args[3] = NULL;

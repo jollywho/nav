@@ -41,11 +41,6 @@ static const char *info_paths[] = {
   "/etc/nav/.navinfo",
 };
 
-char *p_sh = "/bin/sh";
-char *p_cp = "cp";
-char *p_mv = "mv";
-char *p_rm = "rm";
-
 void config_init()
 {
   for (int i = 0; i < LENGTH(cmdtable); i++)

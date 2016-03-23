@@ -22,6 +22,12 @@ static int dummy = 0;
 static uint history = 50;
 static int default_syn_color;
 static int ask_delete = 1;
+static char *p_sh = "/bin/sh";
+static char *hintskey = "wasgd";
+char *p_cp = "cp";
+char *p_mv = "mv";
+char *p_rm = "rm";
+char *p_xc = "xclip";
 
 typedef struct fn_option fn_option;
 static struct fn_option {
@@ -33,7 +39,8 @@ static struct fn_option {
   {"dummy",         OPTION_INT,    &dummy},
   {"ask_delete",    OPTION_INT,    &ask_delete},
   {"history",       OPTION_UINT,   &history},
-  {"hintkeys",      OPTION_STRING, "wasgd"},
+  {"hintkeys",      OPTION_STRING, &hintskey},
+  {"shell",         OPTION_STRING, &p_sh},
 };
 
 static fn_group     *groups;
@@ -72,7 +79,7 @@ void option_init()
   for (int i = 0; i < LENGTH(default_options); i++) {
     fn_option *opt = &default_options[i];
     if (default_options[i].type == OPTION_STRING)
-      opt->value = strdup(default_options[i].value);
+      opt->value = strdup(*(char**)default_options[i].value);
     HASH_ADD_STR(options, key, opt);
   }
   for (int i = 0; i < LENGTH(default_groups); i++) {
