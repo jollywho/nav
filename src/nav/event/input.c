@@ -409,7 +409,7 @@ fn_reg* reg_dcur()
 {
   fn_reg *reg0 = reg_get(NUL);
   fn_reg *reg1 = reg_get('1');
-  if (reg0->value && reg1->value && strcmp(reg0->value, reg1->value) == 0)
+  if (reg0->value && reg1->value && !strcmp(reg0->value, reg1->value))
     return reg1;
   else
     return reg0;
@@ -417,7 +417,7 @@ fn_reg* reg_dcur()
 
 void reg_clear_dcur()
 {
-  reg_set(NUL, NULL, NULL);
+  reg_set('1', NULL, NULL);
 }
 
 void reg_set(int ch, char *value, char *show)

@@ -15,8 +15,8 @@ struct hist_item {
 struct fn_hist {
   TAILQ_HEAD(cont, hist_item) p;
   hist_item *cur;
-  int count;
-  ulong max;
+  uint count;
+  uint max;
   Cmdline *cmd;
 };
 
@@ -29,7 +29,7 @@ static fn_hist* hist_new()
   fn_hist *hst = malloc(sizeof(fn_hist));
   memset(hst, 0, sizeof(fn_hist));
   TAILQ_INIT(&hst->p);
-  hst->max = get_opt_ulong("history");
+  hst->max = get_opt_uint("history");
   return hst;
 }
 
@@ -75,7 +75,7 @@ const char* hist_first()
 
 static int hist_try_resize()
 {
-  cur->max = get_opt_ulong("history");
+  cur->max = get_opt_uint("history");
   return cur->max > cur->count;
 }
 

@@ -59,7 +59,7 @@ void clear_locals(fn_func *);
 fn_func* opt_func(const char *);
 void set_opt(const char *, const char *);
 char* get_opt_str(const char *);
-ulong get_opt_ulong(const char *);
+uint get_opt_uint(const char *);
 void options_list(List *);
 void groups_list(List *);
 

@@ -147,7 +147,8 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
     arg = "";
   }
 
-  char *name = basename(reg->value);
+  char *base = strdup(reg->value);
+  char *name = basename(base);
   log_msg("FM", "{%d} |%s|", reg->key, reg->value);
 
   char *dest;
@@ -160,8 +161,11 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
   shell_exec(cmdstr, NULL, self->cur_dir, NULL);
   free(dest);
   free(cmdstr);
+  free(base);
   fs_fastreq(self->fs);
-  reg_clear_dcur();
+
+  if (reg->key == '1')
+    reg_clear_dcur();
 }
 
 static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
@@ -171,11 +175,15 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
   if (fs_blocking(self->fs))
     return;
 
-  char *src = model_curs_value(host->hndl->model, "fullpath");
-  log_msg("FM", "\"%s\"", src);
-  if (!src)
+  char *path = model_curs_value(host->hndl->model, "fullpath");
+  log_msg("FM", "\"%s\"", path);
+  if (!path)
     return;
-  remove(src);
+
+  char *cmdstr;
+  asprintf(&cmdstr, "%s \"%s\"", p_rm, path);
+  system(cmdstr);
+  free(cmdstr);
   fs_fastreq(self->fs);
 }
 
