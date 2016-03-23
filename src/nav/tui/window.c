@@ -234,17 +234,24 @@ int window_focus_attached()
 static void* win_cd(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_cd");
-  Plugin *plugin = buf_plugin(layout_buf(&win.layout));
+  Plugin *plugin = NULL;
+  Buffer *buf = layout_buf(&win.layout);
   char *path = cmdline_line_from(ca->cmdline, 1);
-  if (plugin)
-    send_hook_msg("open", plugin, NULL, &(HookArg){NULL,path});
-  else {
+
+  if (buf)
+    plugin = buf_plugin(buf);
+
+  if (!plugin) {
     char *newpath = valid_full_path(window_cur_dir(), path);
     if (newpath) {
       window_ch_dir(newpath);
       free(newpath);
     }
   }
+
+  if (plugin)
+    send_hook_msg("open", plugin, NULL, &(HookArg){NULL,path});
+
   return 0;
 }
 

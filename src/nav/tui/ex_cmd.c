@@ -60,6 +60,7 @@ static LineMatch *lm;
 static char state_symbol;
 static int ex_state;
 static int col_text;
+static int col_symb;
 static int mflag;
 
 void ex_cmd_init()
@@ -89,6 +90,7 @@ void start_ex_cmd(char symbol, int state)
   mflag = 0;
   fmt_out = malloc(1);
   col_text = attr_color("ComplText");
+  col_symb = attr_color("BufText");
 
   if (state == EX_REG_STATE) {
     Buffer *buf = window_get_focus();
@@ -169,6 +171,7 @@ static void cmdline_draw()
   mvwaddch(nc_win, 0, 0, state_symbol);
   gen_output_str();
   mvwprintw(nc_win, 0, 1, fmt_out);
+  mvwchgat(nc_win, 0, 0, 1, A_NORMAL, col_symb, NULL);
   mvwchgat(nc_win, 0, 1, -1, A_NORMAL, col_text, NULL);
 
   wmove(nc_win, 0, curpos + 2);
