@@ -253,10 +253,11 @@ int input_waitkey()
 {
   TermKeyKey key;
   TermKeyResult ret;
-  while((ret = termkey_waitkey(tk, &key)) != TERMKEY_RES_EOF) {
-    if (ret == TERMKEY_RES_KEY)
-      return process_key(&key);
-  }
+  ret = termkey_waitkey(tk, &key);
+  //FIXME: polling should block
+  if (ret == TERMKEY_RES_KEY)
+    return process_key(&key);
+
   return NUL;
 }
 

@@ -166,11 +166,10 @@ static void cmdline_draw()
   if (ex_state == EX_CMD_STATE)
     menu_draw(menu);
 
-  wattron(nc_win, COLOR_PAIR(col_text));
   mvwaddch(nc_win, 0, 0, state_symbol);
   gen_output_str();
   mvwprintw(nc_win, 0, 1, fmt_out);
-  wattroff(nc_win, COLOR_PAIR(col_text));
+  mvwchgat(nc_win, 0, 1, -1, A_NORMAL, col_text, NULL);
 
   wmove(nc_win, 0, curpos + 2);
   doupdate();

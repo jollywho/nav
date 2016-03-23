@@ -15,6 +15,7 @@ static char *default_groups[] = {
   "BufText", "BufDir", "BufSz", "OverlaySep",
   "OverlayLine", "OverlayBufNo", "OverlayInactiveBufNo", "OverlayActive",
   "OverlayArgs", "OverlayInactive", "OverlayTextInactive", "ComplText",
+  "MsgError", "MsgMessage", "MsgAsk",
 };
 
 static int dummy = 0;

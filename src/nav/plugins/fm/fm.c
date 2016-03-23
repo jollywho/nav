@@ -182,7 +182,7 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
     return;
 
   if (get_opt_int("ask_delete")) {
-    if (!confirm("remove %s?", path))
+    if (!confirm("Remove: \"%s\" ?", path))
       return;
   }
 
