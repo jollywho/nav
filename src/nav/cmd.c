@@ -7,6 +7,7 @@
 #include "nav/util.h"
 #include "nav/model.h"
 #include "nav/event/shell.h"
+#include "nav/tui/message.h"
 
 enum CTLCMD { CTL_NOP, CTL_IF, CTL_ELSEIF, CTL_ELSE, CTL_END, CTL_FUNC, };
 
@@ -143,16 +144,16 @@ void cmd_flush()
   log_msg("CMD", "flush");
 
   if (parse_error && fndefopen) {
-    log_err("CMD", "parse error: open definition not closed!");
+    nv_err("parse error: open definition not closed!");
     del_param_list(fndef->argv, fndef->argc);
     utarray_free(fndef->lines);
     free(fndef->key);
     free(fndef);
   }
   if (lvl > 0)
-    log_err("CMD", "parse error: open block not closed!");
+    nv_err("parse error: open block not closed!");
   if (lvlcont > 0)
-    log_err("CMD", "parse error: open '(' not closed!");
+    nv_err("parse error: open '(' not closed!");
   for (int i = 0; tape[i].line; i++)
     free(tape[i].line);
 

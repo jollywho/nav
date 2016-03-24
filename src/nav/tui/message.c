@@ -10,9 +10,11 @@
 #include "nav/option.h"
 
 int dialog_pending;
+int message_pending;
 static int gch;
+static WINDOW *win;
 
-static void message_draw(WINDOW *win, char *line, int color)
+static void message_draw(char *line, int color)
 {
   mvwprintw(win, 0, 0, line);
   mvwchgat(win, 0, 0, -1, A_NORMAL, color, NULL);
@@ -20,16 +22,15 @@ static void message_draw(WINDOW *win, char *line, int color)
   doupdate();
 }
 
-static WINDOW* message_start()
+static void message_start()
 {
-  dialog_pending = 1;
   pos_T max = layout_size();
-  return newwin(1, 0, max.lnum - 1, 0);
+  win = newwin(1, 0, max.lnum - 1, 0);
 }
 
-static void message_stop(WINDOW *win)
+static void message_stop()
 {
-  dialog_pending = 0;
+  gch = NUL;
   werase(win);
   wnoutrefresh(win);
   doupdate();
@@ -46,18 +47,43 @@ int confirm(char *fmt, ...)
 
   int color = attr_color("MsgAsk");
 
-  WINDOW *win = message_start();
+  message_start();
+  dialog_pending = 1;
 
-  message_draw(win, msg, color);
-  event_cycle_once();
+  message_draw(msg, color);
+  while (gch == NUL)
+    event_cycle_once();
   free(msg);
 
   int ret = 0;
   if (gch == 'Y' || gch == 'y' || gch == CAR)
     ret = 1;
 
-  message_stop(win);
+  dialog_pending = 0;
+  message_stop();
   return ret;
+}
+
+void nv_err(char *fmt, ...)
+{
+  char *msg;
+  va_list args;
+  va_start(args, fmt);
+  vasprintf(&msg, fmt, args);
+  va_end(args);
+
+  int color = attr_color("MsgError");
+
+  message_start();
+  message_pending = 1;
+  message_draw(msg, color);
+  free(msg);
+}
+
+void nv_clr_msg()
+{
+  message_pending = 0;
+  message_stop();
 }
 
 void dialog_input(int key)

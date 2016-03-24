@@ -43,6 +43,7 @@ static fn_key key_defaults[] = {
   {Ctrl_G,   ex_menuhints,     0,       0},
   {Ctrl_J,   ex_menu_mv,       0,       FORWARD},
   {Ctrl_K,   ex_menu_mv,       0,       BACKWARD},
+  {Ctrl_I,   ex_menu_mv,       0,       BACKWARD},
 };
 static fn_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
@@ -132,6 +133,7 @@ void stop_ex_cmd()
   doupdate();
   ex_state = EX_OFF_STATE;
   window_ex_cmd_end();
+  cmd_flush();
 }
 
 static void str_ins(char *str, const char *ins, int pos, int ofs)
@@ -271,7 +273,6 @@ static void ex_car()
   log_msg("EXCMD", "excar %s", line);
   if (ex_state == EX_CMD_STATE) {
     cmd_eval(NULL, line);
-    cmd_flush();
   }
 
   hist_save();
@@ -511,7 +512,7 @@ Token* ex_cmd_curtok()
   cmd_part *part = cmd_stack[cur_part];
   int st = part->st;
   int ed = curpos + 1;
-  if (!cmd.tokens)
+  if (!cmd.cmds)
     return NULL;
   Token *tok = cmdline_tokbtwn(&cmd, st, ed);
   return tok;

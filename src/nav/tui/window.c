@@ -173,6 +173,10 @@ void window_input(int key)
 {
   log_msg("WINDOW", "input");
   win.ca.key = key;
+
+  if (message_pending)
+    nv_clr_msg();
+
   if (dialog_pending)
     return dialog_input(key);
   if (win.input_override)

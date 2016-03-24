@@ -344,6 +344,9 @@ void menu_mv(Menu *mnu, int y)
   log_msg("MENU", "menu_mv");
   if (!mnu->cx || !mnu->cx->cmpl)
     return;
+  //TODO:
+  //if (mnu->lnum + y > ROW_MAX || mnu->lnum + y < 1)
+  //do scroll
   mnu->moved = false;
   cycle_matches(mnu, y, true);
 }
