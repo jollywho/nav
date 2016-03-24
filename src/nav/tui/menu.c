@@ -30,12 +30,14 @@ struct Menu {
 
   int row_max;
   int lnum;
+  int cur;
 
   int col_text;
   int col_div;
   int col_select;
   int col_box;
   int col_line;
+  int col_sel;
 };
 
 static void menu_queue_draw(void **argv)
@@ -183,6 +185,7 @@ Menu* menu_new()
   mnu->hndl = hndl;
 
   mnu->col_select = attr_color("BufSelected");
+  mnu->col_sel    = attr_color("ComplSelected");
   mnu->col_text   = attr_color("ComplText");
   mnu->col_div    = attr_color("OverlaySep");
   mnu->col_box    = attr_color("OverlayActive");
@@ -402,7 +405,21 @@ void menu_update(Menu *mnu, Cmdline *cmd)
     line = mnu->line_key;
 
   compl_update(mnu->cx, line);
+  menu_mv(mnu, 0);
   mnu->docmpl = false;
+}
+
+void menu_mv(Menu *mnu, int y)
+{
+  log_msg("MENU", "menu_mv");
+  mnu->cur += y;
+
+  fn_compl *cmpl = mnu->cx->cmpl;
+  if (mnu->cur > MIN(ROW_MAX, cmpl->matchcount) - 1)
+    mnu->cur = MIN(ROW_MAX, cmpl->matchcount) - 1;
+  else if (mnu->cur < 0)
+    mnu->cur = 0;
+  log_msg("MENU", "%d", mnu->cur);
 }
 
 void menu_draw(Menu *mnu)
@@ -426,10 +443,11 @@ void menu_draw(Menu *mnu)
   if (mnu->hints)
     hints = get_opt_str("hintkeys");
 
-  for (int i = 0; i < ROW_MAX && i < cmpl->matchcount; i++) {
+  for (int i = 0; i < MIN(ROW_MAX, cmpl->matchcount); i++) {
 
     compl_item *row = cmpl->matches[i];
 
+    log_msg("MENU", ">");
     DRAW_CH(mnu, nc_win, i, 0, hints[i], col_div);
     DRAW_STR(mnu, nc_win, i, 2, row->key, col_text);
 
@@ -441,6 +459,8 @@ void menu_draw(Menu *mnu)
   }
   char *key = mnu->cx->key;
   DRAW_STR(mnu, nc_win, ROW_MAX, 1, key, col_line);
+
+  mvwchgat(mnu->nc_win, mnu->cur, 0, -1, A_NORMAL, mnu->col_sel, NULL);
 
   wnoutrefresh(mnu->nc_win);
 }

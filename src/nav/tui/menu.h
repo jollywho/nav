@@ -18,6 +18,7 @@ void menu_input(Menu *mnu, int key);
 void menu_rebuild(Menu *mnu);
 void menu_update(Menu *mnu, Cmdline *cmd);
 
+void menu_mv(Menu *mnu, int y);
 void menu_draw(Menu *mnu);
 char* menu_next(Menu *mnu, int dir);
 

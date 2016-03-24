@@ -23,6 +23,7 @@ static void ex_killline();
 static void ex_hist();
 static void ex_cmdinvert();
 static void ex_menuhints();
+static void ex_menu_mv();
 
 #define STACK_MIN 10
 #define CURS_MIN -1
@@ -40,6 +41,8 @@ static fn_key key_defaults[] = {
   {Ctrl_U,   ex_killline,      0,       0},
   {Ctrl_L,   ex_cmdinvert,     0,       0},
   {Ctrl_G,   ex_menuhints,     0,       0},
+  {Ctrl_J,   ex_menu_mv,       0,       FORWARD},
+  {Ctrl_K,   ex_menu_mv,       0,       BACKWARD},
 };
 static fn_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
@@ -359,6 +362,11 @@ static void ex_cmdinvert()
 static void ex_menuhints()
 {
   menu_toggle_hints(menu);
+}
+
+static void ex_menu_mv(void *none, Keyarg *arg)
+{
+  menu_mv(menu, arg->arg);
 }
 
 static void ex_check_pipe()
