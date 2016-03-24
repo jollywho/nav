@@ -339,9 +339,9 @@ static void buf_mv(Buffer *buf, Keyarg *ca)
   buf->lnum += y;
 
   if (y < 0 && buf->lnum < buf->b_size.lnum * 0.2)
-    buf_scroll(buf, ca->arg, m_max);
+    buf_scroll(buf, y, m_max);
   else if (y > 0 && buf->lnum > buf->b_size.lnum * 0.8)
-    buf_scroll(buf, ca->arg, m_max);
+    buf_scroll(buf, y, m_max);
 
   if (buf->lnum < 0)
     buf->lnum = 0;

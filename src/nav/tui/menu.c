@@ -23,6 +23,7 @@ struct Menu {
   bool rebuild;
   bool active;
   bool hints;
+  bool moved;
   char *line_key;
 
   pos_T size;
@@ -30,7 +31,6 @@ struct Menu {
 
   int row_max;
   int lnum;
-  int cur;
 
   int col_text;
   int col_div;
@@ -293,23 +293,28 @@ void menu_rebuild(Menu *mnu)
   mnu->rebuild = true;
 }
 
-static char* cycle_matches(Menu *mnu, int dir)
+static char* cycle_matches(Menu *mnu, int dir, int mov)
 {
-  fn_compl *cmpl = mnu->cx->cmpl;
+  if (mnu->moved)
+    dir = 0;
 
-  char *before = cmpl->matches[mnu->lnum]->key;
   mnu->lnum += dir;
+  fn_compl *cmpl = mnu->cx->cmpl;
+  char *before = cmpl->matches[mnu->lnum - 1]->key;
 
   if (mnu->lnum < 0)
     mnu->lnum = cmpl->matchcount - 1;
   if (mnu->lnum > cmpl->matchcount - 1)
     mnu->lnum = 0;
+
+  mnu->moved = mov;
+
   return before;
 }
 
 char* menu_next(Menu *mnu, int dir)
 {
-  log_msg("MENU", "menu_curkey");
+  log_msg("MENU", "menu_next");
   if (!mnu->cx || !mnu->cx->cmpl)
     return NULL;
 
@@ -318,12 +323,18 @@ char* menu_next(Menu *mnu, int dir)
   if (cmpl->matchcount < 1)
     return NULL;
 
-  char *before = cycle_matches(mnu, dir);
-
-  if (strcmp(ex_cmd_curstr(), before) == 0)
-    before = cycle_matches(mnu, dir);
+  char *before = cycle_matches(mnu, dir, false);
 
   return before;
+}
+
+void menu_mv(Menu *mnu, int y)
+{
+  log_msg("MENU", "menu_mv");
+  if (!mnu->cx || !mnu->cx->cmpl)
+    return;
+  mnu->moved = false;
+  cycle_matches(mnu, y, true);
 }
 
 bool menu_hints_enabled(Menu *mnu)
@@ -379,6 +390,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
     return;
 
   mnu->lnum = 0;
+  mnu->moved = false;
 
   if ((ex_cmd_state() & EX_POP) == EX_POP) {
     mnu->cx = ex_cmd_pop(1)->cx;
@@ -405,21 +417,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
     line = mnu->line_key;
 
   compl_update(mnu->cx, line);
-  menu_mv(mnu, 0);
   mnu->docmpl = false;
-}
-
-void menu_mv(Menu *mnu, int y)
-{
-  log_msg("MENU", "menu_mv");
-  mnu->cur += y;
-
-  fn_compl *cmpl = mnu->cx->cmpl;
-  if (mnu->cur > MIN(ROW_MAX, cmpl->matchcount) - 1)
-    mnu->cur = MIN(ROW_MAX, cmpl->matchcount) - 1;
-  else if (mnu->cur < 0)
-    mnu->cur = 0;
-  log_msg("MENU", "%d", mnu->cur);
 }
 
 void menu_draw(Menu *mnu)
@@ -430,9 +428,8 @@ void menu_draw(Menu *mnu)
 
   werase(mnu->nc_win);
 
-  wattron(mnu->nc_win, COLOR_PAIR(mnu->col_line));
   mvwhline(mnu->nc_win, ROW_MAX, 0, ' ', mnu->size.col);
-  wattroff(mnu->nc_win, COLOR_PAIR(mnu->col_line));
+  mvwchgat(mnu->nc_win, ROW_MAX, 0, -1, A_NORMAL, mnu->col_line, NULL);
 
   if (!mnu->cx || !mnu->cx->cmpl || ex_cmd_state() & EX_EXEC) {
     wnoutrefresh(mnu->nc_win);
@@ -447,7 +444,6 @@ void menu_draw(Menu *mnu)
 
     compl_item *row = cmpl->matches[i];
 
-    log_msg("MENU", ">");
     DRAW_CH(mnu, nc_win, i, 0, hints[i], col_div);
     DRAW_STR(mnu, nc_win, i, 2, row->key, col_text);
 
@@ -460,7 +456,7 @@ void menu_draw(Menu *mnu)
   char *key = mnu->cx->key;
   DRAW_STR(mnu, nc_win, ROW_MAX, 1, key, col_line);
 
-  mvwchgat(mnu->nc_win, mnu->cur, 0, -1, A_NORMAL, mnu->col_sel, NULL);
+  mvwchgat(mnu->nc_win, mnu->lnum - 1, 0, -1, A_NORMAL, mnu->col_sel, NULL);
 
   wnoutrefresh(mnu->nc_win);
 }

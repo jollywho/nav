@@ -367,6 +367,7 @@ static void ex_menuhints()
 static void ex_menu_mv(void *none, Keyarg *arg)
 {
   menu_mv(menu, arg->arg);
+  mflag = EX_CYCLE;
 }
 
 static void ex_check_pipe()
@@ -510,6 +511,8 @@ Token* ex_cmd_curtok()
   cmd_part *part = cmd_stack[cur_part];
   int st = part->st;
   int ed = curpos + 1;
+  if (!cmd.tokens)
+    return NULL;
   Token *tok = cmdline_tokbtwn(&cmd, st, ed);
   return tok;
 }
