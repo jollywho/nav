@@ -305,8 +305,8 @@ static char* cycle_matches(Menu *mnu, int dir, int mov)
 
   if (mnu->lnum < 1)
     mnu->lnum = 1;
-  if (mnu->lnum > cmpl->matchcount - 1)
-    mnu->lnum = cmpl->matchcount - 1;
+  if (mnu->lnum > cmpl->matchcount)
+    mnu->lnum = cmpl->matchcount;
 
   char *before = cmpl->matches[mnu->lnum - 1]->key;
   mnu->moved = mov;
@@ -325,9 +325,18 @@ char* menu_next(Menu *mnu, int dir)
   if (cmpl->matchcount < 1)
     return NULL;
 
-  char *before = cycle_matches(mnu, dir, false);
+  bool wasmoved = mnu->moved;
+  char *line = cycle_matches(mnu, dir, false);
 
-  return before;
+  if (!strcmp(ex_cmd_curstr(), line) && !wasmoved) {
+    if (mnu->lnum == 1)
+      mnu->lnum = cmpl->matchcount;
+    else
+      mnu->lnum = 1;
+    line = cycle_matches(mnu, 0, false);
+  }
+
+  return line;
 }
 
 void menu_mv(Menu *mnu, int y)
