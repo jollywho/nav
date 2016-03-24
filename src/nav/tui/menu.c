@@ -248,6 +248,7 @@ void menu_stop(Menu *mnu)
   free(mnu->line_key);
   mnu->active = false;
   mnu->hints = false;
+  mnu->moved = false;
 }
 
 void menu_restart(Menu *mnu)
@@ -255,6 +256,7 @@ void menu_restart(Menu *mnu)
   log_msg("MENU", "menu_restart");
   mnu->cx = context_start();
   mnu->docmpl = false;
+  mnu->moved = false;
 
   ex_cmd_push(mnu->cx);
   compl_build(mnu->cx, NULL);
@@ -298,15 +300,15 @@ static char* cycle_matches(Menu *mnu, int dir, int mov)
   if (mnu->moved)
     dir = 0;
 
-  mnu->lnum += dir;
   fn_compl *cmpl = mnu->cx->cmpl;
-  char *before = cmpl->matches[mnu->lnum - 1]->key;
+  mnu->lnum += dir;
 
-  if (mnu->lnum < 0)
-    mnu->lnum = cmpl->matchcount - 1;
+  if (mnu->lnum < 1)
+    mnu->lnum = 1;
   if (mnu->lnum > cmpl->matchcount - 1)
-    mnu->lnum = 0;
+    mnu->lnum = cmpl->matchcount - 1;
 
+  char *before = cmpl->matches[mnu->lnum - 1]->key;
   mnu->moved = mov;
 
   return before;
