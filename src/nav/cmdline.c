@@ -590,9 +590,8 @@ void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
     cmd->caller = caller;
     cmd_run(cmd, cmdline);
 
-    if (prev && (prev->flag & (PIPE_LEFT|PIPE_RIGHT)))
-      exec_pipe(cmdline, cmd, prev);
-
-    prev = cmd;
+    prev = (Cmdstr*)utarray_prev(cmdline->cmds, cmd);
+    //if (prev && (prev->flag & (PIPE_LEFT|PIPE_RIGHT)))
+    //  exec_pipe(cmdline, cmd, prev);
   }
 }

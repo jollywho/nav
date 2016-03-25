@@ -37,10 +37,12 @@ static void* win_mark();
 static void* win_autocmd();
 static void* win_echo();
 static void* win_reload();
+static void* win_pipe();
 static void win_layout();
 static void window_ex_cmd();
 static void window_reg_cmd();
 static void window_update(uv_timer_t *);
+
 
 static const Cmd_T cmdtable[] = {
   {"version",0,     win_version, 0},
@@ -57,6 +59,7 @@ static const Cmd_T cmdtable[] = {
   {"delm",0,        win_mark,    1},
   {"echo","ec",     win_echo,    0},
   {"reload","rel",  win_reload,  0},
+  {"pipe",0,        win_pipe,    0},
 };
 
 static char *compl_cmds[] = {
@@ -375,6 +378,22 @@ static void* win_bdel(List *args, Cmdarg *ca)
   log_msg("WINDOW", "win_bdel");
   ca->pflag = BUFFER;
   win_close(args, ca);
+  return 0;
+}
+
+static void* win_pipe(List *args, Cmdarg *ca)
+{
+  log_msg("WINDOW", "win_pipe");
+  char *arg = list_arg(args, 1, VAR_STRING);
+  int wnum;
+  if (!str_num(arg, &wnum))
+    return 0;
+
+  Plugin *lhs = focus_plugin();
+  Plugin *rhs = plugin_from_id(wnum);
+
+  log_msg("WINDOW", "%d", wnum);
+  send_hook_msg("pipe_left", lhs, rhs, NULL);
   return 0;
 }
 

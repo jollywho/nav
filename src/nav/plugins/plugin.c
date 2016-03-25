@@ -151,6 +151,8 @@ int plugin_isloaded(const char *name)
 Plugin* focus_plugin()
 {
   Buffer *buf = window_get_focus();
+  if (!buf)
+    return NULL;
   return buf->plugin;
 }
 
