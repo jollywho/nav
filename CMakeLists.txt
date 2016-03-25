@@ -33,6 +33,8 @@ include_directories("${PROJECT_SOURCE_DIR}/src")
 
 file(GLOB_RECURSE SOURCES "${PROJECT_SOURCE_DIR}/src/nav/*.c")
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build)
+
 add_executable(nav ${SOURCES})
 
 set(CURSES_NEED_WIDE true)
@@ -45,3 +47,10 @@ target_link_libraries(nav ${PCRE_LIBRARY})
 target_link_libraries(nav ${LIBUV_LIBRARIES})
 target_link_libraries(nav ${LIBTERMKEY_LIBRARIES})
 target_link_libraries(nav util)
+
+install(
+	TARGETS nav
+	RUNTIME
+	DESTINATION bin
+	COMPONENT runtime
+)

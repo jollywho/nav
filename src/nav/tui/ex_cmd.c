@@ -43,7 +43,6 @@ static fn_key key_defaults[] = {
   {Ctrl_G,   ex_menuhints,     0,       0},
   {Ctrl_J,   ex_menu_mv,       0,       FORWARD},
   {Ctrl_K,   ex_menu_mv,       0,       BACKWARD},
-  {Ctrl_I,   ex_menu_mv,       0,       BACKWARD},
 };
 static fn_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
