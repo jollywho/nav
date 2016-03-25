@@ -178,7 +178,7 @@ void window_input(int key)
   win.ca.key = key;
 
   if (message_pending)
-    nv_clr_msg();
+    msg_clear();
 
   if (dialog_pending)
     return dialog_input(key);
@@ -299,6 +299,7 @@ static void* win_echo(List *args, Cmdarg *ca)
   log_msg("WINDOW", "win_echo");
   //TODO: print from cmdstr, not tokens or raw
   char *out = cmdline_line_from(ca->cmdline, 1);
+  ca->flags = STRING;
   log_msg(">", "%s", out);
   return out;
 }
@@ -325,6 +326,7 @@ static void* win_reload(List *args, Cmdarg *ca)
 static void* win_version(List *args, Cmdarg *ca)
 {
   log_err("-", "%s", NAV_LONG_VERSION);
+  ca->flags = STRING;
   return NAV_LONG_VERSION;
 }
 

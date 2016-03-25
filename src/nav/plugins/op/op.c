@@ -237,5 +237,4 @@ void op_new(Plugin *plugin, Buffer *buf, void *arg)
 
 void op_delete(Plugin *plugin)
 {
-  log_err("OP", "op_cleanup");
 }

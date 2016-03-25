@@ -182,11 +182,17 @@ static void pop_callstack()
 
 static void ret2caller(Cmdstr *cmdstr, int ret_t, void *ret)
 {
-  if (!cmdstr || !cmdstr->caller)
+  if (!ret)
     return;
+
+  if (!cmdstr || !cmdstr->caller) {
+    if (ret_t == WORD || ret_t == STRING)
+      nv_msg("%s", ret);
+    return;
+  }
+
   cmdstr->caller->ret_t = ret_t;
-  if (ret)
-    cmdstr->caller->ret = strdup(ret);
+  cmdstr->caller->ret = strdup(ret);
 }
 
 static void cmd_do(Cmdstr *caller, char *line)
@@ -228,7 +234,7 @@ static void* cmd_call(Cmdstr *caller, fn_func *fn, char *line)
   List *args = cmdline_lst(&cmd);
   int argc = utarray_len(args->items);
   if (argc != fn->argc) {
-    log_err("CMD", "incorrect arguments to call: expected %d, got %d!",
+    nv_err("incorrect arguments to call: expected %d, got %d!",
         fn->argc, argc);
     goto cleanup;
   }
@@ -525,7 +531,7 @@ static int mk_param_list(Cmdarg *ca, char ***dest)
 
   goto cleanup;
 type_error:
-  log_err("CMD", "parse error: invalid function argument!");
+  nv_err("parse error: invalid function argument!");
   del_param_list(*dest, argc);
 cleanup:
   cmdline_cleanup(&cmd);
@@ -654,7 +660,7 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
     return ret2caller(cmdstr, WORD, cmdline->line);
 
   Cmdarg flags = {fun->flags, 0, cmdstr, cmdline};
-  return ret2caller(cmdstr, PLUGIN, fun->cmd_func(args, &flags));
+  return ret2caller(cmdstr, flags.flags, fun->cmd_func(args, &flags));
 }
 
 fn_func* cmd_callstack()

@@ -6,6 +6,7 @@
 #include "nav/log.h"
 #include "nav/tui/layout.h"
 #include "nav/tui/window.h"
+#include "nav/tui/message.h"
 #include "nav/tui/history.h"
 #include "nav/tui/menu.h"
 #include "nav/option.h"
@@ -125,8 +126,10 @@ void stop_ex_cmd()
   free(line);
   free(fmt_out);
   cmdline_cleanup(&cmd);
-  werase(nc_win);
-  wnoutrefresh(nc_win);
+  if (!message_pending) {
+    werase(nc_win);
+    wnoutrefresh(nc_win);
+  }
   delwin(nc_win);
   curs_set(0);
   doupdate();

@@ -17,7 +17,7 @@ static WINDOW *win;
 static void message_draw(char *line, int color)
 {
   mvwprintw(win, 0, 0, line);
-  mvwchgat(win, 0, 0, -1, A_NORMAL, color, NULL);
+  mvwchgat(win, 0, 0, strlen(line), A_NORMAL, color, NULL);
   wnoutrefresh(win);
   doupdate();
 }
@@ -64,23 +64,36 @@ int confirm(char *fmt, ...)
   return ret;
 }
 
-void nv_err(char *fmt, ...)
+static void msg(int color, char *line)
 {
-  char *msg;
-  va_list args;
-  va_start(args, fmt);
-  vasprintf(&msg, fmt, args);
-  va_end(args);
-
-  int color = attr_color("MsgError");
-
   message_start();
   message_pending = 1;
-  message_draw(msg, color);
-  free(msg);
+  message_draw(line, color);
+  free(line);
 }
 
-void nv_clr_msg()
+void nv_err(char *fmt, ...)
+{
+  int color = attr_color("MsgError");
+  char *line;
+  va_list args;
+  va_start(args, fmt);
+  vasprintf(&line, fmt, args);
+  va_end(args);
+  msg(color, line);
+}
+
+void nv_msg(char *fmt, ...)
+{
+  char *line;
+  va_list args;
+  va_start(args, fmt);
+  vasprintf(&line, fmt, args);
+  va_end(args);
+  msg(0, line);
+}
+
+void msg_clear()
 {
   message_pending = 0;
   message_stop();

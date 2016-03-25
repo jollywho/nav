@@ -7,6 +7,7 @@ extern int message_pending;
 void dialog_input(int);
 int confirm(char *, ...);
 void nv_err(char *fmt, ...);
-void nv_clr_msg();
+void nv_msg(char *fmt, ...);
+void msg_clear();
 
 #endif
