@@ -406,8 +406,17 @@ static void buf_g(Buffer *buf, Keyarg *ca)
 static void buf_yank(Buffer *buf, Keyarg *ca)
 {
   fn_handle *h = buf->hndl;
+
+  char *field = h->fname;
+  if (ca->key == 'f')
+    field = "fullpath";
+  else if (ca->key == 'd')
+    field = "dir";
+  else if (ca->key != 'y')
+    return;
+
   char *val = model_curs_value(h->model, "fullpath");
-  char *shw = model_curs_value(h->model, h->fname);
+  char *shw = model_curs_value(h->model, field);
   reg_set(NUL, val, shw);
   reg_set('0', val, shw);
 }
