@@ -22,7 +22,7 @@ add_definitions(-DNAV_VERSION=\"${GIT_COMMIT_HASH}\")
 string(TIMESTAMP CURRENT_DATE "%Y-%m-%d" UTC)
 add_definitions(-DNAV_DATE=\"${CURRENT_DATE}\")
 
-set( CMAKE_EXPORT_COMPILE_COMMANDS 1 )
+set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 include(CheckIncludeFiles)
