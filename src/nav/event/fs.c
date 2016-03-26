@@ -10,6 +10,7 @@
 #include "nav/log.h"
 #include "nav/table.h"
 #include "nav/tui/buffer.h"
+#include "nav/tui/message.h"
 #include "nav/info.h"
 
 static void fs_close_req(fentry *);
@@ -188,6 +189,7 @@ char* valid_full_path(char *base, char *path)
 
   char *valid = realpath(dir, NULL);
   if (!valid) {
+    nv_err("not a valid path: %s", dir);
     free(dir);
     return strdup(base);
   }

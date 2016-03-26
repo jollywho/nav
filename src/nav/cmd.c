@@ -291,7 +291,6 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
     char *symb = list_arg(args, cmd->idx, VAR_STRING);
     if (symb) {
       fn_func *fn = opt_func(symb);
-      //TODO: error here unless symb is '$'
       if (fn) {
         Cmdstr rstr;
         cmd_call(&rstr, fn, cmd->ret);
@@ -299,6 +298,7 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
         if (rstr.ret)
           SWAP_ALLOC_PTR(cmd->ret, rstr.ret);
       }
+      //TODO: error here unless symb is '$'
     }
 
     if (cmd->ret) {

@@ -2,6 +2,7 @@
 #include <curses.h>
 #include <locale.h>
 #include <unistd.h>
+#include <getopt.h>
 
 #include "nav/log.h"
 #include "nav/nav.h"
@@ -18,17 +19,16 @@
 #include "nav/event/shell.h"
 #include "nav/vt/vt.h"
 
-void init(void)
+void init(int debug, char *config_path)
 {
-//  log_set("IMG");
-  log_init();
   log_msg("INIT", "INIT_START");
+  if (debug)
+    log_init();
+
   setlocale(LC_CTYPE, "");
-
-  log_msg("INIT", "initscr");
-
   char *term = getenv("TERM");
 
+  log_msg("INIT", "initscr");
   initscr();
   start_color();
   use_default_colors();
@@ -48,7 +48,7 @@ void init(void)
 
   config_init();
   hist_init();
-  config_load_defaults();
+  config_start(config_path);
 
   ex_cmd_init();
   cmd_sort_cmds();
@@ -71,7 +71,7 @@ void cleanup(void)
   vt_shutdown();
   endwin();
   log_msg("CLEANUP", "CLEANUP_END");
-  //logger
+  log_cleanup();
 }
 
 void sigsegv_handler(int sig)
@@ -81,15 +81,68 @@ void sigsegv_handler(int sig)
   kill(getpid(), sig);
 }
 
+static const char* usage =
+"Usage: nav [options] [command]\n"
+"\n"
+"  -h, --help             Print this help message and exit.\n"
+"  -c, --config=<config>  Specify an alternative config file.\n"
+"  -l  --log-file=<path>  Specify an alternative log file (Requires -d).\n"
+"  -d, --debug            Debug mode.\n"
+"      --debug=<group>    Debug mode for a specific group.\n"
+"  -v, --version          Print version information and exit.\n"
+"\n";
+
+static struct option long_options[] = {
+  {"help", no_argument, NULL, 'h'},
+  {"config", required_argument, NULL, 'c'},
+  {"log-file", required_argument, NULL, 'l'},
+  {"debug", optional_argument, NULL, 'd'},
+  {"version", no_argument, NULL, 'v'},
+};
+
 int main(int argc, char **argv)
 {
+  int debug = 0;
+  char *config_path = NULL;
+
+  for (int i = 0; i < argc; i++) {
+    int option_index = 0;
+    int c = getopt_long(argc, argv, "hd::vc:", long_options, &option_index);
+    if (c < 0)
+      continue;
+
+    switch (c) {
+      case 'h':
+        fprintf(stdout, "%s", usage);
+        exit(EXIT_SUCCESS);
+        break;
+      case 'c':
+        config_path = optarg;
+        break;
+      case 'l':
+        log_set_file(optarg);
+        break;
+      case 'd':
+        debug = 1;
+        if (optarg)
+          log_set_group(optarg);
+        break;
+      case 'v':
+        fprintf(stdout, "%s\n", NAV_LONG_VERSION);
+        exit(EXIT_SUCCESS);
+        break;
+      default:
+        fprintf(stderr, "%s", usage);
+        exit(EXIT_FAILURE);
+    }
+  }
+
 #ifdef DEBUG
   signal(SIGSEGV, sigsegv_handler);
 #endif
-  init();
+  init(debug, config_path);
   start_event_loop();
   DO_EVENTS_UNTIL(!mainloop_busy());
   config_write_info();
   cleanup();
-  log_msg("INIT", "END_OF_EXECUTION");
 }

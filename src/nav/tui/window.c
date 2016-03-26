@@ -45,7 +45,7 @@ static void window_update(uv_timer_t *);
 
 
 static const Cmd_T cmdtable[] = {
-  {"version",0,     win_version, 0},
+  {"version","ver", win_version, 0},
   {"qa",0,          win_shut,    0},
   {"close","q",     win_close,   0},
   {"autocmd","au",  win_autocmd, 0},

@@ -148,7 +148,7 @@ static FILE* config_open(const char *file, const char **defaults, char *mode)
   FILE *f = fopen(path, mode);
   free(path);
   if (!f) {
-    fprintf(stderr, "Unable to open %s for reading", path);
+    fprintf(stderr, "Unable to open '%s' for reading", path);
     return NULL;
   }
   return f;
@@ -163,9 +163,9 @@ void config_load(const char *file)
   fclose(f);
 }
 
-void config_load_defaults()
+void config_start(char *config_path)
 {
-  config_load(NULL);
+  config_load(config_path);
   FILE *f = config_open(NULL, info_paths, "r");
   if (!f)
     return;
