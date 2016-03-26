@@ -9,8 +9,6 @@
 #include "nav/event/event.h"
 #include "nav/log.h"
 #include "nav/table.h"
-#include "nav/tui/buffer.h"
-#include "nav/tui/message.h"
 #include "nav/info.h"
 
 static void fs_close_req(fentry *);
@@ -161,11 +159,12 @@ char* fs_expand_path(const char *path)
 {
   wordexp_t p;
   char *newpath = NULL;
-  if (wordexp(path, &p, 0) == 0)
+  if (!wordexp(path, &p, 0)) {
     newpath = strdup(p.we_wordv[0]);
-
-  wordfree(&p);
-  return newpath;
+    wordfree(&p);
+    return newpath;
+  }
+  return strdup(path);
 }
 
 char* fs_current_dir()
@@ -189,9 +188,8 @@ char* valid_full_path(char *base, char *path)
 
   char *valid = realpath(dir, NULL);
   if (!valid) {
-    nv_err("not a valid path: %s", dir);
     free(dir);
-    return strdup(base);
+    return NULL;
   }
   SWAP_ALLOC_PTR(dir, valid);
   return dir;
@@ -226,15 +224,9 @@ static void stat_read_cb(uv_fs_t *req)
   char *path = realpath(fs->readkey, NULL);
   log_msg("FS", "req_stat_cb %s", req->path);
 
-  if (path && S_ISDIR(stat.st_mode)) {
-    CREATE_EVENT(eventq(), fs->stat_cb, 2, fs->data, path);
-    CREATE_EVENT(eventq(), stat_cleanup, 2, fs, path);
-  }
-  else {
-    free(path);
-    free(fs->readkey);
-    uv_fs_req_cleanup(&fs->uv_fs);
-  }
+  int path_state = S_ISDIR(stat.st_mode);
+  CREATE_EVENT(eventq(), fs->stat_cb, 3, fs->data, path, path_state);
+  CREATE_EVENT(eventq(), stat_cleanup, 2, fs, path);
 }
 
 const char* file_ext(const char *filename)

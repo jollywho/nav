@@ -98,7 +98,11 @@ static void fm_ch_dir(void **args)
   log_msg("FM", "fm_ch_dir");
   Plugin *plugin = args[0];
   char *path = args[1];
-  fm_opendir(plugin, path, FORWARD);
+  bool path_ok = args[2];
+  if (path_ok)
+    fm_opendir(plugin, path, FORWARD);
+  else
+    nv_err("not a valid path: %s", path);
 }
 
 static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
@@ -255,7 +259,13 @@ void fm_new(Plugin *plugin, Buffer *buf, void *arg)
   plugin->name = "fm";
   plugin->fmt_name = "FM";
 
-  fm->cur_dir = valid_full_path(window_cur_dir(), arg);
+  char *path = valid_full_path(window_cur_dir(), arg);
+  if (path)
+    fm->cur_dir = path;
+  else {
+    nv_err("not a valid path: %s", arg);
+    fm->cur_dir = strdup(window_cur_dir());
+  }
 
   init_fm_hndl(fm, buf, plugin, fm->cur_dir);
   model_init(plugin->hndl);

@@ -254,6 +254,8 @@ static void* win_cd(List *args, Cmdarg *ca)
       window_ch_dir(newpath);
       free(newpath);
     }
+    else
+      nv_err("not a valid path: %s", path);
   }
 
   if (plugin)

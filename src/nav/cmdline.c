@@ -450,9 +450,9 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
     char *str = token_val(word, VAR_STRING);
 
     switch(ch = str[0]) {
-      case '|':
-        word = pipe_type(cmdline, word, &cmd);
-        goto breakout;
+      //case '|':
+      //  word = pipe_type(cmdline, word, &cmd);
+      //  goto breakout;
       case '!':
         cmd.rev = 1;
         break;
