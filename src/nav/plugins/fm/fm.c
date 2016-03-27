@@ -18,11 +18,11 @@ void fm_init()
 {
   if (tbl_mk("fm_files")) {
     tbl_mk_fld("fm_files", "name",     TYP_STR|SRT_DIR);
-    tbl_mk_fld("fm_files", "dir",      SRT_DIR);
+    tbl_mk_fld("fm_files", "dir",      SRT_DIR|SRT_STR);
     tbl_mk_fld("fm_files", "fullpath", TYP_STR|SRT_DIR);
     tbl_mk_fld("fm_files", "stat",     TYP_VOID);
     tbl_mk_vt_fld("fm_files", "mtime", SRT_TIME);
-    tbl_mk_vt_fld("fm_files", "size",  SRT_NUM);
+    tbl_mk_vt_fld("fm_files", "size",  SRT_STR|SRT_NUM);
   }
 }
 

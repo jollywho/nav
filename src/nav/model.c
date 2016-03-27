@@ -34,6 +34,9 @@ struct Model {
   UT_array *lines;
 };
 
+/* sort types require a unique sorting property or
+ * line numbers saved in the lis will be incorrect.
+ */
 static int cmp_str(const void *, const void *, void *);
 static int cmp_time(const void *, const void *, void *);
 //static int cmp_type(const void *, const void *, void *);
@@ -170,7 +173,7 @@ static void refit(Model *m, fn_lis *lis, Buffer *buf)
     lis->index = 0;
     lis->lnum += dif;
   }
-  if (pos >= model_count(m))
+  if (pos > model_count(m) - 1)
     lis->lnum = (model_count(m) - lis->index) - 1;
 }
 
