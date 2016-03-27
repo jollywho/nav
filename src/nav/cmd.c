@@ -68,7 +68,7 @@ static const Cmd_T builtins[] = {
   {NULL,             NULL,               0, 0},
   {"if",0,           cmd_ifblock,        0, 1},
   {"else","el",      cmd_elseblock,      0, 1},
-  {"elseif","elsei", cmd_elseifblock,    0, 1},
+  {"elseif","elif",  cmd_elseifblock,    0, 1},
   {"end","en",       cmd_endblock,       0, 1},
   {"function","fu",  cmd_funcblock,      0, 2},
   {"return","ret",   cmd_returnblock,    0, 0},

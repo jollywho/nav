@@ -52,6 +52,7 @@ static int fm_opendir(Plugin *plugin, char *path, short arg)
   fn_handle *h = plugin->hndl;
   char *cur_dir = self->cur_dir;
 
+  model_close(h);
   free(cur_dir);
   cur_dir = strdup(path);
 

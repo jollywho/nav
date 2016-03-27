@@ -149,9 +149,11 @@ void model_close(fn_handle *hndl)
   log_msg("MODEL", "model_close");
   Model *m = hndl->model;
   Buffer *b = hndl->buf;
+  if (m->opened)
+    lis_save(m->lis, buf_top(b), buf_line(b));
+
   m->blocking = true;
-  m->opened = true;
-  lis_save(m->lis, buf_top(b), buf_line(b));
+  m->opened = false;
   utarray_clear(m->lines);
 }
 
@@ -222,7 +224,6 @@ void model_sort(Model *m, int sort_type, int flags)
   }
 
   sort_by_type(m);
-
   refind_line(m);
   refit(m, m->lis, m->hndl->buf);
   buf_full_invalidate(m->hndl->buf, m->lis->index, m->lis->lnum);
@@ -250,9 +251,11 @@ void model_null_entry(Model *m, fn_lis *lis)
   fn_handle *h = m->hndl;
   m->head = NULL;
   m->cur = NULL;
+  lis->index = 0;
+  lis->lnum = 0;
   buf_full_invalidate(h->buf, lis->index, lis->lnum);
   m->blocking = false;
-  m->opened = true;
+  m->opened = false;
 }
 
 void model_read_entry(Model *m, fn_lis *lis, ventry *head)
