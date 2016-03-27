@@ -36,6 +36,7 @@ struct Model {
 
 /* sort types require a unique sorting property or
  * line numbers saved in the lis will be incorrect.
+ * try: sort by name, then do special sort.
  */
 static int cmp_str(const void *, const void *, void *);
 static int cmp_time(const void *, const void *, void *);

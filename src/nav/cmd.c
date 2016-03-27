@@ -182,11 +182,11 @@ static void pop_callstack()
 
 static void ret2caller(Cmdstr *cmdstr, int ret_t, void *ret)
 {
-  if (!ret)
+  if (!ret || ret_t == 0)
     return;
 
   if (!cmdstr || !cmdstr->caller) {
-    if (ret_t == WORD || ret_t == STRING)
+    if (ret_t == STRING)
       nv_msg("%s", ret);
     return;
   }
@@ -267,7 +267,7 @@ cleanup:
 static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
 {
   Cmdstr *cmd = NULL;
-  int maxlen = strlen(cmdline->line);
+  int maxlen = strlen(cmdline->line) + 2;
   char *base = malloc(maxlen);
   int pos = 0;
   int prevst = 0;
@@ -275,7 +275,7 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
   while ((cmd = (Cmdstr*)utarray_next(caller->chlds, cmd))) {
     int nlen = cmd->st - prevst;
     if (maxlen < pos + nlen)
-      base = realloc(base, maxlen += nlen);
+      base = realloc(base, maxlen += nlen + 2);
     strncpy(base+pos, &cmdline->line[prevst], cmd->st);
     pos += nlen;
     prevst = cmd->ed + 1;
@@ -305,14 +305,14 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
       char *retline = cmd->ret;
       int retlen = strlen(retline);
       if (maxlen < pos + retlen)
-        base = realloc(base, maxlen += retlen);
+        base = realloc(base, maxlen += retlen + 2);
       strcpy(base+pos, retline);
       pos += retlen;
     }
   }
   int nlen = caller->ed;
   if (maxlen < pos + nlen)
-    base = realloc(base, maxlen += nlen);
+    base = realloc(base, maxlen += nlen + 2);
   strcpy(base+pos, &cmdline->line[prevst]);
 
   cmd_do(caller->caller, base);
@@ -633,7 +633,7 @@ void exec_line(Cmdstr *cmd, char *line)
 
   //TODO: hook output + block for output
   free(str);
-  ret2caller(cmd, STRING, pidstr);
+  ret2caller(cmd, WORD, pidstr);
   free(pidstr);
 }
 

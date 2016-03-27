@@ -588,6 +588,7 @@ void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
       continue;
 
     cmd->caller = caller;
+    cmd->ret_t = 0;
     cmd_run(cmd, cmdline);
 
     prev = (Cmdstr*)utarray_prev(cmdline->cmds, cmd);
