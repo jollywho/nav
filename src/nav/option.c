@@ -26,7 +26,7 @@ static char *hintskey = "wasgd";
 static char *p_sh = "/bin/sh";
 char *p_cp = "cp";
 char *p_mv = "mv";
-char *p_rm = "rm";
+char *p_rm = "rm -r";
 char *p_xc = "xclip";
 
 typedef struct fn_option fn_option;

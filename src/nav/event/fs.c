@@ -1,3 +1,4 @@
+#include <time.h>
 #include <malloc.h>
 #include <sys/time.h>
 #include <libgen.h>
@@ -393,7 +394,7 @@ static void stat_cb(uv_fs_t *req)
   if (!cache || ent->flush)
     goto scandir;
 
-  if (stat.st_ctim.tv_sec == cache->mtimesec) {
+  if (!difftime(stat.st_mtim.tv_sec, cache->mtimesec)) {
     log_msg("FS", "STAT:NOP");
     nop = 1;
   }
