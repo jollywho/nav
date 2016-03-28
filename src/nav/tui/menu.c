@@ -29,7 +29,7 @@ struct Menu {
   pos_T size;
   pos_T ofs;
 
-  int row_max;
+  int top;
   int lnum;
 
   int col_text;
@@ -257,6 +257,7 @@ void menu_restart(Menu *mnu)
   mnu->cx = context_start();
   mnu->docmpl = false;
   mnu->moved = false;
+  mnu->top = 0;
 
   ex_cmd_push(mnu->cx);
   compl_build(mnu->cx, NULL);
@@ -295,6 +296,20 @@ void menu_rebuild(Menu *mnu)
   mnu->rebuild = true;
 }
 
+static void mnu_scroll(Menu *mnu, int y, int max)
+{
+  int prev = mnu->top;
+  mnu->top += y;
+
+  if (mnu->top + ROW_MAX > max)
+    mnu->top = max - ROW_MAX;
+  if (mnu->top < 0)
+    mnu->top = 0;
+
+  int diff = prev - mnu->top;
+  mnu->lnum += diff;
+}
+
 static char* cycle_matches(Menu *mnu, int dir, int mov)
 {
   if (mnu->moved)
@@ -303,12 +318,24 @@ static char* cycle_matches(Menu *mnu, int dir, int mov)
   fn_compl *cmpl = mnu->cx->cmpl;
   mnu->lnum += dir;
 
+  if (dir < 0 && mnu->lnum < ROW_MAX * 0.2)
+    mnu_scroll(mnu, dir, cmpl->matchcount);
+  else if (dir > 0 && mnu->lnum > ROW_MAX * 0.8)
+    mnu_scroll(mnu, dir, cmpl->matchcount);
+
   if (mnu->lnum < 1)
     mnu->lnum = 1;
-  if (mnu->lnum > cmpl->matchcount)
-    mnu->lnum = cmpl->matchcount;
+  if (mnu->lnum > ROW_MAX)
+    mnu->lnum = ROW_MAX;
 
-  char *before = cmpl->matches[mnu->lnum - 1]->key;
+  int idx = mnu->top + mnu->lnum - 1;
+  if (idx > cmpl->matchcount - 1) {
+    int count = cmpl->matchcount - mnu->top;
+    mnu->lnum = count - 1;
+    idx = mnu->top + mnu->lnum - 1;
+  }
+
+  char *before = cmpl->matches[idx]->key;
   mnu->moved = mov;
 
   return before;
@@ -329,10 +356,14 @@ char* menu_next(Menu *mnu, int dir)
   char *line = cycle_matches(mnu, dir, false);
 
   if (!strcmp(ex_cmd_curstr(), line) && !wasmoved) {
-    if (mnu->lnum == 1)
+    if (mnu->top + mnu->lnum == 1) {
       mnu->lnum = cmpl->matchcount;
-    else
+      mnu->top = cmpl->matchcount - ROW_MAX;
+    }
+    else {
       mnu->lnum = 1;
+      mnu->top = 0;
+    }
     line = cycle_matches(mnu, 0, false);
   }
 
@@ -344,9 +375,6 @@ void menu_mv(Menu *mnu, int y)
   log_msg("MENU", "menu_mv");
   if (!mnu->cx || !mnu->cx->cmpl)
     return;
-  //TODO:
-  //if (mnu->lnum + y > ROW_MAX || mnu->lnum + y < 1)
-  //do scroll
   mnu->moved = false;
   cycle_matches(mnu, y, true);
 }
@@ -403,6 +431,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   if (ex_cmd_state() & (EX_CYCLE|EX_QUIT|EX_EXEC))
     return;
 
+  mnu->top = 0;
   mnu->lnum = 0;
   mnu->moved = false;
 
@@ -456,7 +485,7 @@ void menu_draw(Menu *mnu)
 
   for (int i = 0; i < MIN(ROW_MAX, cmpl->matchcount); i++) {
 
-    compl_item *row = cmpl->matches[i];
+    compl_item *row = cmpl->matches[mnu->top + i];
 
     DRAW_CH(mnu, nc_win, i, 0, hints[i], col_div);
     DRAW_STR(mnu, nc_win, i, 2, row->key, col_text);
