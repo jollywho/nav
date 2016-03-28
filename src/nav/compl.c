@@ -239,7 +239,7 @@ void compl_update(fn_context *cx, const char *line)
 
   for (int i = 0; i < cmpl->rowcount; i++) {
     char *key = cmpl->rows[i]->key;
-    if (strcasestr(key, line)) {
+    if (fuzzy_match(key, line)) {
       cmpl->matches[cmpl->matchcount] = cmpl->rows[i];
       cmpl->matchcount++;
     }

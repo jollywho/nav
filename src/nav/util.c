@@ -3,6 +3,7 @@
 #include <string.h>
 #include <malloc.h>
 #include "nav/util.h"
+#include "nav/macros.h"
 
 #define init_mb(state) memset(&state, 0, sizeof(state))
 #define reset_mbytes(state) init_mb(state)
@@ -145,4 +146,20 @@ char* do_expansion(char *src, Exparg *arg)
   asprintf(&out, "%s\"%s\"%s%s", head, body, quote, tail);
   free(line);
   return out;
+}
+
+bool fuzzy_match(char *s, const char *accept)
+{
+  char *sub = s;
+  for (int i = 0; accept[i]; i++) {
+    int c = TOUPPER_ASC(accept[i]);
+    char *next = strchr(sub, c);
+    if (!next) {
+      c = TOLOWER_ASC(accept[i]);
+      next = strchr(sub, c);
+    }
+    if (!next)
+      return false;
+  }
+  return true;
 }

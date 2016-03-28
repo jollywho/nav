@@ -15,5 +15,6 @@ void readable_fs(double size/*in bytes*/, char buf[]);
 void expand_escapes(char *dest, const char *src);
 void del_param_list(char **params, int argc);
 char* do_expansion(char *src, Exparg *arg);
+bool fuzzy_match(char *, const char *);
 
 #endif
