@@ -432,7 +432,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
     return;
 
   mnu->top = 0;
-  mnu->lnum = 0;
+  mnu->lnum = 1;
   mnu->moved = false;
 
   if ((ex_cmd_state() & EX_POP) == EX_POP) {
