@@ -373,7 +373,7 @@ char* menu_next(Menu *mnu, int dir)
 void menu_mv(Menu *mnu, int y)
 {
   log_msg("MENU", "menu_mv");
-  if (!mnu->cx || !mnu->cx->cmpl)
+  if (!mnu->cx || !mnu->cx->cmpl || mnu->cx->cmpl->matchcount < 1)
     return;
   mnu->moved = false;
   cycle_matches(mnu, y, true);
