@@ -32,19 +32,19 @@ static void img_draw(Plugin *plugin)
   int max_height_pixels = size.lnum * img->fonth;
 
   if (img->width > max_width_pixels) {
-    img->height = (img->height * max_width_pixels) / img->width;
     img->width = max_width_pixels;
+    img->height = (img->height * max_width_pixels) / img->width;
   }
   if (img->height > max_height_pixels) {
     img->width = (img->width * max_height_pixels) / img->height;
-    img->height = max_height_pixels;
+    img->height = max_height_pixels - 2;
   }
 
   free(img->cl_msg);
   free(img->img_msg);
   asprintf(&img->cl_msg, CL_ARG,
       pos.col * img->fontw + 1, pos.lnum * img->fonth,
-      (size.col * img->fontw), (size.lnum * img->fonth));
+      size.col * img->fontw, size.lnum * img->fonth);
   asprintf(&img->img_msg, DR_ARG,
       pos.col * img->fontw, pos.lnum * img->fonth,
       img->width, img->height, img->path);

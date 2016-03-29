@@ -388,6 +388,8 @@ static void* win_bdel(List *args, Cmdarg *ca)
 static void* win_pipe(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_pipe");
+  if (utarray_len(args->items) < 1)
+    return 0;
   char *arg = list_arg(args, 1, VAR_STRING);
   int wnum;
   if (!str_num(arg, &wnum))
