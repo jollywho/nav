@@ -160,6 +160,7 @@ bool fuzzy_match(char *s, const char *accept)
     }
     if (!next)
       return false;
+    sub = next;
   }
   return true;
 }
