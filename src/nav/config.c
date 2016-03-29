@@ -333,8 +333,10 @@ static void* edit_op(List *args, Cmdarg *ca)
   char *group  = list_arg(args, 1, VAR_STRING);
   char *before = list_arg(args, 2, VAR_STRING);
   char *after  = list_arg(args, 3, VAR_STRING);
-  if (!group || !before || !after)
+  if (!group || !before)
     return 0;
+  if (!after)
+    after = "";
 
   fn_group *grp = get_group(group);
   if (!grp)
