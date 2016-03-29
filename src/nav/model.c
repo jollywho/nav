@@ -34,32 +34,28 @@ struct Model {
   UT_array *lines;
 };
 
-/* sort types require a unique sorting property or
- * line numbers saved in the lis will be incorrect.
- * try: sort by name, then do special sort.
- */
 static int cmp_str(const void *, const void *, void *);
 static int cmp_time(const void *, const void *, void *);
-//static int cmp_type(const void *, const void *, void *);
 static int cmp_dir(const void *, const void *, void *);
 static int cmp_num(const void *, const void *, void *);
+//static int cmp_type(const void *, const void *, void *);
 typedef struct Sort_T Sort_T;
 static struct Sort_T {
   int val;
   int (*cmp)(const void *, const void *, void *);
 } sort_tbl[] = {
-  {SRT_DFLT,   cmp_str},
   {SRT_STR,    cmp_str},
   {SRT_TIME,   cmp_time},
-  //{SRT_TYPE, cmp_type},
   {SRT_DIR,    cmp_dir},
   {SRT_NUM,    cmp_num},
+  //{SRT_TYPE, cmp_type},
 };
 //TODO: remove field name from cmp functions:
 //field name can be passed into each cmp fn within an arg struct.
 
 #define REV_FN(cond,fn,a,b) ((cond) ? (fn((b),(a))) : (fn((a),(b))))
 #define numcmp(a,b) ((a) - (b))
+#define offcmp(a,b) ((a) < (b) ? (1) : (-1))
 
 static int cmp_time(const void *a, const void *b, void *arg)
 {
@@ -94,10 +90,9 @@ static int cmp_num(const void *a, const void *b, void *arg)
   fn_line l2 = *(fn_line*)b;
   off_t t1 = rec_stsize(l1.rec);
   off_t t2 = rec_stsize(l2.rec);
-  off_t ret = REV_FN(*(int*)arg, numcmp, t2, t1);
-  if (ret < 0) return -1;
-  if (ret > 0) return 1;
-  return 0;
+  if (t1 == t2)
+    return 0;
+  return REV_FN(*(int*)arg, offcmp, t2, t1);
 }
 
 static void sort_by_type(Model *m)
