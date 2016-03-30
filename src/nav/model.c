@@ -163,13 +163,24 @@ bool model_blocking(fn_handle *hndl)
 
 static void refit(Model *m, fn_lis *lis, Buffer *buf)
 {
-  int pos = lis->index + lis->lnum;
-  if (buf_size(m->hndl->buf).lnum > model_count(m)) {
+  int bsize = buf_size(buf).lnum;
+
+  /* content above index */
+  if (model_count(m) - lis->index < MIN(model_count(m), bsize)) {
+    int prev = lis->index;
+    lis->index = model_count(m) - bsize;
+    lis->lnum += (prev - lis->index);
+  }
+
+  /* content fits without offset */
+  if (bsize > model_count(m)) {
     int dif = lis->index;
     lis->index = 0;
     lis->lnum += dif;
   }
-  if (pos > model_count(m) - 1)
+
+  /* lnum + offset exceeds maximum index */
+  if (lis->index + lis->lnum > model_count(m) - 1)
     lis->lnum = (model_count(m) - lis->index) - 1;
 }
 
