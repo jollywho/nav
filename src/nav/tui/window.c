@@ -310,6 +310,8 @@ static void* win_sort(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_sort");
   char *fld = list_arg(args, 1, VAR_STRING);
+  if (!fld)
+    return 0;
   buf_sort(layout_buf(&win.layout), fld, ca->cmdstr->rev);
   return 0;
 }

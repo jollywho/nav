@@ -248,7 +248,7 @@ void menu_stop(Menu *mnu)
   free(mnu->line_key);
   mnu->active = false;
   mnu->hints = false;
-  mnu->moved = false;
+  mnu->moved = true;
 }
 
 void menu_restart(Menu *mnu)
@@ -256,7 +256,7 @@ void menu_restart(Menu *mnu)
   log_msg("MENU", "menu_restart");
   mnu->cx = context_start();
   mnu->docmpl = false;
-  mnu->moved = false;
+  mnu->moved = true;
   mnu->top = 0;
 
   ex_cmd_push(mnu->cx);
@@ -432,7 +432,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 
   mnu->top = 0;
   mnu->lnum = 0;
-  mnu->moved = false;
+  mnu->moved = true;
 
   if ((ex_cmd_state() & EX_POP) == EX_POP) {
     mnu->cx = ex_cmd_pop(1)->cx;
