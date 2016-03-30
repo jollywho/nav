@@ -323,16 +323,16 @@ static char* cycle_matches(Menu *mnu, int dir, int mov)
   else if (dir > 0 && mnu->lnum > ROW_MAX * 0.8)
     mnu_scroll(mnu, dir, cmpl->matchcount);
 
-  if (mnu->lnum < 1)
-    mnu->lnum = 1;
+  if (mnu->lnum < 0)
+    mnu->lnum = 0;
   if (mnu->lnum > ROW_MAX)
     mnu->lnum = ROW_MAX;
 
-  int idx = mnu->top + mnu->lnum - 1;
+  int idx = mnu->top + mnu->lnum;
   if (idx > cmpl->matchcount - 1) {
     int count = cmpl->matchcount - mnu->top;
     mnu->lnum = count - 1;
-    idx = mnu->top + mnu->lnum - 1;
+    idx = mnu->top + mnu->lnum;
   }
 
   char *before = cmpl->matches[idx]->key;
@@ -348,20 +348,19 @@ char* menu_next(Menu *mnu, int dir)
     return NULL;
 
   fn_compl *cmpl = mnu->cx->cmpl;
-  log_msg("MENU", "%d %d", mnu->lnum, cmpl->matchcount);
-  if (cmpl->matchcount < 1)
+  if (cmpl->matchcount < 0)
     return NULL;
 
   bool wasmoved = mnu->moved;
   char *line = cycle_matches(mnu, dir, false);
 
   if (!strcmp(ex_cmd_curstr(), line) && !wasmoved) {
-    if (mnu->top + mnu->lnum == 1) {
+    if (mnu->top + mnu->lnum == 0) {
       mnu->lnum = cmpl->matchcount;
-      mnu->top = cmpl->matchcount - ROW_MAX;
+      mnu->top = MAX(0, cmpl->matchcount - ROW_MAX);
     }
     else {
-      mnu->lnum = 1;
+      mnu->lnum = 0;
       mnu->top = 0;
     }
     line = cycle_matches(mnu, 0, false);
@@ -432,7 +431,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
     return;
 
   mnu->top = 0;
-  mnu->lnum = 1;
+  mnu->lnum = 0;
   mnu->moved = false;
 
   if ((ex_cmd_state() & EX_POP) == EX_POP) {
@@ -499,7 +498,7 @@ void menu_draw(Menu *mnu)
   char *key = mnu->cx->key;
   DRAW_STR(mnu, nc_win, ROW_MAX, 1, key, col_line);
 
-  mvwchgat(mnu->nc_win, mnu->lnum - 1, 0, -1, A_NORMAL, mnu->col_sel, NULL);
+  mvwchgat(mnu->nc_win, mnu->lnum, 0, -1, A_NORMAL, mnu->col_sel, NULL);
 
   wnoutrefresh(mnu->nc_win);
 }
