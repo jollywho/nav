@@ -93,6 +93,7 @@ static fn_key key_defaults[] = {
   {'J',     win_layout,      0,           MOVE_DOWN},
   {'K',     win_layout,      0,           MOVE_UP},
   {'L',     win_layout,      0,           MOVE_RIGHT},
+  {Ctrl_W,  oper,            NCH_A,       OP_WIN},
 };
 
 static fn_keytbl key_tbl;
@@ -194,7 +195,9 @@ void window_input(int key)
   if (window_get_focus())
     ret = buf_input(layout_buf(&win.layout), &win.ca);
   if (!ret)
-    find_do_cmd(&key_tbl, &win.ca, NULL);
+    ret = find_do_cmd(&key_tbl, &win.ca, &win);
+  if (!ret)
+    find_do_op(&win.ca, &win);
 }
 
 void window_start_override(Plugin *term)
@@ -403,6 +406,14 @@ static void* win_pipe(List *args, Cmdarg *ca)
   log_msg("WINDOW", "%d", wnum);
   send_hook_msg("pipe_left", lhs, rhs, NULL);
   return 0;
+}
+
+void win_move(void *_w, Keyarg *ca)
+{
+  log_msg("WINDOW", "win_move");
+  Window *win = (Window*)_w;
+  log_msg("WINDOW", "%p", win);
+  //need target from dir
 }
 
 void window_close_focus()

@@ -18,6 +18,7 @@ Buffer* window_get_focus();
 Plugin* window_get_plugin();
 int window_focus_attached();
 void window_shift(int lines);
+void win_move(void *, Keyarg *);
 
 char* window_cur_dir();
 void window_ch_dir(char *);

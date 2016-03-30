@@ -234,11 +234,11 @@ static pos_T pos_shift(Container *c, enum move_dir dir)
 
   if (dir == MOVE_LEFT)
     pos = (pos_T){c->ofs.lnum+pos.lnum, c->ofs.col-1};
-  if (dir == MOVE_RIGHT)
+  else if (dir == MOVE_RIGHT)
     pos = (pos_T){c->ofs.lnum+pos.lnum, c->ofs.col+c->size.col+1};
-  if (dir == MOVE_UP)
+  else if (dir == MOVE_UP)
     pos = (pos_T){c->ofs.lnum-1, c->ofs.col+1};
-  if (dir == MOVE_DOWN)
+  else if (dir == MOVE_DOWN)
     pos = (pos_T){c->ofs.lnum+c->size.lnum+1, c->ofs.col+1};
 
   return pos;

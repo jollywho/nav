@@ -13,15 +13,9 @@
 #include "nav/event/fs.h"
 #include "nav/util.h"
 
-static void buf_oper();
 static void buf_mv_page();
 static void buf_mv();
 static void buf_search();
-static void buf_g();
-static void buf_mark();
-static void buf_gomark();
-static void buf_yank();
-static void buf_del();
 static void buf_gen_event();
 static void buf_draw(void **);
 
@@ -35,15 +29,6 @@ static char *buf_events[] = {
   "paste","remove","left","right",
 };
 
-static fn_oper key_operators[] = {
-  {NUL,      NUL,    NULL},
-  {'y',      NUL,    buf_yank},
-  {'m',      NUL,    buf_mark},
-  {'\'',     NUL,    buf_gomark},
-  {'g',      NUL,    buf_g},
-  {'d',      NUL,    buf_del},
-};
-
 static fn_key key_defaults[] = {
   {Ctrl_J,  buf_mv_page,     0,           FORWARD},
   {Ctrl_K,  buf_mv_page,     0,           BACKWARD},
@@ -51,12 +36,12 @@ static fn_key key_defaults[] = {
   {'N',     buf_search,      0,           BACKWARD},
   {'j',     buf_mv,          0,           FORWARD},
   {'k',     buf_mv,          0,           BACKWARD},
-  {'g',     buf_oper,        NCH_S,       BACKWARD},
+  {'g',     oper,            NCH_S,       BACKWARD},
   {'G',     buf_g,           0,           FORWARD},
-  {'y',     buf_oper,        NCH,         OP_YANK},
-  {'d',     buf_oper,        NCH,         OP_DELETE},
-  {'m',     buf_oper,        NCH_A,       OP_MARK},
-  {'\'',    buf_oper,        NCH_A,       OP_JUMP},
+  {'y',     oper,            NCH,         OP_YANK},
+  {'d',     oper,            NCH,         OP_DELETE},
+  {'m',     oper,            NCH_A,       OP_MARK},
+  {'\'',    oper,            NCH_A,       OP_JUMP},
   {'p',     buf_gen_event,   0,           EV_PASTE},
   {'X',     buf_gen_event,   0,           EV_REMOVE},
   {'h',     buf_gen_event,   0,           EV_LEFT},
@@ -371,21 +356,9 @@ int buf_input(Buffer *buf, Keyarg *ca)
 
   int ret = find_do_cmd(&key_tbl, ca, buf);
   if (!ret)
-    ret = find_do_op(key_operators, ca, buf);
+    ret = find_do_op(ca, buf);
 
   return ret;
-}
-
-static void buf_oper(Buffer *buf, Keyarg *ca)
-{
-  log_msg("BUFFER", "buf_oper");
-  clearop(ca);
-  if (ca->type == NCH_S)
-    ca->oap.key = OP_G;
-  else
-    ca->oap.key = ca->arg;
-
-  ca->nkey = ca->key;
 }
 
 static void buf_mv_page(Buffer *buf, Keyarg *ca)
@@ -396,15 +369,17 @@ static void buf_mv_page(Buffer *buf, Keyarg *ca)
   buf_move(buf, y, 0);
 }
 
-static void buf_g(Buffer *buf, Keyarg *ca)
+void buf_g(void *_b, Keyarg *ca)
 {
+  Buffer *buf = (Buffer*)_b;
   int dir = ca->arg;
   int y = model_count(buf->hndl->model) * dir;
   buf_move(buf, y, 0);
 }
 
-static void buf_yank(Buffer *buf, Keyarg *ca)
+void buf_yank(void *_b, Keyarg *ca)
 {
+  Buffer *buf = (Buffer*)_b;
   fn_handle *h = buf->hndl;
 
   char *field = h->fname;
@@ -421,8 +396,9 @@ static void buf_yank(Buffer *buf, Keyarg *ca)
   reg_set('0', val, shw);
 }
 
-static void buf_del(Buffer *buf, Keyarg *ca)
+void buf_del(void *_b, Keyarg *ca)
 {
+  Buffer *buf = (Buffer*)_b;
   fn_handle *h = buf->hndl;
   char *val = model_curs_value(h->model, "fullpath");
   char *shw = model_curs_value(h->model, h->fname);
@@ -430,15 +406,17 @@ static void buf_del(Buffer *buf, Keyarg *ca)
   reg_set('1', val, shw);
 }
 
-static void buf_mark(Buffer *buf, Keyarg *ca)
+void buf_mark(void *_b, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_mark");
+  Buffer *buf = (Buffer*)_b;
   mark_chr_str(ca->key, buf->hndl->key);
 }
 
-static void buf_gomark(Buffer *buf, Keyarg *ca)
+void buf_gomark(void *_b, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_gomark");
+  Buffer *buf = (Buffer*)_b;
   char *path = mark_str(ca->key);
   if (!path)
     return;

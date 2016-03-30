@@ -58,6 +58,16 @@ static fn_reg reg_tbl[] = {
   {'_',  NULL},
 };
 
+static fn_oper key_operators[] = {
+  {NUL,      NUL,    NULL},
+  {'y',      NUL,    buf_yank},
+  {'m',      NUL,    buf_mark},
+  {'\'',     NUL,    buf_gomark},
+  {'g',      NUL,    buf_g},
+  {'d',      NUL,    buf_del},
+  {Ctrl_W,   NUL,    win_move},
+};
+
 typedef struct fn_map fn_map;
 struct fn_map {
   char *lhs;
@@ -358,32 +368,44 @@ int find_do_cmd(fn_keytbl *kt, Keyarg *ca, void *obj)
   return 0;
 }
 
-static int do_op(fn_oper *kt, Keyarg *ca, void *obj)
+void oper(void *none, Keyarg *ca)
 {
-  kt[ca->oap.key].cmd_func(obj, ca);
+  log_msg("INPUT", "oper");
+  clearop(ca);
+  if (ca->type == NCH_S)
+    ca->oap.key = OP_G;
+  else
+    ca->oap.key = ca->arg;
+
+  ca->nkey = ca->key;
+}
+
+static int do_op(Keyarg *ca, void *obj)
+{
+  key_operators[ca->oap.key].cmd_func(obj, ca);
   clearop(ca);
   return 1;
 }
 
-int find_do_op(fn_oper *kt, Keyarg *ca, void *obj)
+int find_do_op(Keyarg *ca, void *obj)
 {
   if (!op_pending(ca)) return 0;
-  log_msg("BUFFER", "do_op");
-  log_msg("BUFFER", "%c %c %c", ca->key, ca->oap.key, ca->nkey);
+  log_msg("INPUT", "do_op");
+  log_msg("INPUT", "%c %c %c", ca->key, ca->oap.key, ca->nkey);
   if (ca->type == NCH_A || ca->key == ca->nkey) {
-    return do_op(kt, ca, obj);
+    return do_op(ca, obj);
   }
 
   if (ca->type == NCH_S) {
-    if (ca->nkey == kt[ca->oap.key].nchar)
-      return do_op(kt, ca, obj);
+    if (ca->nkey == key_operators[ca->oap.key].nchar)
+      return do_op(ca, obj);
     else
       clearop(ca);
   }
 
   if (ca->type == NCH) {
     if (ca->nkey != OP_NOP)
-      return do_op(kt, ca, obj);
+      return do_op(ca, obj);
     else
       ca->nkey = ca->key;
   }
@@ -392,7 +414,7 @@ int find_do_op(fn_oper *kt, Keyarg *ca, void *obj)
 
 void clearop(Keyarg *ca)
 {
-  log_msg("BUFFER", "clear_oparg");
+  log_msg("INPUT", "clear_oparg");
   memset(&ca->oap, 0, sizeof(Oparg));
   ca->nkey = OP_NOP;
   ca->mkey = OP_NOP;
@@ -428,7 +450,7 @@ void reg_clear_dcur()
 
 void reg_set(int ch, char *value, char *show)
 {
-  log_msg("model", "reg_set");
+  log_msg("INPUT", "reg_set");
   fn_reg *find = reg_get(ch);
   if (!find)
     return;

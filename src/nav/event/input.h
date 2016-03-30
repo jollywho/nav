@@ -10,7 +10,7 @@
 #define OP_JUMP         3       /* "'"  jump   operator */
 #define OP_G            4       /* "g"  spcl   operator */
 #define OP_DELETE       5       /* "d"  delete operator */
-#define OP_CHANGE       6       /* "c"  change operator */
+#define OP_WIN          6       /* "^w" window operator */
 
 typedef struct {
   int key;                      // current pending operator type
@@ -70,8 +70,9 @@ void do_map(int key);
 
 int find_command(fn_keytbl *kt, int cmdchar);
 int find_do_cmd(fn_keytbl *kt, Keyarg *ca, void *obj);
-int find_do_op(fn_oper *kt, Keyarg *ca, void *obj);
+int find_do_op(Keyarg *ca, void *obj);
 void input_check();
+void oper(void *, Keyarg *ca);
 void clearop(Keyarg *ca);
 bool op_pending(Keyarg *arg);
 
