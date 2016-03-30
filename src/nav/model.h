@@ -12,7 +12,7 @@ void model_close(fn_handle *hndl);
 bool model_blocking(fn_handle *hndl);
 
 void model_sort(Model *m, int sort_type, int flags);
-void model_recv(Model *m);
+void model_recv(Model *m, bool);
 void refind_line(Model *m);
 
 void model_read_entry(Model *m, fn_lis *lis, ventry *head);

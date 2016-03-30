@@ -28,6 +28,7 @@ struct fentry {
   bool fastreq;
   bool flush;
   bool cancel;
+  bool reopen;
   int refs;
   fn_fs *listeners;
   UT_hash_handle hh;
@@ -52,6 +53,7 @@ static fentry* fs_mux(fn_fs *fs)
     ent->fastreq = false;
     ent->flush = false;
     ent->cancel = false;
+    ent->reopen = false;
     ent->listeners = NULL;
     ent->key = strdup(fs->path);
     ent->refs = 2;
@@ -276,10 +278,11 @@ void fs_signal_handle(void **data)
     if (it->open_cb)
       it->open_cb(NULL);
     else
-      model_recv(h->model);
+      model_recv(h->model, ent->reopen);
   }
   ent->running = false;
   ent->flush = false;
+  ent->reopen = false;
 }
 
 bool fs_blocking(fn_fs *fs)
@@ -414,6 +417,7 @@ static void fs_reopen(fentry *ent)
   uv_fs_event_stop(&ent->watcher);
 
   ent->running = true;
+  ent->reopen = true;
   uv_fs_stat(eventloop(), &ent->uv_fs, ent->key, stat_cb);
   uv_fs_event_start(&ent->watcher, watch_cb, ent->key, 1);
 }

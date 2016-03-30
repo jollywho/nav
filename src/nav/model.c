@@ -143,6 +143,9 @@ void model_open(fn_handle *hndl)
   tbl_add_lis(hndl->tn, hndl->key_fld, hndl->key);
 }
 
+//paired buf saves lis during recv and overwites other
+//could demux but watcher needs a push target
+//push could go a diff entry
 void model_close(fn_handle *hndl)
 {
   log_msg("MODEL", "model_close");
@@ -150,6 +153,7 @@ void model_close(fn_handle *hndl)
   Buffer *b = hndl->buf;
   if (m->opened)
     lis_save(m->lis, buf_top(b), buf_line(b));
+  log_err("MODEL", "%d %d %d", m->opened, buf_top(b), buf_line(b));
 
   m->blocking = true;
   m->opened = false;
@@ -239,8 +243,11 @@ void model_sort(Model *m, int sort_type, int flags)
   buf_full_invalidate(m->hndl->buf, m->lis->index, m->lis->lnum);
 }
 
-void model_recv(Model *m)
+void model_recv(Model *m, bool reopen)
 {
+  if (m->opened && !reopen)
+    return;
+
   if (m->opened)
     model_close(m->hndl);
 
