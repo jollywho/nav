@@ -36,7 +36,7 @@ struct fentry {
 
 typedef struct {
   char *key;
-  time_t mtimesec;
+  time_t ctimesec;
   UT_hash_handle hh;
 } cachedir;
 
@@ -129,7 +129,7 @@ void fs_clr_cache(char *path)
   cachedir *cache;
   HASH_FIND_STR(cache_tbl, path, cache);
   if (cache)
-    cache->mtimesec = -1;
+    cache->ctimesec = -1;
 }
 
 void fs_clr_all_cache()
@@ -244,10 +244,10 @@ bool isrecdir(fn_rec *rec)
   return (S_ISDIR(st->st_mode));
 }
 
-time_t rec_mtime(fn_rec *rec)
+time_t rec_ctime(fn_rec *rec)
 {
   struct stat *stat = (struct stat*)rec_fld(rec, "stat");
-  return stat->st_mtim.tv_sec;
+  return stat->st_ctim.tv_sec;
 }
 
 off_t rec_stsize(fn_rec *rec)
@@ -343,7 +343,7 @@ static void add_dir(const char *path, uv_stat_t stat)
     cache->key = strdup(path);
     HASH_ADD_STR(cache_tbl, key, cache);
   }
-  cache->mtimesec = stat.st_mtim.tv_sec;
+  cache->ctimesec = stat.st_ctim.tv_sec;
 }
 
 void fs_cancel(fn_fs *fs)
@@ -397,7 +397,7 @@ static void stat_cb(uv_fs_t *req)
   if (!cache || ent->flush)
     goto scandir;
 
-  if (!difftime(stat.st_mtim.tv_sec, cache->mtimesec)) {
+  if (!difftime(stat.st_ctim.tv_sec, cache->ctimesec)) {
     log_msg("FS", "STAT:NOP");
     nop = 1;
   }

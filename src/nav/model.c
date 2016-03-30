@@ -61,8 +61,8 @@ static int cmp_time(const void *a, const void *b, void *arg)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
-  time_t t1 = rec_mtime(l1.rec);
-  time_t t2 = rec_mtime(l2.rec);
+  time_t t1 = rec_ctime(l1.rec);
+  time_t t2 = rec_ctime(l2.rec);
   return REV_FN(*(int*)arg, difftime, t2, t1);
 }
 
@@ -143,9 +143,6 @@ void model_open(fn_handle *hndl)
   tbl_add_lis(hndl->tn, hndl->key_fld, hndl->key);
 }
 
-//paired buf saves lis during recv and overwites other
-//could demux but watcher needs a push target
-//push could go a diff entry
 void model_close(fn_handle *hndl)
 {
   log_msg("MODEL", "model_close");
@@ -153,7 +150,6 @@ void model_close(fn_handle *hndl)
   Buffer *b = hndl->buf;
   if (m->opened)
     lis_save(m->lis, buf_top(b), buf_line(b));
-  log_err("MODEL", "%d %d %d", m->opened, buf_top(b), buf_line(b));
 
   m->blocking = true;
   m->opened = false;

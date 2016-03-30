@@ -21,7 +21,7 @@ void fm_init()
     tbl_mk_fld("fm_files", "dir",      SRT_DIR);
     tbl_mk_fld("fm_files", "fullpath", SRT_STR);
     tbl_mk_fld("fm_files", "stat",     TYP_VOID);
-    tbl_mk_vt_fld("fm_files", "mtime", SRT_TIME);
+    tbl_mk_vt_fld("fm_files", "ctime", SRT_TIME);
     tbl_mk_vt_fld("fm_files", "size",  SRT_NUM);
   }
 }
