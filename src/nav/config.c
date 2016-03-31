@@ -167,8 +167,15 @@ void config_start(char *config_path)
 {
   config_load(config_path);
   FILE *f = config_open(NULL, info_paths, "r");
-  if (!f)
+  log_msg("CONFIG", "%p", f);
+  if (!f) {
+    char *path = fs_expand_path(info_paths[0]);
+    f = fopen(path, "w+");
+    if (f)
+      fclose(f);
+    free(path);
     return;
+  }
   info_read(f);
   fclose(f);
 }
