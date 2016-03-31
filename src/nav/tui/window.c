@@ -404,6 +404,8 @@ static void* win_direct(List *args, Cmdarg *ca)
 
   Plugin *lhs = focus_plugin();
   Plugin *rhs = plugin_from_id(wnum);
+  if (!rhs)
+    return 0;
 
   log_msg("WINDOW", "%d", wnum);
   send_hook_msg("pipe_left", lhs, rhs, NULL);
