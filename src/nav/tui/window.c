@@ -231,6 +231,8 @@ Buffer* window_get_focus()
 
 Plugin* window_get_plugin()
 {
+  if (!layout_buf(&win.layout))
+    return NULL;
   return window_get_focus()->plugin;
 }
 
