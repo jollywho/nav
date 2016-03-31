@@ -37,7 +37,7 @@ static void* win_mark();
 static void* win_autocmd();
 static void* win_echo();
 static void* win_reload();
-static void* win_pipe();
+static void* win_direct();
 static void win_layout();
 static void window_ex_cmd();
 static void window_reg_cmd();
@@ -59,7 +59,7 @@ static const Cmd_T cmdtable[] = {
   {"delm",0,        win_mark,    1},
   {"echo","ec",     win_echo,    0},
   {"reload","rel",  win_reload,  0},
-  {"pipe",0,        win_pipe,    0},
+  {"direct",0,      win_direct,  0},
 };
 
 static char *compl_cmds[] = {
@@ -392,9 +392,9 @@ static void* win_bdel(List *args, Cmdarg *ca)
   return 0;
 }
 
-static void* win_pipe(List *args, Cmdarg *ca)
+static void* win_direct(List *args, Cmdarg *ca)
 {
-  log_msg("WINDOW", "win_pipe");
+  log_msg("WINDOW", "win_direct");
   if (utarray_len(args->items) < 1)
     return 0;
   char *arg = list_arg(args, 1, VAR_STRING);

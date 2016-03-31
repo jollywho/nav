@@ -31,7 +31,9 @@ static struct plugin_ent {
 } plugin_table[] = {
   {"fm",   fm_init, fm_new,   fm_delete,   0},
   {"op",   NULL,    op_new,   op_delete,   1},
+#if W3M_SUPPORTED
   {"img",  NULL,    img_new,  img_delete,  0},
+#endif
   {"term", NULL,    term_new, term_delete, 0},
   //{"dt",   NULL,    dt_new,   dt_delete,   0},
 };

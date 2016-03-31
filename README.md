@@ -1,6 +1,7 @@
 # nav [![](https://api.travis-ci.org/jollywho/nav.svg)](https://travis-ci.org/jollywho/nav)
 
-nav is a (**work in progress**) hackable ncurses file manager, inspired by vim, [ranger](http://ranger.nongnu.org/), and [dvtm](http://www.brain-dump.org/projects/dvtm/).
+nav is a hackable ncurses file manager, inspired by vim, [ranger](http://ranger.nongnu.org/), and [dvtm](http://www.brain-dump.org/projects/dvtm/).
+nav is a **work in progress**.
 
 ### What it has
 
@@ -22,17 +23,28 @@ Install dependencies:
 * cmake
 * ncurses
 * pcre
-* libtermkey
-* libuv
-* w3m (image support)
+* [libtermkey](http://www.leonerd.org.uk/code/libtermkey/)
+* [libuv](https://github.com/libuv/libuv)
+* [w3m](http://w3m.sourceforge.net/) (optional: image support)
 
-    cmake .
-    make
-    sudo make install
+```bash
+$ cmake .
+$ make
+$ sudo make install
+```
 
 ## Configuration
 
 Copy the sample config from `/etc/nav/navrc_example` to `~/.navrc`.
+
+## Image Display
+
+With w3mimgdisplay installed
+```vim
+new fm
+vnew img
+pipe #BUFFER_ID
+```
 
 ## Contributing
 
@@ -41,6 +53,6 @@ Copy the sample config from `/etc/nav/navrc_example` to `~/.navrc`.
 ## Future
 
 * parser remake for more advanced features
-* command pipes
 * 'datatable' buffers for aggregate content
 * strong filter support
+* command pipes

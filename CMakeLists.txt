@@ -48,6 +48,12 @@ target_link_libraries(nav ${LIBUV_LIBRARIES})
 target_link_libraries(nav ${LIBTERMKEY_LIBRARIES})
 target_link_libraries(nav util)
 
+find_program(HAS_W3M w3m)
+if (HAS_W3M)
+  add_definitions(-DW3M_SUPPORTED=1)
+endif()
+
+
 install(
 	TARGETS nav
 	RUNTIME
