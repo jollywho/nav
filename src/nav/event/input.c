@@ -46,6 +46,7 @@ static struct key_name_entry {
   {CSI,               (char *)"CSI"},
   {'|',               (char *)"Bar"},
   {'\\',              (char *)"Bslash"},
+  {BS,                (char *)"Backspace"},
   {BS,                (char *)"Del"},
   {DEL,               (char *)"Delete"},      /* Alternative name */
   {0,                 NULL}
