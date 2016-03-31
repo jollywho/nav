@@ -32,13 +32,12 @@ static const Cmd_T cmdtable[] = {
 static const char *config_paths[] = {
   "$HOME/.navrc",
   "$HOME/.nav/.navrc",
-  "/etc/nav/.navrc",
+  "/etc/nav/navrc",
 };
 
 static const char *info_paths[] = {
   "$HOME/.navinfo",
   "$HOME/.nav/.navinfo",
-  "/etc/nav/.navinfo",
 };
 
 void config_init()

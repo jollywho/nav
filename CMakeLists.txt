@@ -61,7 +61,7 @@ install(
 	COMPONENT runtime
 )
 install(
-	FILES ${PROJECT_SOURCE_DIR}/navrc_example
+	FILES ${PROJECT_SOURCE_DIR}/navrc
   DESTINATION /etc/nav/
 	COMPONENT configuration
 )
