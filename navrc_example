@@ -43,8 +43,12 @@ op Music "mpv --fs %:fullpath"
 op Image "sxiv -m %:fullpath"
 op Document "mupdf %:fullpath"
 
-
 # ========================================
 # nav keymaps
 # ========================================
 map s :sort <C-g>
+
+# ========================================
+# auto
+# ========================================
+new fm
