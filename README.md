@@ -43,9 +43,9 @@ Copy the sample config from `/etc/nav/navrc_example` to `~/.navrc`.
 
 With w3mimgdisplay installed
 ```viml
-new fm
-vnew img
-direct #BUFFER_ID
+:new fm
+:vnew img
+:direct #BUFFER_ID
 ```
 
 ## Contributing
