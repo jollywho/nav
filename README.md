@@ -1,6 +1,7 @@
 # nav [![](https://api.travis-ci.org/jollywho/nav.svg)](https://travis-ci.org/jollywho/nav)
 
 nav is a hackable ncurses file manager, inspired by vim, [ranger](http://ranger.nongnu.org/), and [dvtm](http://www.brain-dump.org/projects/dvtm/).
+
 nav is a **work in progress**.
 
 ### What it has
@@ -13,6 +14,7 @@ nav is a **work in progress**.
 * vim-style autocmds, marks, maps, syntax, colors
 * file executor/opener with 'before/after' cmds
 * [ctrlp](https://kien.github.io/ctrlp.vim/)-inspired autocomplete menu
+* menu hint keys
 
 ## Installation
 
@@ -40,19 +42,20 @@ Copy the sample config from `/etc/nav/navrc_example` to `~/.navrc`.
 ## Image Display
 
 With w3mimgdisplay installed
-```vim
+```viml
 new fm
 vnew img
-pipe #BUFFER_ID
+direct #BUFFER_ID
 ```
 
 ## Contributing
 
-...is welcome.
+...is much welcome.
 
 ## Future
 
+* stronger UTF-8 support
 * parser remake for more advanced features
 * 'datatable' buffers for aggregate content
-* strong filter support
+* filters
 * command pipes

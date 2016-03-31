@@ -279,8 +279,8 @@ void fm_new(Plugin *plugin, Buffer *buf, void *arg)
   hook_add_intl(plugin, plugin, fm_left,       "left"      );
   hook_add_intl(plugin, plugin, fm_right,      "right"     );
   hook_add_intl(plugin, plugin, fm_req_dir,    "open"      );
-  hook_add_intl(plugin, plugin, fm_pipe_left,  "pipe_left" );
-  hook_add_intl(plugin, plugin, fm_pipe_right, "pipe_right");
+  //hook_add_intl(plugin, plugin, fm_pipe_left,  "pipe_left" );
+  //hook_add_intl(plugin, plugin, fm_pipe_right, "pipe_right");
 
   fm->fs = fs_init(plugin->hndl);
   fm->fs->stat_cb = fm_ch_dir;

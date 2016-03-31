@@ -25,6 +25,7 @@ struct Menu {
   bool hints;
   bool moved;
   char *line_key;
+  char *line_path;
 
   pos_T size;
   pos_T ofs;
@@ -348,7 +349,7 @@ char* menu_next(Menu *mnu, int dir)
     return NULL;
 
   fn_compl *cmpl = mnu->cx->cmpl;
-  if (cmpl->matchcount < 0)
+  if (cmpl->matchcount < 1)
     return NULL;
 
   bool wasmoved = mnu->moved;
@@ -365,6 +366,11 @@ char* menu_next(Menu *mnu, int dir)
     }
     line = cycle_matches(mnu, 0, false);
   }
+
+  if (cur_menu->hndl->key)
+    line = conspath(cur_menu->hndl->key, line);
+  else
+    line = strdup(line);
 
   return line;
 }

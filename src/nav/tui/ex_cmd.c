@@ -208,7 +208,7 @@ static void ex_esc()
 static void ex_tab(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "TAB");
-  const char *str = menu_next(menu, arg->arg);
+  char *str = menu_next(menu, arg->arg);
   if (!str)
     return;
 
@@ -221,6 +221,7 @@ static void ex_tab(void *none, Keyarg *arg)
   char key[strlen(str) + 2];
   expand_escapes(key, str);
   int len = strlen(key);
+  free(str);
 
   if (st + len >= maxpos - 1) {
     char *newline = strdup(line);
