@@ -1,0 +1,21 @@
+sudo: required
+
+language: c
+
+compiler:
+  - gcc
+  - clang
+
+arch:
+  packages:
+    - cmake
+    - ncurses
+    - pcre
+    - libtermkey
+    - libuv
+  script:
+    - "cmake ."
+    - "make"
+
+script:
+  - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
