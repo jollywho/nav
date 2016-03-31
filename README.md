@@ -1,8 +1,9 @@
 # nav [![](https://api.travis-ci.org/jollywho/nav.svg)](https://travis-ci.org/jollywho/nav)
-
 nav is a hackable ncurses file manager, inspired by vim, [ranger](http://ranger.nongnu.org/), and [dvtm](http://www.brain-dump.org/projects/dvtm/).
 
 nav is a **work in progress**.
+
+![](http://sicp.me/u/armtv.png)
 
 ### What it has
 
