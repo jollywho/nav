@@ -54,3 +54,8 @@ install(
 	DESTINATION bin
 	COMPONENT runtime
 )
+install(
+	FILES ${PROJECT_SOURCE_DIR}/.navrc
+  DESTINATION $ENV{HOME}
+	COMPONENT configuration
+)
