@@ -84,20 +84,21 @@ void sigsegv_handler(int sig)
 static const char* usage =
 "Usage: nav [options] [command]\n"
 "\n"
-"  -h, --help             Print this help message and exit.\n"
 "  -c, --config=<config>  Specify an alternative config file.\n"
-"  -l  --log-file=<path>  Specify an alternative log file (Requires -d).\n"
+"  -l, --log-file=<path>  Specify an alternative log file (Requires -d).\n"
+"  -V, --verbose=<group>  Verbose mode for a specific log group.\n"
 "  -d, --debug            Debug mode.\n"
-"      --debug=<group>    Debug mode for a specific group.\n"
 "  -v, --version          Print version information and exit.\n"
+"  -h, --help             Print this help message and exit.\n"
 "\n";
 
 static struct option long_options[] = {
-  {"help", no_argument, NULL, 'h'},
   {"config", required_argument, NULL, 'c'},
   {"log-file", required_argument, NULL, 'l'},
-  {"debug", optional_argument, NULL, 'd'},
+  {"verbose", required_argument, NULL, 'V'},
+  {"debug", no_argument, NULL, 'd'},
   {"version", no_argument, NULL, 'v'},
+  {"help", no_argument, NULL, 'h'},
 };
 
 int main(int argc, char **argv)
@@ -107,7 +108,7 @@ int main(int argc, char **argv)
 
   for (int i = 0; i < argc; i++) {
     int option_index = 0;
-    int c = getopt_long(argc, argv, "hd::vc:", long_options, &option_index);
+    int c = getopt_long(argc, argv, "c:l:V:dvh", long_options, &option_index);
     if (c < 0)
       continue;
 
@@ -120,12 +121,15 @@ int main(int argc, char **argv)
         config_path = optarg;
         break;
       case 'l':
+        debug = 1;
         log_set_file(optarg);
         break;
       case 'd':
         debug = 1;
-        if (optarg)
-          log_set_group(optarg);
+        break;
+      case 'V':
+        debug = 1;
+        log_set_group(optarg);
         break;
       case 'v':
         fprintf(stdout, "%s\n", NAV_LONG_VERSION);

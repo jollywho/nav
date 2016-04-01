@@ -38,7 +38,7 @@ $ sudo make install
 
 ## Configuration
 
-Copy the sample config from `/etc/nav/navrc_example` to `~/.navrc`.
+Copy the sample config from `/etc/nav/navrc` to `~/.navrc` or `~/.nav/.navrc`.
 
 ## Image Display
 

@@ -1,0 +1,48 @@
+.TH NAV 1
+.SH NAME
+nav \- a highly configurable, performant, async system tool
+.SH SYNOPSIS
+.IX Header "SYNOPSIS"
+\&\fBnav\fR [\fB\-\-version\fR] [\fB\-\-help\fR] [\fB\-\-debug\fR]
+.TP
+\&\fBnav\fR [\fB\-\-config\fR=\fIpath\fR] [\fB\-\-log-file\fR=\fIpath\fR] [\fB\-\-verbose\fR=\fIgroup\fR]
+.SH DESCRIPTION
+nav is a hackable ncurses file manager, inspired by vim, ranger, and dvtm.
+
+nav searches for a config file in the following order:
+  \fB~/.navrc\fP
+  \fB~/.nav/.navrc\fP
+  \fB/etc/navrc\fP
+
+.SH OPTIONS
+.IP "\fB\-c\fR \fIpath\fR, \fB\-\-config\fR=\fIpath\fR" 14
+.IX Item "--config=path"
+Specify an alternative config file.
+.IP "\fB\-l\fR \fIpath\fR, \fB\-\-log-file\fR=\fIpath\fR" 14
+.IX Item "-l, --log-file"
+Specify an alternative log file
+(Sets \fB--debug\fP).
+.IP "\fB\-V\fR \fIgroup\fR, \fB\-\-verbose\fR=\fIgroup\fR" 14
+Verbose mode for a specific log group
+(Sets \fB--debug\fP).
+.IX Item "-V, --verbose"
+.IP "\fB\-d\fR, \fB\-\-debug\fR" 14
+.IX Item "--debug"
+Debug mode.
+.IP "\fB\-v\fR, \fB\-\-version\fR" 14
+.IX Item "--version"
+Print version information and exit.
+.IP "\fB\-h\fR, \fB\-\-help\fR" 14
+.IX Item "-h, --help"
+Print this help message and exit.
+
+.SH FILES
+User-local info file: \fI~/.navinfo\fR.
+.TP
+Global configuration file: \fI/etc/navrc\fR.
+.SH BUGS
+If you find a bug, please report it at
+.br
+<\fBhttp://github.com/jollywho/nav\fP>.
+.SH AUTHORS
+Kevin Vollmer <works.kvollmer@gmail.com>
