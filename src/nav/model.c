@@ -172,6 +172,10 @@ static void refit(Model *m, fn_lis *lis, Buffer *buf)
     lis->lnum += (prev - lis->index);
   }
 
+  /* content below window */
+  if (lis->lnum > bsize)
+    lis->lnum = bsize - 1;
+
   /* content fits without offset */
   if (bsize > model_count(m)) {
     int dif = lis->index;
