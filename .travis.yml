@@ -1,4 +1,4 @@
-sudo: false
+sudo: required
 
 language: c
 
@@ -16,6 +16,9 @@ arch:
   script:
     - "cmake ."
     - "make"
+
+notifications:
+  email: false
 
 script:
   - "curl -s https://raw.githubusercontent.com/mikkeloscar/arch-travis/master/arch-travis.sh | bash"
