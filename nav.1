@@ -36,6 +36,106 @@ Print version information and exit.
 .IX Item "-h, --help"
 Print this help message and exit.
 
+.SH DEFAULT KEYS
+.IR Buffer
+.IP "\fBh\fR"
+go left
+.IP "\fBj\fR"
+go down
+.IP "\fBk\fR"
+go up
+.IP "\fBl\fR"
+go right
+.IP "\fBC-j\fR"
+jump page down
+.IP "\fBC-k\fR"
+jump page up
+.IP "\fBn\fR"
+next search result
+.IP "\fBN\fR"
+previous search result
+.IP "\fBg\fR"
+g operator
+.IP "\fBG\fR"
+goto bottom
+.IP "\fBy\fR"
+yank operator
+.IP "\fBd\fR"
+cut operator
+.IP "\fBm\fR"
+mark operator
+.IP "\fB’\fR"
+jump operator
+.IP "\fBp\fR"
+paste
+.IP "\fBX\fR"
+remove
+
+.RE
+.IR Window
+.IP "\fBH\fR"
+move window focus left
+.IP "\fBJ\fR"
+move window focus down
+.IP "\fBK\fR"
+move window focus up
+.IP "\fBL\fR"
+move window focus down
+.IP "\fB:\fR"
+start command-line mode
+.IP "\fB/\fR"
+forward search
+.IP "\fB?\fR"
+backward search
+
+.RE
+.IR command-line
+.IP "\fBESC\fR"
+cancel/close ex_mode
+.IP "\fBTAB\fR"
+compl cycle forward
+.IP "\fBS-TAB\fR"
+compl cycle backward
+.IP "\fBCAR\fR"
+run cmd
+.IP "\fBBS\fR"
+(internal)
+.IP "\fBSpc\fR"
+(internal)
+.IP "\fBC-p\fR"
+history cycle backward
+.IP "\fBC-n\fR"
+history cycle forward
+.IP "\fBC-w\fR"
+delete word
+.IP "\fBC-u\fR"
+delete line
+.IP "\fBC-l\fR"
+add invert symbol to cmd
+.IP "\fBC-g\fR"
+hint mode
+.IP "\fBC-j\fR"
+go down in menu
+.IP "\fBC-k\fR"
+go up in menu
+
+.RE
+.IR operator
+.IP "\fBm\fR {\fBa-zA-Z0-9\fR}"
+mark path at {Key2}
+.IP "\fB’\fR {\fBa-zA-Z0-9\fR}"
+jump to path at mark {\fBKey2\fR}
+.IP "\fBC-w\fR {\fBHJKL\fR}"
+swap buffer in direction
+.IP "\fByy\fR
+yank visible field
+.IP "\fByf\fR
+yank fullpath
+.IP "\fByb\fR"
+yank directory
+.IP "\fBdd\fR"
+yank to delete register
+
 .SH FILES
 User-local info file: \fI~/.navinfo\fR.
 .TP

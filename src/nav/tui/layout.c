@@ -298,7 +298,6 @@ void layout_swap(Layout *layout, enum move_dir dir)
   if (!pp)
     return;
 
-  log_msg("LAYOUT", "shuld swap");
   Buffer *swap_buf = pp->buf;
   Overlay *swap_ov = pp->ov;
   pp->buf = c->buf;
