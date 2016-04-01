@@ -37,7 +37,7 @@ Print version information and exit.
 Print this help message and exit.
 
 .SH DEFAULT KEYS
-.IR Buffer
+.SS "\s-1Buffer\s0"
 .IP "\fBh\fR"
 go left
 .IP "\fBj\fR"
@@ -72,7 +72,7 @@ paste
 remove
 
 .RE
-.IR Window
+.SS "\s-1Window\s0"
 .IP "\fBH\fR"
 move window focus left
 .IP "\fBJ\fR"
@@ -89,7 +89,7 @@ forward search
 backward search
 
 .RE
-.IR command-line
+.SS "\s-1Command-line\s0"
 .IP "\fBESC\fR"
 cancel/close ex_mode
 .IP "\fBTAB\fR"
@@ -120,18 +120,18 @@ go down in menu
 go up in menu
 
 .RE
-.IR operator
-.IP "\fBm\fR {\fBa-zA-Z0-9\fR}"
-mark path at {Key2}
-.IP "\fB’\fR {\fBa-zA-Z0-9\fR}"
-jump to path at mark {\fBKey2\fR}
+.SS "\s-1Operator\s0"
+.IP "\fBm\fR {\fIa-zA-Z0-9\fR}"
+set mark {\fIa-zA-Z0-9\fR} for path.
+.IP "\fB’\fR {\fIa-zA-Z0-9\fR}"
+jump to the mark {\fIa-zA-Z0-9\fR}
 .IP "\fBC-w\fR {\fBHJKL\fR}"
 swap buffer in direction
 .IP "\fByy\fR
 yank visible field
 .IP "\fByf\fR
 yank fullpath
-.IP "\fByb\fR"
+.IP "\fByd\fR"
 yank directory
 .IP "\fBdd\fR"
 yank to delete register
