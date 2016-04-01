@@ -276,6 +276,7 @@ Container* find_intersect(Container *c, Container *pp, pos_T pos)
 void layout_movement(Layout *layout, enum move_dir dir)
 {
   log_msg("LAYOUT", "layout_movement");
+  log_msg("LAYOUT", "%d", dir);
   Container *c = layout->focus;
   pos_T pos = pos_shift(c, dir);
 
@@ -283,6 +284,40 @@ void layout_movement(Layout *layout, enum move_dir dir)
   pp = find_intersect(c, layout->root, pos);
   if (pp)
     swap_focus(layout, pp);
+}
+
+void layout_swap(Layout *layout, enum move_dir dir)
+{
+  log_msg("LAYOUT", "layout_swap");
+  log_msg("LAYOUT", "%d", dir);
+  Container *c = layout->focus;
+  pos_T pos = pos_shift(c, dir);
+
+  Container *pp = NULL;
+  pp = find_intersect(c, layout->root, pos);
+  if (!pp)
+    return;
+
+  log_msg("LAYOUT", "shuld swap");
+  Buffer *swap_buf = pp->buf;
+  Overlay *swap_ov = pp->ov;
+  pp->buf = c->buf;
+  pp->ov = c->ov;
+  c->buf = swap_buf;
+  c->ov = swap_ov;
+  buf_set_overlay(pp->buf, pp->ov);
+  buf_set_overlay(c->buf, c->ov);
+  if (c->dir != c->parent->dir) {
+    c->parent->buf = c->buf;
+    c->parent->ov = c->ov;
+  }
+  if (pp->dir != pp->parent->dir) {
+    pp->parent->buf = pp->buf;
+    pp->parent->ov = pp->ov;
+  }
+
+  resize_container(layout->root);
+  swap_focus(layout, pp);
 }
 
 Buffer* layout_buf(Layout *layout)
@@ -314,4 +349,18 @@ void layout_shift(Layout *layout, int lines)
   Container *c = layout->root;
   c->size.lnum += lines;
   resize_container(c);
+}
+
+int key2move_type(int key)
+{
+  if (key == 'H')
+    return MOVE_LEFT;
+  else if (key == 'J')
+    return MOVE_DOWN;
+  else if (key == 'K')
+    return MOVE_UP;
+  else if (key == 'L')
+    return MOVE_RIGHT;
+  else
+    return -1;
 }

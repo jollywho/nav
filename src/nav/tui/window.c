@@ -167,9 +167,9 @@ static void* win_shut()
   return 0;
 }
 
-static void win_layout(Window *_w, Keyarg *arg)
+static void win_layout(Window *_w, Keyarg *ca)
 {
-  enum move_dir dir = arg->arg;
+  enum move_dir dir = ca->arg;
   layout_movement(&win.layout, dir);
 }
 
@@ -415,9 +415,10 @@ static void* win_direct(List *args, Cmdarg *ca)
 void win_move(void *_w, Keyarg *ca)
 {
   log_msg("WINDOW", "win_move");
-  Window *win = (Window*)_w;
-  log_msg("WINDOW", "%p", win);
-  //need target from dir
+  int dir = key2move_type(ca->key);
+  if (dir < 0)
+    return;
+  layout_swap(&win.layout, dir);
 }
 
 void window_close_focus()

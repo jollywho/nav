@@ -157,6 +157,10 @@ static void pipe_attach_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("IMG", "pipe_attach_cb");
   hook_add_intl(caller, host, cursor_change_cb, "cursor_change");
+  //TODO:
+  //hook global cursor_change to refresh.
+  //keep host cursor_change to change path
+  //hook_add_intl(caller, host, cursor_change_cb, "cursor_change");
 }
 
 void img_new(Plugin *plugin, Buffer *buf, void *arg)
