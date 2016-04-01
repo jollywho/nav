@@ -10,12 +10,12 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-missing-field-initializers")
 add_definitions(-D_GNU_SOURCE)
 
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
-	execute_process(
-		COMMAND git describe --always
-		OUTPUT_VARIABLE GIT_COMMIT_HASH
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-		)
+  execute_process(
+  COMMAND git describe --always
+  OUTPUT_VARIABLE GIT_COMMIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
 endif()
 add_definitions(-DNAV_VERSION=\"${GIT_COMMIT_HASH}\")
 
@@ -55,13 +55,18 @@ endif()
 
 
 install(
-	TARGETS nav
-	RUNTIME
-	DESTINATION bin
-	COMPONENT runtime
+  TARGETS nav
+  RUNTIME
+  DESTINATION bin
+  COMPONENT runtime
 )
 install(
-	FILES ${PROJECT_SOURCE_DIR}/navrc
+  FILES ${PROJECT_SOURCE_DIR}/navrc
   DESTINATION /etc/nav/
-	COMPONENT configuration
+  COMPONENT configuration
+)
+install(
+  FILES ${PROJECT_SOURCE_DIR}/nav.1
+  DESTINATION share/man/man1
+  COMPONENT documentation
 )
