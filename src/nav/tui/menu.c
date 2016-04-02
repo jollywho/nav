@@ -402,6 +402,8 @@ void menu_input(Menu *mnu, int key)
   window_req_draw(cur_menu, menu_queue_draw);
   if (key == ESC)
     return menu_toggle_hints(mnu);
+  if (key == Ctrl_L)
+    ex_cmdinvert();
 
   char *hints = get_opt_str("hintkeys");
   char *str = NULL;

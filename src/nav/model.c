@@ -36,6 +36,11 @@ struct Model {
   UT_array *lines;
 };
 
+typedef struct {
+  int i;
+  bool rev;
+} sort_t;
+
 static int cmp_str(const void *, const void *, void *);
 static int cmp_time(const void *, const void *, void *);
 static int cmp_dir(const void *, const void *, void *);
@@ -95,18 +100,13 @@ static int cmp_num(const void *a, const void *b, void *arg)
   return t1 - t2;
 }
 
-typedef struct {
-  int i;
-  bool rev;
-} sort_t;
-
 static int sort_by_type(const void *a, const void *b, void *arg)
 {
   sort_t *srt = (sort_t*)arg;
   int ret = sort_tbl[srt->i].cmp(a,b,0);
   if (ret == 0)
     return 0;
-  return srt->rev ? !ret : ret;
+  return srt->rev ? -ret : ret;
 }
 
 static void do_sort(Model *m)

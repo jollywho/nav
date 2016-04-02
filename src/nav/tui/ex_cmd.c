@@ -22,7 +22,6 @@ static void ex_bckspc();
 static void ex_killword();
 static void ex_killline();
 static void ex_hist();
-static void ex_cmdinvert();
 static void ex_menuhints();
 static void ex_menu_mv();
 
@@ -345,7 +344,7 @@ static void ex_killline()
   mflag = 0;
 }
 
-static void ex_cmdinvert()
+void ex_cmdinvert()
 {
   List *list = ex_cmd_curlist();
   if (!list || utarray_len(list->items) < 1)

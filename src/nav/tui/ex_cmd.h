@@ -31,6 +31,7 @@ void ex_cmd_init();
 void ex_cmd_cleanup();
 void start_ex_cmd(char, int);
 void stop_ex_cmd();
+void ex_cmdinvert();
 
 void ex_input(int key);
 void cmdline_refresh();
