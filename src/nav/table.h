@@ -54,7 +54,7 @@ void commit(void **data);
 ventry* fnd_val(const char *, const char *, const char *);
 fn_lis* fnd_lis(const char *, const char *, const char *);
 ventry* lis_get_val(fn_lis *lis, const char *);
-void lis_save(fn_lis *lis, int index, int lnum);
+void lis_save(fn_lis *lis, int index, int lnum, const char *);
 void* rec_fld(fn_rec *rec, const char *);
 char* ent_str(ventry *ent);
 ventry* ent_head(ventry *ent);

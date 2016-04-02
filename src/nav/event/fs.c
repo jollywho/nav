@@ -278,7 +278,7 @@ void fs_signal_handle(void **data)
     if (it->open_cb)
       it->open_cb(NULL);
     else
-      model_recv(h->model, ent->reopen);
+      model_recv(h->model);
   }
   ent->running = false;
   ent->flush = false;
@@ -359,6 +359,10 @@ static void scan_cb(uv_fs_t *req)
   uv_dirent_t dent;
   fentry *ent = req->data;
 
+  fn_fs *it = NULL;
+  for (it = ent->listeners; it != NULL; it = it->hh.next) {
+    model_flush(it->hndl, ent->reopen);
+  }
   /* clear outdated records */
   tbl_del_val("fm_files", "dir",      (char*)req->path);
 

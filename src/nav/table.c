@@ -232,10 +232,11 @@ ventry* lis_get_val(fn_lis *lis, const char *fld)
   return NULL;
 }
 
-void lis_save(fn_lis *lis, int index, int lnum)
+void lis_save(fn_lis *lis, int index, int lnum, const char *fval)
 {
   lis->index = index;
   lis->lnum = lnum;
+  SWAP_ALLOC_PTR(lis->fval, strdup(fval));
 }
 
 void* rec_fld(fn_rec *rec, const char *fld)

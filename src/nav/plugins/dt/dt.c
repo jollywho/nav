@@ -61,7 +61,7 @@ void dt_delete(Plugin *plugin)
 static void dt_signal_model(void **data)
 {
   DT *dt = data[0];
-  model_recv(dt->m, 0);
+  model_recv(dt->m);
 }
 
 static void dt_readfile(DT *dt)
