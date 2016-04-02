@@ -136,6 +136,16 @@ static fn_line* find_by_type(Model *m, fn_line *ln)
   return utarray_find(m->lines, ln, sort_by_type, &srt);
 }
 
+static fn_line* find_linear(Model *m, const char *val)
+{
+  for (int i = 0; i < utarray_len(m->lines); i++) {
+    fn_line *ln = (fn_line*)utarray_eltptr(m->lines, i);
+    if (!strcmp(val, rec_fld(ln->rec, m->hndl->kname)))
+      return ln;
+  }
+  return NULL;
+}
+
 void model_init(fn_handle *hndl)
 {
   Model *m = malloc(sizeof(Model));
@@ -233,6 +243,11 @@ static void try_old_val(Model *m, fn_lis *lis, ventry *it)
   fn_line ln = { .rec = it->rec };
 
   find = find_by_type(m, &ln);
+
+  /* if found value is not stored value */
+  if (strcmp(m->pfval, rec_fld(find->rec, m->hndl->kname)))
+    find = find_linear(m, m->pfval);
+
   if (!find)
     return;
 
