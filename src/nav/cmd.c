@@ -408,7 +408,13 @@ static int cond_do(char *line)
     log_err("CMD", "%s", opstr);
 
     if (!opstr) {
-      cond = 1;
+      char *lhs = list_arg(args, i, VAR_STRING);
+      int dlhs;
+      int tlhs = str_num(lhs, &dlhs);
+      if (tlhs)
+        cond = dlhs;
+      else
+        cond = !!lhs;
       continue;
     }
 
