@@ -19,6 +19,7 @@ static void readfd_ready(uv_poll_t *, int, int);
 static void plugin_resize(Plugin *, Plugin *, HookArg *);
 static void plugin_focus(Plugin *);
 static void chld_handler(uv_signal_t *, int);
+static void plugin_cancel(Plugin *plugin);
 
 void term_new(Plugin *plugin, Buffer *buf, void *arg)
 {
@@ -30,6 +31,7 @@ void term_new(Plugin *plugin, Buffer *buf, void *arg)
   plugin->name = "term";
   plugin->fmt_name = "VT";
   plugin->_focus = plugin_focus;
+  plugin->_cancel = plugin_cancel;
 
   term->buf = buf;
   buf_set_plugin(buf, plugin);
@@ -100,6 +102,13 @@ void term_cursor(Plugin *plugin)
   curs_set(vt_cursor_visible(term->vt));
   wnoutrefresh(buf_ncwin(term->buf));
   doupdate();
+}
+
+static void plugin_cancel(Plugin *plugin)
+{
+  log_msg("TERM", "<|_CANCEL_|>");
+  Term *term = plugin->top;
+  vt_keypress(term->vt, Ctrl_C);
 }
 
 void term_keypress(Plugin *plugin, int key)

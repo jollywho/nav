@@ -693,6 +693,7 @@ static void* cmd_returnblock(List *args, Cmdarg *ca)
   char *out = cmdline_line_from(ca->cmdline, 1);
   log_msg("CMD", "return %s", out);
   callstack->ret = strdup(out);
+  //FIXME: use ret2caller
   return 0;
 }
 
