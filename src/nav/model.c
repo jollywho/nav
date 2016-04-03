@@ -66,7 +66,7 @@ static int cmp_time(const void *a, const void *b, void *arg)
   fn_line l2 = *(fn_line*)b;
   time_t t1 = rec_ctime(l1.rec);
   time_t t2 = rec_ctime(l2.rec);
-  return difftime(t2, t1);
+  return difftime(t1, t2);
 }
 
 static int cmp_str(const void *a, const void *b, void *arg)
@@ -75,7 +75,7 @@ static int cmp_str(const void *a, const void *b, void *arg)
   fn_line l2 = *(fn_line*)b;
   char *s1 = rec_fld(l1.rec, "name");
   char *s2 = rec_fld(l2.rec, "name");
-  return strcmp(s1, s2);
+  return strcmp(s2, s1);
 }
 
 static int cmp_dir(const void *a, const void *b, void *arg)
@@ -106,7 +106,7 @@ static int sort_by_type(const void *a, const void *b, void *arg)
   int ret = sort_tbl[srt->i].cmp(a,b,0);
   if (ret == 0)
     return 0;
-  return srt->rev ? -ret : ret;
+  return srt->rev ? ret : -ret;
 }
 
 static void do_sort(Model *m)

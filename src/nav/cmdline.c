@@ -62,6 +62,7 @@ static UT_icd chld_icd = { sizeof(Cmdstr), NULL, cmdstr_copy, cmdstr_dtor };
 
 int str_num(const char *str, int *tmp)
 {
+  if (!str) return 0;
   return sscanf(str, "%d", tmp);
 }
 
@@ -274,7 +275,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
         st = end;
       }
     }
-    else if (strpbrk(ch, "!/:|<>,[]{}() ")) {
+    else if (strpbrk(ch, "~!/:|<>,[]{}() ")) {
       cmdline_create_token(cmdline->tokens, str, st, ed, block);
       if (*ch == ' ')
         block++;
@@ -417,7 +418,7 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
   if (!next)
     return false;
 
-  char * str = token_val(next, VAR_STRING);
+  char *str = token_val(next, VAR_STRING);
   if (str && str[0] == ':') {
     push(pair_new(cmdline), stack);
     return true;

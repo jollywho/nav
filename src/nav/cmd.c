@@ -351,16 +351,118 @@ static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
   cmd_do(caller->caller, base);
 }
 
+static char* op_arg(List *args, int argc, int st, char *line)
+{
+  Token *tok = tok_arg(args, argc);
+  if (tok->start - 1 < st || line[tok->start - 1] == '"')
+    return NULL;
+  char *str = list_arg(args, argc, VAR_STRING);
+  if (!str)
+    return NULL;
+  return strpbrk(str, "~=<>");
+}
+
+static char* cmd_int_comp(int lhs, int rhs, char ch, char nch, int *ret)
+{
+  if (ch == '~' && nch == '=')
+    *ret = lhs != rhs;
+  else if (ch == '=' && nch == '=')
+    *ret = lhs == rhs;
+  else if (ch == '>' && nch == '=')
+    *ret = lhs >= rhs;
+  else if (ch == '<' && nch == '=')
+    *ret = lhs <= rhs;
+  else if (ch == '<')
+    *ret = lhs < rhs;
+  else if (ch == '>')
+    *ret = lhs > rhs;
+
+  return NULL;
+}
+
+static char* cmd_str_comp(char *lhs, char *rhs, char ch, char nch, int *ret)
+{
+  *ret = strcmp(lhs, rhs);
+  return NULL;
+}
+
 static int cond_do(char *line)
 {
   log_msg("CMD", "cond");
-  int cond = 0;
   Cmdstr nstr;
   cmd_eval(&nstr, line);
-  if (nstr.ret) {
-    cond = 1;
-    free(nstr.ret);
+  if (!nstr.ret)
+    return 0;
+
+  int cond = 0;
+  char *err = NULL;
+
+  Cmdline cmd;
+  cmdline_build(&cmd, nstr.ret);
+
+  Cmdstr *cmdstr = (Cmdstr*)utarray_front(cmd.cmds);
+  List *args = token_val(&cmdstr->args, VAR_LIST);
+
+  for (int i = 0; i < utarray_len(args->items); i++) {
+    char *opstr = op_arg(args, i, cmdstr->st, nstr.ret);
+    log_err("CMD", "%s", opstr);
+
+    if (!opstr) {
+      cond = 1;
+      continue;
+    }
+
+    char ch  = opstr[0];
+    char nch = opstr[1];
+
+    char *lhs = list_arg(args, i - 1, VAR_STRING);
+    char *rhs = list_arg(args, i + 1, VAR_STRING);
+    i++;
+
+    int dlhs, drhs;
+    int tlhs = str_num(lhs, &dlhs);
+    int trhs = str_num(rhs, &drhs);
+
+    if (ch == '~' && !nch) {
+      if (!rhs) {
+        err = "syntax error, rhs";
+        goto error;
+      }
+      if (trhs)
+        cond = !drhs;
+      else
+        cond = !rhs;
+      continue;
+    }
+
+    if (!lhs || !rhs) {
+      err = "syntax error, lhs & rhs";
+      goto error;
+    }
+
+    if (tlhs != trhs) {
+      err = "syntax error, type mismatch";
+      goto error;
+    }
+
+    if (tlhs)
+      err = cmd_int_comp(dlhs, drhs, ch, nch, &cond);
+    else
+      err = cmd_str_comp(lhs, rhs, ch, nch, &cond);
+
+    if (err)
+      goto error;
+
+    break;
   }
+
+  goto cleanup;
+error:
+  parse_error = 1;
+  nv_err("%s:%s", err, nstr.ret);
+cleanup:
+  cmdline_cleanup(&cmd);
+  free(nstr.ret);
   return cond;
 }
 
@@ -382,6 +484,9 @@ static void cmd_start()
       case CTL_IF:
       case CTL_ELSEIF:
         cond = cond_do(it->line);
+        if (parse_error)
+          return;
+        log_err("CMD", "cond ret %d", cond);
         if (cond)
           it = STAILQ_FIRST(&it->childs);
         else
