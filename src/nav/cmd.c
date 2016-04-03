@@ -382,7 +382,20 @@ static char* cmd_int_comp(int lhs, int rhs, char ch, char nch, int *ret)
 
 static char* cmd_str_comp(char *lhs, char *rhs, char ch, char nch, int *ret)
 {
-  *ret = strcmp(lhs, rhs);
+  log_msg("CMD", "strcomp");
+  int diff = strcmp(lhs, rhs);
+  if (ch == '~' && nch == '=')
+    *ret = diff != 0;
+  else if (ch == '=' && nch == '=')
+    *ret = diff == 0;
+  else if (ch == '>' && nch == '=')
+    *ret = diff <= 0;
+  else if (ch == '<' && nch == '=')
+    *ret = diff >= 0;
+  else if (ch == '<')
+    *ret = diff > 0;
+  else if (ch == '>')
+    *ret = diff < 0;
   return NULL;
 }
 
