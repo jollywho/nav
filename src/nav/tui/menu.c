@@ -370,8 +370,8 @@ char* menu_next(Menu *mnu, int dir)
     line = cycle_matches(mnu, 0, false);
   }
 
-  if (cur_menu->hndl->key)
-    line = conspath(cur_menu->hndl->key, line);
+  if (cur_menu->hndl->key && !mark_path(line))
+      line = conspath(cur_menu->hndl->key, line);
   else
     line = strdup(line);
 
