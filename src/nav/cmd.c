@@ -66,7 +66,7 @@ static Cmdblock *callstack;
 
 static const Cmd_T builtins[] = {
   {NULL,             NULL,               0, 0},
-  {"if",0,           cmd_ifblock,        0, 1},
+  {"if","if",        cmd_ifblock,        0, 1},
   {"else","el",      cmd_elseblock,      0, 1},
   {"elseif","elif",  cmd_elseifblock,    0, 1},
   {"end","en",       cmd_endblock,       0, 1},
@@ -543,6 +543,9 @@ static int ctl_cmd(const char *line)
   for (int i = 1; i < LENGTH(builtins) - 1; i++) {
     char *str = builtins[i].name;
     if (!strncmp(str, line, strlen(str)))
+      return i;
+    char *alt = builtins[i].alt;
+    if (!strncmp(alt, line, strlen(str)))
       return i;
   }
   return -1;
