@@ -115,24 +115,22 @@ static int last_dir_in_path(Token *tok, List *args, int pos, char **path)
   return exec;
 }
 
-static char* expand_path(char *line, char *path)
+static int expand_path(char *line, char **path)
 {
-  if (path[0] != '/') {
-    SWAP_ALLOC_PTR(path, conspath(window_cur_dir(), path));
-    cur_menu->line_key = line;
-  }
-  char *tmp = realpath(path, NULL);
-  if (!tmp)
-    return path;
+  char *dir = valid_full_path(window_cur_dir(), *path);
+  log_err("MENU", "path_list: %s", dir);
+  if (!dir)
+    return 0;
 
-  if (strcmp(tmp, path)) {
-    free(path);
+  if (strcmp(dir, *path)) {
+    free(*path);
     cur_menu->line_key = line;
-    path = tmp;
+    *path = dir;
   }
   else
-    free(tmp);
-  return path;
+    free(dir);
+
+  return 1;
 }
 
 void path_list(List *args)
@@ -165,8 +163,9 @@ void path_list(List *args)
       return;
     }
 
-    path = expand_path(cur_menu->line_key, path);
-    int exec = last_dir_in_path(tok, args, pos, &path);
+    int exec = expand_path(cur_menu->line_key, &path);
+    if (exec)
+      exec = last_dir_in_path(tok, args, pos, &path);
 
     cur_menu->line_key = strdup(cur_menu->line_key);
     if (exec)
@@ -371,7 +370,7 @@ char* menu_next(Menu *mnu, int dir)
   }
 
   if (cur_menu->hndl->key && !mark_path(line))
-      line = conspath(cur_menu->hndl->key, line);
+    line = conspath(cur_menu->hndl->key, line);
   else
     line = strdup(line);
 

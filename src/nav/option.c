@@ -194,8 +194,13 @@ char* opt_var(const char *name, fn_func *blk)
     HASH_FIND_STR(blk->locals, name, var);
   if (!var)
     HASH_FIND_STR(gbl_vars, name, var);
-  if (!var)
-    return " ";
+  if (!var) {
+    char *env = getenv(name);
+    if (env)
+      return env;
+    else
+      return " ";
+  }
   return var->var;
 }
 

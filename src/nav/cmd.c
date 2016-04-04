@@ -336,7 +336,7 @@ static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
   char *var_lst[count];
   Token *tok_lst[count];
   int len_lst[count];
-  int size = 0;
+  int size = strlen(cmdline->line);
 
   for (int i = 0; i < count; i++) {
     Token *word = (Token*)utarray_eltptr(cmdline->vars, i);

@@ -351,11 +351,9 @@ Cmdret win_new(List *args, Cmdarg *ca)
 
   if (!(ca->pflag & BUFFER))
     window_add_buffer(ca->flags);
-  Token *cmd = tok_arg(args, 2);
-  char *path = NULL;
-  if (cmd)
-    path = ca->cmdline->line + cmd->start;
-  int id = plugin_open(name, layout_buf(&win.layout), path);
+
+  char *path_arg = cmdline_line_after(ca->cmdline, 1);
+  int id = plugin_open(name, layout_buf(&win.layout), path_arg);
   return (Cmdret){RET_INT, .val.v_int = id};
 }
 
