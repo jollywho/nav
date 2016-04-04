@@ -190,12 +190,17 @@ static void ret2caller(Cmdstr *cmdstr, Cmdret ret)
       nv_msg("%s", ret.val.v_str);
     return;
   }
+
   if (ret.type == OUTPUT)
     ret.type = STRING;
 
   cmdstr->caller->ret = ret;
   if (ret.type == STRING)
     cmdstr->caller->ret.val.v_str = strdup(ret.val.v_str);
+  else if (ret.type == RET_INT) {
+    asprintf(&cmdstr->caller->ret.val.v_str, "%d", ret.val.v_int);
+    cmdstr->caller->ret.type = STRING;
+  }
 }
 
 static void cmd_do(Cmdstr *caller, char *line)
@@ -484,7 +489,7 @@ static int cond_do(char *line)
   goto cleanup;
 error:
   parse_error = 1;
-  nv_err("%s:%s", err, nstr.ret);
+  nv_err("%s:%s", err, condline);
 cleanup:
   cmdline_cleanup(&cmd);
   free(condline);
