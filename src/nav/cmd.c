@@ -33,15 +33,15 @@ struct Cmdblock {
   Cmdblock *parent;
   fn_func *func;
   int brk;
-  void *ret;
+  Cmdret ret;
 };
 
-static void* cmd_ifblock();
-static void* cmd_elseifblock();
-static void* cmd_elseblock();
-static void* cmd_endblock();
-static void* cmd_funcblock();
-static void* cmd_returnblock();
+static Cmdret cmd_ifblock();
+static Cmdret cmd_elseifblock();
+static Cmdret cmd_elseblock();
+static Cmdret cmd_endblock();
+static Cmdret cmd_funcblock();
+static Cmdret cmd_returnblock();
 
 //TODO: wrap these into cmdblock
 static Cmd_T *cmd_table;
@@ -180,19 +180,22 @@ static void pop_callstack()
     callstack = callstack->parent;
 }
 
-static void ret2caller(Cmdstr *cmdstr, int ret_t, void *ret)
+static void ret2caller(Cmdstr *cmdstr, Cmdret ret)
 {
-  if (!ret || ret_t == 0)
+  if (ret.type == 0)
     return;
 
   if (!cmdstr || !cmdstr->caller) {
-    if (ret_t == STRING)
-      nv_msg("%s", ret);
+    if (ret.type == OUTPUT)
+      nv_msg("%s", ret.val.v_str);
     return;
   }
+  if (ret.type == OUTPUT)
+    ret.type = STRING;
 
-  cmdstr->caller->ret_t = ret_t;
-  cmdstr->caller->ret = strdup(ret);
+  cmdstr->caller->ret = ret;
+  if (ret.type == STRING)
+    cmdstr->caller->ret.val.v_str = strdup(ret.val.v_str);
 }
 
 static void cmd_do(Cmdstr *caller, char *line)
@@ -224,7 +227,7 @@ static void cmd_do(Cmdstr *caller, char *line)
     free(line);
 }
 
-static void* cmd_call(Cmdstr *caller, fn_func *fn, char *line)
+static Cmdret cmd_call(Cmdstr *caller, fn_func *fn, char *line)
 {
   log_msg("CMD", "cmd_call");
   if (!line)
@@ -261,7 +264,7 @@ static void* cmd_call(Cmdstr *caller, fn_func *fn, char *line)
 cleanup:
   cmdline_cleanup(&cmd);
   pop_callstack();
-  return 0;
+  return NORET;
 }
 
 static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
@@ -276,7 +279,7 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
     int nlen = cmd->st - prevst;
     if (maxlen < pos + nlen)
       base = realloc(base, maxlen += nlen + 2);
-    strncpy(base+pos, &cmdline->line[prevst], cmd->st);
+    strncpy(base+pos, &cmdline->line[prevst], cmd->st - prevst);
     pos += nlen;
     prevst = cmd->ed + 1;
 
@@ -286,6 +289,8 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
     subline[len-1] = '\0';
 
     cmd_do(cmd, subline);
+    if (cmd->ret.type != STRING)
+      continue;
 
     List *args = cmdline_lst(cmdline);
     char *symb = list_arg(args, cmd->idx, VAR_STRING);
@@ -293,22 +298,22 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
       fn_func *fn = opt_func(symb);
       if (fn) {
         Cmdstr rstr;
-        cmd_call(&rstr, fn, cmd->ret);
+        cmd_call(&rstr, fn, cmd->ret.val.v_str);
         pos -= strlen(symb);
-        if (rstr.ret)
-          SWAP_ALLOC_PTR(cmd->ret, rstr.ret);
+        free(cmd->ret.val.v_str);
+        cmd->ret = rstr.ret;
+        if (cmd->ret.type != STRING)
+          continue;
       }
       //TODO: error here unless symb is '$'
     }
 
-    if (cmd->ret) {
-      char *retline = cmd->ret;
-      int retlen = strlen(retline);
-      if (maxlen < pos + retlen)
-        base = realloc(base, maxlen += retlen + 2);
-      strcpy(base+pos, retline);
-      pos += retlen;
-    }
+    char *retline = cmd->ret.val.v_str;
+    int retlen = strlen(retline);
+    if (maxlen < pos + retlen)
+      base = realloc(base, maxlen += retlen + 2);
+    strcpy(base+pos, retline);
+    pos += retlen;
   }
   int nlen = caller->ed;
   if (maxlen < pos + nlen)
@@ -401,23 +406,24 @@ static char* cmd_str_comp(char *lhs, char *rhs, char ch, char nch, int *ret)
 
 static int cond_do(char *line)
 {
-  log_msg("CMD", "cond");
+  log_msg("CMD", "cond %s", line);
   Cmdstr nstr;
   cmd_eval(&nstr, line);
-  if (!nstr.ret)
+  if (nstr.ret.type == 0)
     return 0;
 
   int cond = 0;
   char *err = NULL;
+  char *condline = nstr.ret.val.v_str;
 
   Cmdline cmd;
-  cmdline_build(&cmd, nstr.ret);
+  cmdline_build(&cmd, condline);
 
   Cmdstr *cmdstr = (Cmdstr*)utarray_front(cmd.cmds);
   List *args = token_val(&cmdstr->args, VAR_LIST);
 
   for (int i = 0; i < utarray_len(args->items); i++) {
-    char *opstr = op_arg(args, i, cmdstr->st, nstr.ret);
+    char *opstr = op_arg(args, i, cmdstr->st, condline);
     log_err("CMD", "%s", opstr);
 
     if (!opstr) {
@@ -481,7 +487,7 @@ error:
   nv_err("%s:%s", err, nstr.ret);
 cleanup:
   cmdline_cleanup(&cmd);
-  free(nstr.ret);
+  free(condline);
   return cond;
 }
 
@@ -551,13 +557,13 @@ void cmd_eval(Cmdstr *caller, char *line)
     stack_push(line);
 }
 
-static void* cmd_ifblock(List *args, Cmdarg *ca)
+static Cmdret cmd_ifblock(List *args, Cmdarg *ca)
 {
   log_msg("CMD", "ifblock");
   if (IS_READ) {
     ++lvl;
     read_line(ca->cmdline->line);
-    return 0;
+    return NORET;
   }
   if (!IS_SEEK)
     cmd_flush();
@@ -566,14 +572,14 @@ static void* cmd_ifblock(List *args, Cmdarg *ca)
   cur = &tape[pos];
   cur->st = pos;
   tape[pos].type = CTL_IF;
-  return 0;
+  return NORET;
 }
 
-static void* cmd_elseifblock(List *args, Cmdarg *ca)
+static Cmdret cmd_elseifblock(List *args, Cmdarg *ca)
 {
   if (IS_READ) {
     read_line(ca->cmdline->line);
-    return 0;
+    return NORET;
   }
   int st = cur->st;
   cur = cur->parent;
@@ -581,14 +587,14 @@ static void* cmd_elseifblock(List *args, Cmdarg *ca)
   stack_push(cmdline_line_after(ca->cmdline, 0));
   tape[pos].type = CTL_ELSEIF;
   cur = &tape[pos];
-  return 0;
+  return NORET;
 }
 
-static void* cmd_elseblock(List *args, Cmdarg *ca)
+static Cmdret cmd_elseblock(List *args, Cmdarg *ca)
 {
   if (IS_READ) {
     read_line(ca->cmdline->line);
-    return 0;
+    return NORET;
   }
   int st = cur->st;
   cur = cur->parent;
@@ -596,10 +602,10 @@ static void* cmd_elseblock(List *args, Cmdarg *ca)
   stack_push(cmdline_line_after(ca->cmdline, 0));
   tape[pos].type = CTL_ELSE;
   cur = &tape[pos];
-  return 0;
+  return NORET;
 }
 
-static void* cmd_endblock(List *args, Cmdarg *ca)
+static Cmdret cmd_endblock(List *args, Cmdarg *ca)
 {
   log_msg("CMD", "endblock");
   --lvl;
@@ -607,11 +613,11 @@ static void* cmd_endblock(List *args, Cmdarg *ca)
     set_func(fndef);
     fndefopen = 0;
     cmd_flush();
-    return 0;
+    return NORET;
   }
   if (IS_READ) {
     read_line(ca->cmdline->line);
-    return 0;
+    return NORET;
   }
   cur = cur->parent;
   stack_push("");
@@ -621,7 +627,7 @@ static void* cmd_endblock(List *args, Cmdarg *ca)
     cmd_start();
     lvl = 0;
   }
-  return 0;
+  return NORET;
 }
 
 static int mk_param_list(Cmdarg *ca, char ***dest)
@@ -662,12 +668,12 @@ cleanup:
   return argc;
 }
 
-static void* cmd_funcblock(List *args, Cmdarg *ca)
+static Cmdret cmd_funcblock(List *args, Cmdarg *ca)
 {
   const char *name = list_arg(args, 1, VAR_STRING);
   if (!name || IS_PARSE) {
     parse_error = 1;
-    return 0;
+    return NORET;
   }
 
   if (ca->cmdstr->rev) {
@@ -683,18 +689,18 @@ static void* cmd_funcblock(List *args, Cmdarg *ca)
     for (int i = 0; i < utarray_len(fn->lines); i++)
       log_msg("CMD", "%s", *(char**)utarray_eltptr(fn->lines, i));
   }
-  return 0;
+  return NORET;
 }
 
-static void* cmd_returnblock(List *args, Cmdarg *ca)
+static Cmdret cmd_returnblock(List *args, Cmdarg *ca)
 {
   log_msg("CMD", "cmd_return");
   callstack->brk = 1;
   char *out = cmdline_line_from(ca->cmdline, 1);
   log_msg("CMD", "return %s", out);
-  callstack->ret = strdup(out);
-  //FIXME: use ret2caller
-  return 0;
+  //FIXME: exec out, return that
+  callstack->ret = (Cmdret){STRING, .val.v_str = strdup(out)};
+  return callstack->ret;
 }
 
 void cmd_clearall()
@@ -758,7 +764,7 @@ void exec_line(Cmdstr *cmd, char *line)
 
   //TODO: hook output + block for output
   free(str);
-  ret2caller(cmd, WORD, pidstr);
+  ret2caller(cmd, (Cmdret){STRING, .val.v_str = pidstr});
   free(pidstr);
 }
 
@@ -782,10 +788,10 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
     return exec_line(cmdstr, cmdline->line);
 
   if (!fun)
-    return ret2caller(cmdstr, WORD, cmdline->line);
+    return ret2caller(cmdstr, (Cmdret){STRING, .val.v_str = cmdline->line});
 
   Cmdarg flags = {fun->flags, 0, cmdstr, cmdline};
-  return ret2caller(cmdstr, flags.flags, fun->cmd_func(args, &flags));
+  return ret2caller(cmdstr, fun->cmd_func(args, &flags));
 }
 
 fn_func* cmd_callstack()

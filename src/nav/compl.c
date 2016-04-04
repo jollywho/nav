@@ -8,6 +8,7 @@
 #include "nav/info.h"
 #include "nav/event/hook.h"
 #include "nav/option.h"
+#include "nav/util.h"
 
 typedef struct {
   char *key;

@@ -44,15 +44,15 @@ void cmdstr_copy(void *_dst, const void *_src)
 void cmdret_dtor(void *_elt)
 {
   Cmdstr *elt = (Cmdstr*)_elt;
-  if (elt->ret)
-    free(elt->ret);
+  if (elt->ret.type == STRING)
+    free(elt->ret.val.v_str);
 }
 
 void cmdstr_dtor(void *_elt)
 {
   Cmdstr *elt = (Cmdstr*)_elt;
-  if (elt->ret)
-    free(elt->ret);
+  if (elt->ret.type == STRING)
+    free(elt->ret.val.v_str);
   utarray_free(elt->chlds);
 }
 
@@ -533,48 +533,48 @@ int cmdline_can_exec(Cmdstr *cmd, char *line)
 
 static void do_pipe(Cmdstr *lhs, Cmdstr *rhs)
 {
-  log_msg("CMDLINE", "do_pipe");
-  if ((lhs)->flag == PIPE_LEFT)
-    send_hook_msg("pipe_left", lhs->ret, rhs->ret, NULL);
-  if ((lhs)->flag == PIPE_RIGHT)
-    send_hook_msg("pipe_right", rhs->ret, lhs->ret, NULL);
+  //log_msg("CMDLINE", "do_pipe");
+  //if ((lhs)->flag == PIPE_LEFT)
+  //  send_hook_msg("pipe_left", lhs->ret, rhs->ret, NULL);
+  //if ((lhs)->flag == PIPE_RIGHT)
+  //  send_hook_msg("pipe_right", rhs->ret, lhs->ret, NULL);
 }
 
 static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd, Cmdstr *prev)
 {
-  log_msg("CMDLINE", "exec_pipe");
-  List *args = token_val(&cmd->args, VAR_LIST);
-  char *arg = list_arg(args, 0, VAR_STRING);
+  //log_msg("CMDLINE", "exec_pipe");
+  //List *args = token_val(&cmd->args, VAR_LIST);
+  //char *arg = list_arg(args, 0, VAR_STRING);
 
-  if (!prev->ret) {
-    prev->ret = focus_plugin();
-    prev->ret_t = PLUGIN;
-  }
+  //if (!prev->ret) {
+  //  prev->ret = focus_plugin();
+  //  prev->ret_t = PLUGIN;
+  //}
 
-  if (prev->ret_t == PLUGIN && cmd->ret_t == PLUGIN)
-    return do_pipe(prev, cmd);
+  //if (prev->ret_t == PLUGIN && cmd->ret_t == PLUGIN)
+  //  return do_pipe(prev, cmd);
 
-  cmd->ret = plugin_open(arg, NULL, cmdline->line);
-  log_msg("CMDLINE", "%p %d %p %d",
-      prev->ret,
-      prev->ret_t,
-      cmd->ret,
-      cmd->ret_t);
+  //cmd->ret = plugin_open(arg, NULL, cmdline->line);
+  //log_msg("CMDLINE", "%p %d %p %d",
+  //    prev->ret,
+  //    prev->ret_t,
+  //    cmd->ret,
+  //    cmd->ret_t);
 
-  if (cmd->ret) {
-    cmd->ret_t = PLUGIN;
-    return do_pipe(prev, cmd);
-  }
+  //if (cmd->ret) {
+  //  cmd->ret_t = PLUGIN;
+  //  return do_pipe(prev, cmd);
+  //}
 
-  int wnum;
-  if (!str_num(arg, &wnum))
-    return;
+  //int wnum;
+  //if (!str_num(arg, &wnum))
+  //  return;
 
-  cmd->ret = plugin_from_id(wnum);
-  if (cmd->ret) {
-    cmd->ret_t = PLUGIN;
-    return do_pipe(prev, cmd);
-  }
+  //cmd->ret = plugin_from_id(wnum);
+  //if (cmd->ret) {
+  //  cmd->ret_t = PLUGIN;
+  //  return do_pipe(prev, cmd);
+  //}
 }
 
 void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
@@ -589,7 +589,6 @@ void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
       continue;
 
     cmd->caller = caller;
-    cmd->ret_t = 0;
     cmd_run(cmd, cmdline);
 
     prev = (Cmdstr*)utarray_prev(cmdline->cmds, cmd);

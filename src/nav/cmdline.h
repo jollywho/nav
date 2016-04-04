@@ -5,7 +5,6 @@
 #include "nav/plugins/plugin.h"
 #include "nav/lib/queue.h"
 #include "nav/lib/utarray.h"
-#include "nav/util.h"
 
 typedef struct {
   char v_type;              /* see below: VAR_NUMBER, VAR_STRING, etc. */
@@ -39,14 +38,21 @@ struct List {
   UT_array *items;
 };
 
+struct Cmdret {
+  int type;
+  union {
+    int   v_int;
+    char *v_str;
+  } val;
+};
+
 struct Cmdstr {
   int flag;               /* pipe flag types */
   char rev;               /* reverse flag TODO :merge with pipe flags */
   QUEUE stack;
   Token args;
-  int ret_t;
   int exec;
-  void *ret;
+  Cmdret ret;
   int st;
   int ed;
   int idx;

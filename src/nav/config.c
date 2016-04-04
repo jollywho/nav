@@ -10,13 +10,13 @@
 #include "nav/event/input.h"
 #include "nav/event/fs.h"
 
-static void* edit_setting();
-static void* edit_color();
-static void* edit_syntax();
-static void* edit_variable();
-static void* edit_mapping();
-static void* edit_op();
-static void* add_source();
+static Cmdret edit_setting();
+static Cmdret edit_color();
+static Cmdret edit_syntax();
+static Cmdret edit_variable();
+static Cmdret edit_mapping();
+static Cmdret edit_op();
+static Cmdret add_source();
 
 static const Cmd_T cmdtable[] = {
   {"set",0,       edit_setting,   0},
@@ -225,24 +225,24 @@ bool config_read(FILE *file)
   return 1;
 }
 
-static void* edit_setting(List *args, Cmdarg *ca)
+static Cmdret edit_setting(List *args, Cmdarg *ca)
 {
   log_msg("CONFIG", "edit_setting");
   char *name = list_arg(args, 1, VAR_STRING);
   Token *oper = tok_arg(args, 2);
   Token *rhs = tok_arg(args, 3);
   if (!name|| !oper || !rhs)
-    return 0;
+    return NORET;
   char *value = cmdline_line_from(ca->cmdline, 3);
   set_opt(name, value);
-  return 0;
+  return NORET;
 }
 
-static void* edit_color(List *args, Cmdarg *ca)
+static Cmdret edit_color(List *args, Cmdarg *ca)
 {
   log_msg("CONFIG", "edit_color");
   if (utarray_len(args->items) < 3)
-    return 0;
+    return NORET;
 
   int fg, bg;
   int ret = 0;
@@ -250,25 +250,25 @@ static void* edit_color(List *args, Cmdarg *ca)
   ret += str_num(list_arg(args, 3, VAR_STRING), &bg);
   char *group = list_arg(args, 1, VAR_STRING);
   if (!ret || !group)
-    return 0;
+    return NORET;
 
   fn_group *grp = get_group(group);
   if (!grp)
-    return 0;
+    return NORET;
   //TODO: error msg
   set_color(grp, fg, bg);
   //TODO: refresh cached colors
-  return 0;
+  return NORET;
 }
 
-static void* edit_syntax(List *args)
+static Cmdret edit_syntax(List *args)
 {
   log_msg("CONFIG", "edit_syntax");
   char *group = list_arg(args, 1, VAR_STRING);
   List *words = list_arg(args, 2, VAR_LIST);
   char *single = list_arg(args, 2, VAR_STRING);
   if (!group && (!words || !single))
-    return 0;
+    return NORET;
 
   fn_group *grp = get_group(group);
   if (!grp)
@@ -280,7 +280,7 @@ static void* edit_syntax(List *args)
       .group = grp,
     };
     set_syn(&syn);
-    return 0;
+    return NORET;
   }
 
   log_msg("CONFIG", "# %d", utarray_len(words->items));
@@ -291,10 +291,10 @@ static void* edit_syntax(List *args)
     };
     set_syn(&syn);
   }
-  return 0;
+  return NORET;
 }
 
-static void* edit_variable(List *args, Cmdarg *ca)
+static Cmdret edit_variable(List *args, Cmdarg *ca)
 {
   log_msg("CONFIG", "edit_variable");
   Token *lhs = tok_arg(args, 1);
@@ -303,7 +303,7 @@ static void* edit_variable(List *args, Cmdarg *ca)
   if (!lhs || !oper || !rhs
       || lhs->var.v_type != VAR_STRING
       || rhs->var.v_type != VAR_STRING)
-    return 0;
+    return NORET;
   char *key = token_val(lhs, VAR_STRING);
   char *str = cmdline_line_from(ca->cmdline, 3);
   fn_var var = {
@@ -314,49 +314,49 @@ static void* edit_variable(List *args, Cmdarg *ca)
   if (!ca->flags)
     blk = NULL;
   set_var(&var, blk);
-  return 0;
+  return NORET;
 }
 
-static void* edit_mapping(List *args, Cmdarg *ca)
+static Cmdret edit_mapping(List *args, Cmdarg *ca)
 {
   if (strlen(ca->cmdline->line) < strlen("map ") + 3)
-    return 0;
+    return NORET;
   char *line = ca->cmdline->line + strlen("map ");
   if (!line)
-    return 0;
+    return NORET;
   char *from = strdup(line);
   char *to = strchr(from, ' ');
   *to = '\0';
   log_msg("CONFIG", "%s -> %s", from, to);
   set_map(from, to+1);
   free(from);
-  return 0;
+  return NORET;
 }
 
-static void* edit_op(List *args, Cmdarg *ca)
+static Cmdret edit_op(List *args, Cmdarg *ca)
 {
   log_msg("CONFIG", "edit_op");
   char *group  = list_arg(args, 1, VAR_STRING);
   char *before = list_arg(args, 2, VAR_STRING);
   char *after  = list_arg(args, 3, VAR_STRING);
   if (!group || !before)
-    return 0;
+    return NORET;
   if (!after)
     after = "";
 
   fn_group *grp = get_group(group);
   if (!grp)
-    return 0;
+    return NORET;
 
   grp->opgrp = op_newgrp(before, after);
-  return 0;
+  return NORET;
 }
 
-static void* add_source(List *args, Cmdarg *ca)
+static Cmdret add_source(List *args, Cmdarg *ca)
 {
   char *file = cmdline_line_after(ca->cmdline, 0);
   if (!file)
-    return 0;
+    return NORET;
 
   char *path = fs_expand_path(file);
   if (path && file_exists(path))
@@ -364,5 +364,5 @@ static void* add_source(List *args, Cmdarg *ca)
   if (path)
     free(path);
 
-  return 0;
+  return NORET;
 }

@@ -50,7 +50,7 @@ void plugin_init();
 void plugin_cleanup();
 int plugin_isloaded(const char *);
 
-Plugin* plugin_open(const char *name, Buffer *buf, char *line);
+int plugin_open(const char *name, Buffer *buf, char *line);
 void plugin_close(Plugin *plugin);
 
 Plugin* focus_plugin();

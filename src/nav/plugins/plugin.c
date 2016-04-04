@@ -117,18 +117,18 @@ int plugin_requires_buf(const char *name)
   return !plugin_table[ret].type_bg;
 }
 
-Plugin* plugin_open(const char *name, Buffer *buf, char *line)
+int plugin_open(const char *name, Buffer *buf, char *line)
 {
   int i = find_plugin(name);
   if (i == -1)
-    return NULL;
+    return -1;
 
   log_msg("PLUG", "%s", plugin_table[i].name);
   Plugin *plugin = calloc(1, sizeof(Plugin));
   if (buf)
     set_cid(plugin);
   plugin_table[i].open_cb(plugin, buf, line);
-  return plugin;
+  return plugin->id;
 }
 
 void plugin_close(Plugin *plugin)

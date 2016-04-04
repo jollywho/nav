@@ -11,6 +11,7 @@
 #include "nav/event/fs.h"
 #include "nav/cmdline.h"
 #include "nav/cmd.h"
+#include "nav/util.h"
 
 static void create_proc(fn_group *, char *);
 
@@ -157,8 +158,10 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
 
   cmd_eval(&bfcmd, line);
   set_exparg(NULL);
-  create_proc(grp, bfcmd.ret);
-  free(bfcmd.ret);
+  if (bfcmd.ret.type != STRING)
+    return;
+  create_proc(grp, bfcmd.ret.val.v_str);
+  free(bfcmd.ret.val.v_str);
 }
 
 static void execopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
@@ -177,22 +180,22 @@ static void execclose_cb(Plugin *host, Plugin *caller, HookArg *hka)
   remove_pid("", *(int*)hka->arg);
 }
 
-static void* op_kill(List *args, Cmdarg *ca)
+static Cmdret op_kill(List *args, Cmdarg *ca)
 {
   log_msg("OP", "kill");
   int pid;
   char *pidstr = list_arg(args, 1, VAR_STRING);
   if (!pidstr || !str_num(pidstr, &pid))
-    return 0;
+    return NORET;
 
   ventry *vent = fnd_val("op_procs", "pid", pidstr);
   if (!vent) {
     log_msg("OP", "pid %s not found", pidstr);
-    return 0;
+    return NORET;
   }
 
   uv_kill(pid, SIGKILL);
-  return 0;
+  return NORET;
 }
 
 Op_group* op_newgrp(const char *before, const char *after)

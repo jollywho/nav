@@ -18,6 +18,7 @@ typedef struct Dict Dict;
 typedef struct List List;
 typedef struct Cmdstr Cmdstr;
 typedef struct Cmdline Cmdline;
+typedef struct Cmdret Cmdret;
 
 #include <stdbool.h>
 #include "nav/macros.h"

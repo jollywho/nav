@@ -25,19 +25,19 @@ struct Window {
   Plugin *term;
 };
 
-static void* win_version();
-static void* win_new();
-static void* win_shut();
-static void* win_close();
-static void* win_sort();
-static void* win_buf();
-static void* win_bdel();
-static void* win_cd();
-static void* win_mark();
-static void* win_autocmd();
-static void* win_echo();
-static void* win_reload();
-static void* win_direct();
+static Cmdret win_version();
+static Cmdret win_new();
+static Cmdret win_shut();
+static Cmdret win_close();
+static Cmdret win_sort();
+static Cmdret win_buf();
+static Cmdret win_bdel();
+static Cmdret win_cd();
+static Cmdret win_mark();
+static Cmdret win_autocmd();
+static Cmdret win_echo();
+static Cmdret win_reload();
+static Cmdret win_direct();
 static void win_layout();
 static void window_ex_cmd();
 static void window_reg_cmd();
@@ -160,11 +160,11 @@ void window_cleanup(void)
   plugin_cleanup();
 }
 
-static void* win_shut()
+static Cmdret win_shut()
 {
   uv_timer_stop(&win.draw_timer);
   stop_event_loop();
-  return 0;
+  return NORET;
 }
 
 static void win_layout(Window *_w, Keyarg *ca)
@@ -243,7 +243,7 @@ int window_focus_attached()
   return buf_attached(layout_buf(&win.layout));
 }
 
-static void* win_cd(List *args, Cmdarg *ca)
+Cmdret win_cd(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_cd");
   Plugin *plugin = NULL;
@@ -266,24 +266,24 @@ static void* win_cd(List *args, Cmdarg *ca)
   if (plugin)
     send_hook_msg("open", plugin, NULL, &(HookArg){NULL,path});
 
-  return 0;
+  return NORET;
 }
 
-static void* win_mark(List *args, Cmdarg *ca)
+Cmdret win_mark(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_mark");
 
   char *label = list_arg(args, 1, VAR_STRING);
   if (!label)
-    return 0;
+    return NORET;
 
   Plugin *plugin = buf_plugin(layout_buf(&win.layout));
   if (plugin)
     mark_label_dir(label, window_cur_dir());
-  return 0;
+  return NORET;
 }
 
-static void* win_autocmd(List *args, Cmdarg *ca)
+Cmdret win_autocmd(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_autocmd");
   int len = utarray_len(args->items);
@@ -298,30 +298,29 @@ static void* win_autocmd(List *args, Cmdarg *ca)
     hook_remove(event, pat);
   else if (event && cur)
     hook_add(event, pat, cur);
-  return 0;
+  return NORET;
 }
 
-static void* win_echo(List *args, Cmdarg *ca)
+Cmdret win_echo(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_echo");
   //TODO: print from cmdstr, not tokens or raw
   char *out = cmdline_line_from(ca->cmdline, 1);
-  ca->flags = STRING;
   log_msg(">", "%s", out);
-  return out;
+  return (Cmdret){OUTPUT, .val.v_str = out};
 }
 
-static void* win_sort(List *args, Cmdarg *ca)
+Cmdret win_sort(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_sort");
   char *fld = list_arg(args, 1, VAR_STRING);
   if (!fld)
-    return 0;
+    return NORET;
   buf_sort(layout_buf(&win.layout), fld, ca->cmdstr->rev);
-  return 0;
+  return NORET;
 }
 
-static void* win_reload(List *args, Cmdarg *ca)
+Cmdret win_reload(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_reload");
   char *path = window_cur_dir();
@@ -329,24 +328,23 @@ static void* win_reload(List *args, Cmdarg *ca)
   Plugin *plugin = buf_plugin(layout_buf(&win.layout));
   if (plugin)
     send_hook_msg("open", plugin, NULL, &(HookArg){NULL,path});
-  return 0;
+  return NORET;
 }
 
-static void* win_version(List *args, Cmdarg *ca)
+Cmdret win_version(List *args, Cmdarg *ca)
 {
   log_err("-", "%s", NAV_LONG_VERSION);
-  ca->flags = STRING;
-  return NAV_LONG_VERSION;
+  return (Cmdret){OUTPUT, .val.v_str = NAV_LONG_VERSION};
 }
 
-static void* win_new(List *args, Cmdarg *ca)
+Cmdret win_new(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_new");
   char *name = list_arg(args, 1, VAR_STRING);
   if (!name)
     window_add_buffer(ca->flags);
   if (!plugin_requires_buf(name))
-    return 0;
+    return NORET;
 
   if (!(ca->pflag & BUFFER))
     window_add_buffer(ca->flags);
@@ -354,10 +352,11 @@ static void* win_new(List *args, Cmdarg *ca)
   char *path = NULL;
   if (cmd)
     path = ca->cmdline->line + cmd->start;
-  return plugin_open(name, layout_buf(&win.layout), path);
+  int id = plugin_open(name, layout_buf(&win.layout), path);
+  return (Cmdret){RET_INT, .val.v_int = id};
 }
 
-static void* win_close(List *args, Cmdarg *ca)
+Cmdret win_close(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_close");
   Buffer *buf = layout_buf(&win.layout);
@@ -368,48 +367,48 @@ static void* win_close(List *args, Cmdarg *ca)
     window_remove_buffer();
   else if (buf)
     buf_detach(buf);
-  return 0;
+  return NORET;
 }
 
-static void* win_buf(List *args, Cmdarg *ca)
+Cmdret win_buf(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_buf");
   char *name = list_arg(args, 1, VAR_STRING);
   if (!name || layout_is_root(&win.layout))
-    return 0;
+    return NORET;
 
   ca->pflag = BUFFER;
   win_close(args, ca);
   win_new(args, ca);
-  return 0;
+  return NORET;
 }
 
-static void* win_bdel(List *args, Cmdarg *ca)
+Cmdret win_bdel(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_bdel");
   ca->pflag = BUFFER;
   win_close(args, ca);
-  return 0;
+  return NORET;
 }
 
-static void* win_direct(List *args, Cmdarg *ca)
+Cmdret win_direct(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_direct");
   if (utarray_len(args->items) < 1)
-    return 0;
+    return NORET;
   char *arg = list_arg(args, 1, VAR_STRING);
   int wnum;
   if (!str_num(arg, &wnum))
-    return 0;
+    return NORET;
 
   Plugin *lhs = focus_plugin();
   Plugin *rhs = plugin_from_id(wnum);
   if (!rhs)
-    return 0;
+    return NORET;
 
   log_msg("WINDOW", "%d", wnum);
   send_hook_msg("pipe_left", lhs, rhs, NULL);
-  return 0;
+  return NORET;
 }
 
 void win_move(void *_w, Keyarg *ca)

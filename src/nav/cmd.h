@@ -5,18 +5,16 @@
 #include "nav/cmdline.h"
 #include "nav/option.h"
 
-#define WORD      0x01
+#define OUTPUT    0x01
 #define BUFFER    0x02
-#define FIELD     0x04
-#define FUNCTION  0x08
-#define RANGE     0x10
-#define REGEX     0x20
+#define RET_INT   0x04
 #define PLUGIN    0x40
 #define STRING    0x80
+#define NORET (Cmdret){}
 
 typedef struct Cmd_T Cmd_T;
 typedef struct Cmdarg Cmdarg;
-typedef void* (*Cmd_Func_T)(List *, Cmdarg *);
+typedef Cmdret (*Cmd_Func_T)(List *, Cmdarg *);
 
 struct Cmd_T {
   char *name;
