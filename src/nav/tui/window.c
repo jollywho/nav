@@ -305,7 +305,10 @@ Cmdret win_echo(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_echo");
   //TODO: print from cmdstr, not tokens or raw
-  char *out = cmdline_line_from(ca->cmdline, 1);
+  char *out = cmdline_line_after(ca->cmdline, 0);
+  if (!out)
+    return NORET;
+  out++;
   log_msg(">", "%s", out);
   return (Cmdret){OUTPUT, .val.v_str = out};
 }

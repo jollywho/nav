@@ -696,10 +696,10 @@ static Cmdret cmd_returnblock(List *args, Cmdarg *ca)
 {
   log_msg("CMD", "cmd_return");
   callstack->brk = 1;
-  char *out = cmdline_line_from(ca->cmdline, 1);
-  log_msg("CMD", "return %s", out);
-  //FIXME: exec out, return that
-  callstack->ret = (Cmdret){STRING, .val.v_str = strdup(out)};
+  char *line = cmdline_line_after(ca->cmdline, 0);
+  Cmdstr nstr;
+  cmd_eval(&nstr, line);
+  callstack->ret = nstr.ret;
   return callstack->ret;
 }
 
