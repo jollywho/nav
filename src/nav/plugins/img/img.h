@@ -22,7 +22,7 @@ struct Img {
   int width; int height;
 };
 
-void img_new(Plugin *plugin, Buffer *buf, void *arg);
+void img_new(Plugin *plugin, Buffer *buf, char *arg);
 void img_delete(Plugin *plugin);
 
 #endif

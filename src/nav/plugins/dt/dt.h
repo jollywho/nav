@@ -12,7 +12,7 @@ struct DT {
   Model *m;
 };
 
-void dt_new(Plugin *plugin, Buffer *buf, void *arg);
+void dt_new(Plugin *plugin, Buffer *buf, char *arg);
 void dt_delete(Plugin *plugin);
 
 #endif

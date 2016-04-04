@@ -10,7 +10,7 @@
 
 static void dt_readfile(DT *dt);
 
-void dt_new(Plugin *plugin, Buffer *buf, void *arg)
+void dt_new(Plugin *plugin, Buffer *buf, char *arg)
 {
   log_msg("DT", "init");
   if (!arg)

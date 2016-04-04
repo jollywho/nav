@@ -18,7 +18,7 @@ struct Op {
   fn_handle *hndl;
 };
 
-void op_new(Plugin *plugin, Buffer *buf, void *arg);
+void op_new(Plugin *plugin, Buffer *buf, char *arg);
 void op_delete(Plugin *plugin);
 Op_group* op_newgrp(const char *before, const char *after);
 void      op_delgrp(Op_group *);

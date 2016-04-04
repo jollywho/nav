@@ -215,7 +215,7 @@ void op_delgrp(Op_group *opgrp)
   free(opgrp);
 }
 
-void op_new(Plugin *plugin, Buffer *buf, void *arg)
+void op_new(Plugin *plugin, Buffer *buf, char *arg)
 {
   log_msg("OP", "INIT");
   op.base = plugin;

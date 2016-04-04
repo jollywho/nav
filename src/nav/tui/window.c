@@ -352,7 +352,7 @@ Cmdret win_new(List *args, Cmdarg *ca)
   if (!(ca->pflag & BUFFER))
     window_add_buffer(ca->flags);
 
-  char *path_arg = cmdline_line_after(ca->cmdline, 1);
+  char *path_arg = cmdline_line_from(ca->cmdline, 2);
   int id = plugin_open(name, layout_buf(&win.layout), path_arg);
   return (Cmdret){RET_INT, .val.v_int = id};
 }

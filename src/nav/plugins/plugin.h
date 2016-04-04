@@ -16,7 +16,7 @@ typedef struct fn_reg fn_reg;
 typedef struct Keyarg Keyarg;
 
 typedef void (*plugin_init_cb)(void);
-typedef void (*plugin_open_cb)(Plugin *base, Buffer *b, void *arg);
+typedef void (*plugin_open_cb)(Plugin *base, Buffer *b, char *arg);
 typedef void (*plugin_close_cb)(Plugin *plugin);
 
 struct fn_handle {

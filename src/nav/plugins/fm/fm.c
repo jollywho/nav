@@ -252,7 +252,7 @@ static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, char *val)
   c->top = fm;
 }
 
-void fm_new(Plugin *plugin, Buffer *buf, void *arg)
+void fm_new(Plugin *plugin, Buffer *buf, char *arg)
 {
   log_msg("FM", "init");
   FM *fm = malloc(sizeof(FM));
