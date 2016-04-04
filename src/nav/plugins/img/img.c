@@ -157,6 +157,7 @@ static void pipe_attach_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("IMG", "pipe_attach_cb");
   hook_add_intl(caller, host, cursor_change_cb, "cursor_change");
+  cursor_change_cb(caller, host, NULL);
   //TODO:
   //hook global cursor_change to refresh.
   //keep host cursor_change to change path
@@ -204,6 +205,15 @@ void img_new(Plugin *plugin, Buffer *buf, void *arg)
   hook_add_intl(plugin, NULL,   pipe_attach_cb, "pipe_left");
   hook_add_intl(plugin, NULL,   pipe_remove_cb, "pipe_remove");
   hook_add_intl(plugin, plugin, try_refresh,    "window_resize");
+
+
+  if (arg) {
+    int wnum;
+    if (str_num(arg, &wnum)) {
+      Plugin *rhs = plugin_from_id(wnum);
+      send_hook_msg("pipe_left", plugin, rhs, NULL);
+    }
+  }
 }
 
 void img_delete(Plugin *plugin)
@@ -211,12 +221,19 @@ void img_delete(Plugin *plugin)
   log_msg("IMG", "img_cleanup");
   Img *img = plugin->top;
   fn_handle *h = img->base->hndl;
-  //TODO: delay cleanup until clear has run, like term
-  //shell_set_in_buffer(img->sh_clear, img->cl_msg);
-  //shell_start(img->sh_clear);
-  img->disabled = true;
+
   hook_clear_host(img->base);
   hook_cleanup_host(img->base);
+
+  if (img->img_set) {
+    shell_set_in_buffer(img->sh_clear, img->cl_msg);
+    shell_start(img->sh_clear);
+  }
+  img->disabled = true;
+
+  DO_EVENTS_UNTIL(!img->sh_size->blocking);
+  DO_EVENTS_UNTIL(!img->sh_draw->blocking);
+  DO_EVENTS_UNTIL(!img->sh_clear->blocking);
   shell_delete(img->sh_draw);
   shell_delete(img->sh_size);
   shell_delete(img->sh_clear);

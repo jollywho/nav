@@ -14,6 +14,7 @@
 
 typedef struct {
   char type;
+  char *msg;
   Plugin *caller;
   Plugin *host;
   Pattern *pat;
@@ -86,7 +87,7 @@ void hook_add(char *event, char *pattern, char *cmd)
   Pattern *pat = NULL;
   if (pattern)
     pat = regex_pat_new(pattern);
-  Hook hook = { HK_CMD, NULL, NULL, pat, .data.cmd = strdup(cmd) };
+  Hook hook = { HK_CMD, evh->msg, NULL, NULL, pat, .data.cmd = strdup(cmd) };
   utarray_push_back(evh->hooks, &hook);
 }
 
@@ -113,20 +114,25 @@ void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg)
   if (!evh)
     return;
 
-  Hook hook = { HK_INTL, caller, host, NULL, .data.fn = fn };
+  Hook hook = { HK_INTL, evh->msg, caller, host, NULL, .data.fn = fn };
   utarray_push_back(evh->hooks, &hook);
 
   HookHandler *hkh = host->event_hooks;
+  HookHandler *ckh = host->event_hooks;
+  if (caller)
+    ckh = caller->event_hooks;
   utarray_push_back(hkh->hosting, &hook);
-  utarray_push_back(hkh->own, &hook);
+  utarray_push_back(ckh->own, &hook);
 }
 
-static void hook_rm_container(UT_array *ary, hook_cb fn)
+static void hook_rm_container(UT_array *ary, Plugin *host, Plugin *caller)
 {
   for (int i = 0; i < utarray_len(ary); i++) {
     Hook *it = (Hook*)utarray_eltptr(ary, i);
-    if (it->data.fn == fn)
+    if (it->host == host && it->caller == caller) {
+      log_err("HOOK", "RM_INTL");
       utarray_erase(ary, i, 1);
+    }
   }
 }
 
@@ -137,10 +143,13 @@ void hook_rm_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg)
   HASH_FIND_STR(events_tbl, msg, evh);
   if (!evh)
     return;
-  hook_rm_container(evh->hooks, fn);
+  hook_rm_container(evh->hooks, host, caller);
   HookHandler *hkh = host->event_hooks;
-  hook_rm_container(hkh->hosting, fn);
-  hook_rm_container(hkh->own, fn);
+  HookHandler *ckh = host->event_hooks;
+  if (caller)
+    ckh = caller->event_hooks;
+  hook_rm_container(hkh->hosting, host, caller);
+  hook_rm_container(ckh->own, host, caller);
 }
 
 void hook_set_tmp(char *msg)
@@ -161,6 +170,18 @@ void hook_clear_host(Plugin *host)
   HookHandler *hkh = host->event_hooks;
 
   //TODO: workaround to store actual pointers to hook in events_tbl
+  for (int i = 0; i < utarray_len(hkh->own); i++) {
+    Hook *it = (Hook*)utarray_eltptr(hkh->own, i);
+    EventHandler *evh;
+    HASH_FIND_STR(events_tbl, it->msg, evh);
+    hook_rm_container(evh->hooks, it->host, it->caller);
+    HookHandler *hkh = it->host->event_hooks;
+    hook_rm_container(hkh->hosting, it->host, it->caller);
+    HookHandler *ckh = it->host->event_hooks;
+    if (it->caller)
+      ckh = it->caller->event_hooks;
+    hook_rm_container(ckh->hosting, it->host, it->caller);
+  }
   utarray_clear(hkh->own);
   utarray_clear(hkh->hosting);
 }
