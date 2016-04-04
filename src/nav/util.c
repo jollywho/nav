@@ -148,6 +148,21 @@ char* do_expansion(char *src, Exparg *arg)
   return out;
 }
 
+char* strip_quotes(char *_str)
+{
+  if (*_str == '"')
+    _str++;
+
+  char *str = strdup(_str);
+  int i;
+  for (i = 0; str[i] != '\0'; ++i);
+
+  if (str[i-1] == '"')
+    str[i-1] = '\0';
+
+  return str;
+}
+
 bool fuzzy_match(char *s, const char *accept)
 {
   char *sub = s;

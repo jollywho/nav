@@ -7,6 +7,7 @@
 #include "nav/cmdline.h"
 #include "nav/compl.h"
 #include "nav/regex.h"
+#include "nav/util.h"
 
 #define HK_INTL 1
 #define HK_CMD  2
@@ -84,10 +85,15 @@ void hook_add(char *event, char *pattern, char *cmd)
   HASH_FIND_STR(events_tbl, event, evh);
   if (!evh)
     return;
+
+  cmd = strip_quotes(cmd);
+  log_msg("HOOK", "<%s> %s `%s`", event, pattern, cmd);
+
   Pattern *pat = NULL;
   if (pattern)
     pat = regex_pat_new(pattern);
-  Hook hook = { HK_CMD, evh->msg, NULL, NULL, pat, .data.cmd = strdup(cmd) };
+
+  Hook hook = { HK_CMD, evh->msg, NULL, NULL, pat, .data.cmd = cmd };
   utarray_push_back(evh->hooks, &hook);
 }
 

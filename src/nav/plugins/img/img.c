@@ -153,15 +153,18 @@ static void try_refresh(Plugin *host, Plugin *none, HookArg *hka)
   shell_start(img->sh_size);
 }
 
+//TODO:
+//hook global cursor_change to refresh.
+//keep host cursor_change to change path
+//hook_add_intl(caller, host, cursor_change_cb, "cursor_change");
+//
+//alternate:
+//
 static void pipe_attach_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("IMG", "pipe_attach_cb");
   hook_add_intl(caller, host, cursor_change_cb, "cursor_change");
   cursor_change_cb(caller, host, NULL);
-  //TODO:
-  //hook global cursor_change to refresh.
-  //keep host cursor_change to change path
-  //hook_add_intl(caller, host, cursor_change_cb, "cursor_change");
 }
 
 static void pipe_remove_cb(Plugin *host, Plugin *caller, HookArg *hka)

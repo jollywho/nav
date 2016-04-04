@@ -292,12 +292,12 @@ Cmdret win_autocmd(List *args, Cmdarg *ca)
   int pos = len > 3 ? 2 : -1;
   int rem = len > 3 ? 3 : 2;
   char *pat = list_arg(args, pos, VAR_STRING);
-  char *cur = cmdline_line_from(ca->cmdline, rem);
+  char *cur = cmdline_line_after(ca->cmdline, rem-1);
 
   if (event && ca->cmdstr->rev)
     hook_remove(event, pat);
   else if (event && cur)
-    hook_add(event, pat, cur);
+    hook_add(event, pat, cur+1);
   return NORET;
 }
 
