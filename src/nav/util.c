@@ -125,7 +125,7 @@ char* do_expansion(char *src, Exparg *arg)
   //some token/cmdstr context would be nice
   if (!delim) {
     delim = " ";
-    quote = "";
+    quote = " ";
   }
 
   name = strtok(name, delim);

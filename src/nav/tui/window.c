@@ -407,7 +407,10 @@ Cmdret win_direct(List *args, Cmdarg *ca)
     return NORET;
 
   log_msg("WINDOW", "%d", wnum);
-  send_hook_msg("pipe_left", lhs, rhs, NULL);
+  if (ca->cmdstr->rev)
+    send_hook_msg("pipe_remove", lhs, rhs, NULL);
+  else
+    send_hook_msg("pipe_left", lhs, rhs, NULL);
   return NORET;
 }
 

@@ -38,7 +38,7 @@ struct HookHandler {
 static const char *events_list[] = {
   "open", "fileopen", "cursor_change", "window_resize", "diropen",
   "pipe_left", "pipe_right", "left", "right", "paste", "remove",
-  "execopen", "execclose",
+  "execopen", "execclose", "pipe_remove",
 };
 
 static UT_icd hook_icd = { sizeof(Hook),NULL,NULL,NULL };
@@ -119,6 +119,28 @@ void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg)
   HookHandler *hkh = host->event_hooks;
   utarray_push_back(hkh->hosting, &hook);
   utarray_push_back(hkh->own, &hook);
+}
+
+static void hook_rm_container(UT_array *ary, hook_cb fn)
+{
+  for (int i = 0; i < utarray_len(ary); i++) {
+    Hook *it = (Hook*)utarray_eltptr(ary, i);
+    if (it->data.fn == fn)
+      utarray_erase(ary, i, 1);
+  }
+}
+
+void hook_rm_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg)
+{
+  log_msg("HOOK", "RM_INTL");
+  EventHandler *evh;
+  HASH_FIND_STR(events_tbl, msg, evh);
+  if (!evh)
+    return;
+  hook_rm_container(evh->hooks, fn);
+  HookHandler *hkh = host->event_hooks;
+  hook_rm_container(hkh->hosting, fn);
+  hook_rm_container(hkh->own, fn);
 }
 
 void hook_set_tmp(char *msg)

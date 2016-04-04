@@ -433,7 +433,7 @@ static int cond_do(char *line)
       if (tlhs)
         cond = dlhs;
       else
-        cond = !!lhs;
+        cond = lhs != NULL;
       continue;
     }
 
@@ -754,6 +754,7 @@ Cmd_T* cmd_find(const char *name)
 
 void exec_line(Cmdstr *cmd, char *line)
 {
+  log_msg("CMD", "exec_line");
   char *str = strstr(line, "!");
   ++str;
   Exparg exparg = {.expfn = model_str_expansion, .key = NULL};
@@ -763,6 +764,7 @@ void exec_line(Cmdstr *cmd, char *line)
   asprintf(&pidstr, "%d", pid);
 
   //TODO: hook output + block for output
+  //TODO: use pid integer
   free(str);
   ret2caller(cmd, (Cmdret){STRING, .val.v_str = pidstr});
   free(pidstr);

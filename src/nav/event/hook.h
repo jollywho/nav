@@ -20,6 +20,7 @@ void hook_add(char *event, char *pattern, char *cmd);
 void hook_remove(char *event, char *pattern);
 
 void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg);
+void hook_rm_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg);
 void hook_set_tmp(char *msg);
 void hook_clear_msg(Plugin *host, char *msg);
 void hook_clear_host(Plugin *host);

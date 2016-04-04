@@ -163,6 +163,11 @@ static void pipe_attach_cb(Plugin *host, Plugin *caller, HookArg *hka)
   //hook_add_intl(caller, host, cursor_change_cb, "cursor_change");
 }
 
+static void pipe_remove_cb(Plugin *host, Plugin *caller, HookArg *hka)
+{
+  hook_rm_intl(caller, host, cursor_change_cb, "cursor_change");
+}
+
 void img_new(Plugin *plugin, Buffer *buf, void *arg)
 {
   log_msg("IMG", "INIT");
@@ -197,6 +202,7 @@ void img_new(Plugin *plugin, Buffer *buf, void *arg)
 
   hook_init_host(plugin);
   hook_add_intl(plugin, NULL,   pipe_attach_cb, "pipe_left");
+  hook_add_intl(plugin, NULL,   pipe_remove_cb, "pipe_remove");
   hook_add_intl(plugin, plugin, try_refresh,    "window_resize");
 }
 
