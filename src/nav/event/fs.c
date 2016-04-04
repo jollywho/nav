@@ -352,6 +352,15 @@ void fs_cancel(fn_fs *fs)
   uv_cancel((uv_req_t*)&fs->ent->uv_fs);
 }
 
+static void fs_flush_stream(fentry *ent)
+{
+  fn_fs *it = NULL;
+  for (it = ent->listeners; it != NULL; it = it->hh.next) {
+    if (it->hndl->model)
+      model_flush(it->hndl, ent->reopen);
+  }
+}
+
 static void scan_cb(uv_fs_t *req)
 {
   log_msg("FS", "--scan--");
@@ -359,10 +368,8 @@ static void scan_cb(uv_fs_t *req)
   uv_dirent_t dent;
   fentry *ent = req->data;
 
-  fn_fs *it = NULL;
-  for (it = ent->listeners; it != NULL; it = it->hh.next) {
-    model_flush(it->hndl, ent->reopen);
-  }
+  fs_flush_stream(ent);
+
   /* clear outdated records */
   tbl_del_val("fm_files", "dir",      (char*)req->path);
 

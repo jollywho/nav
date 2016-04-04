@@ -84,8 +84,7 @@ void menu_ch_dir(void **args)
   if (!dir)
     return;
 
-  free(cur_menu->hndl->key);
-  cur_menu->hndl->key = strdup(dir);
+  SWAP_ALLOC_PTR(cur_menu->hndl->key, strdup(dir));
   fs_open(cur_menu->fs, dir);
 }
 
@@ -247,6 +246,8 @@ void menu_stop(Menu *mnu)
   delwin(mnu->nc_win);
   window_shift(ROW_MAX+1);
   free(mnu->line_key);
+  free(mnu->hndl->key);
+  mnu->hndl->key = NULL;
   mnu->active = false;
   mnu->hints = false;
   mnu->moved = true;
@@ -259,6 +260,8 @@ void menu_restart(Menu *mnu)
   mnu->docmpl = false;
   mnu->moved = true;
   mnu->top = 0;
+  free(mnu->hndl->key);
+  mnu->hndl->key = NULL;
 
   ex_cmd_push(mnu->cx);
   compl_build(mnu->cx, NULL);
