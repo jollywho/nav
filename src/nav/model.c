@@ -97,7 +97,11 @@ static int cmp_num(const void *a, const void *b, void *arg)
   fn_line l2 = *(fn_line*)b;
   off_t t1 = rec_stsize(l1.rec);
   off_t t2 = rec_stsize(l2.rec);
-  return t1 - t2;
+  if (t1 < t2)
+    return -1;
+  if (t1 > t2)
+    return 1;
+  return 0;
 }
 
 static int sort_by_type(const void *a, const void *b, void *arg)

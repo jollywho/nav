@@ -412,7 +412,7 @@ void menu_input(Menu *mnu, int key)
   if (!str)
     return;
 
-  int pos = ex_cmd_curpos() + 1;
+  int pos = ex_cmd_curpos();
   Token *cur = ex_cmd_curtok();
   if (cur)
     pos = cur->start;
