@@ -150,12 +150,15 @@ static void cmdline_draw()
   if (ex_state == EX_CMD_STATE)
     menu_draw(menu);
 
+  pos_T max = layout_size();
+  int offset = MAX((curpos + 3) - max.col, 0);
+
   mvwaddch(nc_win, 0, 0, state_symbol);
-  mvwaddstr(nc_win, 0, 1, line);
+  mvwaddstr(nc_win, 0, 1, &line[offset]);
   mvwchgat(nc_win, 0, 0, 1, A_NORMAL, col_symb, NULL);
   mvwchgat(nc_win, 0, 1, -1, A_NORMAL, col_text, NULL);
 
-  wmove(nc_win, 0, curpos + 1);
+  wmove(nc_win, 0, (curpos + 1) - offset);
   doupdate();
   curs_set(1);
   wnoutrefresh(nc_win);
@@ -166,7 +169,6 @@ void cmdline_refresh()
   pos_T max = layout_size();
   delwin(nc_win);
   nc_win = newwin(1, 0, max.lnum - 1, 0);
-  maxpos = max.col - 2;
   cmdline_draw();
 }
 
@@ -195,7 +197,7 @@ static void ex_tab(void *none, Keyarg *arg)
   free(str);
 
   if (st + len >= maxpos)
-    line = realloc(line, maxpos *= len);
+    line = realloc(line, maxpos = (2*maxpos)+len+1);
 
   line[curpos] = ' ';
   strcpy(&line[st], key);
@@ -419,8 +421,8 @@ void ex_input(int key, char utf8[7])
 
     int len = cell_len(instr);
 
-    if (1 + curpos + len >= maxpos)
-      line = realloc(line, maxpos *= len);
+    if ((1 + curpos + len) >= maxpos)
+      line = realloc(line, maxpos = (2*maxpos)+len+1);
 
     strcat(&line[curpos], instr);
     curpos += len;
