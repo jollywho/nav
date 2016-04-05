@@ -139,27 +139,23 @@ static void cursor_change_cb(Plugin *host, Plugin *caller, HookArg *hka)
     shell_set_in_buffer(img->sh_size, img->sz_msg);
     shell_start(img->sh_size);
   }
+  else if (img->img_set) { /* refresh */
+    shell_set_in_buffer(img->sh_clear, img->cl_msg);
+    shell_start(img->sh_clear);
+  }
 }
 
+//TODO: add to bottom of draw queue
 static void try_refresh(Plugin *host, Plugin *none, HookArg *hka)
 {
   Img *img = (Img*)host->top;
   if (!img->img_set)
     return;
-  shell_set_in_buffer(img->sh_clear, img->cl_msg);
-  shell_start(img->sh_clear);
 
   shell_set_in_buffer(img->sh_size, img->sz_msg);
   shell_start(img->sh_size);
 }
 
-//TODO:
-//hook global cursor_change to refresh.
-//keep host cursor_change to change path
-//hook_add_intl(caller, host, cursor_change_cb, "cursor_change");
-//
-//alternate:
-//
 static void pipe_attach_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("IMG", "pipe_attach_cb");

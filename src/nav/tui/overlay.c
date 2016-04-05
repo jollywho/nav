@@ -2,6 +2,7 @@
 #include "nav/log.h"
 #include "nav/tui/buffer.h"
 #include "nav/tui/window.h"
+#include "nav/util.h"
 
 #define SZ_BUFBOX  3
 #define SZ_NAMEBOX 8

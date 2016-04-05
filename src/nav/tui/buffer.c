@@ -267,13 +267,21 @@ void buf_draw(void **argv)
   wnoutrefresh(buf->nc_win);
 }
 
+static void buf_curs_move(Buffer *buf, Model *m)
+{
+  char *curval = model_str_line(m, buf->top + buf->lnum);
+  model_set_curs(m, buf->top + buf->lnum);
+  buf_refresh(buf);
+  send_hook_msg("cursor_change", buf->plugin, NULL, &(HookArg){NULL,curval});
+}
+
 void buf_move_invalid(Buffer *buf, int index, int lnum)
 {
   Model *m = buf->hndl->model;
   buf->top = index;
   buf->lnum = lnum;
+  buf_curs_move(buf, m);
   model_set_curs(m, buf->top + buf->lnum);
-  buf_refresh(buf);
 }
 
 void buf_full_invalidate(Buffer *buf, int index, int lnum)
@@ -337,10 +345,7 @@ static void buf_mv(Buffer *buf, Keyarg *ca)
     int count = m_max - buf->top;
     buf->lnum = count - 1;
   }
-  model_set_curs(m, buf->top + buf->lnum);
-  char *curval = model_str_line(m, buf->top + buf->lnum);
-  send_hook_msg("cursor_change", buf->plugin, NULL, &(HookArg){NULL,curval});
-  buf_refresh(buf);
+  buf_curs_move(buf, m);
 }
 
 int buf_input(Buffer *buf, Keyarg *ca)
