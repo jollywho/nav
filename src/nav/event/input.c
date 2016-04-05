@@ -217,7 +217,7 @@ void do_map(int key)
 {
   log_msg("INPUT", "<<<<<<<<<<<<<<<<<<");
   for (int i = 0; i < key_maps[0][key]->len; i++)
-    window_input(key_maps[0][key]->rhs[i]);
+    window_input(key_maps[0][key]->rhs[i], 0);
 }
 
 static int process_key(TermKeyKey *key)
@@ -256,9 +256,8 @@ void input_check()
 
   termkey_advisereadable(tk);
 
-  while ((ret = termkey_getkey_force(tk, &key)) == TERMKEY_RES_KEY) {
-    window_input(process_key(&key));
-  }
+  while ((ret = termkey_getkey_force(tk, &key)) == TERMKEY_RES_KEY)
+    window_input(process_key(&key), key.utf8);
 }
 
 /*

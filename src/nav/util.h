@@ -10,6 +10,9 @@ typedef struct {
 
 void set_exparg(Exparg *exparg);
 bool exparg_isset();
+wchar_t* str2wide(char *src);
+char* wide2str(wchar_t *src);
+int cell_len(char *str);
 void draw_wide(WINDOW *win, int row, int col, char *src, int max);
 void readable_fs(double size/*in bytes*/, char buf[]);
 void expand_escapes(char *dest, const char *src);

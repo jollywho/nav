@@ -118,7 +118,6 @@ static int last_dir_in_path(Token *tok, List *args, int pos, char **path)
 static int expand_path(char *line, char **path)
 {
   char *dir = valid_full_path(window_cur_dir(), *path);
-  log_err("MENU", "path_list: %s", dir);
   if (!dir)
     return 0;
 
@@ -262,7 +261,7 @@ void menu_restart(Menu *mnu)
   free(mnu->hndl->key);
   mnu->hndl->key = NULL;
 
-  ex_cmd_push(mnu->cx);
+  ex_cmd_push(mnu->cx, 0);
   compl_build(mnu->cx, NULL);
   compl_update(mnu->cx, "");
 }
@@ -272,21 +271,17 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
   log_msg("MENU", "rebuild_contexts");
   Token *word;
   int i = 0;
-  int pos = 0;
   while ((word = cmdline_tokindex(cmd, i))) {
     char *key = token_val(word, VAR_STRING);
     fn_context *find = find_context(mnu->cx, key);
     if (find)
       mnu->cx = find->params[0];
 
-    pos = word->end;
-    ex_cmd_set(pos);
-    ex_cmd_push(mnu->cx);
+    ex_cmd_push(mnu->cx, &word->end);
     i++;
   }
   if (i > 0) {
     mnu->cx = ex_cmd_pop(1)->cx;
-    ex_cmd_set(pos - 1);
     compl_build(mnu->cx, ex_cmd_curlist());
     compl_update(mnu->cx, ex_cmd_curstr());
   }
@@ -427,7 +422,7 @@ void menu_input(Menu *mnu, int key)
   strcpy(&newline[pos], str);
   ex_cmd_populate(newline);
   menu_toggle_hints(mnu);
-  ex_input(CAR);
+  ex_input(CAR, 0);
 }
 
 void menu_update(Menu *mnu, Cmdline *cmd)
@@ -450,6 +445,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   }
   else if ((ex_cmd_state() & EX_PUSH) == EX_PUSH) {
     char *key = ex_cmd_curstr();
+
     fn_context *find = find_context(mnu->cx, key);
     if (find) {
       mnu->cx = find->params[0];
@@ -458,7 +454,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
     else
       mnu->cx = NULL;
 
-    ex_cmd_push(mnu->cx);
+    ex_cmd_push(mnu->cx, 0);
   }
 
   if (mnu->docmpl || compl_isdynamic(mnu->cx))

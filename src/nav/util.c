@@ -1,13 +1,13 @@
 #include <wchar.h>
 #include <limits.h>
 #include <string.h>
+#include <stdlib.h>
 #include <malloc.h>
 #include "nav/util.h"
 #include "nav/macros.h"
 
 #define init_mb(state) memset(&state, 0, sizeof(state))
 #define reset_mbytes(state) init_mb(state)
-#define count_mbytes(buffer,length,state) mbrlen(buffer,length,&state)
 #define check_mbytes(wch,buffer,length,state) \
 	(int) mbrtowc(&wch, buffer, length, &state)
 
@@ -23,6 +23,46 @@ void set_exparg(Exparg *exparg)
 bool exparg_isset()
 {
   return gexp;
+}
+
+wchar_t* str2wide(char *src)
+{
+  int len = mbstowcs(NULL, src, 0) + 1;
+  wchar_t *dest = malloc((len+1)*sizeof(wchar_t));
+  mbstowcs(dest, src, len);
+  return dest;
+}
+
+char* wide2str(wchar_t *src)
+{
+  int len = wcstombs(NULL, src, 0) + 1;
+  char *dest = malloc((len+1)*sizeof(char));
+  wcstombs(dest, src, len);
+  if (!dest)
+    dest = "";
+  return dest;
+}
+
+int cell_len(char *str)
+{
+  unsigned len = strlen(str);
+  unsigned j, k;
+  wchar_t wch;
+  size_t rc;
+  int width;
+  int cnt = 0;
+  mbstate_t state;
+  reset_mbytes(state);
+  for (j = k = 0; j < len; j++) {
+    rc = check_mbytes(wch, str + j, len - j, state);
+    if (rc == (size_t) -1 || rc == (size_t) -2)
+      break;
+    j += rc - 1;
+    if ((width = wcwidth(wch)) < 0)
+      break;
+    cnt += width;
+  }
+  return cnt;
 }
 
 void draw_wide(WINDOW *win, int row, int col, char *src, int max)

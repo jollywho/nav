@@ -40,6 +40,7 @@ static void img_draw(Plugin *plugin)
     img->height = max_height_pixels;
   }
 
+  //TODO: use buffer size * font, not given image
   free(img->cl_msg);
   free(img->img_msg);
   asprintf(&img->cl_msg, CL_ARG,

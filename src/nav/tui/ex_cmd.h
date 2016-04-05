@@ -33,7 +33,7 @@ void start_ex_cmd(char, int);
 void stop_ex_cmd();
 void ex_cmdinvert();
 
-void ex_input(int key);
+void ex_input(int key, char[7]);
 void cmdline_refresh();
 void ex_cmd_populate(const char *);
 
@@ -48,8 +48,7 @@ int ex_cmd_state();
 int ex_cmd_curidx(List *list);
 char* ex_cmd_line();
 
-void ex_cmd_push(fn_context *cx);
+void ex_cmd_push(fn_context *cx, int *);
 cmd_part* ex_cmd_pop(int count);
-void ex_cmd_set(int pos);
 
 #endif

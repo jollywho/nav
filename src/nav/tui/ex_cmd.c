@@ -26,7 +26,6 @@ static void ex_menuhints();
 static void ex_menu_mv();
 
 #define STACK_MIN 10
-#define CURS_MIN -1
 
 static fn_key key_defaults[] = {
   {ESC,      ex_esc,           0,       0},
@@ -56,7 +55,6 @@ static int curpos;
 static int maxpos;
 static Cmdline cmd;
 static char *line;
-static char *fmt_out;
 static Menu *menu;
 static LineMatch *lm;
 
@@ -88,10 +86,9 @@ void start_ex_cmd(char symbol, int state)
   state_symbol = symbol;
   pos_T max = layout_size();
   nc_win = newwin(1, 0, max.lnum - 1, 0);
-  curpos = CURS_MIN;
-  maxpos = max.col;
+  curpos = 0;
+  maxpos = max.col - 2;
   mflag = 0;
-  fmt_out = malloc(1);
   col_text = attr_color("ComplText");
   col_symb = attr_color("BufText");
 
@@ -123,7 +120,6 @@ void stop_ex_cmd()
   }
   lm = NULL;
   free(line);
-  free(fmt_out);
   cmdline_cleanup(&cmd);
   if (!message_pending) {
     werase(nc_win);
@@ -146,26 +142,6 @@ static void str_ins(char *str, const char *ins, int pos, int ofs)
   free(buf);
 }
 
-static void gen_output_str()
-{
-  char ch;
-  int i, j;
-
-  free(fmt_out);
-  fmt_out = calloc(maxpos+1, sizeof(char*));
-
-  i = j = 0;
-  while ((ch = line[i])) {
-    fmt_out[j] = ch;
-
-    if (ch == '%') {
-      j++;
-      fmt_out[j] = ch;
-    }
-    i++; j++;
-  }
-}
-
 static void cmdline_draw()
 {
   log_msg("EXCMD", "cmdline_draw");
@@ -175,12 +151,11 @@ static void cmdline_draw()
     menu_draw(menu);
 
   mvwaddch(nc_win, 0, 0, state_symbol);
-  gen_output_str();
-  mvwprintw(nc_win, 0, 1, fmt_out);
+  mvwaddstr(nc_win, 0, 1, line);
   mvwchgat(nc_win, 0, 0, 1, A_NORMAL, col_symb, NULL);
   mvwchgat(nc_win, 0, 1, -1, A_NORMAL, col_text, NULL);
 
-  wmove(nc_win, 0, curpos + 2);
+  wmove(nc_win, 0, curpos + 1);
   doupdate();
   curs_set(1);
   wnoutrefresh(nc_win);
@@ -191,7 +166,7 @@ void cmdline_refresh()
   pos_T max = layout_size();
   delwin(nc_win);
   nc_win = newwin(1, 0, max.lnum - 1, 0);
-  maxpos = max.col;
+  maxpos = max.col - 2;
   cmdline_draw();
 }
 
@@ -213,31 +188,18 @@ static void ex_tab(void *none, Keyarg *arg)
 
   cmd_part *part = cmd_stack[cur_part];
   int st = part->st;
-  int ed = curpos + 1;
-  if (st > 0)
-    st++;
 
   char key[strlen(str) + 2];
   expand_escapes(key, str);
-  int len = strlen(key);
+  int len = cell_len(key);
   free(str);
 
-  if (st + len >= maxpos - 1) {
-    char *newline = strdup(line);
-    maxpos = 2 * (len+maxpos);
-    line = realloc(line, maxpos);
-    memset(line, '\0', maxpos);
-    strcpy(line, newline);
-    free(newline);
-  }
+  if (st + len >= maxpos)
+    line = realloc(line, maxpos *= len);
 
-  int i;
-  for (i = st; i < ed + 2; i++)
-    line[i] = ' ';
-  for (i = 0; i < len; i++)
-    line[st + i] = key[i];
-
-  curpos = st + i - 1;
+  line[curpos] = ' ';
+  strcpy(&line[st], key);
+  curpos = cell_len(line);
   mflag = EX_CYCLE;
 }
 
@@ -267,7 +229,7 @@ void ex_cmd_populate(const char *newline)
   else
     line = strdup(newline);
 
-  curpos = strlen(line) - 1;
+  curpos = cell_len(line);
 }
 
 static void ex_car()
@@ -284,29 +246,38 @@ static void ex_car()
 static void ex_spc()
 {
   log_msg("EXCMD", "ex_spc");
-  curpos++;
   mflag |= EX_RIGHT;
   mflag &= ~(EX_FRESH|EX_NEW);
-  if (curpos >= maxpos - 1) {
-    char *newline = strdup(line);
-    line = realloc(line, maxpos *= 2);
-    memset(line, '\0', maxpos);
-    strcpy(line, newline);
-    free(newline);
-  }
 
-  line[curpos] = ' ';
+  if (curpos + 1 >= maxpos) {
+    line = realloc(line, maxpos *= 2);
+    line[curpos+2] = '\0';
+  }
+  strcat(&line[curpos++], " ");
 }
 
 static void ex_bckspc()
 {
   log_msg("EXCMD", "bkspc");
-  //FIXME: this will split line when cursor movement added
-  line[curpos] = '\0';
-  curpos--;
+
+  if (curpos > 0) {
+    wchar_t *tmp = str2wide(line);
+    tmp[wcslen(tmp)-1] = '\0';
+
+    char *nline = wide2str(tmp);
+    if (strlen(nline) >= maxpos) {
+      line = realloc(line, maxpos *= 2);
+      line[curpos+2] = '\0';
+    }
+    strcpy(line, nline);
+    curpos = cell_len(line);
+    free(tmp);
+    free(nline);
+  }
+
   mflag |= EX_LEFT;
-  if (curpos < CURS_MIN)
-    curpos = CURS_MIN;
+  if (curpos < 0)
+    curpos = 0;
 
   if (ex_state == EX_CMD_STATE) {
     if (curpos < cmd_stack[cur_part]->st)
@@ -325,7 +296,7 @@ static void ex_killword()
   int st = last->start;
   int ed = last->end;
   for (int i = st; i < ed; i++)
-    line[i] = ' ';
+    line[i] = '\0';
 
   curpos = st;
   ex_bckspc();
@@ -335,7 +306,7 @@ static void ex_killline()
 {
   free(line);
   line = calloc(maxpos, sizeof(char*));
-  curpos = -1;
+  curpos = 0;
 
   if (ex_state == EX_CMD_STATE) {
     ex_cmd_pop(-1);
@@ -401,7 +372,7 @@ static void check_new_state()
   Token *tok = cmdline_last(&cmd);
   if (!tok)
     return;
-  if (curpos + 1 > tok->end && curpos > 0)
+  if (curpos > tok->end && curpos > 0)
     mflag |= EX_NEW;
 }
 
@@ -415,7 +386,7 @@ static void ex_onkey()
     menu_update(menu, &cmd);
   }
   else {
-    if (window_focus_attached() && curpos > CURS_MIN) {
+    if (window_focus_attached() && curpos > 0) {
       regex_build(lm, line);
       regex_pivot(lm);
       regex_hover(lm);
@@ -425,7 +396,7 @@ static void ex_onkey()
   window_req_draw(NULL, NULL);
 }
 
-void ex_input(int key)
+void ex_input(int key, char utf8[7])
 {
   log_msg("EXCMD", "input");
   if (menu_hints_enabled(menu))
@@ -437,14 +408,22 @@ void ex_input(int key)
   if (idx >= 0)
     key_defaults[idx].cmd_func(NULL, &ca);
   else {
-    curpos++;
     mflag |= EX_RIGHT;
     mflag &= ~(EX_FRESH|EX_NEW);
-    if (curpos >= maxpos)
-      line = realloc(line, maxpos *= 2);
 
-    // FIXME: wide char support
-    line[curpos] = key;
+    char instr[7] = {0,0};
+    if (!utf8)
+      instr[0] = key;
+    else
+      strcpy(instr, utf8);
+
+    int len = cell_len(instr);
+
+    if (1 + curpos + len >= maxpos)
+      line = realloc(line, maxpos *= len);
+
+    strcat(&line[curpos], instr);
+    curpos += len;
   }
 
   if (mflag & EX_QUIT)
@@ -453,7 +432,7 @@ void ex_input(int key)
     ex_onkey();
 }
 
-void ex_cmd_push(fn_context *cx)
+void ex_cmd_push(fn_context *cx, int *save)
 {
   log_msg("EXCMD", "ex_cmd_push");
   cur_part++;
@@ -472,6 +451,8 @@ void ex_cmd_push(fn_context *cx)
     if (line[st] == '|')
       st++;
   }
+  if (save)
+    st = *save;
   cmd_stack[cur_part]->st = st;
   mflag &= ~EX_NEW;
   mflag |= EX_FRESH;
@@ -536,11 +517,6 @@ char* ex_cmd_curstr()
 int ex_cmd_state()
 {
   return mflag;
-}
-
-void ex_cmd_set(int pos)
-{
-  curpos = pos;
 }
 
 Cmdstr* ex_cmd_prevcmd()

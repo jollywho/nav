@@ -173,7 +173,7 @@ static void win_layout(Window *_w, Keyarg *ca)
   layout_movement(&win.layout, dir);
 }
 
-void window_input(int key)
+void window_input(int key, char utf8[7])
 {
   log_msg("WINDOW", "input");
   win.ca.key = key;
@@ -186,7 +186,7 @@ void window_input(int key)
   if (win.input_override)
     return term_keypress(win.term, key);
   if (win.ex)
-    return ex_input(key);
+    return ex_input(key, utf8);
 
   if (input_map_exists(key))
     return do_map(key);
