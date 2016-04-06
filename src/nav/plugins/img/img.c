@@ -160,6 +160,8 @@ static void try_refresh(Plugin *host, Plugin *none, HookArg *hka)
 static void pipe_attach_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("IMG", "pipe_attach_cb");
+  if (strcmp(caller->name, "fm"))
+    return;
   hook_add_intl(caller, host, cursor_change_cb, "cursor_change");
   cursor_change_cb(caller, host, NULL);
 }
@@ -210,7 +212,8 @@ void img_new(Plugin *plugin, Buffer *buf, char *arg)
     int wnum;
     if (str_num(arg, &wnum)) {
       Plugin *rhs = plugin_from_id(wnum);
-      send_hook_msg("pipe_left", plugin, rhs, NULL);
+      if (rhs && rhs->id != plugin->id)
+        send_hook_msg("pipe_left", plugin, rhs, NULL);
     }
   }
 }
