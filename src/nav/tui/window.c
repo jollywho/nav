@@ -309,7 +309,6 @@ Cmdret win_echo(List *args, Cmdarg *ca)
   if (!out)
     return NORET;
   out++;
-  log_msg(">", "%s", out);
   return (Cmdret){OUTPUT, .val.v_str = out};
 }
 

@@ -157,6 +157,6 @@ void hist_insert(int state, char *line)
   cur->count++;
   item->line = strdup(line);
   cur->cur = item;
-  TAILQ_INSERT_HEAD(&cur->p, item, ent);
+  TAILQ_INSERT_TAIL(&cur->p, item, ent);
   hst_chk_limits();
 }

@@ -375,6 +375,8 @@ char* cmdline_line_from(Cmdline *cmdline, int idx)
   Token *word = cmdline_tokindex(cmdline, idx);
   if (!word)
     return NULL;
+  if (word->start >= strlen(cmdline->line))
+    return NULL;
   return &cmdline->line[word->start];
 }
 
@@ -382,6 +384,8 @@ char* cmdline_line_after(Cmdline *cmdline, int idx)
 {
   Token *word = cmdline_tokindex(cmdline, idx);
   if (!word || idx >= utarray_len(cmdline->tokens))
+    return NULL;
+  if (word->end >= strlen(cmdline->line))
     return NULL;
   return &cmdline->line[word->end];
 }
