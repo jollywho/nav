@@ -46,14 +46,14 @@ char* wide2str(wchar_t *src)
 int cell_len(char *str)
 {
   unsigned len = strlen(str);
-  unsigned j, k;
+  unsigned j;
   wchar_t wch;
   size_t rc;
   int width;
   int cnt = 0;
   mbstate_t state;
   reset_mbytes(state);
-  for (j = k = 0; j < len; j++) {
+  for (j = 0; j < len; j++) {
     rc = check_mbytes(wch, str + j, len - j, state);
     if (rc == (size_t) -1 || rc == (size_t) -2)
       break;

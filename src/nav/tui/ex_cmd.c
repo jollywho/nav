@@ -151,10 +151,12 @@ static void cmdline_draw()
     menu_draw(menu);
 
   pos_T max = layout_size();
-  int offset = MAX((curpos + 3) - max.col, 0);
+  wchar_t *wline = str2wide(line);
+  int len = 2 + wcswidth(wline, -1);
+  int offset = MAX(len - (max.col - 1), 0);
 
   mvwaddch(nc_win, 0, 0, state_symbol);
-  mvwaddstr(nc_win, 0, 1, &line[offset]);
+  mvwaddwstr(nc_win, 0, 1, &wline[offset]);
   mvwchgat(nc_win, 0, 0, 1, A_NORMAL, col_symb, NULL);
   mvwchgat(nc_win, 0, 1, -1, A_NORMAL, col_text, NULL);
 
@@ -162,6 +164,7 @@ static void cmdline_draw()
   doupdate();
   curs_set(1);
   wnoutrefresh(nc_win);
+  free(wline);
 }
 
 void cmdline_refresh()

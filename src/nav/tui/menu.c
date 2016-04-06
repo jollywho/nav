@@ -9,6 +9,7 @@
 #include "nav/event/fs.h"
 #include "nav/info.h"
 #include "nav/ascii.h"
+#include "nav/util.h"
 
 static const int ROW_MAX = 5;
 static Menu *cur_menu;
@@ -488,17 +489,19 @@ void menu_draw(Menu *mnu)
   if (mnu->hints)
     hints = get_opt_str("hintkeys");
 
+  int colmax = mnu->size.col - 3;
+
   for (int i = 0; i < MIN(ROW_MAX, cmpl->matchcount); i++) {
 
     compl_item *row = cmpl->matches[mnu->top + i];
 
     DRAW_CH(mnu, nc_win, i, 0, hints[i], col_div);
-    DRAW_STR(mnu, nc_win, i, 2, row->key, col_text);
+    draw_wide(mnu->nc_win, i, 2, row->key, colmax);
 
     int ofs = strlen(row->key);
     for (int c = 0; c < row->colcount; c++) {
       char *col = row->columns;
-      DRAW_STR(mnu, nc_win, i, ofs+3, col, col_text);
+      draw_wide(mnu->nc_win, i, ofs+3, col, colmax);
     }
   }
   char *key = mnu->cx->key;
