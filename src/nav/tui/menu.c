@@ -183,13 +183,6 @@ Menu* menu_new()
   fn_handle *hndl = malloc(sizeof(fn_handle));
   mnu->hndl = hndl;
 
-  mnu->col_select = attr_color("BufSelected");
-  mnu->col_sel    = attr_color("ComplSelected");
-  mnu->col_text   = attr_color("ComplText");
-  mnu->col_div    = attr_color("OverlaySep");
-  mnu->col_box    = attr_color("OverlayActive");
-  mnu->col_line   = attr_color("OverlayLine");
-
   memset(mnu->hndl, 0, sizeof(fn_handle));
   mnu->hndl->tn = "fm_files";
   mnu->hndl->key_fld = "dir";
@@ -217,22 +210,19 @@ void menu_start(Menu *mnu)
 {
   log_msg("MENU", "menu_start");
 
-  pos_T size = layout_size();
-  mnu->size = (pos_T){ROW_MAX+1, size.col};
-  mnu->ofs =  (pos_T){size.lnum - (ROW_MAX+2), 0};
-  window_shift(-(ROW_MAX+1));
-
-  mnu->nc_win = newwin(
-      mnu->size.lnum,
-      mnu->size.col,
-      mnu->ofs.lnum,
-      mnu->ofs.col);
+  mnu->col_select = attr_color("BufSelected");
+  mnu->col_sel    = attr_color("ComplSelected");
+  mnu->col_text   = attr_color("ComplText");
+  mnu->col_div    = attr_color("OverlaySep");
+  mnu->col_box    = attr_color("OverlayActive");
+  mnu->col_line   = attr_color("OverlayLine");
 
   mnu->lnum = 0;
   mnu->rebuild = false;
   mnu->active = true;
   mnu->line_key = strdup("");
 
+  menu_resize(mnu);
   menu_restart(mnu);
 }
 
@@ -467,6 +457,27 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 
   compl_update(mnu->cx, line);
   mnu->docmpl = false;
+}
+
+void menu_resize(Menu *mnu)
+{
+  if (!mnu->active)
+    return;
+
+  pos_T size = layout_size();
+  mnu->size = (pos_T){ROW_MAX+1, size.col};
+  mnu->ofs =  (pos_T){size.lnum - (ROW_MAX+2), 0};
+
+  if (mnu->nc_win)
+    delwin(mnu->nc_win);
+
+  mnu->nc_win = newwin(
+      mnu->size.lnum,
+      mnu->size.col,
+      mnu->ofs.lnum,
+      mnu->ofs.col);
+
+  window_shift(-(ROW_MAX+1));
 }
 
 void menu_draw(Menu *mnu)

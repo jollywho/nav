@@ -34,6 +34,7 @@ void stop_ex_cmd();
 void ex_cmdinvert();
 
 void ex_input(int key, char[7]);
+void cmdline_resize();
 void cmdline_refresh();
 void ex_cmd_populate(const char *);
 

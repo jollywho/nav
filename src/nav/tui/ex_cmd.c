@@ -167,11 +167,19 @@ static void cmdline_draw()
   free(wline);
 }
 
-void cmdline_refresh()
+void cmdline_resize()
 {
+  log_err("EXCMD", "refresh");
+  if (ex_state == EX_OFF_STATE)
+    return;
+  menu_resize(menu);
   pos_T max = layout_size();
   delwin(nc_win);
   nc_win = newwin(1, 0, max.lnum - 1, 0);
+}
+
+void cmdline_refresh()
+{
   cmdline_draw();
 }
 

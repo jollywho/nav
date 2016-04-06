@@ -44,13 +44,13 @@ void init(int debug, char *config_path)
   input_init();
   compl_init();
   hook_init();
+  ex_cmd_init();
   window_init();
 
   config_init();
   hist_init();
   config_start(config_path);
 
-  ex_cmd_init();
   cmd_sort_cmds();
   log_msg("INIT", "INIT_END");
 }

@@ -107,6 +107,7 @@ void sigwinch_handler(int sig)
   log_msg("WINDOW", "Signal received: **term resize**");
   clear();
   layout_refresh(&win.layout);
+  cmdline_resize();
   refresh();
   event_wakeup();
   window_update(&win.draw_timer);
