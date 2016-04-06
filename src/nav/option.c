@@ -20,6 +20,7 @@ static char *default_groups[] = {
 
 static int dummy = 0;
 static uint history = 50;
+static int menu_rows = 5;
 static int default_syn_color;
 static int ask_delete = 1;
 static char *hintskey = "wasgd";
@@ -39,6 +40,7 @@ static struct fn_option {
   {"dummy",         OPTION_INT,    &dummy},
   {"ask_delete",    OPTION_INT,    &ask_delete},
   {"history",       OPTION_UINT,   &history},
+  {"menu_rows",     OPTION_INT,    &menu_rows},
   {"hintkeys",      OPTION_STRING, &hintskey},
   {"shell",         OPTION_STRING, &p_sh},
 };
@@ -225,7 +227,7 @@ void set_opt(const char *name, const char *val)
   if (!opt)
     return;
 
-  log_msg("CONFIG", "%s :: %s", opt->key, val);
+  log_msg("OPTION", "%s :: %s", opt->key, val);
   if (opt->type == OPTION_STRING)
     SWAP_ALLOC_PTR(opt->value, strdup(val));
   else if (opt->type == OPTION_INT) {

@@ -1,5 +1,3 @@
-#include <ncurses.h>
-
 #include "nav/tui/window.h"
 #include "nav/event/event.h"
 #include "nav/tui/layout.h"
@@ -105,9 +103,12 @@ static char *cur_dir;
 void sigwinch_handler(int sig)
 {
   log_msg("WINDOW", "Signal received: **term resize**");
+  endwin();
+  refresh();
   clear();
-  layout_refresh(&win.layout);
   cmdline_resize();
+  int offset = (win.ex * (get_opt_int("menu_rows")+1));
+  layout_refresh(&win.layout, offset);
   refresh();
   event_wakeup();
   window_update(&win.draw_timer);
@@ -147,7 +148,6 @@ void window_init(void)
   for (int i = 0; i < LENGTH(compl_args); i++)
     compl_add_arg(compl_args[i][0], compl_args[i][1]);
 
-  curs_set(0);
   sigwinch_handler(0);
   plugin_init();
   buf_init();
@@ -336,7 +336,7 @@ Cmdret win_reload(List *args, Cmdarg *ca)
 
 Cmdret win_version(List *args, Cmdarg *ca)
 {
-  log_err("-", "%s", NAV_LONG_VERSION);
+  log_msg("-", "%s", NAV_LONG_VERSION);
   return (Cmdret){OUTPUT, .val.v_str = NAV_LONG_VERSION};
 }
 
@@ -434,6 +434,8 @@ static void window_ex_cmd(Window *_w, Keyarg *arg)
   if (!window_focus_attached() && arg->arg == EX_REG_STATE)
     return;
   win.ex = true;
+  int offset = (win.ex * (get_opt_int("menu_rows")+1));
+  layout_refresh(&win.layout, offset);
   start_ex_cmd(arg->key, arg->arg);
 }
 
@@ -447,6 +449,7 @@ static void window_reg_cmd(Window *_w, Keyarg *arg)
 void window_ex_cmd_end()
 {
   win.ex = false;
+  layout_refresh(&win.layout, win.ex);
 }
 
 void window_draw(void **argv)
@@ -507,9 +510,4 @@ void window_add_buffer(enum move_dir dir)
   log_msg("WINDOW", "BUFFER +ADD+");
   Buffer *buf = buf_new();
   layout_add_buffer(&win.layout, buf, dir);
-}
-
-void window_shift(int lines)
-{
-  layout_shift(&win.layout, lines);
 }

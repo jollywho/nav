@@ -11,7 +11,7 @@
 #include "nav/ascii.h"
 #include "nav/util.h"
 
-static const int ROW_MAX = 5;
+static int ROW_MAX;
 static Menu *cur_menu;
 
 struct Menu {
@@ -27,6 +27,7 @@ struct Menu {
   bool moved;
   char *line_key;
   char *line_path;
+  char *hintkeys;
 
   pos_T size;
   pos_T ofs;
@@ -216,6 +217,8 @@ void menu_start(Menu *mnu)
   mnu->col_div    = attr_color("OverlaySep");
   mnu->col_box    = attr_color("OverlayActive");
   mnu->col_line   = attr_color("OverlayLine");
+  ROW_MAX = get_opt_int("menu_rows");
+  mnu->hintkeys = get_opt_str("hintkeys");
 
   mnu->lnum = 0;
   mnu->rebuild = false;
@@ -233,7 +236,8 @@ void menu_stop(Menu *mnu)
   wnoutrefresh(mnu->nc_win);
 
   delwin(mnu->nc_win);
-  window_shift(ROW_MAX+1);
+  mnu->nc_win = NULL;
+
   free(mnu->line_key);
   free(mnu->hndl->key);
   mnu->hndl->key = NULL;
@@ -378,6 +382,10 @@ bool menu_hints_enabled(Menu *mnu)
 void menu_toggle_hints(Menu *mnu)
 {
   log_msg("MENU", "toggle hints");
+  if (strlen(mnu->hintkeys) < ROW_MAX) {
+    log_err("MENU", "not enough hintkeys for menu rows!");
+    return;
+  }
   mnu->hints = !mnu->hints;
   if (!mnu->cx || !mnu->cx->cmpl || ex_cmd_state() & EX_EXEC)
     mnu->hints = false;
@@ -393,11 +401,11 @@ void menu_input(Menu *mnu, int key)
   if (key == Ctrl_L)
     ex_cmdinvert();
 
-  char *hints = get_opt_str("hintkeys");
   char *str = NULL;
+
   fn_compl *cmpl = mnu->cx->cmpl;
   for (int i = 0; i < cmpl->matchcount; i++) {
-    if (hints[i] == key)
+    if (mnu->hintkeys[i] == key)
       str = cmpl->matches[i]->key;
   }
   if (!str)
@@ -461,6 +469,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 
 void menu_resize(Menu *mnu)
 {
+  log_msg("MENU", "menu_resize");
   if (!mnu->active)
     return;
 
@@ -468,16 +477,12 @@ void menu_resize(Menu *mnu)
   mnu->size = (pos_T){ROW_MAX+1, size.col};
   mnu->ofs =  (pos_T){size.lnum - (ROW_MAX+2), 0};
 
-  if (mnu->nc_win)
-    delwin(mnu->nc_win);
-
+  delwin(mnu->nc_win);
   mnu->nc_win = newwin(
       mnu->size.lnum,
       mnu->size.col,
       mnu->ofs.lnum,
       mnu->ofs.col);
-
-  window_shift(-(ROW_MAX+1));
 }
 
 void menu_draw(Menu *mnu)
@@ -487,7 +492,6 @@ void menu_draw(Menu *mnu)
     return;
 
   werase(mnu->nc_win);
-
   mvwhline(mnu->nc_win, ROW_MAX, 0, ' ', mnu->size.col);
   mvwchgat(mnu->nc_win, ROW_MAX, 0, -1, A_NORMAL, mnu->col_line, NULL);
 
@@ -496,19 +500,22 @@ void menu_draw(Menu *mnu)
     return;
   }
   fn_compl *cmpl = mnu->cx->cmpl;
-  char *hints = ">>>>>";
-  if (mnu->hints)
-    hints = get_opt_str("hintkeys");
 
   int colmax = mnu->size.col - 3;
 
   for (int i = 0; i < MIN(ROW_MAX, cmpl->matchcount); i++) {
-
     compl_item *row = cmpl->matches[mnu->top + i];
 
-    DRAW_CH(mnu, nc_win, i, 0, hints[i], col_div);
+    /* draw hints */
+    if (mnu->hints)
+      DRAW_CH(mnu, nc_win, i, 0, mnu->hintkeys[i], col_div);
+    else
+      DRAW_CH(mnu, nc_win, i, 0, '>', col_div);
+
+    /* draw compl key */
     draw_wide(mnu->nc_win, i, 2, row->key, colmax);
 
+    /* draw extra column */
     int ofs = strlen(row->key);
     for (int c = 0; c < row->colcount; c++) {
       char *col = row->columns;
@@ -517,7 +524,6 @@ void menu_draw(Menu *mnu)
   }
   char *key = mnu->cx->key;
   DRAW_STR(mnu, nc_win, ROW_MAX, 1, key, col_line);
-
   mvwchgat(mnu->nc_win, mnu->lnum, 0, -1, A_NORMAL, mnu->col_sel, NULL);
 
   wnoutrefresh(mnu->nc_win);

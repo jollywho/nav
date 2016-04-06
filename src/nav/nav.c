@@ -34,6 +34,7 @@ void init(int debug, char *config_path)
   use_default_colors();
   noecho();
   nonl();
+  curs_set(0);
   //raw();
   vt_init(term);
 

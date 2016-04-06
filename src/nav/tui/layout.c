@@ -334,19 +334,12 @@ int layout_is_root(Layout *layout)
   return layout->focus == layout->root;
 }
 
-void layout_refresh(Layout *layout)
+void layout_refresh(Layout *layout, int offset)
 {
   Container *c = layout->root;
   c->size = layout_size();
-  c->size.lnum--;  //cmdline, status
+  c->size.lnum -= (1+offset);  //1:cmdline, status. 2:offset/menu
   c->ofs = (pos_T){0,0};
-  resize_container(c);
-}
-
-void layout_shift(Layout *layout, int lines)
-{
-  Container *c = layout->root;
-  c->size.lnum += lines;
   resize_container(c);
 }
 

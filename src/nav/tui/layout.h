@@ -20,8 +20,7 @@ void layout_swap(Layout *layout, enum move_dir dir);
 Buffer* layout_buf(Layout *layout);
 
 void layout_set_status(Layout *layout, char *, char *, char *);
-void layout_refresh(Layout *layout);
-void layout_shift(Layout *layout, int lines);
+void layout_refresh(Layout *layout, int);
 
 pos_T layout_size();
 

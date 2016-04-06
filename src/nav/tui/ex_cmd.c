@@ -169,13 +169,10 @@ static void cmdline_draw()
 
 void cmdline_resize()
 {
-  log_err("EXCMD", "refresh");
-  if (ex_state == EX_OFF_STATE)
-    return;
-  menu_resize(menu);
   pos_T max = layout_size();
   delwin(nc_win);
   nc_win = newwin(1, 0, max.lnum - 1, 0);
+  menu_resize(menu);
 }
 
 void cmdline_refresh()
@@ -236,11 +233,11 @@ void ex_cmd_populate(const char *newline)
     ex_cmd_pop(-1);
     menu_rebuild(menu);
   }
-  free(line);
-  if (strlen(newline) < 1)
-    line = calloc(maxpos, sizeof(char*));
-  else
-    line = strdup(newline);
+
+  int len = strlen(newline);
+  if (strlen(newline) >= maxpos)
+    line = realloc(line, maxpos = (2*maxpos)+len);
+  strcpy(line, newline);
 
   curpos = cell_len(line);
 }
