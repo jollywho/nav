@@ -81,6 +81,8 @@ void regex_build(LineMatch *lm, const char *line)
       free(gcomp);
     gcomp = strdup(line);
   }
+  if (!gcomp)
+    return;
   lm->gcomp = gcomp;
 
   regex_compile(gcomp, &pcre, &extra);
@@ -176,15 +178,8 @@ static int focus_cur_line(LineMatch *lm)
   return lm->pivot_top + lm->pivot_lnum;
 }
 
-static int line_diff(int to, int from)
+static void ensure_global_match(LineMatch *lm)
 {
-  return to - from;
-}
-
-static void get_or_make_matches(LineMatch *lm)
-{
-  if (!lm->gcomp)
-    return;
   if (!lm->lines || lm->gcomp != gcomp) {
     regex_mk_pivot(lm);
     regex_build(lm, NULL);
@@ -202,11 +197,11 @@ static int* nearest_next_match(UT_array *matches, int line)
   return it;
 }
 
-static void regex_focus(LineMatch *lm, int to, int from)
+static void regex_focus(LineMatch *lm, int to)
 {
   log_msg("REGEX", "regex_focus");
   Buffer *buf = lm->hndl->buf;
-  int dif = line_diff(to, buf_index(buf));
+  int dif = to - buf_index(buf);
   if (dif != 0)
     buf_move(buf, dif, 0);
 }
@@ -236,11 +231,11 @@ void regex_hover(LineMatch *lm)
 
   int *ret = nearest_next_match(lm->lines, line);
   if (ret)
-    regex_focus(lm, *ret, line);
+    regex_focus(lm, *ret);
   else {
     ret = (int*)utarray_next(lm->lines, ret); \
     ret = ret ? ret : (int*)utarray_next(lm->lines, ret);
-    regex_focus(lm, *ret, line);
+    regex_focus(lm, *ret);
   }
 }
 
@@ -249,11 +244,14 @@ void regex_hover(LineMatch *lm)
 void regex_next(LineMatch *lm, int line, int dir)
 {
   log_msg("REGEX", "regex_next");
-  get_or_make_matches(lm);
+  ensure_global_match(lm);
   if (!lm->lines || utarray_len(lm->lines) < 1)
     return;
 
   int *ret = nearest_next_match(lm->lines, line);
+  if (!ret)
+    ret = (int*)utarray_front(lm->lines);
+
   if (ret && *ret == line) {
     if (gregsign * dir > 0) {
       ret = (int*)utarray_next(lm->lines, ret); \
@@ -264,5 +262,6 @@ void regex_next(LineMatch *lm, int line, int dir)
       ret = ret ? ret : (int*)utarray_prev(lm->lines, ret);
     }
   }
-  regex_focus(lm, *ret, line);
+  if (ret)
+    regex_focus(lm, *ret);
 }
