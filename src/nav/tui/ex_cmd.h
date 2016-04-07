@@ -52,4 +52,6 @@ char* ex_cmd_line();
 void ex_cmd_push(fn_context *cx, int *);
 cmd_part* ex_cmd_pop(int count);
 
+int ex_cmd_height();
+
 #endif

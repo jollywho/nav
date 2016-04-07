@@ -106,9 +106,7 @@ void sigwinch_handler(int sig)
   endwin();
   refresh();
   clear();
-  cmdline_resize();
-  int offset = (win.ex * (get_opt_int("menu_rows")+1));
-  layout_refresh(&win.layout, offset);
+  window_refresh();
   refresh();
   event_wakeup();
   window_update(&win.draw_timer);
@@ -159,6 +157,12 @@ void window_cleanup(void)
   layout_cleanup(&win.layout);
   buf_cleanup();
   plugin_cleanup();
+}
+
+void window_refresh()
+{
+  cmdline_resize();
+  layout_refresh(&win.layout, ex_cmd_height());
 }
 
 static Cmdret win_shut()
@@ -434,8 +438,6 @@ static void window_ex_cmd(Window *_w, Keyarg *arg)
   if (!window_focus_attached() && arg->arg == EX_REG_STATE)
     return;
   win.ex = true;
-  int offset = (win.ex * (get_opt_int("menu_rows")+1));
-  layout_refresh(&win.layout, offset);
   start_ex_cmd(arg->key, arg->arg);
 }
 
@@ -449,7 +451,6 @@ static void window_reg_cmd(Window *_w, Keyarg *arg)
 void window_ex_cmd_end()
 {
   win.ex = false;
-  layout_refresh(&win.layout, win.ex);
 }
 
 void window_draw(void **argv)

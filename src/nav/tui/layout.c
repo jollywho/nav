@@ -338,7 +338,7 @@ void layout_refresh(Layout *layout, int offset)
 {
   Container *c = layout->root;
   c->size = layout_size();
-  c->size.lnum -= (1+offset);  //1:cmdline, status. 2:offset/menu
+  c->size.lnum -= offset;
   c->ofs = (pos_T){0,0};
   resize_container(c);
 }

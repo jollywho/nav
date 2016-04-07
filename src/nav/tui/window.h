@@ -7,6 +7,7 @@
 void window_init(void);
 void window_cleanup(void);
 void window_req_draw(void *obj, argv_callback);
+void window_refresh();
 void window_input(int key, char[7]);
 
 void window_add_buffer(enum move_dir);

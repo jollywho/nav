@@ -84,8 +84,9 @@ void start_ex_cmd(char symbol, int state)
   log_msg("EXCMD", "start");
   ex_state = state;
   state_symbol = symbol;
+  window_refresh();
+
   pos_T max = layout_size();
-  nc_win = newwin(1, 0, max.lnum - 1, 0);
   curpos = 0;
   maxpos = max.col - 2;
   mflag = 0;
@@ -125,12 +126,12 @@ void stop_ex_cmd()
     werase(nc_win);
     wnoutrefresh(nc_win);
   }
-  delwin(nc_win);
   curs_set(0);
   doupdate();
   ex_state = EX_OFF_STATE;
   window_ex_cmd_end();
   cmd_flush();
+  window_refresh();
 }
 
 static void str_ins(char *str, const char *ins, int pos, int ofs)
@@ -567,4 +568,12 @@ int ex_cmd_curidx(List *list)
   int st = part->st;
   int ed = curpos + 1;
   return utarray_eltidx(list->items, list_tokbtwn(list, st, ed));
+}
+
+int ex_cmd_height()
+{
+  int height = 1;
+  if (ex_state == EX_CMD_STATE)
+    height += get_opt_int("menu_rows") + 1;
+  return height;
 }
