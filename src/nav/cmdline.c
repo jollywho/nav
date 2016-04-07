@@ -532,7 +532,7 @@ void cmdline_build(Cmdline *cmdline, char *line)
 
 int cmdline_can_exec(Cmdstr *cmd, char *line)
 {
-  return !(!cmd->exec || strlen(line) < 2);
+  return !(!cmd->exec || !line || strlen(line) < 2);
 }
 
 static void do_pipe(Cmdstr *lhs, Cmdstr *rhs)

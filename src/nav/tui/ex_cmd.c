@@ -399,7 +399,6 @@ static void ex_onkey()
   else {
     if (window_focus_attached() && curpos > 0) {
       regex_build(lm, line);
-      regex_pivot(lm);
       regex_hover(lm);
     }
   }

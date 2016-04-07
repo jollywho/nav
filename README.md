@@ -36,10 +36,6 @@ $ make
 $ sudo make install
 ```
 
-## Configuration
-
-Copy the sample config from `/etc/nav/navrc` to `~/.navrc` or `~/.nav/.navrc`.
-
 ## Image Display
 
 With w3mimgdisplay installed
@@ -52,6 +48,10 @@ With w3mimgdisplay installed
 ## Contributing
 
 ...is much welcome.
+
+## Non Goals
+
+Text editor
 
 ## Future
 

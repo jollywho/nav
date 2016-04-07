@@ -205,7 +205,10 @@ static int* nearest_next_match(UT_array *matches, int line)
 static void regex_focus(LineMatch *lm, int to, int from)
 {
   log_msg("REGEX", "regex_focus");
-  buf_move(lm->hndl->buf, line_diff(to, from), 0);
+  Buffer *buf = lm->hndl->buf;
+  int dif = line_diff(to, buf_index(buf));
+  if (dif != 0)
+    buf_move(buf, dif, 0);
 }
 
 void regex_pivot(LineMatch *lm)
@@ -226,8 +229,10 @@ void regex_hover(LineMatch *lm)
 {
   int line = focus_cur_line(lm);
 
-  if (!lm->lines || utarray_len(lm->lines) < 1)
+  if (!lm->lines || utarray_len(lm->lines) < 1) {
+    regex_pivot(lm);
     return;
+  }
 
   int *ret = nearest_next_match(lm->lines, line);
   if (ret)
