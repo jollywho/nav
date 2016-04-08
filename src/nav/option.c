@@ -13,7 +13,7 @@ enum opt_type { OPTION_STRING, OPTION_INT, OPTION_UINT };
 static char *default_groups[] = {
   "BufSelActive", "BufSelInactive", "ComplSelected",
   "BufText", "BufDir", "BufSz", "OverlaySep",
-  "OverlayLine", "OverlayBufNo", "OverlayInactiveBufNo", "OverlayActive",
+  "OverlayLine", "OverlayBufNo", "OverlayActive",
   "OverlayArgs", "OverlayInactive", "OverlayTextInactive", "ComplText",
   "MsgError", "MsgMessage", "MsgAsk",
 };

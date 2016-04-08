@@ -23,7 +23,8 @@ char* model_str_line(Model *m, int index);
 void* model_fld_line(Model *m, const char *fld, int index);
 void* model_curs_value(Model *m, const char *fld);
 fn_rec* model_rec_line(Model *m, int index);
-void model_set_curs(Model *m, int index);
+bool model_issel_line(Model *m, int index);
+void model_set_curs(Model *m, int index, bool sel);
 int model_count(Model *m);
 
 char* model_str_expansion(char* val, char *key);

@@ -17,6 +17,7 @@ static void buf_mv_page();
 static void buf_mv();
 static void buf_search();
 static void buf_gen_event();
+static void buf_toggle_sel();
 static void buf_draw(void **);
 
 /* BUF_GEN_EVENTS */
@@ -38,6 +39,7 @@ static fn_key key_defaults[] = {
   {'k',     buf_mv,          0,           BACKWARD},
   {'g',     oper,            NCH_S,       BACKWARD},
   {'G',     buf_g,           0,           FORWARD},
+  {'V',     buf_toggle_sel,  0,           FORWARD},
   {'y',     oper,            NCH,         OP_YANK},
   {'d',     oper,            NCH,         OP_DELETE},
   {'m',     oper,            NCH_A,       OP_MARK},
@@ -225,20 +227,26 @@ static void draw_lines(Buffer *buf, Model *m)
 
     readable_fs(rec_stsize(rec), szbuf);
 
+    attr_t attr = A_NORMAL;
+    if (model_issel_line(m, buf->top + i))
+      attr = A_REVERSE;
+
     int max = MAX_POS(buf->b_size.col);
     draw_wide(buf->nc_win, i, 0, it, max - 1);
 
     if (isrecdir(rec)) {
-      mvwchgat(buf->nc_win, i, 0, -1, A_NORMAL, buf->col_dir, NULL);
-      DRAW_STR(buf, nc_win, i, buf->b_size.col - 1, "/", col_sz);
+      mvwchgat(buf->nc_win, i, 0, -1, attr, buf->col_dir, NULL);
+      draw_wide(buf->nc_win, i, buf->b_size.col - 1, "/", SZ_LEN);
+      mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, attr, buf->col_sz, NULL);
     }
     else {
-      // TODO: show item count when type is directory
       int col = get_syn_colpair(file_ext(it));
-      mvwchgat(buf->nc_win, i, 0, -1, A_NORMAL, col, NULL);
-      DRAW_STR(buf, nc_win, i, 2+max, szbuf, col_sz);
-      mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, A_NORMAL, buf->col_text,0);
+      mvwchgat(buf->nc_win, i, 0, -1, attr, col, NULL);
+      draw_wide(buf->nc_win, i, 2+max, szbuf, SZ_LEN);
+      mvwchgat(buf->nc_win, i, 2+max, -1, attr, buf->col_sz, NULL);
+      mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, attr, buf->col_text,0);
     }
+
   }
 }
 
@@ -270,7 +278,7 @@ void buf_draw(void **argv)
 static void buf_curs_move(Buffer *buf, Model *m)
 {
   char *curval = model_str_line(m, buf->top + buf->lnum);
-  model_set_curs(m, buf->top + buf->lnum);
+  model_set_curs(m, buf->top + buf->lnum, buf->sel);
   buf_refresh(buf);
   send_hook_msg("cursor_change", buf->plugin, NULL, &(HookArg){NULL,curval});
 }
@@ -281,7 +289,7 @@ void buf_move_invalid(Buffer *buf, int index, int lnum)
   buf->top = index;
   buf->lnum = lnum;
   buf_curs_move(buf, m);
-  model_set_curs(m, buf->top + buf->lnum);
+  model_set_curs(m, buf->top + buf->lnum, buf->sel);
 }
 
 void buf_full_invalidate(Buffer *buf, int index, int lnum)
@@ -437,6 +445,15 @@ static void buf_gen_event(Buffer *buf, Keyarg *ca)
   if (ca->arg > LENGTH(buf_events) || ca->arg < 0)
     return;
   send_hook_msg(buf_events[ca->arg], buf->plugin, NULL, NULL);
+}
+
+static void buf_toggle_sel(Buffer * buf, Keyarg *ca)
+{
+  log_msg("BUFFER", "buf_toggle_sel");
+  buf->sel = !buf->sel;
+  if (!buf->sel)
+    return;
+  log_msg("BUFFER", "cont");
 }
 
 void buf_sort(Buffer *buf, char *fld, int flags)

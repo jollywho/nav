@@ -29,12 +29,12 @@ struct Overlay {
   char name[SZ_NAMEBOX];
   char lineno[SZ_LNUMBOX];
 
-  short color_namebox;
-  short color_argsbox;
-  short color_sep;
-  short color_line;
-  short color_text;
-  short color_bufno;
+  short col_name;
+  short col_arg;
+  short col_sep;
+  short col_line;
+  short col_text;
+  short col_bufno;
 };
 
 Overlay* overlay_new()
@@ -43,12 +43,12 @@ Overlay* overlay_new()
   memset(ov, 0, sizeof(Overlay));
   ov->nc_st = newwin(1,1,0,0);
   ov->nc_sep = newwin(1,1,0,0);
-  ov->color_sep = attr_color("OverlaySep");
-  ov->color_line = attr_color("OverlayLine");
-  ov->color_text = attr_color("OverlayLine");
-  ov->color_namebox = attr_color("OverlayActive");
-  ov->color_argsbox = attr_color("OverlayArgs");
-  ov->color_bufno = attr_color("OverlayBufNo");
+  ov->col_sep = attr_color("OverlaySep");
+  ov->col_line = attr_color("OverlayLine");
+  ov->col_text = attr_color("OverlayLine");
+  ov->col_name = attr_color("OverlayActive");
+  ov->col_arg = attr_color("OverlayArgs");
+  ov->col_bufno = attr_color("OverlayBufNo");
   ov->usr_arg = strdup("         ");
   overlay_bufno(ov, 0);
 
@@ -123,17 +123,15 @@ void overlay_erase(Overlay *ov)
 
 void overlay_focus(Overlay *ov)
 {
-  ov->color_namebox = attr_color("OverlayActive");
-  ov->color_bufno = attr_color("OverlayBufNo");
-  ov->color_text = attr_color("OverlayLine");
+  ov->col_name = attr_color("OverlayActive");
+  ov->col_text = attr_color("OverlayLine");
   overlay_refresh(ov);
 }
 
 void overlay_unfocus(Overlay *ov)
 {
-  ov->color_namebox = attr_color("OverlayInactive");
-  ov->color_bufno = attr_color("OverlayInactiveBufNo");
-  ov->color_text = attr_color("OverlayTextInactive");
+  ov->col_name = attr_color("OverlayInactive");
+  ov->col_text = attr_color("OverlayTextInactive");
   overlay_refresh(ov);
 }
 
@@ -164,7 +162,8 @@ void overlay_lnum(Overlay *ov, int lnum, int max)
 {
   snprintf(ov->lineno, SZ_LNUMBOX, " %*d:%-*d ", 3, lnum+1, 3, max);
   int pos = ST_LNUMBOX(ov->ov_size.col) - 2;
-  DRAW_STR(ov, nc_st, 0, pos, ov->lineno, color_namebox);
+  draw_wide(ov->nc_st, 0, pos, ov->lineno, SZ_ARGSBOX+1);
+  mvwchgat (ov->nc_st, 0, pos, -1, A_NORMAL, ov->col_name, NULL);
   wnoutrefresh(ov->nc_st);
 }
 
@@ -187,28 +186,33 @@ void overlay_draw(void **argv)
     return;
   ov->queued = false;
 
-  DRAW_STR(ov, nc_st, 0, 0, ov->bufno, color_bufno);
-  DRAW_STR(ov, nc_st, 0, SZ_BUFBOX-1, ov->name, color_namebox);
+  draw_wide(ov->nc_st, 0, 0, ov->bufno, SZ_BUFBOX+1);
+  mvwchgat (ov->nc_st, 0, 0, SZ_BUFBOX+1, A_NORMAL, ov->col_bufno, NULL);
 
-  wattron(ov->nc_st, COLOR_PAIR(ov->color_line));
+  draw_wide(ov->nc_st, 0, SZ_BUFBOX-1, ov->name, SZ_NAMEBOX+1);
+  mvwchgat (ov->nc_st, 0, SZ_BUFBOX-1, SZ_NAMEBOX+1, A_NORMAL, ov->col_name, NULL);
+
+  wattron(ov->nc_st, COLOR_PAIR(ov->col_line));
   mvwhline(ov->nc_st, 0, SZ_NAMEBOX-1, ' ', ov->ov_size.col);
-  wattroff(ov->nc_st, COLOR_PAIR(ov->color_line));
+  wattroff(ov->nc_st, COLOR_PAIR(ov->col_line));
 
   if (ov->separator) {
-    wattron(ov->nc_sep, COLOR_PAIR(ov->color_sep));
+    wattron(ov->nc_sep, COLOR_PAIR(ov->col_sep));
     int i;
     for (i = 0; i < ov->ov_size.lnum; i++) {
       mvwaddstr(ov->nc_sep, i, 0, SEPCHAR);
     }
-    wattroff(ov->nc_sep, COLOR_PAIR(ov->color_sep));
-    DRAW_CH(ov, nc_sep, i, 0, ' ', color_line);
+    wattroff(ov->nc_sep, COLOR_PAIR(ov->col_sep));
+    DRAW_CH(ov, nc_sep, i, 0, ' ', col_line);
   }
 
   //TODO: if usr_arg exceeds SZ_USR() then compress /*/*/ to fit
-  int max = ST_LNUMBOX(ov->ov_size.col) - 2;
+  int pos = ST_LNUMBOX(ov->ov_size.col) - 2;
   draw_wide(ov->nc_st, 0, ST_USRARG(), ov->usr_arg, SZ_USR(ov->ov_size.col));
-  mvwchgat (ov->nc_st, 0, ST_USRARG(), max, A_NORMAL, ov->color_text, NULL);
-  DRAW_STR(ov, nc_st, 0, max, ov->lineno, color_namebox);
+  mvwchgat (ov->nc_st, 0, ST_USRARG(), pos, A_NORMAL, ov->col_text, NULL);
+
+  draw_wide(ov->nc_st, 0, pos, ov->lineno, SZ_ARGSBOX+1);
+  mvwchgat (ov->nc_st, 0, pos, -1, A_NORMAL, ov->col_name, NULL);
 
   wnoutrefresh(ov->nc_st);
   if (ov->separator)

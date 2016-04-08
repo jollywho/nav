@@ -23,13 +23,6 @@
     wattroff((obj)->win, COLOR_PAIR((obj)->color)); \
   } while (0)
 
-#define DRAW_STR(obj,win,ln,col,str,color)          \
-  do {                                              \
-    wattron((obj)->win, COLOR_PAIR((obj)->color));  \
-    mvwaddstr((obj)->win, ln, col, str);            \
-    wattroff((obj)->win, COLOR_PAIR((obj)->color)); \
-  } while (0)
-
 #define SWAP_ALLOC_PTR(a,b)   \
   do {                        \
     char *_tmp_str = (b);    \

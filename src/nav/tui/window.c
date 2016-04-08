@@ -103,6 +103,7 @@ static char *cur_dir;
 void sigwinch_handler(int sig)
 {
   log_msg("WINDOW", "Signal received: **term resize**");
+  //TODO: workaround to avoid flicker at startup
   endwin();
   refresh();
   clear();

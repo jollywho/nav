@@ -25,6 +25,7 @@ struct Buffer {
   bool del;
   bool attached;
   bool nodraw;
+  bool sel;
 
   short col_focus;
   short col_text;
