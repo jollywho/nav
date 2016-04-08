@@ -299,7 +299,6 @@ static void ex_bckspc()
 
 static void ex_killword()
 {
-  //FIXME: regex_state does not build cmdline
   Token *last = cmdline_last(&cmd);
   if (!last)
     return;
@@ -390,13 +389,14 @@ static void check_new_state()
 static void ex_onkey()
 {
   log_msg("EXCMD", "##%d", ex_cmd_state());
+  cmdline_cleanup(&cmd);
+  cmdline_build(&cmd, line);
+
   if (ex_state == EX_CMD_STATE) {
-    cmdline_cleanup(&cmd);
-    cmdline_build(&cmd, line);
     check_new_state();
     menu_update(menu, &cmd);
   }
-  else {
+  if (ex_state == EX_REG_STATE) {
     if (window_focus_attached() && curpos > 0) {
       regex_build(lm, line);
       regex_hover(lm);
