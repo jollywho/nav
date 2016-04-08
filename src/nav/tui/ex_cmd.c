@@ -45,7 +45,7 @@ struct Ex_cmd {
   int ex_state;
   int col_text;
   int col_symb;
-  int mflag;
+  int inrstate;
 };
 
 static fn_key key_defaults[] = {
@@ -93,7 +93,7 @@ void start_ex_cmd(char symbol, int state)
   pos_T max = layout_size();
   ex.curpos = 0;
   ex.maxpos = max.col - 2;
-  ex.mflag = 0;
+  ex.inrstate = 0;
   ex.col_text = attr_color("ComplText");
   ex.col_symb = attr_color("BufText");
 
@@ -191,7 +191,7 @@ static void ex_esc()
     regex_pivot(ex.lm);
 
   hist_save();
-  ex.mflag = EX_QUIT;
+  ex.inrstate = EX_QUIT;
 }
 
 static void ex_tab(void *none, Keyarg *arg)
@@ -215,7 +215,7 @@ static void ex_tab(void *none, Keyarg *arg)
   ex.line[ex.curpos] = ' ';
   strcpy(&ex.line[st], key);
   ex.curpos = cell_len(ex.line);
-  ex.mflag = EX_CYCLE;
+  ex.inrstate = EX_CYCLE;
 }
 
 static void ex_hist(void *none, Keyarg *arg)
@@ -228,7 +228,7 @@ static void ex_hist(void *none, Keyarg *arg)
     ret = hist_next();
   if (ret) {
     ex_cmd_populate(ret);
-    ex.mflag = EX_HIST;
+    ex.inrstate = EX_HIST;
   }
 }
 
@@ -255,14 +255,14 @@ static void ex_car()
   }
 
   hist_save();
-  ex.mflag = EX_QUIT;
+  ex.inrstate = EX_QUIT;
 }
 
 static void ex_spc()
 {
   log_msg("EXCMD", "ex_spc");
-  ex.mflag |= EX_RIGHT;
-  ex.mflag &= ~(EX_FRESH|EX_NEW);
+  ex.inrstate |= EX_RIGHT;
+  ex.inrstate &= ~(EX_FRESH|EX_NEW);
 
   if (ex.curpos + 1 >= ex.maxpos) {
     ex.line = realloc(ex.line, ex.maxpos *= 2);
@@ -290,15 +290,15 @@ static void ex_bckspc()
     free(nline);
   }
 
-  ex.mflag |= EX_LEFT;
+  ex.inrstate |= EX_LEFT;
   if (ex.curpos < 0)
     ex.curpos = 0;
 
   if (ex.ex_state == EX_CMD_STATE) {
     if (ex.curpos < ex.cmd_stack[ex.curpart]->st)
-      ex.mflag |= EX_EMPTY;
+      ex.inrstate |= EX_EMPTY;
   }
-  ex.mflag &= ~EX_FRESH;
+  ex.inrstate &= ~EX_FRESH;
 }
 
 static void ex_killword()
@@ -326,7 +326,7 @@ static void ex_killline()
     ex_cmd_pop(-1);
     menu_restart(ex.menu);
   }
-  ex.mflag = 0;
+  ex.inrstate = 0;
 }
 
 void ex_cmdinvert()
@@ -355,31 +355,31 @@ static void ex_menuhints()
 static void ex_menu_mv(void *none, Keyarg *arg)
 {
   menu_mv(ex.menu, arg->arg);
-  ex.mflag = EX_CYCLE;
+  ex.inrstate = EX_CYCLE;
 }
 
 static void ex_check_pipe()
 {
   Cmdstr *cur = ex_cmd_curcmd();
   if (cur && cur->exec) {
-    ex.mflag = EX_EXEC;
+    ex.inrstate = EX_EXEC;
     return;
   }
-  if (ex.mflag & EX_EXEC) {
+  if (ex.inrstate & EX_EXEC) {
     ex_cmd_pop(-1);
     menu_restart(ex.menu);
-    ex.mflag = 0;
+    ex.inrstate = 0;
   }
   Cmdstr *prev = ex_cmd_prevcmd();
   if (prev && prev->flag) {
     menu_restart(ex.menu);
-    ex.mflag = 0;
+    ex.inrstate = 0;
   }
 }
 
 static void check_new_state()
 {
-  if ((ex.mflag & (EX_FRESH|EX_HIST)))
+  if ((ex.inrstate & (EX_FRESH|EX_HIST)))
     return;
   ex_check_pipe();
 
@@ -387,7 +387,7 @@ static void check_new_state()
   if (!tok)
     return;
   if (ex.curpos > tok->end && ex.curpos > 0)
-    ex.mflag |= EX_NEW;
+    ex.inrstate |= EX_NEW;
 }
 
 static void ex_onkey()
@@ -406,7 +406,7 @@ static void ex_onkey()
       regex_hover(ex.lm);
     }
   }
-  ex.mflag &= ~EX_CLEAR;
+  ex.inrstate &= ~EX_CLEAR;
   window_req_draw(NULL, NULL);
 }
 
@@ -422,8 +422,8 @@ void ex_input(int key, char utf8[7])
   if (idx >= 0)
     key_defaults[idx].cmd_func(NULL, &ca);
   else {
-    ex.mflag |= EX_RIGHT;
-    ex.mflag &= ~(EX_FRESH|EX_NEW);
+    ex.inrstate |= EX_RIGHT;
+    ex.inrstate &= ~(EX_FRESH|EX_NEW);
 
     char instr[7] = {0,0};
     if (!utf8)
@@ -440,7 +440,7 @@ void ex_input(int key, char utf8[7])
     ex.curpos += len;
   }
 
-  if (ex.mflag & EX_QUIT)
+  if (ex.inrstate & EX_QUIT)
     stop_ex_cmd();
   else
     ex_onkey();
@@ -468,8 +468,8 @@ void ex_cmd_push(fn_context *cx, int *save)
   if (save)
     st = *save;
   ex.cmd_stack[ex.curpart]->st = st;
-  ex.mflag &= ~EX_NEW;
-  ex.mflag |= EX_FRESH;
+  ex.inrstate &= ~EX_NEW;
+  ex.inrstate |= EX_FRESH;
 }
 
 cmd_part* ex_cmd_pop(int count)
@@ -530,7 +530,7 @@ char* ex_cmd_curstr()
 
 int ex_cmd_state()
 {
-  return ex.mflag;
+  return ex.inrstate;
 }
 
 Cmdstr* ex_cmd_prevcmd()

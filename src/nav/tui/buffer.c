@@ -395,6 +395,7 @@ void buf_yank(void *_b, Keyarg *ca)
   else if (ca->key != 'y')
     return;
 
+  //TODO: iterate selection into \n delimited string
   char *val = model_curs_value(h->model, "fullpath");
   char *shw = model_curs_value(h->model, field);
   reg_set(NUL, val, shw);
