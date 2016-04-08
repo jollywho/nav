@@ -3,7 +3,8 @@
 #include "nav/log.h"
 
 typedef struct {
-  int origin;
+  int orgn_lnum;
+  int orgn_index;
   int *lines;
   int max;
   bool enabled;
@@ -13,7 +14,7 @@ typedef struct {
 
 static Select sel;
 
-void select_toggle(int cur, int max)
+void select_toggle(int lnum, int index, int max)
 {
   log_msg("SELECT", "toggle");
   sel.enabled = !sel.enabled;
@@ -22,12 +23,14 @@ void select_toggle(int cur, int max)
   if (!sel.active)
     sel.lines = calloc(max, sizeof(int));
 
-  sel.aditv = !sel.lines[cur];
+  int idx = lnum + index;
+  sel.aditv = !sel.lines[idx];
 
   sel.max = max;
   sel.active = true;
-  sel.origin = cur;
-  sel.lines[cur] = 1;
+  sel.orgn_lnum = lnum;
+  sel.orgn_index = index;
+  sel.lines[idx] = 1;
 }
 
 void select_clear()
@@ -50,9 +53,10 @@ void select_enter(int idx)
     return;
 
   bool enable = sel.aditv;
+  int orgn = sel.orgn_lnum + sel.orgn_index;
 
-  int st = MIN(idx, sel.origin);
-  int ed = MAX(idx, sel.origin);
+  int st = MIN(idx, orgn);
+  int ed = MAX(idx, orgn);
 
   for (int i = 0; i < st; i++)
     sel.lines[i] = !enable;
@@ -60,6 +64,20 @@ void select_enter(int idx)
     sel.lines[i] = enable;
   for (int i = ed; i < sel.max; i++)
     sel.lines[i] = !enable;
+}
+
+bool select_alt_origin(int *lnum, int *index)
+{
+  if (!select_active())
+    return false;
+
+  int lnum_was   = sel.orgn_lnum;
+  int index_was  = sel.orgn_index;
+  sel.orgn_lnum  = *lnum;
+  sel.orgn_index = *index;
+  *lnum  = lnum_was;
+  *index = index_was;
+  return true;
 }
 
 bool select_has_line(int idx)

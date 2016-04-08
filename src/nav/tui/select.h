@@ -3,10 +3,11 @@
 
 #include "nav/nav.h"
 
-void select_toggle(int cur, int max);
+void select_toggle(int lnum, int index, int max);
 void select_clear();
 bool select_active();
 void select_enter(int idx);
+bool select_alt_origin(int *lnum, int *index);
 bool select_has_line(int idx);
 
 #endif

@@ -19,6 +19,7 @@ static void buf_mv();
 static void buf_search();
 static void buf_gen_event();
 static void buf_toggle_sel();
+static void buf_alt_origin();
 static void buf_esc();
 static void buf_draw(void **);
 
@@ -42,7 +43,8 @@ static fn_key key_defaults[] = {
   {'k',     buf_mv,          0,           BACKWARD},
   {'g',     oper,            NCH_S,       BACKWARD},
   {'G',     buf_g,           0,           FORWARD},
-  {'V',     buf_toggle_sel,  0,           FORWARD},
+  {'V',     buf_toggle_sel,  0,           0},
+  {'o',     buf_alt_origin,  0,           0},
   {'y',     oper,            NCH,         OP_YANK},
   {'d',     oper,            NCH,         OP_DELETE},
   {'m',     oper,            NCH_A,       OP_MARK},
@@ -451,13 +453,22 @@ static void buf_gen_event(Buffer *buf, Keyarg *ca)
   send_hook_msg(buf_events[ca->arg], buf->plugin, NULL, NULL);
 }
 
-static void buf_toggle_sel(Buffer * buf, Keyarg *ca)
+static void buf_toggle_sel(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_toggle_sel");
-  select_toggle(buf_index(buf), model_count(buf->hndl->model));
+  select_toggle(buf->lnum, buf->top, model_count(buf->hndl->model));
 }
 
-static void buf_esc(Buffer * buf, Keyarg *ca)
+static void buf_alt_origin(Buffer *buf, Keyarg *ca)
+{
+  log_msg("BUFFER", "buf_alt_origin");
+  log_msg("BUFFER", "is %d %d", buf->lnum, buf->top);
+  if (select_alt_origin(&buf->lnum, &buf->top))
+    buf_move_invalid(buf, buf->top, buf->lnum);
+  log_msg("BUFFER", "now %d %d", buf->lnum, buf->top);
+}
+
+static void buf_esc(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_esc");
   select_clear();
