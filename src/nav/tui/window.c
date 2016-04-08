@@ -353,7 +353,7 @@ Cmdret win_new(List *args, Cmdarg *ca)
   if (!plugin_requires_buf(name))
     return NORET;
 
-  if (!(ca->pflag & BUFFER))
+  if (!(ca->bflag & BUFFER))
     window_add_buffer(ca->flags);
 
   char *path_arg = cmdline_line_from(ca->cmdline, 2);
@@ -368,7 +368,7 @@ Cmdret win_close(List *args, Cmdarg *ca)
   if (buf)
     plugin_close(buf_plugin(buf));
 
-  if (!(ca->pflag & BUFFER) && buf)
+  if (!(ca->bflag & BUFFER) && buf)
     window_remove_buffer();
   else if (buf)
     buf_detach(buf);
@@ -382,7 +382,7 @@ Cmdret win_buf(List *args, Cmdarg *ca)
   if (!name || layout_is_root(&win.layout))
     return NORET;
 
-  ca->pflag = BUFFER;
+  ca->bflag = BUFFER;
   win_close(args, ca);
   win_new(args, ca);
   return NORET;
@@ -391,7 +391,7 @@ Cmdret win_buf(List *args, Cmdarg *ca)
 Cmdret win_bdel(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_bdel");
-  ca->pflag = BUFFER;
+  ca->bflag = BUFFER;
   win_close(args, ca);
   return NORET;
 }

@@ -290,6 +290,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
   }
 }
 
+#ifdef PIPES_SUPPORTED
 static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)
 {
   Token *nword = (Token*)utarray_next(cmdline->tokens, word);
@@ -314,6 +315,7 @@ static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)
   (*cmd).flag = PIPE;
   return word;
 }
+#endif
 
 void check_if_exec(Cmdline *cmdline, Cmdstr *cmd, Token *word)
 {
@@ -455,9 +457,11 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
     char *str = token_val(word, VAR_STRING);
 
     switch(ch = str[0]) {
-      //case '|':
-      //  word = pipe_type(cmdline, word, &cmd);
-      //  goto breakout;
+#ifdef PIPES_SUPPORTED
+      case '|':
+        word = pipe_type(cmdline, word, &cmd);
+        goto breakout;
+#endif
       case '!':
         cmd.rev = 1;
         break;
@@ -535,56 +539,61 @@ int cmdline_can_exec(Cmdstr *cmd, char *line)
   return !(!cmd->exec || !line || strlen(line) < 2);
 }
 
+#ifdef PIPES_SUPPORTED
 static void do_pipe(Cmdstr *lhs, Cmdstr *rhs)
 {
-  //log_msg("CMDLINE", "do_pipe");
-  //if ((lhs)->flag == PIPE_LEFT)
-  //  send_hook_msg("pipe_left", lhs->ret, rhs->ret, NULL);
-  //if ((lhs)->flag == PIPE_RIGHT)
-  //  send_hook_msg("pipe_right", rhs->ret, lhs->ret, NULL);
+  log_msg("CMDLINE", "do_pipe");
+  if ((lhs)->flag == PIPE_LEFT)
+    send_hook_msg("pipe_left", lhs->ret, rhs->ret, NULL);
+  if ((lhs)->flag == PIPE_RIGHT)
+    send_hook_msg("pipe_right", rhs->ret, lhs->ret, NULL);
 }
 
 static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd, Cmdstr *prev)
 {
-  //log_msg("CMDLINE", "exec_pipe");
-  //List *args = token_val(&cmd->args, VAR_LIST);
-  //char *arg = list_arg(args, 0, VAR_STRING);
+  log_msg("CMDLINE", "exec_pipe");
+  List *args = token_val(&cmd->args, VAR_LIST);
+  char *arg = list_arg(args, 0, VAR_STRING);
 
-  //if (!prev->ret) {
-  //  prev->ret = focus_plugin();
-  //  prev->ret_t = PLUGIN;
-  //}
+  if (!prev->ret) {
+    prev->ret = focus_plugin();
+    prev->ret_t = PLUGIN;
+  }
 
-  //if (prev->ret_t == PLUGIN && cmd->ret_t == PLUGIN)
-  //  return do_pipe(prev, cmd);
+  if (prev->ret_t == PLUGIN && cmd->ret_t == PLUGIN)
+    return do_pipe(prev, cmd);
 
-  //cmd->ret = plugin_open(arg, NULL, cmdline->line);
-  //log_msg("CMDLINE", "%p %d %p %d",
-  //    prev->ret,
-  //    prev->ret_t,
-  //    cmd->ret,
-  //    cmd->ret_t);
+  cmd->ret = plugin_open(arg, NULL, cmdline->line);
+  log_msg("CMDLINE", "%p %d %p %d",
+      prev->ret,
+      prev->ret_t,
+      cmd->ret,
+      cmd->ret_t);
 
-  //if (cmd->ret) {
-  //  cmd->ret_t = PLUGIN;
-  //  return do_pipe(prev, cmd);
-  //}
+  if (cmd->ret) {
+    cmd->ret_t = PLUGIN;
+    return do_pipe(prev, cmd);
+  }
 
-  //int wnum;
-  //if (!str_num(arg, &wnum))
-  //  return;
+  int wnum;
+  if (!str_num(arg, &wnum))
+    return;
 
-  //cmd->ret = plugin_from_id(wnum);
-  //if (cmd->ret) {
-  //  cmd->ret_t = PLUGIN;
-  //  return do_pipe(prev, cmd);
-  //}
+  cmd->ret = plugin_from_id(wnum);
+  if (cmd->ret) {
+    cmd->ret_t = PLUGIN;
+    return do_pipe(prev, cmd);
+  }
 }
+#endif
 
 void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
 {
   Cmdstr *cmd = NULL;
+#ifdef PIPES_SUPPORTED
   Cmdstr *prev = NULL;
+#endif
+
   if (!cmdline->cmds)
     return;
 
@@ -595,8 +604,10 @@ void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
     cmd->caller = caller;
     cmd_run(cmd, cmdline);
 
+#ifdef PIPES_SUPPORTED
     prev = (Cmdstr*)utarray_prev(cmdline->cmds, cmd);
-    //if (prev && (prev->flag & (PIPE_LEFT|PIPE_RIGHT)))
-    //  exec_pipe(cmdline, cmd, prev);
+    if (prev && (prev->flag & (PIPE_LEFT|PIPE_RIGHT)))
+      exec_pipe(cmdline, cmd, prev);
+#endif
   }
 }

@@ -20,14 +20,14 @@ struct Cmd_T {
   char *name;
   char *alt;
   Cmd_Func_T cmd_func;
-  int flags;
-  int bflags;
+  int flags;              /* cmd     flags */
+  int bflags;             /* builtin flags */
   UT_hash_handle hh;
 };
 
 struct Cmdarg {
-  int flags;
-  int pflag;
+  int flags;              /* cmd     flags */
+  int bflag;              /* builtin flags */
   Cmdstr *cmdstr;
   Cmdline *cmdline;
 };
