@@ -350,14 +350,14 @@ int find_command(fn_keytbl *kt, int cmdchar)
 
 int find_do_cmd(fn_keytbl *kt, Keyarg *ca, void *obj)
 {
-  if (ca->key == ESC) {
-    clearop(ca);
-    reg_clear_dcur();
+  if (op_pending(ca)) {
+    if (ca->key == ESC) {
+      clearop(ca);
+      reg_clear_dcur();
+    }
     return 0;
   }
 
-  if (op_pending(ca))
-    return 0;
   int idx = find_command(kt, ca->key);
   if (idx >= 0) {
     ca->arg  = kt->tbl[idx].cmd_arg;

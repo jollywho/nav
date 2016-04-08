@@ -19,7 +19,6 @@ static void generate_lines(Model *m);
 
 struct fn_line {
   fn_rec *rec;
-  bool selected;
 };
 static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
 
@@ -369,7 +368,7 @@ static void generate_lines(Model *m)
   /* generate hash set of index,line. */
   ventry *it = m->head;
   for (int i = 0; i < tbl_ent_count(m->head); i++) {
-    fn_line ln = {0,0};
+    fn_line ln;
     ln.rec = it->rec;
     utarray_push_back(m->lines, &ln);
     it = it->next;
@@ -407,23 +406,15 @@ fn_rec* model_rec_line(Model *m, int index)
   return res->rec;
 }
 
-bool model_issel_line(Model *m, int index)
-{
-  fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
-  return res->selected;
-}
-
-void model_set_curs(Model *m, int index, bool sel)
+void model_set_curs(Model *m, int index)
 {
   log_msg("MODEL", "model_set_curs");
   if (!m->lines)
     return;
 
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
-  if (res) {
+  if (res)
     m->cur = res->rec;
-    res->selected = sel;
-  }
 }
 
 char* model_str_expansion(char *val, char *key)

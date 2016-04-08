@@ -1,6 +1,7 @@
 #include "nav/tui/buffer.h"
 #include "nav/tui/window.h"
 #include "nav/tui/overlay.h"
+#include "nav/tui/select.h"
 #include "nav/event/hook.h"
 #include "nav/ascii.h"
 #include "nav/log.h"
@@ -18,6 +19,7 @@ static void buf_mv();
 static void buf_search();
 static void buf_gen_event();
 static void buf_toggle_sel();
+static void buf_esc();
 static void buf_draw(void **);
 
 /* BUF_GEN_EVENTS */
@@ -31,6 +33,7 @@ static char *buf_events[] = {
 };
 
 static fn_key key_defaults[] = {
+  {ESC,     buf_esc,         0,           0},
   {Ctrl_J,  buf_mv_page,     0,           FORWARD},
   {Ctrl_K,  buf_mv_page,     0,           BACKWARD},
   {'n',     buf_search,      0,           FORWARD},
@@ -228,7 +231,7 @@ static void draw_lines(Buffer *buf, Model *m)
     readable_fs(rec_stsize(rec), szbuf);
 
     attr_t attr = A_NORMAL;
-    if (model_issel_line(m, buf->top + i))
+    if (select_has_line(buf->top + i))
       attr = A_REVERSE;
 
     int max = MAX_POS(buf->b_size.col);
@@ -278,7 +281,8 @@ void buf_draw(void **argv)
 static void buf_curs_move(Buffer *buf, Model *m)
 {
   char *curval = model_str_line(m, buf->top + buf->lnum);
-  model_set_curs(m, buf->top + buf->lnum, buf->sel);
+  model_set_curs(m, buf->top + buf->lnum);
+  select_enter(buf_index(buf));
   buf_refresh(buf);
   send_hook_msg("cursor_change", buf->plugin, NULL, &(HookArg){NULL,curval});
 }
@@ -289,7 +293,7 @@ void buf_move_invalid(Buffer *buf, int index, int lnum)
   buf->top = index;
   buf->lnum = lnum;
   buf_curs_move(buf, m);
-  model_set_curs(m, buf->top + buf->lnum, buf->sel);
+  model_set_curs(m, buf->top + buf->lnum);
 }
 
 void buf_full_invalidate(Buffer *buf, int index, int lnum)
@@ -450,10 +454,14 @@ static void buf_gen_event(Buffer *buf, Keyarg *ca)
 static void buf_toggle_sel(Buffer * buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_toggle_sel");
-  buf->sel = !buf->sel;
-  if (!buf->sel)
-    return;
-  log_msg("BUFFER", "cont");
+  select_toggle(buf_index(buf), model_count(buf->hndl->model));
+}
+
+static void buf_esc(Buffer * buf, Keyarg *ca)
+{
+  log_msg("BUFFER", "buf_esc");
+  select_clear();
+  buf_refresh(buf);
 }
 
 void buf_sort(Buffer *buf, char *fld, int flags)

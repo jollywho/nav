@@ -192,9 +192,8 @@ void overlay_draw(void **argv)
   draw_wide(ov->nc_st, 0, SZ_BUFBOX-1, ov->name, SZ_NAMEBOX+1);
   mvwchgat (ov->nc_st, 0, SZ_BUFBOX-1, SZ_NAMEBOX+1, A_NORMAL, ov->col_name, NULL);
 
-  wattron(ov->nc_st, COLOR_PAIR(ov->col_line));
   mvwhline(ov->nc_st, 0, SZ_NAMEBOX-1, ' ', ov->ov_size.col);
-  wattroff(ov->nc_st, COLOR_PAIR(ov->col_line));
+  mvwchgat(ov->nc_st, 0, SZ_NAMEBOX-1, -1, A_NORMAL, ov->col_line, NULL);
 
   if (ov->separator) {
     wattron(ov->nc_sep, COLOR_PAIR(ov->col_sep));
