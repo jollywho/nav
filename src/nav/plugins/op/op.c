@@ -2,6 +2,7 @@
 #include <errno.h>
 
 #include "nav/lib/utarray.h"
+#include "nav/tui/window.h"
 #include "nav/plugins/op/op.h"
 #include "nav/log.h"
 #include "nav/model.h"
@@ -121,6 +122,7 @@ static void create_proc(fn_group *grp, char *line)
   proc->opts.file = args[0];
   proc->opts.args = args;
   proc->proc.data = proc;
+  proc->opts.cwd = window_cur_dir();
 
   uv_signal_start(&mainloop()->children_watcher, chld_handler, SIGCHLD);
   uv_disable_stdio_inheritance();

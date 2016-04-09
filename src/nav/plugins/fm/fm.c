@@ -149,7 +149,6 @@ char* lines2argv(char *src)
       strcat(dest, "\"");
       strncat(dest, &src[prev], pos);
       strcat(dest, "\" ");
-      //TODO: next_valid_path
       prev = j + 1;
     }
   }
@@ -174,16 +173,7 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("FM", "using {%d} |%s|", reg->key, reg->value);
   char *src = lines2argv(reg->value);
   log_msg("FM", "src |%s|", src);
-
-  //char *base = strdup(reg->value);
-
-  //TODO: iterate by '\n' and check next_valid_path. add quotes here
-  //if (reg->value[0] != '\"') {
-  //  char *name = basename(base);
-  //  asprintf(&dest, "%s/%s", self->cur_dir, name);
-  //  dest = next_valid_path(dest);
-  //}
-  //else
+  //TODO: if src has multiple entries, dest = lines2argv with next_valid_path
   char *dest = strdup(self->cur_dir);
 
   char *cmdstr;
@@ -193,7 +183,6 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
   free(src);
   free(dest);
   free(cmdstr);
-  //free(base);
   fs_fastreq(self->fs);
 
   if (reg->key == '1')
