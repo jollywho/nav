@@ -69,6 +69,18 @@ static void regex_compile(const char *comp, pcre **pcre, pcre_extra **extra)
   }
 }
 
+char* regex_str(LineMatch *lm)
+{
+  if (lm->gcomp)
+    return lm->gcomp;
+  return gcomp;
+}
+
+int regex_match_count(LineMatch *lm)
+{
+  return utarray_len(lm->lines);
+}
+
 void regex_build(LineMatch *lm, const char *line)
 {
   log_msg("REGEX", "build");
@@ -76,11 +88,8 @@ void regex_build(LineMatch *lm, const char *line)
   pcre *pcre = NULL;
   pcre_extra *extra = NULL;
 
-  if (line) {
-    if (gcomp)
-      free(gcomp);
-    gcomp = strdup(line);
-  }
+  if (line)
+    SWAP_ALLOC_PTR(gcomp, strdup(line));
   if (!gcomp)
     return;
   lm->gcomp = gcomp;
@@ -241,12 +250,13 @@ void regex_hover(LineMatch *lm)
 
 // pivot buffernode focus to closest match.
 // varies by direction: '/', '?'
-void regex_next(LineMatch *lm, int line, int dir)
+// return next match index.
+int regex_next(LineMatch *lm, int line, int dir)
 {
   log_msg("REGEX", "regex_next");
   ensure_global_match(lm);
   if (!lm->lines || utarray_len(lm->lines) < 1)
-    return;
+    return -1;
 
   int *ret = nearest_next_match(lm->lines, line);
   if (!ret)
@@ -262,6 +272,9 @@ void regex_next(LineMatch *lm, int line, int dir)
       ret = ret ? ret : (int*)utarray_prev(lm->lines, ret);
     }
   }
-  if (ret)
+  if (ret) {
     regex_focus(lm, *ret);
+    return utarray_eltidx(lm->lines, ret);
+  }
+  return -1;
 }

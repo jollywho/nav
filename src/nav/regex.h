@@ -19,6 +19,8 @@ void regex_mk_pivot(LineMatch *lm);
 void regex_pivot(LineMatch *lm);
 
 void regex_hover(LineMatch *lm);
-void regex_next(LineMatch *lm, int line, int dir);
+int regex_next(LineMatch *lm, int line, int dir);
+char* regex_str(LineMatch *lm);
+int regex_match_count(LineMatch *lm);
 
 #endif

@@ -1,6 +1,7 @@
 #include "nav/tui/buffer.h"
 #include "nav/tui/window.h"
 #include "nav/tui/overlay.h"
+#include "nav/tui/message.h"
 #include "nav/event/hook.h"
 #include "nav/ascii.h"
 #include "nav/log.h"
@@ -311,7 +312,14 @@ void buf_scroll(Buffer *buf, int y, int max)
 static void buf_search(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_search");
-  regex_next(buf->matches, buf->top + buf->lnum, ca->arg);
+  int count = regex_match_count(buf->matches);
+  int next = regex_next(buf->matches, buf_index(buf), ca->arg);
+  if (next == -1)
+    nv_err("No matches: %s", regex_str(buf->matches));
+  else if (count == 1)
+    nv_msg("Single match: %s", regex_str(buf->matches));
+  else
+    nv_msg("Match %d of %d: %s", next + 1, count, regex_str(buf->matches));
 }
 
 void buf_move(Buffer *buf, int y, int x)
