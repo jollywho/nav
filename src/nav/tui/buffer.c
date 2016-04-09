@@ -396,6 +396,40 @@ void buf_g(void *_b, Keyarg *ca)
   buf_move(buf, y, 0);
 }
 
+static char* buf_focus_sel(Model *m, char *fld)
+{
+  log_msg("BUFFER", "buf_focus_sel");
+
+  int selcount = select_count();
+  if (selcount < 1)
+    return strdup(model_curs_value(m, fld));
+
+  int len = 0;
+  for (int i = 0; i < model_count(m); ++i) {
+    if (select_has_line(i))
+      len += strlen(model_fld_line(m, fld, i)) + 2;
+  }
+
+  char *str = malloc(len);
+  str[0] = '\0';
+  for (int i = 0; i < model_count(m); ++i) {
+    if (select_has_line(i)) {
+      strcat(str, model_fld_line(m, fld, i));
+      strcat(str, "\n");
+    }
+  }
+
+  return str;
+}
+
+static void buf_end_sel(Buffer *buf)
+{
+  select_alt_origin(&buf->lnum, &buf->top);
+  select_clear();
+  buf_move_invalid(buf, buf->top, buf->lnum);
+  buf_refresh(buf);
+}
+
 void buf_yank(void *_b, Keyarg *ca)
 {
   Buffer *buf = (Buffer*)_b;
@@ -409,21 +443,26 @@ void buf_yank(void *_b, Keyarg *ca)
   else if (ca->key != 'y')
     return;
 
-  //TODO: iterate selection into \n delimited string
-  char *val = model_curs_value(h->model, "fullpath");
-  char *shw = model_curs_value(h->model, field);
+  char *val = buf_focus_sel(h->model, "fullpath");
+  char *shw = buf_focus_sel(h->model, field);
   reg_set(NUL, val, shw);
   reg_set('0', val, shw);
+  free(val);
+  free(shw);
+  buf_end_sel(buf);
 }
 
 void buf_del(void *_b, Keyarg *ca)
 {
   Buffer *buf = (Buffer*)_b;
   fn_handle *h = buf->hndl;
-  char *val = model_curs_value(h->model, "fullpath");
-  char *shw = model_curs_value(h->model, h->fname);
+  char *val = buf_focus_sel(h->model, "fullpath");
+  char *shw = buf_focus_sel(h->model, h->fname);
   reg_set(NUL, val, shw);
   reg_set('1', val, shw);
+  free(val);
+  free(shw);
+  buf_end_sel(buf);
 }
 
 void buf_mark(void *_b, Keyarg *ca)
@@ -462,10 +501,8 @@ static void buf_toggle_sel(Buffer *buf, Keyarg *ca)
 static void buf_alt_origin(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_alt_origin");
-  log_msg("BUFFER", "is %d %d", buf->lnum, buf->top);
   if (select_alt_origin(&buf->lnum, &buf->top))
     buf_move_invalid(buf, buf->top, buf->lnum);
-  log_msg("BUFFER", "now %d %d", buf->lnum, buf->top);
 }
 
 static void buf_esc(Buffer *buf, Keyarg *ca)

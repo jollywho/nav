@@ -6,6 +6,7 @@
 void select_toggle(int lnum, int index, int max);
 void select_clear();
 bool select_active();
+int select_count();
 void select_enter(int idx);
 bool select_alt_origin(int *lnum, int *index);
 bool select_has_line(int idx);

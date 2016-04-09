@@ -7,6 +7,7 @@ typedef struct {
   int orgn_index;
   int *lines;
   int max;
+  int count;
   bool enabled;
   bool active;
   bool aditv;
@@ -20,8 +21,10 @@ void select_toggle(int lnum, int index, int max)
   sel.enabled = !sel.enabled;
   if (!sel.enabled)
     return;
-  if (!sel.active)
+  if (!sel.active) {
     sel.lines = calloc(max, sizeof(int));
+    sel.count = 0;
+  }
 
   int idx = lnum + index;
   sel.aditv = !sel.lines[idx];
@@ -40,11 +43,17 @@ void select_clear()
   sel.lines = NULL;
   sel.enabled = false;
   sel.active = false;
+  sel.count = 0;
 }
 
 bool select_active()
 {
   return sel.active;
+}
+
+int select_count()
+{
+  return sel.count;
 }
 
 void select_enter(int idx)
@@ -57,6 +66,7 @@ void select_enter(int idx)
 
   int st = MIN(idx, orgn);
   int ed = MAX(idx, orgn);
+  sel.count = ed - st;
 
   for (int i = 0; i < st; i++)
     sel.lines[i] = !enable;
