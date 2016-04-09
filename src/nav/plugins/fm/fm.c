@@ -123,19 +123,37 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   free(path);
 }
 
-static char* next_valid_path(char *path)
+char* lines2argv(char *src)
 {
-  char *str = strdup(path);
-  free(path);
-
-  //TODO: increment '_0' if already exists
-  struct stat s;
-  while (stat(str, &s) == 0) {
-    char *next;
-    asprintf(&next, "%s_0", str);
-    SWAP_ALLOC_PTR(str, next);
+  int i;
+  int count = 1;
+  int len = 0;
+  char *dest = src;
+  for (i = 0; src[i]; i++) {
+    if (src[i] == '\n')
+      count++;
   }
-  return str;
+
+  if (count == 1) {
+    asprintf(&dest, "\"%s\"", src);
+    return dest;
+  }
+
+  int prev = 0;
+  len = i+(count*3);
+  dest = malloc(len);
+  dest[0] = '\0';
+  for (int j = 0; j < i; j++) {
+    if (src[j] == '\n') {
+      int pos = (j - prev);
+      strcat(dest, "\"");
+      strncat(dest, &src[prev], pos);
+      strcat(dest, "\" ");
+      //TODO: next_valid_path
+      prev = j + 1;
+    }
+  }
+  return dest;
 }
 
 static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
@@ -153,21 +171,29 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
     arg = "";
   }
 
-  char *base = strdup(reg->value);
-  char *name = basename(base);
-  log_msg("FM", "{%d} |%s|", reg->key, reg->value);
+  log_msg("FM", "using {%d} |%s|", reg->key, reg->value);
+  char *src = lines2argv(reg->value);
+  log_msg("FM", "src |%s|", src);
 
-  char *dest;
-  asprintf(&dest, "%s/%s", self->cur_dir, name);
-  dest = next_valid_path(dest);
+  //char *base = strdup(reg->value);
+
+  //TODO: iterate by '\n' and check next_valid_path. add quotes here
+  //if (reg->value[0] != '\"') {
+  //  char *name = basename(base);
+  //  asprintf(&dest, "%s/%s", self->cur_dir, name);
+  //  dest = next_valid_path(dest);
+  //}
+  //else
+  char *dest = strdup(self->cur_dir);
 
   char *cmdstr;
-  asprintf(&cmdstr, "%s %s \"%s\" \"%s\"", oper, arg, reg->value, dest);
-
+  asprintf(&cmdstr, "%s %s %s %s", oper, arg, src, dest);
   shell_exec(cmdstr, NULL, self->cur_dir, NULL);
+
+  free(src);
   free(dest);
   free(cmdstr);
-  free(base);
+  //free(base);
   fs_fastreq(self->fs);
 
   if (reg->key == '1')
@@ -181,33 +207,33 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
   if (fs_blocking(self->fs))
     return;
 
-  char *path = model_curs_value(host->hndl->model, "fullpath");
-  log_msg("FM", "\"%s\"", path);
-  if (!path)
-    return;
+  int count = buf_sel_count(host->hndl->buf);
+  char *args = buf_focus_sel(host->hndl->model, "fullpath");
+  char *src = lines2argv(args);
+  log_msg("FM", "src |%s|", src);
 
   if (get_opt_int("ask_delete")) {
-    if (!confirm("Remove: \"%s\" ?", path))
+    bool ans = 0;
+
+    if (count > 1)
+      ans = confirm("Remove: %d items ?", count);
+    else
+      ans = confirm("Remove: \"%s\" ?", src);
+
+    if (!ans)
       return;
   }
 
   char *cmdstr;
-  asprintf(&cmdstr, "%s \"%s\"", p_rm, path);
+  asprintf(&cmdstr, "%s %s", p_rm, src);
   system(cmdstr);
+  free(args);
+  free(src);
   free(cmdstr);
   fs_fastreq(self->fs);
 }
 
-static void fm_diropen_cb(Plugin *host, Plugin *caller, HookArg *hka)
-{
-  log_msg("FM", "fm_diropen_cb");
-  FM *self = (FM*)caller->top;
-  fs_close(self->fs);
-  char *path = strdup(hka->arg);
-  fm_opendir(caller, path, BACKWARD);
-  free(path);
-}
-
+#ifdef PIPES_SUPPORTED
 static void fm_cursor_change_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_cursor_change_cb");
@@ -224,6 +250,16 @@ static void fm_cursor_change_cb(Plugin *host, Plugin *caller, HookArg *hka)
   }
 }
 
+static void fm_diropen_cb(Plugin *host, Plugin *caller, HookArg *hka)
+{
+  log_msg("FM", "fm_diropen_cb");
+  FM *self = (FM*)caller->top;
+  fs_close(self->fs);
+  char *path = strdup(hka->arg);
+  fm_opendir(caller, path, BACKWARD);
+  free(path);
+}
+
 static void fm_pipe_left(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_pipe_left");
@@ -236,6 +272,7 @@ static void fm_pipe_right(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("FM", "fm_pipe_right");
   hook_add_intl(caller, host, fm_diropen_cb, "diropen");
 }
+#endif
 
 static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, char *val)
 {
@@ -279,8 +316,10 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   hook_add_intl(plugin, plugin, fm_left,       "left"      );
   hook_add_intl(plugin, plugin, fm_right,      "right"     );
   hook_add_intl(plugin, plugin, fm_req_dir,    "open"      );
-  //hook_add_intl(plugin, plugin, fm_pipe_left,  "pipe_left" );
-  //hook_add_intl(plugin, plugin, fm_pipe_right, "pipe_right");
+#ifdef PIPES_SUPPORTED
+  hook_add_intl(plugin, plugin, fm_pipe_left,  "pipe_left" );
+  hook_add_intl(plugin, plugin, fm_pipe_right, "pipe_right");
+#endif
 
   fm->fs = fs_init(plugin->hndl);
   fm->fs->stat_cb = fm_ch_dir;

@@ -2,6 +2,7 @@
 #include "nav/tui/window.h"
 #include "nav/tui/overlay.h"
 #include "nav/tui/message.h"
+#include "nav/tui/select.h"
 #include "nav/event/hook.h"
 #include "nav/ascii.h"
 #include "nav/log.h"
@@ -18,6 +19,9 @@ static void buf_mv_page();
 static void buf_mv();
 static void buf_search();
 static void buf_gen_event();
+static void buf_toggle_sel();
+static void buf_alt_origin();
+static void buf_esc();
 static void buf_draw(void **);
 
 /* BUF_GEN_EVENTS */
@@ -31,6 +35,7 @@ static char *buf_events[] = {
 };
 
 static fn_key key_defaults[] = {
+  {ESC,     buf_esc,         0,           0},
   {Ctrl_J,  buf_mv_page,     0,           FORWARD},
   {Ctrl_K,  buf_mv_page,     0,           BACKWARD},
   {'n',     buf_search,      0,           FORWARD},
@@ -39,6 +44,8 @@ static fn_key key_defaults[] = {
   {'k',     buf_mv,          0,           BACKWARD},
   {'g',     oper,            NCH_S,       BACKWARD},
   {'G',     buf_g,           0,           FORWARD},
+  {'V',     buf_toggle_sel,  0,           0},
+  {'o',     buf_alt_origin,  0,           0},
   {'y',     oper,            NCH,         OP_YANK},
   {'d',     oper,            NCH,         OP_DELETE},
   {'m',     oper,            NCH_A,       OP_MARK},
@@ -209,10 +216,12 @@ void buf_refresh(Buffer *buf)
   window_req_draw(buf, buf_draw);
 }
 
-
 static void draw_cur_line(Buffer *buf)
 {
-  mvwchgat(buf->nc_win, buf->lnum, 0, -1, A_NORMAL, buf->col_focus, NULL);
+  attr_t attr = A_NORMAL;
+  if (select_has_line(buf->lnum + buf->top))
+    attr = A_REVERSE;
+  mvwchgat(buf->nc_win, buf->lnum, 0, -1, attr, buf->col_focus, NULL);
 }
 
 static void draw_lines(Buffer *buf, Model *m)
@@ -226,20 +235,26 @@ static void draw_lines(Buffer *buf, Model *m)
 
     readable_fs(rec_stsize(rec), szbuf);
 
+    attr_t attr = A_NORMAL;
+    if (select_has_line(buf->top + i))
+      attr = A_REVERSE;
+
     int max = MAX_POS(buf->b_size.col);
     draw_wide(buf->nc_win, i, 0, it, max - 1);
 
     if (isrecdir(rec)) {
-      mvwchgat(buf->nc_win, i, 0, -1, A_NORMAL, buf->col_dir, NULL);
-      DRAW_STR(buf, nc_win, i, buf->b_size.col - 1, "/", col_sz);
+      mvwchgat(buf->nc_win, i, 0, -1, attr, buf->col_dir, NULL);
+      draw_wide(buf->nc_win, i, buf->b_size.col - 1, "/", SZ_LEN);
+      mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, attr, buf->col_sz, NULL);
     }
     else {
-      // TODO: show item count when type is directory
       int col = get_syn_colpair(file_ext(it));
-      mvwchgat(buf->nc_win, i, 0, -1, A_NORMAL, col, NULL);
-      DRAW_STR(buf, nc_win, i, 2+max, szbuf, col_sz);
-      mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, A_NORMAL, buf->col_text,0);
+      mvwchgat(buf->nc_win, i, 0, -1, attr, col, NULL);
+      draw_wide(buf->nc_win, i, 2+max, szbuf, SZ_LEN);
+      mvwchgat(buf->nc_win, i, 2+max, -1, attr, buf->col_sz, NULL);
+      mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, attr, buf->col_text,0);
     }
+
   }
 }
 
@@ -272,6 +287,7 @@ static void buf_curs_move(Buffer *buf, Model *m)
 {
   char *curval = model_str_line(m, buf->top + buf->lnum);
   model_set_curs(m, buf->top + buf->lnum);
+  select_enter(buf_index(buf));
   buf_refresh(buf);
   send_hook_msg("cursor_change", buf->plugin, NULL, &(HookArg){NULL,curval});
 }
@@ -290,6 +306,7 @@ void buf_full_invalidate(Buffer *buf, int index, int lnum)
   log_msg("BUFFER", "buf_full_invalidate");
   if (!buf->attached)
     return;
+  select_clear();
   regex_del_matches(buf->matches);
   buf_move_invalid(buf, index, lnum);
 }
@@ -390,6 +407,40 @@ void buf_g(void *_b, Keyarg *ca)
   buf_move(buf, y, 0);
 }
 
+char* buf_focus_sel(Model *m, const char *fld)
+{
+  log_msg("BUFFER", "buf_focus_sel");
+
+  int selcount = select_count();
+  if (selcount < 2)
+    return strdup(model_curs_value(m, fld));
+
+  int len = 0;
+  for (int i = 0; i < model_count(m); ++i) {
+    if (select_has_line(i))
+      len += strlen(model_fld_line(m, fld, i)) + 2;
+  }
+
+  char *str = malloc(len);
+  str[0] = '\0';
+  for (int i = 0; i < model_count(m); ++i) {
+    if (select_has_line(i)) {
+      strcat(str, model_fld_line(m, fld, i));
+      strcat(str, "\n");
+    }
+  }
+
+  return str;
+}
+
+static void buf_end_sel(Buffer *buf)
+{
+  select_alt_origin(&buf->lnum, &buf->top);
+  select_clear();
+  buf_move_invalid(buf, buf->top, buf->lnum);
+  buf_refresh(buf);
+}
+
 void buf_yank(void *_b, Keyarg *ca)
 {
   Buffer *buf = (Buffer*)_b;
@@ -403,20 +454,26 @@ void buf_yank(void *_b, Keyarg *ca)
   else if (ca->key != 'y')
     return;
 
-  char *val = model_curs_value(h->model, "fullpath");
-  char *shw = model_curs_value(h->model, field);
+  char *val = buf_focus_sel(h->model, "fullpath");
+  char *shw = buf_focus_sel(h->model, field);
   reg_set(NUL, val, shw);
   reg_set('0', val, shw);
+  free(val);
+  free(shw);
+  buf_end_sel(buf);
 }
 
 void buf_del(void *_b, Keyarg *ca)
 {
   Buffer *buf = (Buffer*)_b;
   fn_handle *h = buf->hndl;
-  char *val = model_curs_value(h->model, "fullpath");
-  char *shw = model_curs_value(h->model, h->fname);
+  char *val = buf_focus_sel(h->model, "fullpath");
+  char *shw = buf_focus_sel(h->model, h->fname);
   reg_set(NUL, val, shw);
   reg_set('1', val, shw);
+  free(val);
+  free(shw);
+  buf_end_sel(buf);
 }
 
 void buf_mark(void *_b, Keyarg *ca)
@@ -446,6 +503,27 @@ static void buf_gen_event(Buffer *buf, Keyarg *ca)
   send_hook_msg(buf_events[ca->arg], buf->plugin, NULL, NULL);
 }
 
+static void buf_toggle_sel(Buffer *buf, Keyarg *ca)
+{
+  log_msg("BUFFER", "buf_toggle_sel");
+  select_toggle(buf->lnum, buf->top, model_count(buf->hndl->model));
+  buf_refresh(buf);
+}
+
+static void buf_alt_origin(Buffer *buf, Keyarg *ca)
+{
+  log_msg("BUFFER", "buf_alt_origin");
+  if (select_alt_origin(&buf->lnum, &buf->top))
+    buf_move_invalid(buf, buf->top, buf->lnum);
+}
+
+static void buf_esc(Buffer *buf, Keyarg *ca)
+{
+  log_msg("BUFFER", "buf_esc");
+  select_clear();
+  buf_refresh(buf);
+}
+
 void buf_sort(Buffer *buf, char *fld, int flags)
 {
   if (!buf->hndl)
@@ -462,6 +540,8 @@ int buf_line(Buffer *buf)
 {return buf->lnum;}
 int buf_top(Buffer *buf)
 {return buf->top;}
+int buf_sel_count(Buffer *buf)
+{return select_count();}
 pos_T buf_size(Buffer *buf)
 {return buf->b_size;}
 pos_T buf_ofs(Buffer *buf)

@@ -60,6 +60,11 @@ typedef struct {
   int maxlinear;
 } fn_keytbl;
 
+struct fn_reg {
+  int key;
+  char *value;
+};
+
 void input_init(void);
 void input_cleanup(void);
 void input_setup_tbl(fn_keytbl *kt);
@@ -75,11 +80,6 @@ void input_check();
 void oper(void *, Keyarg *ca);
 void clearop(Keyarg *ca);
 bool op_pending(Keyarg *arg);
-
-struct fn_reg {
-  int key;
-  char *value;
-};
 
 fn_reg* reg_get(int ch);
 fn_reg* reg_dcur();

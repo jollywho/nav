@@ -492,8 +492,6 @@ void menu_draw(Menu *mnu)
     return;
 
   werase(mnu->nc_win);
-  mvwhline(mnu->nc_win, ROW_MAX, 0, ' ', mnu->size.col);
-  mvwchgat(mnu->nc_win, ROW_MAX, 0, -1, A_NORMAL, mnu->col_line, NULL);
 
   if (!mnu->cx || !mnu->cx->cmpl || ex_cmd_state() & EX_EXEC) {
     wnoutrefresh(mnu->nc_win);
@@ -522,9 +520,10 @@ void menu_draw(Menu *mnu)
       draw_wide(mnu->nc_win, i, ofs+3, col, colmax);
     }
   }
-  char *key = mnu->cx->key;
-  DRAW_STR(mnu, nc_win, ROW_MAX, 1, key, col_line);
-  mvwchgat(mnu->nc_win, mnu->lnum, 0, -1, A_NORMAL, mnu->col_sel, NULL);
+  char *context = mnu->cx->key;
+  draw_wide(mnu->nc_win, ROW_MAX, 1, context, mnu->size.col);
+  mvwchgat(mnu->nc_win, ROW_MAX, 0, -1, A_NORMAL, mnu->col_line, NULL);
 
+  mvwchgat(mnu->nc_win, mnu->lnum, 0, -1, A_NORMAL, mnu->col_sel, NULL);
   wnoutrefresh(mnu->nc_win);
 }
