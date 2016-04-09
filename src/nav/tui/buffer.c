@@ -215,10 +215,12 @@ void buf_refresh(Buffer *buf)
   window_req_draw(buf, buf_draw);
 }
 
-
 static void draw_cur_line(Buffer *buf)
 {
-  mvwchgat(buf->nc_win, buf->lnum, 0, -1, A_NORMAL, buf->col_focus, NULL);
+  attr_t attr = A_NORMAL;
+  if (select_has_line(buf->lnum + buf->top))
+    attr = A_REVERSE;
+  mvwchgat(buf->nc_win, buf->lnum, 0, -1, attr, buf->col_focus, NULL);
 }
 
 static void draw_lines(Buffer *buf, Model *m)
@@ -303,6 +305,7 @@ void buf_full_invalidate(Buffer *buf, int index, int lnum)
   log_msg("BUFFER", "buf_full_invalidate");
   if (!buf->attached)
     return;
+  select_clear();
   regex_del_matches(buf->matches);
   buf_move_invalid(buf, index, lnum);
 }
@@ -396,12 +399,12 @@ void buf_g(void *_b, Keyarg *ca)
   buf_move(buf, y, 0);
 }
 
-static char* buf_focus_sel(Model *m, char *fld)
+char* buf_focus_sel(Model *m, const char *fld)
 {
   log_msg("BUFFER", "buf_focus_sel");
 
   int selcount = select_count();
-  if (selcount < 1)
+  if (selcount < 2)
     return strdup(model_curs_value(m, fld));
 
   int len = 0;
@@ -496,6 +499,7 @@ static void buf_toggle_sel(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_toggle_sel");
   select_toggle(buf->lnum, buf->top, model_count(buf->hndl->model));
+  buf_refresh(buf);
 }
 
 static void buf_alt_origin(Buffer *buf, Keyarg *ca)
@@ -528,6 +532,8 @@ int buf_line(Buffer *buf)
 {return buf->lnum;}
 int buf_top(Buffer *buf)
 {return buf->top;}
+int buf_sel_count(Buffer *buf)
+{return select_count();}
 pos_T buf_size(Buffer *buf)
 {return buf->b_size;}
 pos_T buf_ofs(Buffer *buf)

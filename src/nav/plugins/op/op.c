@@ -151,6 +151,7 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
   if (!grp->opgrp)
     return;
 
+  //TODO: add %:fullpath:@ for all selection
   Exparg exparg = {.expfn = expand_field, .key = grp->key};
   set_exparg(&exparg);
   Cmdstr bfcmd;

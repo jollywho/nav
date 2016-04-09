@@ -10,8 +10,11 @@
 #define LENGTH(arr) ((sizeof(arr)/sizeof((arr)[0])) / \
   ((size_t)(!(sizeof(arr) % sizeof((arr)[0])))))
 
-#define MIN(X, Y) (X < Y ? X : Y)
-#define MAX(X, Y) (X > Y ? X : Y)
+#define MIN(X, Y) ((X) < (Y) ? (X) : (Y))
+#define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
+
+#define SWAP(t, a, b) \
+  do { t __tmp = (a); (a) = (b); (b) = __tmp; } while (0)
 
 #define TOUPPER_ASC(c) (((c) < 'a' || (c) > 'z') ? (c) : (c) - ('a' - 'A'))
 #define TOLOWER_ASC(c) (((c) < 'A' || (c) > 'Z') ? (c) : (c) + ('a' - 'A'))

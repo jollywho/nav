@@ -170,6 +170,21 @@ char* fs_expand_path(const char *path)
   return strdup(path);
 }
 
+char* next_valid_path(char *path)
+{
+  char *str = strdup(path);
+  free(path);
+
+  //TODO: increment '_0' if already exists
+  struct stat s;
+  while (stat(str, &s) == 0) {
+    char *next;
+    asprintf(&next, "%s_0", str);
+    SWAP_ALLOC_PTR(str, next);
+  }
+  return str;
+}
+
 char* fs_current_dir()
 {
   return get_current_dir_name();

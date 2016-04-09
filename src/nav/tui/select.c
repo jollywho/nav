@@ -1,6 +1,7 @@
 #include <malloc.h>
 #include "nav/tui/select.h"
 #include "nav/log.h"
+#include "nav/macros.h"
 
 typedef struct {
   int orgn_lnum;
@@ -23,7 +24,7 @@ void select_toggle(int lnum, int index, int max)
     return;
   if (!sel.active) {
     sel.lines = calloc(max, sizeof(int));
-    sel.count = 0;
+    sel.count = 1;
   }
 
   int idx = lnum + index;
@@ -66,7 +67,7 @@ void select_enter(int idx)
 
   int st = MIN(idx, orgn);
   int ed = MAX(idx, orgn);
-  sel.count = ed - st;
+  sel.count = (ed - st) + 1;
 
   for (int i = 0; i < st; i++)
     sel.lines[i] = !enable;
@@ -74,6 +75,7 @@ void select_enter(int idx)
     sel.lines[i] = enable;
   for (int i = ed; i < sel.max; i++)
     sel.lines[i] = !enable;
+  sel.lines[idx] = enable;
 }
 
 bool select_alt_origin(int *lnum, int *index)
@@ -81,12 +83,8 @@ bool select_alt_origin(int *lnum, int *index)
   if (!select_active())
     return false;
 
-  int lnum_was   = sel.orgn_lnum;
-  int index_was  = sel.orgn_index;
-  sel.orgn_lnum  = *lnum;
-  sel.orgn_index = *index;
-  *lnum  = lnum_was;
-  *index = index_was;
+  SWAP(int, *lnum,  sel.orgn_lnum);
+  SWAP(int, *index, sel.orgn_index);
   return true;
 }
 

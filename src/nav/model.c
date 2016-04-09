@@ -280,7 +280,8 @@ static void model_set_prev(Model *m)
 {
   Buffer *buf = m->hndl->buf;
   char *curval = model_curs_value(m, m->hndl->kname);
-  SWAP_ALLOC_PTR(m->pfval, strdup(curval));
+  if (curval)
+    SWAP_ALLOC_PTR(m->pfval, strdup(curval));
   m->ptop = buf_top(buf);
   m->plnum = buf_line(buf);
 }
