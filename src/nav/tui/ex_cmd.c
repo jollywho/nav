@@ -303,17 +303,24 @@ static void ex_bckspc()
 
 static void ex_killword()
 {
-  Token *last = cmdline_last(&ex.cmd);
-  if (!last)
+  while (strlen(ex_cmd_curstr()) < 1) {
+    menu_killword(ex.menu);
+    if (ex.curpart < 1)
+      break;
+  }
+
+  Token *cur = ex_cmd_curtok();
+  if (!cur)
     return;
 
-  int st = last->start;
-  int ed = last->end;
-  for (int i = st; i < ed; i++)
-    ex.line[i] = '\0';
+  int st = cur->start;
+  int ed = cur->end;
+  if (ed - st > 0) {
+    for (int i = st; i < ed; i++)
+      ex.line[i] = '\0';
+  }
 
   ex.curpos = st;
-  ex_bckspc();
 }
 
 static void ex_killline()
@@ -386,6 +393,7 @@ static void check_new_state()
   Token *tok = cmdline_last(&ex.cmd);
   if (!tok)
     return;
+  //FIXME: need another condition to set EX_NEW
   if (ex.curpos > tok->end && ex.curpos > 0)
     ex.inrstate |= EX_NEW;
 }
@@ -511,8 +519,7 @@ Token* ex_cmd_curtok()
   int ed = ex.curpos + 1;
   if (!ex.cmd.cmds)
     return NULL;
-  Token *tok = cmdline_tokbtwn(&ex.cmd, st, ed);
-  return tok;
+  return cmdline_tokbtwn(&ex.cmd, st, ed);
 }
 
 char* ex_cmd_line()

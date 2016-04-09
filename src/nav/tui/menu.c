@@ -261,6 +261,12 @@ void menu_restart(Menu *mnu)
   compl_update(mnu->cx, "");
 }
 
+void menu_killword(Menu *mnu)
+{
+  mnu->cx = ex_cmd_pop(1)->cx;
+  mnu->docmpl = true;
+}
+
 static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
 {
   log_msg("MENU", "rebuild_contexts");

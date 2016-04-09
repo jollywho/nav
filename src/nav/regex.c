@@ -78,6 +78,8 @@ char* regex_str(LineMatch *lm)
 
 int regex_match_count(LineMatch *lm)
 {
+  if (!lm->lines)
+    return -1;
   return utarray_len(lm->lines);
 }
 
