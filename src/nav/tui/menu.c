@@ -397,25 +397,18 @@ void menu_toggle_hints(Menu *mnu)
     mnu->hints = false;
 }
 
-void menu_input(Menu *mnu, int key)
+int menu_input(Menu *mnu, int key)
 {
-  log_msg("MENU", "toggle hints");
-
-  window_req_draw(cur_menu, menu_queue_draw);
-  if (key == ESC)
-    return menu_toggle_hints(mnu);
-  if (key == Ctrl_L)
-    ex_cmdinvert();
+  log_msg("MENU", "menu_input");
 
   char *str = NULL;
-
   fn_compl *cmpl = mnu->cx->cmpl;
-  for (int i = 0; i < cmpl->matchcount; i++) {
+  for (int i = 0; i < ROW_MAX; i++) {
     if (mnu->hintkeys[i] == key)
-      str = cmpl->matches[i]->key;
+      str = cmpl->matches[i+mnu->top]->key;
   }
   if (!str)
-    return;
+    return 0;
 
   int pos = ex_cmd_curpos();
   Token *cur = ex_cmd_curtok();
@@ -427,7 +420,7 @@ void menu_input(Menu *mnu, int key)
   strcpy(&newline[pos], str);
   ex_cmd_populate(newline);
   menu_toggle_hints(mnu);
-  ex_input(CAR, 0);
+  return 1;
 }
 
 void menu_update(Menu *mnu, Cmdline *cmd)

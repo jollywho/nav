@@ -13,7 +13,7 @@ void menu_restart(Menu *mnu);
 void menu_stop(Menu *mnu);
 void menu_toggle_hints(Menu *mnu);
 bool menu_hints_enabled(Menu *mnu);
-void menu_input(Menu *mnu, int key);
+int menu_input(Menu *mnu, int key);
 void menu_killword(Menu *mnu);
 
 void menu_rebuild(Menu *mnu);

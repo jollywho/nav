@@ -357,6 +357,7 @@ void ex_cmdinvert()
 static void ex_menuhints()
 {
   menu_toggle_hints(ex.menu);
+  ex.inrstate = EX_CYCLE;
 }
 
 static void ex_menu_mv(void *none, Keyarg *arg)
@@ -393,7 +394,6 @@ static void check_new_state()
   Token *tok = cmdline_last(&ex.cmd);
   if (!tok)
     return;
-  //FIXME: need another condition to set EX_NEW
   if (ex.curpos > tok->end && ex.curpos > 0)
     ex.inrstate |= EX_NEW;
 }
@@ -421,8 +421,10 @@ static void ex_onkey()
 void ex_input(int key, char utf8[7])
 {
   log_msg("EXCMD", "input");
-  if (menu_hints_enabled(ex.menu))
-    return menu_input(ex.menu, key);
+  if (menu_hints_enabled(ex.menu)) {
+    if (menu_input(ex.menu, key))
+      ex_car();
+  }
 
   Keyarg ca;
   int idx = find_command(&key_tbl, key);
