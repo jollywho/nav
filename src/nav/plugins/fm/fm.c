@@ -13,6 +13,7 @@
 #include "nav/info.h"
 #include "nav/tui/window.h"
 #include "nav/tui/message.h"
+#include "nav/event/file.h"
 
 void fm_init()
 {
@@ -170,10 +171,13 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
     arg = "";
   }
 
+  file_copy(reg->value, "/home/chi/test/1");
+
+  return;
+
   log_msg("FM", "using {%d} |%s|", reg->key, reg->value);
   char *src = lines2argv(reg->value);
   log_msg("FM", "src |%s|", src);
-  //TODO: if src has multiple entries, dest = lines2argv with next_valid_path
   char *dest = strdup(self->cur_dir);
 
   char *cmdstr;

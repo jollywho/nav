@@ -39,7 +39,6 @@ bool isrecdir(fn_rec *);
 time_t rec_ctime(fn_rec *rec);
 off_t rec_stsize(fn_rec *rec);
 char* fs_expand_path(const char *);
-char* next_valid_path(char *path);
 char* valid_full_path(char *, char *);
 char* fs_parent_dir(char *);
 char* conspath(const char *, const char *);
