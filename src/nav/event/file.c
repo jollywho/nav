@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <libgen.h>
 #include <uv.h>
 #include "nav/nav.h"
 #include "nav/log.h"
@@ -17,6 +18,7 @@ struct File {
   uv_fs_t f1, f2;
   uv_fs_t c1, c2;
   uv_fs_t s1;
+  uv_fs_t m1;
   int opencnt;
   uint64_t len;
   uint64_t offset;
@@ -28,35 +30,52 @@ struct File {
 static File file;
 
 
-static int dest_ver(const char *base, const char *backup, size_t base_length)
+static int dest_ver(const char *base, const char *other, size_t baselen)
 {
   int version;
   const char *p;
 
   version = 0;
-  if (strncmp(base, backup, base_length) == 0
-      && backup[base_length] == '.'
-      && backup[base_length + 1] == '~')
+  if (!strncmp(base, other, baselen) && other[baselen] == '_')
   {
-    for (p = &backup[base_length + 2]; ISDIGIT (*p); ++p)
+    for (p = &other[baselen+1]; ISDIGIT (*p); ++p) {
       version = version * 10 + *p - '0';
-    if (p[0] != '~' || p[1])
+    }
+    if (p[0])
       version = 0;
   }
   return version;
 }
 
-char* max_dest_ver(char *path)
+static void scan_cb(uv_fs_t *req)
 {
-  return 0;
+  char *base = basename(file.src);
+  char *dir = dirname(file.src);
+  int baselen = strlen(base);
+  int max_ver = 0;
+
+  uv_dirent_t dent;
+  while (UV_EOF != uv_fs_scandir_next(req, &dent)) {
+    int ver = dest_ver(base, dent.name, baselen);
+    if (ver > max_ver)
+      max_ver = ver;
+  }
+
+  log_msg("FILE", "%s %s ver %d", base, dir, max_ver);
+  //free(file.dest)
+  //file.dest = malloc base + ver
+  //sprintf dest %d ver
+  //req_cleanup file.f2
+  uv_fs_req_cleanup(&file.m1);
+  //call fs_open
 }
 
-char* dest_name(char *path)
+void find_dest_name(char *path)
 {
-  return 0;
+  uv_fs_scandir(eventloop(), &file.m1, file.dest, 0, scan_cb);
 }
 
-static void close_file()
+static void file_cleanup()
 {
   log_msg("FILE", "close");
   free(file.src);
@@ -72,10 +91,18 @@ static void close_file()
 static void close_cb(uv_fs_t *req)
 {
   if (req->result < 0)
-    log_msg("?", "file: |%s|, ", uv_strerror(req->result));
+    log_err("?", "file: |%s|, ", uv_strerror(req->result));
   file.opencnt--;
   if (file.opencnt == 0)
-    close_file();
+    file_cleanup();
+}
+
+static void file_close()
+{
+  if (file.opencnt > 0)
+    uv_fs_close(eventloop(), &file.c1, file.u1, close_cb);
+  if (file.opencnt > 1)
+    uv_fs_close(eventloop(), &file.c2, file.u2, close_cb);
 }
 
 static void try_sendfile()
@@ -96,23 +123,21 @@ static void try_sendfile()
 static void write_cb(uv_fs_t *req)
 {
   if (req->result < 0)
-    log_msg("?", "file: |%s|, ", uv_strerror(req->result));
+    log_err("?", "file: |%s|, ", uv_strerror(req->result));
   log_msg("FILE", "wrote %ld %ld", file.offset, file.len);
 
   file.offset += req->result;
 
   if (file.offset < file.len)
     try_sendfile();
-  else {
-    uv_fs_close(eventloop(), &file.c1, file.u1, close_cb);
-    uv_fs_close(eventloop(), &file.c2, file.u2, close_cb);
-  }
+  else
+    file_close();
 }
 
 static void stat_cb(uv_fs_t *req)
 {
   if (req->result < 0)
-    log_msg("?", "stat: |%s|, ", uv_strerror(req->result));
+    log_err("?", "stat: |%s|, ", uv_strerror(req->result));
   file.len = req->statbuf.st_size;
   file.blk = MAX(req->statbuf.st_blksize, 4096);
   log_msg("FILE", "use %ld for %ld", file.blk, file.len);
@@ -123,12 +148,19 @@ static void stat_cb(uv_fs_t *req)
 static void open_cb(uv_fs_t *req)
 {
   if (req->result < 0)
-    log_msg("?", "open: |%s|, ", uv_strerror(req->result));
+    log_err("?", "open: |%s|, ", uv_strerror(req->result));
 
   if (req == &file.f1)
     file.u1 = req->result;
-  if (req == &file.f2)
+  if (req == &file.f2) {
+    if (req->result == UV_EEXIST) {
+      log_err("FILE", "file exists");
+      find_dest_name(file.dest);
+      file_close();
+      return;
+    }
     file.u2 = req->result;
+  }
 
   file.opencnt++;
 
@@ -136,12 +168,12 @@ static void open_cb(uv_fs_t *req)
     uv_fs_stat(eventloop(), &file.s1, file.src, stat_cb);
 }
 
-void file_copy(char *src, char *dest)
+void file_copy(const char *src, const char *dest)
 {
   log_msg("FILE", "copy");
   file.offset = 0;
   file.src = strdup(src);
   file.dest = strdup(dest);
   uv_fs_open(eventloop(), &file.f1, src, O_RDONLY, 0, open_cb);
-  uv_fs_open(eventloop(), &file.f2, dest, O_WRONLY, 0, open_cb);
+  uv_fs_open(eventloop(), &file.f2, dest, O_CREAT|O_EXCL, 0, open_cb);
 }

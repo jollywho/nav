@@ -171,7 +171,7 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
     arg = "";
   }
 
-  file_copy(reg->value, "/home/chi/test/1");
+  file_copy(reg->value, self->cur_dir);
 
   return;
 
