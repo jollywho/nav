@@ -436,7 +436,7 @@ void fs_reopen(fentry *ent)
 void fs_fastreq(fn_fs *fs)
 {
   log_msg("FS", "fs_fastreq %d", fs->ent->running);
-  //::try direct reopen for now
+  //::try direct reopen for now (unsafe)
   //fs->ent->fastreq = true;
   //if (!fs->ent->running) {
     fs->ent->flush = true;

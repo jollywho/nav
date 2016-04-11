@@ -433,9 +433,9 @@ char* buf_focus_sel(Model *m, const char *fld)
   return str;
 }
 
-static void buf_end_sel(Buffer *buf)
+void buf_end_sel(Buffer *buf)
 {
-  select_alt_origin(&buf->lnum, &buf->top);
+  select_min_origin(&buf->lnum, &buf->top);
   select_clear();
   buf_move_invalid(buf, buf->top, buf->lnum);
   buf_refresh(buf);

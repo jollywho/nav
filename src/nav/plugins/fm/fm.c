@@ -201,11 +201,12 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
     if (count > 1)
       ans = confirm("Remove: %d items ?", count);
     else
-      ans = confirm("Remove: \"%s\" ?", src);
+      ans = confirm("Remove: %s ?", src);
 
     if (!ans)
       return;
   }
+  buf_end_sel(host->hndl->buf);
 
   char *cmdstr;
   asprintf(&cmdstr, "%s %s", p_rm, src);

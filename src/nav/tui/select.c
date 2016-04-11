@@ -78,6 +78,13 @@ void select_enter(int idx)
   sel.lines[idx] = enable;
 }
 
+void select_min_origin(int *lnum, int *index)
+{
+  if (sel.orgn_lnum + sel.orgn_index > *lnum + *index)
+    return;
+  select_alt_origin(lnum, index);
+}
+
 bool select_alt_origin(int *lnum, int *index)
 {
   if (!select_active())
