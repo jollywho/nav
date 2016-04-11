@@ -175,6 +175,8 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
   if (reg->key == '1')
     arg = "";
 
+  //FIXME: register with multiple values breaks file_copy
+
   FileRet cb = {fm_copy_cb, self};
   file_copy(reg->value, self->cur_dir, cb);
 

@@ -329,14 +329,17 @@ void buf_scroll(Buffer *buf, int y, int max)
 static void buf_search(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_search");
-  int count = regex_match_count(buf->matches);
   int next = regex_next(buf->matches, buf_index(buf), ca->arg);
-  if (next == -1)
-    nv_err("No matches: %s", regex_str(buf->matches));
+  int count = regex_match_count(buf->matches);
+  char *str = regex_str(buf->matches);
+  if (!str)
+    nv_err("No search string");
+  else if (next == -1)
+    nv_err("No matches: %s", str);
   else if (count == 1)
-    nv_msg("Single match: %s", regex_str(buf->matches));
+    nv_msg("Single match: %s", str);
   else
-    nv_msg("Match %d of %d: %s", next + 1, count, regex_str(buf->matches));
+    nv_msg("Match %d of %d: %s", next + 1, count, str);
 }
 
 void buf_move(Buffer *buf, int y, int x)
