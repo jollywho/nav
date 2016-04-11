@@ -7,6 +7,7 @@
 #include "nav/nav.h"
 #include "nav/log.h"
 #include "nav/macros.h"
+#include "nav/event/file.h"
 #include "nav/event/event.h"
 #include "nav/event/fs.h"
 
@@ -16,8 +17,8 @@
 static void write_cb(uv_fs_t *req);
 static void open_cb(uv_fs_t *req);
 static void mkdir_cb(uv_fs_t *req);
+static void stat_cb(uv_fs_t *req);
 
-typedef struct File File;
 struct File {
   uv_fs_t w1;         //writer
   uv_fs_t mk1, mk2;   //mkdir, mkdir_ver
@@ -32,25 +33,54 @@ struct File {
   uv_file u1, u2;
   char *src;
   char *dest;
+  File *file;
+  FileRet fr;
 };
 
-static File file;
+static void file_cleanup(void **args)
+{
+  File *file = args[0];
+  free(file);
+}
 
-static void file_cleanup()
+static void file_finish(File *file)
 {
   log_msg("FILE", "close");
   //TODO: chmod
-  free(file.src);
-  free(file.dest);
-  uv_fs_req_cleanup(&file.s1);
-  uv_fs_req_cleanup(&file.s2);
-  uv_fs_req_cleanup(&file.f1);
-  uv_fs_req_cleanup(&file.f2);
-  uv_fs_req_cleanup(&file.f3);
-  uv_fs_req_cleanup(&file.w1);
-  uv_fs_req_cleanup(&file.c1);
-  uv_fs_req_cleanup(&file.c2);
+  if (file->fr.cb)
+    file->fr.cb(file->fr.arg);
+
+  free(file->src);
+  free(file->dest);
+  uv_fs_req_cleanup(&file->s1);
+  uv_fs_req_cleanup(&file->s2);
+  uv_fs_req_cleanup(&file->f1);
+  uv_fs_req_cleanup(&file->f2);
+  uv_fs_req_cleanup(&file->f3);
+  uv_fs_req_cleanup(&file->w1);
+  uv_fs_req_cleanup(&file->c1);
+  uv_fs_req_cleanup(&file->c2);
+  CREATE_EVENT(eventq(), file_cleanup, 1, file);
 }
+
+static void close_cb(uv_fs_t *req)
+{
+  File *file = req->data;
+  if (req->result < 0)
+    log_err("FILE", "close_cb: |%s|", uv_strerror(req->result));
+
+  file->opencnt--;
+  if (file->opencnt == 0)
+    file_finish(file);
+}
+
+static void file_close(File *file)
+{
+  file->c1.data = file->c2.data = file;
+  uv_fs_close(eventloop(), &file->c1, file->u1, close_cb);
+  uv_fs_close(eventloop(), &file->c2, file->u2, close_cb);
+}
+
 
 static int dest_ver(const char *base, const char *other, size_t baselen)
 {
@@ -72,8 +102,9 @@ static void scan_cb(uv_fs_t *req)
     log_err("FILE", "scan_cb: |%s| ", uv_strerror(req->result));
     exit(1);
   }
-  char *base = basename(file.src);
-  char *dir = dirname(file.src);
+  File *file = req->data;
+  char *base = basename(file->src);
+  char *dir = dirname(file->src);
   int baselen = strlen(base);
   int max_ver = 0;
 
@@ -84,45 +115,35 @@ static void scan_cb(uv_fs_t *req)
       max_ver = ver;
   }
 
-  free(file.dest);
-  asprintf(&file.dest, "%s/%s_%d", dir, base, max_ver+1);
-  log_msg("FILE", "NEWVER: %s", file.dest);
+  free(file->dest);
+  asprintf(&file->dest, "%s/%s_%d", dir, base, max_ver+1);
+  log_msg("FILE", "NEWVER: %s", file->dest);
   uv_fs_req_cleanup(req);
 
-  if (S_ISDIR(file.s1.statbuf.st_mode))
-    uv_fs_mkdir(eventloop(), &file.mk2,
-        file.dest, 0644, mkdir_cb);
-  else
-    uv_fs_open(eventloop(), &file.f3, file.dest, FFRESH, 0644, open_cb);
+  if (S_ISDIR(file->s1.statbuf.st_mode)) {
+    file->mk2.data = file;
+    uv_fs_mkdir(eventloop(), &file->mk2,
+        file->dest, 0644, mkdir_cb);
+  }
+  else {
+    file->f3.data = file;
+    uv_fs_open(eventloop(), &file->f3, file->dest, FFRESH, 0644, open_cb);
+  }
 }
 
-void find_dest_name(char *path, uv_fs_t *fs)
+void find_dest_name(File *file, char *path, uv_fs_t *fs)
 {
-  uv_fs_scandir(eventloop(), fs, dirname(file.dest), 0, scan_cb);
+  fs->data = file;
+  uv_fs_scandir(eventloop(), fs, dirname(file->dest), 0, scan_cb);
 }
 
-static void close_cb(uv_fs_t *req)
-{
-  if (req->result < 0)
-    log_err("FILE", "close_cb: |%s|", uv_strerror(req->result));
-  file.opencnt--;
-  if (file.opencnt == 0)
-    file_cleanup();
-}
-
-static void file_close()
-{
-  uv_fs_close(eventloop(), &file.c1, file.u1, close_cb);
-  uv_fs_close(eventloop(), &file.c2, file.u2, close_cb);
-}
-
-static void try_sendfile()
+static void try_sendfile(File *file)
 {
   while(1) {
     int ret = uv_fs_sendfile(eventloop(),
-        &file.w1,
-        file.u2, file.u1,
-        file.offset, file.blk, write_cb);
+        &file->w1,
+        file->u2, file->u1,
+        file->offset, file->blk, write_cb);
     if (ret > -1)
       return;
     if (ret == UV_EINTR || ret == UV_EAGAIN)
@@ -132,99 +153,111 @@ static void try_sendfile()
 
 static void write_cb(uv_fs_t *req)
 {
+  File *file = req->data;
   if (req->result < 0) {
     log_err("FILE", "write_cb: |%s|", uv_strerror(req->result));
-    file_close();
+    file_close(file);
   }
 
-  file.offset += req->result;
+  file->offset += req->result;
 
-  if (file.offset < file.len)
-    try_sendfile();
+  if (file->offset < file->len)
+    try_sendfile(file);
   else
-    file_close();
+    file_close(file);
 }
 
 static void mkdir_cb(uv_fs_t *req)
 {
   if (req->result < 0)
     log_err("FILE", "mkdir_cb: |%s|", uv_strerror(req->result));
+  File *file = req->data;
 
   uv_fs_req_cleanup(req);
 
   if (req->result == UV_EEXIST) {
     log_err("FILE", "file exists: %s", req->path);
-    find_dest_name(file.dest, &file.m2);
+    find_dest_name(file, file->dest, &file->m2);
     return;
   }
   //  scandir(src)
   //  file_copy(cons(src, ent->name), cons(dest, ent->name));
-  file_cleanup();
-}
-
-static void stat_cb(uv_fs_t *req)
-{
-  if (req->result < 0)
-    log_err("FILE", "stat_cb: |%s|", uv_strerror(req->result));
-
-  if (req == &file.s1) {
-    if (S_ISDIR(req->statbuf.st_mode)) {
-      SWAP_ALLOC_PTR(file.dest, conspath(file.dest, basename(file.src)));
-      uv_fs_mkdir(eventloop(), &file.mk1,
-          file.dest, req->statbuf.st_mode, mkdir_cb);
-      return;
-    }
-    file.u1 = req->result;
-    file.len = req->statbuf.st_size;
-    file.blk = MAX(req->statbuf.st_blksize, 4096);
-    log_msg("FILE", "use %ld for %ld", file.blk, file.len);
-    uv_fs_open(eventloop(), &file.f1, file.src, O_RDONLY, 0, open_cb);
-  }
-
-  if (req == &file.s2) {
-    if (S_ISDIR(req->statbuf.st_mode))
-      SWAP_ALLOC_PTR(file.dest, conspath(file.dest, basename(file.src)));
-
-    log_err("FILE", "open: %s", file.dest);
-    uv_fs_open(eventloop(), &file.f2, file.dest, FFRESH, 0644, open_cb);
-  }
+  file_finish(file);
 }
 
 static void open_cb(uv_fs_t *req)
 {
   if (req->result < 0)
     log_err("FILE", "open_cb: |%s|", uv_strerror(req->result));
+  File *file = req->data;
+  log_msg("FILE", "open-cb");
 
-  if (req == &file.f2 || req == &file.f3) {
+  if (req == &file->f2 || req == &file->f3) {
     if (req->result == UV_EEXIST) {
       log_err("FILE", "file exists: %s", req->path);
-      find_dest_name(file.dest, &file.m1);
+      find_dest_name(file, file->dest, &file->m1);
       return;
     }
-    file.u2 = req->result;
+    file->u2 = req->result;
   }
 
-  file.opencnt++;
+  file->opencnt++;
 
-  if (req == &file.f1) {
-    file.u1 = req->result;
-    uv_fs_stat(eventloop(), &file.s2, file.dest, stat_cb);
+  if (req == &file->f1) {
+    file->u1 = req->result;
+    file->s2.data = file;
+    uv_fs_stat(eventloop(), &file->s2, file->dest, stat_cb);
     return;
   }
 
-  if (file.opencnt == 2)
-    try_sendfile();
+  if (file->opencnt == 2) {
+    file->w1.data = file;
+    try_sendfile(file);
+  }
 }
 
-void file_copy(const char *src, const char *dest)
+static void stat_cb(uv_fs_t *req)
+{
+  if (req->result < 0)
+    log_err("FILE", "stat_cb: |%s|", uv_strerror(req->result));
+  File *file = req->data;
+
+  if (req == &file->s1) {
+    if (S_ISDIR(req->statbuf.st_mode)) {
+      file->mk1.data = file;
+      SWAP_ALLOC_PTR(file->dest, conspath(file->dest, basename(file->src)));
+      uv_fs_mkdir(eventloop(), &file->mk1,
+          file->dest, req->statbuf.st_mode, mkdir_cb);
+      return;
+    }
+    file->u1 = req->result;
+    file->len = req->statbuf.st_size;
+    file->blk = MAX(req->statbuf.st_blksize, 4096);
+    log_msg("FILE", "use %ld for %ld", file->blk, file->len);
+    file->f1.data = file;
+    uv_fs_open(eventloop(), &file->f1, file->src, O_RDONLY, 0, open_cb);
+    return;
+  }
+
+  if (req == &file->s2) {
+    if (S_ISDIR(req->statbuf.st_mode))
+      SWAP_ALLOC_PTR(file->dest, conspath(file->dest, basename(file->src)));
+
+    log_err("FILE", "open: %s", file->dest);
+    file->f2.data = file;
+    uv_fs_open(eventloop(), &file->f2, file->dest, FFRESH, 0644, open_cb);
+  }
+}
+
+void file_copy(const char *src, const char *dest, FileRet fr)
 {
   log_msg("FILE", "copy |%s|%s|", src, dest);
-  file.offset = 0;
-  file.opencnt = 0;
-  file.u1 = -1;
-  file.u2 = -1;
-  file.src = strdup(src);
-  file.dest = strdup(dest);
+  File *file = malloc(sizeof(File));
+  memset(file, 0, sizeof(File));
+  file->src = strdup(src);
+  file->dest = strdup(dest);
+  file->s1.data = file;
+  file->fr = fr;
 
-  uv_fs_stat(eventloop(), &file.s1, file.src, stat_cb);
+  uv_fs_stat(eventloop(), &file->s1, file->src, stat_cb);
 }

@@ -156,41 +156,31 @@ char* lines2argv(char *src)
   return dest;
 }
 
+static void fm_copy_cb(void *arg)
+{
+  FM *self = arg;
+  log_msg("FM", "copy_cb------------");
+  fs_fastreq(self->fs);
+}
+
 static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_paste");
   FM *self = (FM*)host->top;
 
-  char *oper = p_cp;
   char *arg = "-r";
   fn_reg *reg = reg_dcur();
   if (!reg || !reg->value)
     return;
-  if (reg->key == '1') {
-    oper = p_mv;
+  if (reg->key == '1')
     arg = "";
-  }
 
-  file_copy(reg->value, self->cur_dir);
-
-  return;
-
-  log_msg("FM", "using {%d} |%s|", reg->key, reg->value);
-  char *src = lines2argv(reg->value);
-  log_msg("FM", "src |%s|", src);
-  char *dest = strdup(self->cur_dir);
-
-  char *cmdstr;
-  asprintf(&cmdstr, "%s %s %s %s", oper, arg, src, dest);
-  shell_exec(cmdstr, NULL, self->cur_dir, NULL);
-
-  free(src);
-  free(dest);
-  free(cmdstr);
-  fs_fastreq(self->fs);
+  FileRet cb = {fm_copy_cb, self};
+  file_copy(reg->value, self->cur_dir, cb);
 
   if (reg->key == '1')
     reg_clear_dcur();
+  return;
 }
 
 static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)

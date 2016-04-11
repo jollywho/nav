@@ -421,7 +421,7 @@ scandir:
     fs_close_req(ent);
 }
 
-static void fs_reopen(fentry *ent)
+void fs_reopen(fentry *ent)
 {
   log_msg("FS", "--reopen--");
   uv_timer_stop(&ent->watcher_timer);
@@ -436,11 +436,12 @@ static void fs_reopen(fentry *ent)
 void fs_fastreq(fn_fs *fs)
 {
   log_msg("FS", "fs_fastreq %d", fs->ent->running);
-  fs->ent->fastreq = true;
-  if (!fs->ent->running) {
+  //::try direct reopen for now
+  //fs->ent->fastreq = true;
+  //if (!fs->ent->running) {
     fs->ent->flush = true;
     fs_reopen(fs->ent);
-  }
+  //}
 }
 
 static void watch_timer_cb(uv_timer_t *handle)
