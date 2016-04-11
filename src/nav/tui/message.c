@@ -45,7 +45,7 @@ int confirm(char *fmt, ...)
   vasprintf(&msg, fmt, args);
   va_end(args);
 
-  int color = attr_color("MsgAsk");
+  int color = opt_color(MSG_ASK);
 
   message_start();
   dialog_pending = 1;
@@ -74,7 +74,7 @@ static void msg(int color, char *line)
 
 void nv_err(char *fmt, ...)
 {
-  int color = attr_color("MsgError");
+  int color = opt_color(MSG_ERROR);
   char *line;
   va_list args;
   va_start(args, fmt);

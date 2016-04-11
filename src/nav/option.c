@@ -10,12 +10,25 @@
 #include "nav/util.h"
 
 enum opt_type { OPTION_STRING, OPTION_INT, OPTION_UINT };
-static char *default_groups[] = {
-  "BufSelActive", "BufSelInactive", "ComplSelected",
-  "BufText", "BufDir", "BufSz", "OverlaySep",
-  "OverlayLine", "OverlayBufNo", "OverlayActive",
-  "OverlayArgs", "OverlayInactive", "OverlayTextInactive", "ComplText",
-  "MsgError", "MsgMessage", "MsgAsk",
+
+static const char *default_groups[] = {
+  [BUF_SEL_ACTIVE]       = "BufSelActive",
+  [BUF_SEL_INACTIVE]     = "BufSelInactive",
+  [COMPL_SELECTED]       = "ComplSelected",
+  [BUF_TEXT]             = "BufText",
+  [BUF_DIR]              = "BufDir",
+  [BUF_SZ]               = "BufSz",
+  [OVERLAY_SEP]          = "OverlaySep",
+  [OVERLAY_LINE]         = "OverlayLine",
+  [OVERLAY_BUFNO]        = "OverlayBufNo",
+  [OVERLAY_ACTIVE]       = "OverlayActive",
+  [OVERLAY_ARGS]         = "OverlayArgs",
+  [OVERLAY_INACTIVE]     = "OverlayInactive",
+  [OVERLAY_TEXTINACTIVE] = "OverlayTextInactive",
+  [COMPL_TEXT]           = "ComplText",
+  [MSG_ERROR]            = "MsgError",
+  [MSG_MESSAGE]          = "MsgMessage",
+  [MSG_ASK]              = "MsgAsk",
 };
 
 static int dummy = 0;
@@ -45,12 +58,6 @@ static struct fn_option {
   {"shell",         OPTION_STRING, &p_sh},
 };
 
-static fn_group     *groups;
-static fn_syn       *syntaxes;
-static fn_var       *gbl_vars;
-static fn_func      *gbl_funcs;
-static fn_option    *options;
-
 #define FLUSH_OLD_OPT(type,opt,str,expr)       \
   do {                                         \
     type *find;                                \
@@ -74,6 +81,16 @@ static fn_option    *options;
       free(it);                                \
     }                                          \
   } while(0)                                   \
+
+static fn_group  *groups;
+static fn_syn    *syntaxes;
+static fn_var    *gbl_vars;
+static fn_func   *gbl_funcs;
+static fn_option *options;
+
+const char *builtin_color(enum nv_color_group col) {
+  return col < LENGTH(default_groups) ? default_groups[col] : NULL;
+}
 
 void option_init()
 {
@@ -121,10 +138,11 @@ void set_color(fn_group *grp, int fg, int bg)
   grp->colorpair = vt_color_get(NULL, fg, bg);
 }
 
-short attr_color(const char *name)
+short opt_color(enum nv_color_group color)
 {
+  const char *key = builtin_color(color);
   fn_group *grp;
-  HASH_FIND_STR(groups, name, grp);
+  HASH_FIND_STR(groups, key, grp);
   if (!grp)
     return 0;
   return grp->colorpair;

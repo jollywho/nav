@@ -41,10 +41,30 @@ typedef struct {
   char *key;
 } fn_func;
 
+enum nv_color_group {
+  BUF_SEL_ACTIVE,
+  BUF_SEL_INACTIVE,
+  COMPL_SELECTED,
+  BUF_TEXT,
+  BUF_DIR,
+  BUF_SZ,
+  OVERLAY_SEP,
+  OVERLAY_LINE,
+  OVERLAY_BUFNO,
+  OVERLAY_ACTIVE,
+  OVERLAY_ARGS,
+  OVERLAY_INACTIVE,
+  OVERLAY_TEXTINACTIVE,
+  COMPL_TEXT,
+  MSG_ERROR,
+  MSG_MESSAGE,
+  MSG_ASK,
+};
+
 void option_init();
 void option_cleanup();
 void set_color(fn_group *, int, int);
-short attr_color(const char *);
+short opt_color(enum nv_color_group color);
 
 fn_group* set_group(const char *);
 fn_group* get_group(const char *);

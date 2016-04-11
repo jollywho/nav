@@ -81,10 +81,10 @@ Buffer* buf_new()
   Buffer *buf = malloc(sizeof(Buffer));
   memset(buf, 0, sizeof(Buffer));
   buf->nc_win = newwin(1,1,0,0);
-  buf->col_focus = attr_color("BufSelActive");
-  buf->col_text = attr_color("BufText");
-  buf->col_dir = attr_color("BufDir");
-  buf->col_sz = attr_color("BufSz");
+  buf->col_focus = opt_color(BUF_SEL_ACTIVE);
+  buf->col_text  = opt_color(BUF_TEXT);
+  buf->col_dir   = opt_color(BUF_DIR);
+  buf->col_sz    = opt_color(BUF_SZ);
   return buf;
 }
 
@@ -189,9 +189,9 @@ void buf_set_status(Buffer *buf, char *name, char *usr, char *in)
 static void set_focus_col(Buffer *buf, int focus)
 {
   if (focus)
-    buf->col_focus = attr_color("BufSelActive");
+    buf->col_focus = opt_color(BUF_SEL_ACTIVE);
   else
-    buf->col_focus = attr_color("BufSelInactive");
+    buf->col_focus = opt_color(BUF_SEL_INACTIVE);
 }
 
 void buf_toggle_focus(Buffer *buf, int focus)

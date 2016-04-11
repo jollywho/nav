@@ -94,8 +94,8 @@ void start_ex_cmd(char symbol, int state)
   ex.curpos = 0;
   ex.maxpos = max.col - 2;
   ex.inrstate = 0;
-  ex.col_text = attr_color("ComplText");
-  ex.col_symb = attr_color("BufText");
+  ex.col_text = opt_color(COMPL_TEXT);
+  ex.col_symb = opt_color(BUF_TEXT);
 
   if (state == EX_REG_STATE) {
     Buffer *buf = window_get_focus();

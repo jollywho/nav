@@ -43,12 +43,12 @@ Overlay* overlay_new()
   memset(ov, 0, sizeof(Overlay));
   ov->nc_st = newwin(1,1,0,0);
   ov->nc_sep = newwin(1,1,0,0);
-  ov->col_sep = attr_color("OverlaySep");
-  ov->col_line = attr_color("OverlayLine");
-  ov->col_text = attr_color("OverlayLine");
-  ov->col_name = attr_color("OverlayActive");
-  ov->col_arg = attr_color("OverlayArgs");
-  ov->col_bufno = attr_color("OverlayBufNo");
+  ov->col_sep = opt_color(OVERLAY_SEP);
+  ov->col_line = opt_color(OVERLAY_LINE);
+  ov->col_text = opt_color(OVERLAY_LINE);
+  ov->col_name = opt_color(OVERLAY_ACTIVE);
+  ov->col_arg = opt_color(OVERLAY_ARGS);
+  ov->col_bufno = opt_color(OVERLAY_BUFNO);
   ov->usr_arg = strdup("         ");
   overlay_bufno(ov, 0);
 
@@ -123,15 +123,15 @@ void overlay_erase(Overlay *ov)
 
 void overlay_focus(Overlay *ov)
 {
-  ov->col_name = attr_color("OverlayActive");
-  ov->col_text = attr_color("OverlayLine");
+  ov->col_name = opt_color(OVERLAY_ACTIVE);
+  ov->col_text = opt_color(OVERLAY_LINE);
   overlay_refresh(ov);
 }
 
 void overlay_unfocus(Overlay *ov)
 {
-  ov->col_name = attr_color("OverlayInactive");
-  ov->col_text = attr_color("OverlayTextInactive");
+  ov->col_name = opt_color(OVERLAY_INACTIVE);
+  ov->col_text = opt_color(OVERLAY_TEXTINACTIVE);
   overlay_refresh(ov);
 }
 

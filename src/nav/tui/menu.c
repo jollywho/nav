@@ -37,7 +37,6 @@ struct Menu {
 
   int col_text;
   int col_div;
-  int col_select;
   int col_box;
   int col_line;
   int col_sel;
@@ -211,12 +210,11 @@ void menu_start(Menu *mnu)
 {
   log_msg("MENU", "menu_start");
 
-  mnu->col_select = attr_color("BufSelected");
-  mnu->col_sel    = attr_color("ComplSelected");
-  mnu->col_text   = attr_color("ComplText");
-  mnu->col_div    = attr_color("OverlaySep");
-  mnu->col_box    = attr_color("OverlayActive");
-  mnu->col_line   = attr_color("OverlayLine");
+  mnu->col_sel    = opt_color(COMPL_SELECTED);
+  mnu->col_text   = opt_color(COMPL_TEXT);
+  mnu->col_div    = opt_color(OVERLAY_SEP);
+  mnu->col_box    = opt_color(OVERLAY_ACTIVE);
+  mnu->col_line   = opt_color(OVERLAY_LINE);
   ROW_MAX = get_opt_int("menu_rows");
   mnu->hintkeys = get_opt_str("hintkeys");
 

@@ -131,7 +131,7 @@ static void scan_cb(uv_fs_t *req)
   }
 }
 
-void find_dest_name(File *file, char *path, uv_fs_t *fs)
+static void find_dest_name(File *file, char *path, uv_fs_t *fs)
 {
   fs->data = file;
   uv_fs_scandir(eventloop(), fs, dirname(file->dest), 0, scan_cb);
