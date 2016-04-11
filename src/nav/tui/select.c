@@ -6,6 +6,7 @@
 typedef struct {
   int orgn_lnum;
   int orgn_index;
+  int head;
   int *lines;
   int max;
   int count;
@@ -30,6 +31,7 @@ void select_toggle(int lnum, int index, int max)
   int idx = lnum + index;
   sel.aditv = !sel.lines[idx];
 
+  sel.head = idx;
   sel.max = max;
   sel.active = true;
   sel.orgn_lnum = lnum;
@@ -65,16 +67,20 @@ void select_enter(int idx)
   bool enable = sel.aditv;
   int orgn = sel.orgn_lnum + sel.orgn_index;
 
-  int st = MIN(idx, orgn);
-  int ed = MAX(idx, orgn);
+  int st = MIN(sel.head, orgn);
+  int ed = MAX(sel.head, orgn);
+
+  for (int i = st; i <= ed; i++)
+    sel.lines[i] = !enable;
+
+  st = MIN(idx, orgn);
+  ed = MAX(idx, orgn);
   sel.count = (ed - st) + 1;
 
-  for (int i = 0; i < st; i++)
-    sel.lines[i] = !enable;
-  for (int i = st; i < ed; i++)
+  for (int i = st; i <= ed; i++)
     sel.lines[i] = enable;
-  for (int i = ed; i < sel.max; i++)
-    sel.lines[i] = !enable;
+
+  sel.head = idx;
   sel.lines[idx] = enable;
 }
 
