@@ -219,7 +219,7 @@ void buf_refresh(Buffer *buf)
 static void draw_cur_line(Buffer *buf)
 {
   attr_t attr = A_NORMAL;
-  if (select_has_line(buf->lnum + buf->top))
+  if (select_has_line(buf, buf->lnum + buf->top))
     attr = A_REVERSE;
   mvwchgat(buf->nc_win, buf->lnum, 0, -1, attr, buf->col_focus, NULL);
 }
@@ -236,7 +236,7 @@ static void draw_lines(Buffer *buf, Model *m)
     readable_fs(rec_stsize(rec), szbuf);
 
     attr_t attr = A_NORMAL;
-    if (select_has_line(buf->top + i))
+    if (select_has_line(buf, buf->top + i))
       attr = A_REVERSE;
 
     int max = MAX_POS(buf->b_size.col);
@@ -287,7 +287,7 @@ static void buf_curs_move(Buffer *buf, Model *m)
 {
   char *curval = model_str_line(m, buf->top + buf->lnum);
   model_set_curs(m, buf->top + buf->lnum);
-  select_enter(buf_index(buf));
+  select_enter(buf, buf_index(buf));
   buf_refresh(buf);
   send_hook_msg("cursor_change", buf->plugin, NULL, &(HookArg){NULL,curval});
 }
@@ -306,7 +306,7 @@ void buf_full_invalidate(Buffer *buf, int index, int lnum)
   log_msg("BUFFER", "buf_full_invalidate");
   if (!buf->attached)
     return;
-  select_clear();
+  select_clear(buf);
   regex_del_matches(buf->matches);
   buf_move_invalid(buf, index, lnum);
 }
@@ -410,9 +410,10 @@ void buf_g(void *_b, Keyarg *ca)
   buf_move(buf, y, 0);
 }
 
-char* buf_focus_sel(Model *m, const char *fld)
+char* buf_focus_sel(Buffer *buf, const char *fld)
 {
   log_msg("BUFFER", "buf_focus_sel");
+  Model *m = buf->hndl->model;
 
   int selcount = select_count();
   if (selcount < 2)
@@ -420,14 +421,14 @@ char* buf_focus_sel(Model *m, const char *fld)
 
   int len = 0;
   for (int i = 0; i < model_count(m); ++i) {
-    if (select_has_line(i))
+    if (select_has_line(buf, i))
       len += strlen(model_fld_line(m, fld, i)) + 2;
   }
 
   char *str = malloc(len);
   str[0] = '\0';
   for (int i = 0; i < model_count(m); ++i) {
-    if (select_has_line(i)) {
+    if (select_has_line(buf, i)) {
       strcat(str, model_fld_line(m, fld, i));
       strcat(str, "\n");
     }
@@ -438,8 +439,8 @@ char* buf_focus_sel(Model *m, const char *fld)
 
 void buf_end_sel(Buffer *buf)
 {
-  select_min_origin(&buf->lnum, &buf->top);
-  select_clear();
+  select_min_origin(buf, &buf->lnum, &buf->top);
+  select_clear(buf);
   buf_move_invalid(buf, buf->top, buf->lnum);
   buf_refresh(buf);
 }
@@ -457,8 +458,8 @@ void buf_yank(void *_b, Keyarg *ca)
   else if (ca->key != 'y')
     return;
 
-  char *val = buf_focus_sel(h->model, "fullpath");
-  char *shw = buf_focus_sel(h->model, field);
+  char *val = buf_focus_sel(buf, "fullpath");
+  char *shw = buf_focus_sel(buf, field);
   reg_set(NUL, val, shw);
   reg_set('0', val, shw);
   free(val);
@@ -470,8 +471,8 @@ void buf_del(void *_b, Keyarg *ca)
 {
   Buffer *buf = (Buffer*)_b;
   fn_handle *h = buf->hndl;
-  char *val = buf_focus_sel(h->model, "fullpath");
-  char *shw = buf_focus_sel(h->model, h->fname);
+  char *val = buf_focus_sel(buf, "fullpath");
+  char *shw = buf_focus_sel(buf, h->fname);
   reg_set(NUL, val, shw);
   reg_set('1', val, shw);
   free(val);
@@ -509,21 +510,21 @@ static void buf_gen_event(Buffer *buf, Keyarg *ca)
 static void buf_toggle_sel(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_toggle_sel");
-  select_toggle(buf->lnum, buf->top, model_count(buf->hndl->model));
+  select_toggle(buf, model_count(buf->hndl->model));
   buf_refresh(buf);
 }
 
 static void buf_alt_origin(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_alt_origin");
-  if (select_alt_origin(&buf->lnum, &buf->top))
+  if (select_alt_origin(buf, &buf->lnum, &buf->top))
     buf_move_invalid(buf, buf->top, buf->lnum);
 }
 
 static void buf_esc(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_esc");
-  select_clear();
+  select_clear(buf);
   buf_refresh(buf);
 }
 
@@ -543,6 +544,8 @@ int buf_line(Buffer *buf)
 {return buf->lnum;}
 int buf_top(Buffer *buf)
 {return buf->top;}
+int buf_id(Buffer *buf)
+{return buf->plugin ? buf->plugin->id : 0;}
 int buf_sel_count(Buffer *buf)
 {return select_count();}
 pos_T buf_size(Buffer *buf)

@@ -1,15 +1,16 @@
 #ifndef FN_TUI_SELECT_H
 #define FN_TUI_SELECT_H
 
-#include "nav/nav.h"
+#include "nav/plugins/plugin.h"
 
-void select_toggle(int lnum, int index, int max);
-void select_clear();
+void select_toggle(Buffer *, int max);
+void select_clear(Buffer *);
 bool select_active();
 int select_count();
-void select_enter(int idx);
-void select_min_origin(int *lnum, int *index);
-bool select_alt_origin(int *lnum, int *index);
-bool select_has_line(int idx);
+bool select_owner(Buffer *);
+void select_enter(Buffer *, int idx);
+void select_min_origin(Buffer *, int *lnum, int *index);
+bool select_alt_origin(Buffer *, int *lnum, int *index);
+bool select_has_line(Buffer *, int idx);
 
 #endif
