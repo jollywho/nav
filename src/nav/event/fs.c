@@ -371,7 +371,7 @@ static void scan_cb(uv_fs_t *req)
   fs_flush_stream(ent);
 
   /* clear outdated records */
-  tbl_del_val("fm_files", "dir",      (char*)req->path);
+  tbl_del_val("fm_files", "dir", (char*)req->path);
 
   add_dir(req->path, req->statbuf);
 
@@ -381,7 +381,7 @@ static void scan_cb(uv_fs_t *req)
     edit_trans(r, "name", (char*)dent.name, NULL);
     edit_trans(r, "dir",  (char*)req->path, NULL);
     char *full = conspath(req->path, dent.name);
-    edit_trans(r, "fullpath", (char*)full,   NULL);
+    edit_trans(r, "fullpath", (char*)full, NULL);
 
     err = edit_trans_stat(r, full, 0);
     free(full);
