@@ -173,6 +173,8 @@ static void push_callstack(Cmdblock *blk, fn_func *fn)
 
 static void pop_callstack()
 {
+  if (!callstack)
+    return;
   clear_locals(callstack->func);
   if (callstack == callstack->parent)
     callstack = NULL;
@@ -241,13 +243,17 @@ static Cmdret cmd_call(Cmdstr *caller, fn_func *fn, char *line)
   cmdline_build(&cmd, line);
   List *args = cmdline_lst(&cmd);
   int argc = utarray_len(args->items);
+
+  Cmdblock blk = {.brk = 0};
+  push_callstack(&blk, fn);
+  caller->ret = callstack->ret;
+
   if (argc != fn->argc) {
+    //TODO: send error up callstack
     nv_err("incorrect arguments to call: expected %d, got %d!",
         fn->argc, argc);
     goto cleanup;
   }
-  Cmdblock blk = {.brk = 0};
-  push_callstack(&blk, fn);
 
   for (int i = 0; i < argc; i++) {
     char *param = list_arg(args, i, VAR_STRING);

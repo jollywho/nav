@@ -73,7 +73,9 @@ bool select_owner(Buffer *buf)
 
 int select_count()
 {
-  return sel.count;
+  if (sel.enabled)
+    return sel.count;
+  return 0;
 }
 
 void select_enter(Buffer *buf, int idx)
