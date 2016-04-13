@@ -1,3 +1,4 @@
+#include <malloc.h>
 #include <string.h>
 #include <uv.h>
 #include "nav/event/ftw.h"
@@ -5,46 +6,62 @@
 #include "nav/util.h"
 #include "nav/event/event.h"
 
+#define MAX_WAIT 30
+
+typedef void (*recurse_cb)(const char *, struct stat *);
 typedef struct {
-  /* files hash: path,stat */
+  bool running;
+  bool cancel;
   uint64_t before;
   off_t size;
   int count;
-  bool cancel;
-  FileRet ret;
+  int depth;
+  FileItem *cur;
+  TAILQ_HEAD(cont, FileItem) p;
 } Ftw;
+static Ftw ftw;
 
-#define MAX_WAIT 30
+void ftw_init()
+{
+  TAILQ_INIT(&ftw.p);
+  ftw.running = false;
+}
 
-static int cancel;
+void ftw_cleanup()
+{
+  //cancel items
+}
 
-//copy -> ftw -> ftw_cb -> copy_cb
-
-typedef void (*recurse_cb)(const char *, struct stat *, Ftw *f);
-
-void recurse(const char *path, recurse_cb fn, Ftw *f)
+void recurse(const char *path, recurse_cb fn)
 {
   char buf[PATH_MAX], *p;
   struct dirent *d;
   struct stat st;
   DIR *dp;
 
-  if (lstat(path, &st) == -1 || !S_ISDIR(st.st_mode))
-    return fn(path, &st, f);
+  if (lstat(path, &st) == -1)
+    return;
+
+  fn(path, &st);
+
+  if (!S_ISDIR(st.st_mode))
+    return;
 
   if (!(dp = opendir(path)))
     log_err("FTW", "opendir failed %s", path);
 
-  while ((d = readdir(dp))) {
+  ftw.depth++;
 
-    if (f->cancel || cancel) {
+  while ((d = readdir(dp))) {
+    if (ftw.cancel) {
       log_err("FTW", "<|_CANCEL_|>");
       break;
     }
+
     uint64_t now = os_hrtime();
-    if ((now - f->before)/1000000 > MAX_WAIT) {
+    if ((now - ftw.before)/1000000 > MAX_WAIT) {
       event_cycle_once();
-      f->before = os_hrtime();
+      ftw.before = os_hrtime();
     }
 
     if (strcmp(d->d_name, ".") == 0 ||
@@ -61,41 +78,64 @@ void recurse(const char *path, recurse_cb fn, Ftw *f)
     strcat(buf, "/");
     strcat(buf, d->d_name);
 
-    recurse(buf, fn, f);
+    recurse(buf, fn);
   }
 
+  ftw.depth--;
   closedir(dp);
 }
 
-static void ftw_cb(const char *str, struct stat *sb, Ftw *f)
+static void ftw_cb(const char *str, struct stat *sb)
 {
-  //log_msg("FTW", "%s", str);
+  log_msg("FTW", "%s %d", str, ftw.depth);
   //log_msg("FTW", "%ld", sb->st_size);
   //log_msg("FTW", "[%ld]", f->size);
-  f->size += sb->st_size;
-  f->count++;
+  ftw.size += sb->st_size;
+  ftw.count++;
 
-  //push item to file_queue
-  //if depth == 0, pop item from ftw_queue
+  if (ftw.depth > 0) {
+    FileItem *cpy = malloc(sizeof(FileItem));
+    cpy->src = strdup(str);
+    cpy->dest = NULL;
+    cpy->parent = ftw.cur;
+    file_push(cpy);
+  }
+  else {
+    TAILQ_REMOVE(&ftw.p, ftw.cur, ent);
+    file_push(ftw.cur);
+  }
+
   //onerror: pop item from ftw_queue
 }
 
 void ftw_cancel()
 {
-  cancel = 1;
+  ftw.cancel = true;
 }
 
-void ftw_start(const char *dirpath, FileRet fr)
+static void ftw_start()
 {
-  cancel = 0;
-  uint64_t before = os_hrtime();
-  Ftw f = {before,0,0,0,{0,0}};
-  recurse(dirpath, ftw_cb, &f);
-  log_msg("FTW", "Finished");
+  ftw.running = true;
+  ftw.cancel = false;
+  ftw.depth = 0;
+  ftw.before = os_hrtime();
 
-  uint64_t now = os_hrtime();
+  ftw.cur = TAILQ_FIRST(&ftw.p);
+  recurse(ftw.cur->src, ftw_cb);
+
+  log_msg("FTW", "Finished");
   char buf[20];
-  uint64_t ran = (now - before);
-  readable_fs(f.size, buf);
-  log_msg("FTW", "Size: %s, Count: %d Ran: %ld", buf, f.count, ran);
+  readable_fs(ftw.size, buf);
+
+  //check for more entries
+  ftw.running = false;
+  ftw.cur = NULL;
+  file_start();
+}
+
+void ftw_push(FileItem *item)
+{
+  TAILQ_INSERT_TAIL(&ftw.p, item, ent);
+  if (!ftw.running)
+    ftw_start();
 }

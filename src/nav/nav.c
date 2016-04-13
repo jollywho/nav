@@ -17,6 +17,7 @@
 #include "nav/compl.h"
 #include "nav/event/hook.h"
 #include "nav/event/shell.h"
+#include "nav/event/file.h"
 #include "nav/vt/vt.h"
 
 void init(int debug, char *config_path)
@@ -47,6 +48,7 @@ void init(int debug, char *config_path)
   hook_init();
   ex_cmd_init();
   window_init();
+  file_init();
 
   config_init();
   hist_init();
@@ -61,6 +63,7 @@ void cleanup(void)
   log_msg("CLEANUP", "CLEANUP_START");
   ex_cmd_cleanup();
   hist_cleanup();
+  file_cleanup();
   window_cleanup();
   hook_cleanup();
   compl_cleanup();

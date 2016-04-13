@@ -3,7 +3,9 @@
 
 #include "nav/event/file.h"
 
-void ftw_start(const char *dirpath, FileRet fr);
+void ftw_init();
+void ftw_cleanup();
+void ftw_push(FileItem *item);
 void ftw_cancel();
 
 #endif
