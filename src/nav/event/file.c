@@ -10,6 +10,7 @@
 #include "nav/event/file.h"
 #include "nav/event/event.h"
 #include "nav/event/fs.h"
+#include "nav/event/ftw.h"
 
 #define ISDIGIT(c) ((unsigned) (c) - '0' <= 9)
 #define FFRESH O_CREAT|O_EXCL|O_WRONLY
@@ -17,20 +18,20 @@
 static void write_cb(uv_fs_t *req);
 static void open_cb(uv_fs_t *req);
 static void mkdir_cb(uv_fs_t *req);
-static void stat_cb(uv_fs_t *req);
+static void do_stat(File *file, const char *path, struct stat *sb);
 
 struct File {
   uv_fs_t w1;         //writer
   uv_fs_t mk1, mk2;   //mkdir, mkdir_ver
   uv_fs_t f1, f2, f3; //src,dest,dest_ver
   uv_fs_t c1, c2;     //close
-  uv_fs_t s1, s2;     //stat
   uv_fs_t m1, m2;     //scan_ver, scan_mkdir
   int opencnt;        //ref_count src,dest
   uint64_t len;       //file length
   uint64_t offset;    //write offset
   uint64_t blk;       //write blk size
   uv_file u1, u2;
+  struct stat s1, s2; //file stat
   char *src;
   char *dest;
   File *file;
@@ -52,8 +53,6 @@ static void file_finish(File *file)
 
   free(file->src);
   free(file->dest);
-  uv_fs_req_cleanup(&file->s1);
-  uv_fs_req_cleanup(&file->s2);
   uv_fs_req_cleanup(&file->f1);
   uv_fs_req_cleanup(&file->f2);
   uv_fs_req_cleanup(&file->f3);
@@ -120,7 +119,7 @@ static void scan_cb(uv_fs_t *req)
   log_msg("FILE", "NEWVER: %s", file->dest);
   uv_fs_req_cleanup(req);
 
-  if (S_ISDIR(file->s1.statbuf.st_mode)) {
+  if (S_ISDIR(file->s1.st_mode)) {
     file->mk2.data = file;
     uv_fs_mkdir(eventloop(), &file->mk2,
         file->dest, 0644, mkdir_cb);
@@ -205,8 +204,7 @@ static void open_cb(uv_fs_t *req)
 
   if (req == &file->f1) {
     file->u1 = req->result;
-    file->s2.data = file;
-    uv_fs_stat(eventloop(), &file->s2, file->dest, stat_cb);
+    do_stat(file, file->dest, &file->s2);
     return;
   }
 
@@ -216,31 +214,29 @@ static void open_cb(uv_fs_t *req)
   }
 }
 
-static void stat_cb(uv_fs_t *req)
+static void do_stat(File *file, const char *path, struct stat *sb)
 {
-  if (req->result < 0)
-    log_err("FILE", "stat_cb: |%s|", uv_strerror(req->result));
-  File *file = req->data;
+  if (stat(path, sb) == -1)
+    log_err("FILE", "do_stat: |%s|", strerror(errno));
 
-  if (req == &file->s1) {
-    if (S_ISDIR(req->statbuf.st_mode)) {
+  if (sb == &file->s1) {
+    if (S_ISDIR(sb->st_mode)) {
       file->mk1.data = file;
       SWAP_ALLOC_PTR(file->dest, conspath(file->dest, basename(file->src)));
       uv_fs_mkdir(eventloop(), &file->mk1,
-          file->dest, req->statbuf.st_mode, mkdir_cb);
+          file->dest, sb->st_mode, mkdir_cb);
       return;
     }
-    file->u1 = req->result;
-    file->len = req->statbuf.st_size;
-    file->blk = MAX(req->statbuf.st_blksize, 4096);
+    file->len = sb->st_size;
+    file->blk = MAX(sb->st_blksize, 4096);
     log_msg("FILE", "use %ld for %ld", file->blk, file->len);
     file->f1.data = file;
     uv_fs_open(eventloop(), &file->f1, file->src, O_RDONLY, 0, open_cb);
     return;
   }
 
-  if (req == &file->s2) {
-    if (S_ISDIR(req->statbuf.st_mode))
+  if (sb == &file->s2) {
+    if (S_ISDIR(sb->st_mode))
       SWAP_ALLOC_PTR(file->dest, conspath(file->dest, basename(file->src)));
 
     log_err("FILE", "open: %s", file->dest);
@@ -256,8 +252,8 @@ void file_copy(const char *src, const char *dest, FileRet fr)
   memset(file, 0, sizeof(File));
   file->src = strdup(src);
   file->dest = strdup(dest);
-  file->s1.data = file;
   file->fr = fr;
 
-  uv_fs_stat(eventloop(), &file->s1, file->src, stat_cb);
+  ftw_start(src, (FileRet){});
+  do_stat(file, file->src, &file->s1);
 }

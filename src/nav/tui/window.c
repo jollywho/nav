@@ -369,9 +369,12 @@ Cmdret win_close(List *args, Cmdarg *ca)
   if (buf)
     plugin_close(buf_plugin(buf));
 
-  if (!(ca->bflag & BUFFER) && buf)
+  if (!buf)
+    return win_shut();
+
+  if (!(ca->bflag & BUFFER))
     window_remove_buffer();
-  else if (buf)
+  else
     buf_detach(buf);
   return NORET;
 }

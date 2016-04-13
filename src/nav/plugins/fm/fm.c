@@ -14,7 +14,6 @@
 #include "nav/tui/window.h"
 #include "nav/tui/message.h"
 #include "nav/event/file.h"
-#include "nav/event/ftw.h"
 
 void fm_init()
 {
@@ -32,6 +31,7 @@ void fm_cleanup()
 {
 }
 
+#include "nav/event/ftw.h"
 void plugin_cancel(Plugin *plugin)
 {
   log_msg("FM", "<|_CANCEL_|>");
@@ -179,7 +179,6 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
 
   //FIXME: register with multiple values breaks file_copy
 
-  ftw_start(reg->value, (FileRet){});
   FileRet cb = {fm_copy_cb, self};
   file_copy(reg->value, self->cur_dir, cb);
 

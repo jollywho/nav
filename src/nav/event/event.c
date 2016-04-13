@@ -165,10 +165,10 @@ void queue_put_event(Queue *queue, Event event)
 void event_cycle_once()
 {
   bool pstate = mainloop()->running;
-    queue_process_events(eventq(), TIMEOUT);
-    queue_process_events(drawq(),  TIMEOUT);
-    uv_run(eventloop(), UV_RUN_NOWAIT);
-  //mainloop()->running = false;
-  //uv_run(eventloop(), UV_RUN_ONCE);
+  mainloop()->running = false;
+  queue_process_events(eventq(), TIMEOUT);
+  queue_process_events(drawq(),  TIMEOUT);
+  uv_run(eventloop(), UV_RUN_NOWAIT);
+  uv_run(eventloop(), UV_RUN_ONCE);
   mainloop()->running = pstate;
 }
