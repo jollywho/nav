@@ -42,7 +42,7 @@ static char *p_sh = "/bin/sh";
 char *p_cp = "cp";
 char *p_mv = "mv";
 char *p_rm = "rm -r";
-char *p_xc = "xclip";
+char *p_xc = "xclip -i";
 
 typedef struct fn_option fn_option;
 static struct fn_option {
@@ -51,12 +51,13 @@ static struct fn_option {
   void *value;
   UT_hash_handle hh;
 } default_options[] = {
-  {"dummy",         OPTION_INT,    &dummy},
-  {"ask_delete",    OPTION_INT,    &ask_delete},
-  {"history",       OPTION_UINT,   &history},
-  {"menu_rows",     OPTION_INT,    &menu_rows},
-  {"hintkeys",      OPTION_STRING, &hintskey},
-  {"shell",         OPTION_STRING, &p_sh},
+  {"dummy",         OPTION_INT,       &dummy},
+  {"ask_delete",    OPTION_INT,       &ask_delete},
+  {"history",       OPTION_UINT,      &history},
+  {"menu_rows",     OPTION_INT,       &menu_rows},
+  {"hintkeys",      OPTION_STRING,    &hintskey},
+  {"shell",         OPTION_STRING,    &p_sh},
+  {"copy-pipe",     OPTION_STRING,    &p_xc},
 };
 
 #define FLUSH_OLD_OPT(type,opt,str,expr)       \
