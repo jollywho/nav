@@ -242,17 +242,23 @@ static void draw_lines(Buffer *buf, Model *m)
     int max = MAX_POS(buf->b_size.col);
     draw_wide(buf->nc_win, i, 0, it, max - 1);
 
-    if (isrecdir(rec)) {
-      mvwchgat(buf->nc_win, i, 0, -1, attr, buf->col_dir, NULL);
-      draw_wide(buf->nc_win, i, buf->b_size.col - 1, "/", SZ_LEN);
-      mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, attr, buf->col_sz, NULL);
-    }
-    else {
+    if (isrecreg(rec)) {
       int col = get_syn_colpair(file_ext(it));
       mvwchgat(buf->nc_win, i, 0, -1, attr, col, NULL);
       draw_wide(buf->nc_win, i, 2+max, szbuf, SZ_LEN);
       mvwchgat(buf->nc_win, i, 2+max, -1, attr, buf->col_sz, NULL);
       mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, attr, buf->col_text,0);
+    }
+    else {
+      char *symb = "?";
+      if (isreclnk(rec))
+        symb = ">";
+      else if (isrecdir(rec))
+        symb = "/";
+
+      mvwchgat(buf->nc_win, i, 0, -1, attr, buf->col_dir, NULL);
+      draw_wide(buf->nc_win, i, buf->b_size.col - 1, symb, SZ_LEN);
+      mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, attr, buf->col_sz, NULL);
     }
 
   }

@@ -8,7 +8,7 @@
 
 #define MAX_WAIT 30
 
-typedef void (*recurse_cb)(const char *, struct stat *);
+typedef void (*recurse_cb)(const char *, struct stat *, int);
 typedef struct {
   bool running;
   bool cancel;
@@ -32,7 +32,7 @@ void ftw_cleanup()
   //cancel items
 }
 
-void recurse(const char *path, recurse_cb fn)
+static void do_ftw(const char *path, recurse_cb fn)
 {
   char buf[PATH_MAX], *p;
   struct dirent *d;
@@ -42,9 +42,11 @@ void recurse(const char *path, recurse_cb fn)
   if (lstat(path, &st) == -1)
     return;
 
-  fn(path, &st);
+  int isdir = S_ISDIR(st.st_mode);
 
-  if (!S_ISDIR(st.st_mode))
+  fn(path, &st, isdir);
+
+  if (!isdir)
     return;
 
   if (!(dp = opendir(path)))
@@ -78,18 +80,17 @@ void recurse(const char *path, recurse_cb fn)
     strcat(buf, "/");
     strcat(buf, d->d_name);
 
-    recurse(buf, fn);
+    do_ftw(buf, fn);
   }
 
   ftw.depth--;
+  ftw.cur = ftw.cur->parent;
   closedir(dp);
 }
 
-static void ftw_cb(const char *str, struct stat *sb)
+static void ftw_cb(const char *str, struct stat *sb, int isdir)
 {
   log_msg("FTW", "%s %d", str, ftw.depth);
-  //log_msg("FTW", "%ld", sb->st_size);
-  //log_msg("FTW", "[%ld]", f->size);
   ftw.size += sb->st_size;
   ftw.count++;
 
@@ -99,6 +100,9 @@ static void ftw_cb(const char *str, struct stat *sb)
     cpy->dest = NULL;
     cpy->parent = ftw.cur;
     file_push(cpy);
+
+    if (isdir)
+      ftw.cur = cpy;
   }
   else {
     TAILQ_REMOVE(&ftw.p, ftw.cur, ent);
@@ -121,7 +125,7 @@ static void ftw_start()
   ftw.before = os_hrtime();
 
   ftw.cur = TAILQ_FIRST(&ftw.p);
-  recurse(ftw.cur->src, ftw_cb);
+  do_ftw(ftw.cur->src, ftw_cb);
 
   log_msg("FTW", "Finished");
   char buf[20];
@@ -129,7 +133,6 @@ static void ftw_start()
 
   //check for more entries
   ftw.running = false;
-  ftw.cur = NULL;
   file_start();
 }
 

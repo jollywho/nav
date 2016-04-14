@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -33,9 +34,11 @@ struct File {
   File *file;
   FileRet fr;
   FileItem *cur;
+  FileItem *curp;
   TAILQ_HEAD(cont, FileItem) p;
 };
 static File file;
+static char target[PATH_MAX];
 
 void file_init()
 {
@@ -50,23 +53,38 @@ void file_cleanup()
   ftw_cleanup();
 }
 
-static void file_stop(int isdir)
+static void clear_fileitem(FileItem *cur, FileItem *p)
+{
+  if (S_ISDIR(file.s1.st_mode)) {
+    file.curp = cur;
+    return;
+  }
+
+  if (p && (cur->parent != p || TAILQ_EMPTY(&file.p))) {
+    free(p->src);
+    free(p->dest);
+    free(p);
+  }
+  file.curp = cur->parent;
+
+  free(cur->src);
+  free(cur->dest);
+  free(cur);
+}
+
+static void file_stop()
 {
   log_msg("FILE", "close");
   //TODO: chmod
   if (file.fr.cb)
     file.fr.cb(file.fr.arg);
 
+  TAILQ_REMOVE(&file.p, file.cur, ent);
+  clear_fileitem(file.cur, file.curp);
+
   memset(&file.s1, 0, sizeof(struct stat));
   memset(&file.s2, 0, sizeof(struct stat));
 
-  //FIXME: clear parent
-  TAILQ_REMOVE(&file.p, file.cur, ent);
-  if (!isdir) {
-    free(file.cur->src);
-    free(file.cur->dest);
-    free(file.cur);
-  }
   uv_fs_req_cleanup(&file.w1);
   uv_fs_req_cleanup(&file.f1);
   uv_fs_req_cleanup(&file.f2);
@@ -84,7 +102,7 @@ static void close_cb(uv_fs_t *req)
 
   file.opencnt--;
   if (file.opencnt == 0)
-    file_stop(0);
+    file_stop();
 }
 
 static void file_close()
@@ -209,10 +227,11 @@ static void do_stat(const char *path, struct stat *sb)
 {
   log_err("FILE", "do_stat");
 
-  int ret = stat(path, sb);
+  int ret = lstat(path, sb);
   if (ret < 0)
     log_err("FILE", "%s", strerror(errno));
 
+  /* src exists, check dest */
   if (sb == &file.s1 && ret == 0) {
     get_cur_dest_name(file.cur->dest, file.cur->parent);
     return do_stat(file.cur->dest, &file.s2);
@@ -226,14 +245,19 @@ static void do_stat(const char *path, struct stat *sb)
   /* dest does not exist */
   if (sb == &file.s2 && errno == ENOENT) {
     if (S_ISDIR(file.s1.st_mode)) {
-      log_err("FILE", "MKDIR %s %p", file.cur->dest, file.cur);
       mkdir(file.cur->dest, file.s1.st_mode);
-      file_stop(1);
+      file_stop();
+      return;
+    }
+    if (S_ISLNK(file.s1.st_mode)) {
+      int r = readlink(file.cur->src, target, sizeof(target));
+      target[r] = '\0';
+      symlink(target, file.cur->dest);
+      file_stop();
       return;
     }
     if (!S_ISREG(file.s1.st_mode))
       return;
-    log_err("FILE", "USING %s %p", file.cur->dest, file.cur->parent);
     uv_fs_open(eventloop(), &file.f1, file.cur->src,  O_RDONLY, 0644, open_cb);
     uv_fs_open(eventloop(), &file.f2, file.cur->dest, FFRESH,   0644, open_cb);
   }
@@ -241,6 +265,7 @@ static void do_stat(const char *path, struct stat *sb)
 
 void file_push(FileItem *item)
 {
+  //add size to progress total
   TAILQ_INSERT_TAIL(&file.p, item, ent);
 }
 

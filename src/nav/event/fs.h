@@ -36,6 +36,8 @@ bool fs_blocking(fn_fs *fs);
 
 bool isdir(const char *);
 bool isrecdir(fn_rec *);
+bool isreclnk(fn_rec *rec);
+bool isrecreg(fn_rec *rec);
 time_t rec_ctime(fn_rec *rec);
 off_t rec_stsize(fn_rec *rec);
 char* fs_expand_path(const char *);
