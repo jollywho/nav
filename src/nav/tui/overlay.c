@@ -52,7 +52,7 @@ Overlay* overlay_new()
   ov->col_name = opt_color(OVERLAY_ACTIVE);
   ov->col_arg = opt_color(OVERLAY_ARGS);
   ov->col_bufno = opt_color(OVERLAY_BUFNO);
-  ov->col_prog = opt_color(OVERLAY_BUFNO);
+  ov->col_prog = opt_color(OVERLAY_PROGRESS);
   ov->usr_arg = strdup("         ");
   overlay_bufno(ov, 0);
 
@@ -226,7 +226,6 @@ void overlay_draw(void **argv)
 
   draw_wide(ov->nc_st, 0, pos, ov->lineno, SZ_ARGSBOX+1);
   mvwchgat (ov->nc_st, 0, pos, -1, A_NORMAL, ov->col_name, NULL);
-
 
   mvwchgat (ov->nc_st, 0, ST_PROG(), ov->prog, A_NORMAL, ov->col_prog, NULL);
 

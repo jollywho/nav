@@ -83,6 +83,9 @@ static void file_stop()
   TAILQ_REMOVE(&file.p, file.cur, ent);
   clear_fileitem(file.cur, file.curp);
 
+  if (TAILQ_EMPTY(&file.p))
+    file.tsize = file.wsize = 0;
+
   memset(&file.s1, 0, sizeof(struct stat));
   memset(&file.s2, 0, sizeof(struct stat));
 
@@ -305,13 +308,25 @@ void file_copy(const char *src, const char *dest, FileRet fr)
 {
   log_msg("FILE", "copy |%s|%s|", src, dest);
 
-  //TODO: parse newlines
-  FileItem *item = malloc(sizeof(FileItem));
-  item->src = strdup(src);
-  item->dest = strdup(dest);
-  item->parent = NULL;
-
   //TODO: better approach for multiple listeners
   file.fr = fr;
-  ftw_push(item);
+
+  int len = strlen(src);
+  int prev = 0;
+
+  for (int i = 0; i < len; i++) {
+    if (src[i] == '\n') {
+      int pos = (i - prev);
+      char *buf = malloc(pos+1);
+      strncpy(buf, &src[prev], pos);
+      buf[pos] = '\0';
+      prev = i + 1;
+
+      FileItem *item = malloc(sizeof(FileItem));
+      item->src = buf;
+      item->dest = strdup(dest);
+      item->parent = NULL;
+      ftw_push(item);
+    }
+  }
 }
