@@ -535,8 +535,7 @@ static void buf_alt_origin(Buffer *buf, Keyarg *ca)
 static void buf_esc(Buffer *buf, Keyarg *ca)
 {
   log_msg("BUFFER", "buf_esc");
-  select_clear(buf);
-  buf_refresh(buf);
+  buf_end_sel(buf);
 }
 
 void buf_sort(Buffer *buf, char *fld, int flags)
