@@ -164,6 +164,11 @@ void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs)
   buf_refresh(buf);
 }
 
+void buf_set_progress(Buffer *buf, long percent)
+{
+  overlay_progress(buf->ov, percent);
+}
+
 void buf_set_pass(Buffer *buf)
 {
   buf->nodraw = true;

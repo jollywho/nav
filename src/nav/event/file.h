@@ -1,6 +1,7 @@
 #ifndef FN_FILE_H
 #define FN_FILE_H
 
+#include <uv.h>
 #include "nav/lib/sys_queue.h"
 
 typedef struct File File;
@@ -21,7 +22,8 @@ struct FileItem {
 void file_init();
 void file_cleanup();
 void file_copy(const char *src, const char *dest, FileRet fr);
-void file_push(FileItem *item);
+void file_push(FileItem *item, uint64_t len);
 void file_start();
+long file_progress();
 
 #endif

@@ -162,7 +162,9 @@ static void fm_copy_cb(void *arg)
 {
   FM *self = arg;
   log_msg("FM", "copy_cb------------");
-  fs_fastreq(self->fs);
+  Buffer *buf = self->base->hndl->buf;
+  buf_set_progress(buf, file_progress());
+  //fs_fastreq(self->fs);
 }
 
 static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)

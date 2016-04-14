@@ -4,7 +4,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <libgen.h>
-#include <uv.h>
 #include "nav/nav.h"
 #include "nav/log.h"
 #include "nav/macros.h"
@@ -15,6 +14,7 @@
 
 #define ISDIGIT(c) ((unsigned) (c) - '0' <= 9)
 #define FFRESH O_CREAT|O_EXCL|O_WRONLY
+#define MAX_WAIT 30
 
 static void write_cb(uv_fs_t *);
 static void do_stat(const char *, struct stat *);
@@ -30,11 +30,14 @@ struct File {
   uint64_t len;       //file length
   uint64_t offset;    //write offset
   uint64_t blk;       //write blk size
+  uint64_t tsize;     //size of queue
+  uint64_t wsize;     //written in queue
+  uint64_t before;
   struct stat s1, s2; //file stat
   File *file;
   FileRet fr;
-  FileItem *cur;
-  FileItem *curp;
+  FileItem *cur;      //current item
+  FileItem *curp;     //parent  item
   TAILQ_HEAD(cont, FileItem) p;
 };
 static File file;
@@ -76,8 +79,6 @@ static void file_stop()
 {
   log_msg("FILE", "close");
   //TODO: chmod
-  if (file.fr.cb)
-    file.fr.cb(file.fr.arg);
 
   TAILQ_REMOVE(&file.p, file.cur, ent);
   clear_fileitem(file.cur, file.curp);
@@ -93,6 +94,8 @@ static void file_stop()
 
   file.running = false;
   CREATE_EVENT(eventq(), file_start, 0, NULL);
+  if (file.fr.cb)
+    file.fr.cb(file.fr.arg);
 }
 
 static void close_cb(uv_fs_t *req)
@@ -180,6 +183,14 @@ static void write_cb(uv_fs_t *req)
   }
 
   file.offset += req->result;
+  file.wsize += req->result;
+
+  uint64_t now = os_hrtime();
+  if ((now - file.before)/1000000 > 30) {
+    if (file.fr.cb)
+      file.fr.cb(file.fr.arg);
+    file.before = os_hrtime();
+  }
 
   if (file.offset < file.len)
     try_sendfile();
@@ -216,11 +227,8 @@ static void open_cb(uv_fs_t *req)
 static void get_cur_dest_name(const char *dest, FileItem *parent)
 {
   if (parent)
-    log_msg("FILE", "parent %s", parent->dest);
-  if (parent)
     dest = parent->dest;
   SWAP_ALLOC_PTR(file.cur->dest, conspath(dest, basename(file.cur->src)));
-  log_msg("FILE", "resul %s", file.cur->dest);
 }
 
 static void do_stat(const char *path, struct stat *sb)
@@ -263,9 +271,21 @@ static void do_stat(const char *path, struct stat *sb)
   }
 }
 
-void file_push(FileItem *item)
+long file_progress()
 {
-  //add size to progress total
+  if (TAILQ_EMPTY(&file.p) || file.tsize < 1)
+    return 0;
+
+  long long sofar = file.wsize * 100;
+  sofar /= file.tsize;
+  if (sofar > 100)
+    sofar = 100;
+  return sofar;
+}
+
+void file_push(FileItem *item, uint64_t len)
+{
+  file.tsize += len;
   TAILQ_INSERT_TAIL(&file.p, item, ent);
 }
 
@@ -276,6 +296,8 @@ void file_start()
 
   file.running = true;
   file.cur = TAILQ_FIRST(&file.p);
+  file.offset = 0;
+  file.before = os_hrtime();
   do_stat(file.cur->src, &file.s1);
 }
 
@@ -288,5 +310,8 @@ void file_copy(const char *src, const char *dest, FileRet fr)
   item->src = strdup(src);
   item->dest = strdup(dest);
   item->parent = NULL;
+
+  //TODO: better approach for multiple listeners
+  file.fr = fr;
   ftw_push(item);
 }

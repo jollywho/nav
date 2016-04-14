@@ -13,7 +13,6 @@ typedef struct {
   bool running;
   bool cancel;
   uint64_t before;
-  off_t size;
   int count;
   int depth;
   FileItem *cur;
@@ -91,7 +90,6 @@ static void do_ftw(const char *path, recurse_cb fn)
 static void ftw_cb(const char *str, struct stat *sb, int isdir)
 {
   log_msg("FTW", "%s %d", str, ftw.depth);
-  ftw.size += sb->st_size;
   ftw.count++;
 
   if (ftw.depth > 0) {
@@ -99,14 +97,14 @@ static void ftw_cb(const char *str, struct stat *sb, int isdir)
     cpy->src = strdup(str);
     cpy->dest = NULL;
     cpy->parent = ftw.cur;
-    file_push(cpy);
+    file_push(cpy, sb->st_size);
 
     if (isdir)
       ftw.cur = cpy;
   }
   else {
     TAILQ_REMOVE(&ftw.p, ftw.cur, ent);
-    file_push(ftw.cur);
+    file_push(ftw.cur, sb->st_size);
   }
 
   //onerror: pop item from ftw_queue
@@ -128,8 +126,6 @@ static void ftw_start()
   do_ftw(ftw.cur->src, ftw_cb);
 
   log_msg("FTW", "Finished");
-  char buf[20];
-  readable_fs(ftw.size, buf);
 
   //check for more entries
   ftw.running = false;

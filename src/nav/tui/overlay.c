@@ -9,6 +9,7 @@
 #define SZ_ARGSBOX 8
 #define SZ_LNUMBOX 10
 #define ST_USRARG() (SZ_NAMEBOX)
+#define ST_PROG() ((SZ_NAMEBOX)-1)
 #define ST_LNUMBOX(col) ((col) - ((SZ_ARGSBOX)-1))
 #define SZ_USR(col) ((col) - (SZ_BUFBOX + SZ_NAMEBOX + SZ_LNUMBOX))
 #define NAME_FMT " %-"STR(SZ_NAMEBOX)"s"
@@ -20,6 +21,7 @@ struct Overlay {
   pos_T ov_size;
   pos_T ov_ofs;
   int separator;
+  int prog;
   bool queued;
   bool del;
 
@@ -35,6 +37,7 @@ struct Overlay {
   short col_line;
   short col_text;
   short col_bufno;
+  short col_prog;
 };
 
 Overlay* overlay_new()
@@ -49,6 +52,7 @@ Overlay* overlay_new()
   ov->col_name = opt_color(OVERLAY_ACTIVE);
   ov->col_arg = opt_color(OVERLAY_ARGS);
   ov->col_bufno = opt_color(OVERLAY_BUFNO);
+  ov->col_prog = opt_color(OVERLAY_BUFNO);
   ov->usr_arg = strdup("         ");
   overlay_bufno(ov, 0);
 
@@ -176,6 +180,16 @@ void overlay_edit(Overlay *ov, char *name, char *usr, char *in)
   overlay_refresh(ov);
 }
 
+void overlay_progress(Overlay *ov, long percent)
+{
+  log_err("OVERLAY", "prog: %ld", percent);
+  ov->prog = SZ_USR(ov->ov_size.col) * percent * 0.01;
+  log_err("OVERLAY", "prog: %d", ov->prog);
+  overlay_refresh(ov);
+  //TODO: cycle overlay once with completion color.
+  //helps for small files that complete too fast to see.
+}
+
 void overlay_draw(void **argv)
 {
   log_msg("OVERLAY", "draw");
@@ -212,6 +226,9 @@ void overlay_draw(void **argv)
 
   draw_wide(ov->nc_st, 0, pos, ov->lineno, SZ_ARGSBOX+1);
   mvwchgat (ov->nc_st, 0, pos, -1, A_NORMAL, ov->col_name, NULL);
+
+
+  mvwchgat (ov->nc_st, 0, ST_PROG(), ov->prog, A_NORMAL, ov->col_prog, NULL);
 
   wnoutrefresh(ov->nc_st);
   if (ov->separator)

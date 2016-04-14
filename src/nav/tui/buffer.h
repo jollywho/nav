@@ -47,6 +47,7 @@ WINDOW* buf_ncwin(Buffer *buf);
 void buf_set_overlay(Buffer *buf, Overlay *ov);
 void buf_set_plugin(Buffer *buf, Plugin *plugin);
 void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs);
+void buf_set_progress(Buffer *buf, long);
 
 void buf_set_pass(Buffer *buf);
 
