@@ -12,6 +12,7 @@
 #define ST_PROG() ((SZ_NAMEBOX)-1)
 #define ST_LNUMBOX(col) ((col) - ((SZ_ARGSBOX)-1))
 #define SZ_USR(col) ((col) - (SZ_BUFBOX + SZ_NAMEBOX + SZ_LNUMBOX))
+#define SZ_PROG(col) (SZ_USR(col) + ST_PROG()-2)
 #define NAME_FMT " %-"STR(SZ_NAMEBOX)"s"
 #define SEPCHAR "╬"
 
@@ -24,6 +25,7 @@ struct Overlay {
   int prog;
   bool queued;
   bool del;
+  bool progfin;
 
   char *usr_arg;
   char *pipe_in;
@@ -183,11 +185,16 @@ void overlay_edit(Overlay *ov, char *name, char *usr, char *in)
 void overlay_progress(Overlay *ov, long percent)
 {
   log_err("OVERLAY", "prog: %ld", percent);
-  ov->prog = SZ_USR(ov->ov_size.col) * percent * 0.01;
-  log_err("OVERLAY", "prog: %d", ov->prog);
+
+  int prog = SZ_PROG(ov->ov_size.col) * percent * 0.01;
+  if (prog == 0)
+    ov->progfin = true;
+
+  //TODO: queue refresh for next draw cycle. not this one. disabled for now.
+  ov->progfin = false;
+  ov->prog = prog;
+
   overlay_refresh(ov);
-  //TODO: cycle overlay once with completion color.
-  //helps for small files that complete too fast to see.
 }
 
 void overlay_draw(void **argv)
@@ -200,19 +207,22 @@ void overlay_draw(void **argv)
     return;
   ov->queued = false;
 
+  int x = ov->ov_size.col;
+  int y = ov->ov_size.lnum;
+
   draw_wide(ov->nc_st, 0, 0, ov->bufno, SZ_BUFBOX+1);
   mvwchgat (ov->nc_st, 0, 0, SZ_BUFBOX+1, A_NORMAL, ov->col_bufno, NULL);
 
   draw_wide(ov->nc_st, 0, SZ_BUFBOX-1, ov->name, SZ_NAMEBOX+1);
   mvwchgat (ov->nc_st, 0, SZ_BUFBOX-1, SZ_NAMEBOX+1, A_NORMAL, ov->col_name, NULL);
 
-  mvwhline(ov->nc_st, 0, SZ_NAMEBOX-1, ' ', ov->ov_size.col);
+  mvwhline(ov->nc_st, 0, SZ_NAMEBOX-1, ' ', x);
   mvwchgat(ov->nc_st, 0, SZ_NAMEBOX-1, -1, A_NORMAL, ov->col_line, NULL);
 
   if (ov->separator) {
     wattron(ov->nc_sep, COLOR_PAIR(ov->col_sep));
     int i;
-    for (i = 0; i < ov->ov_size.lnum; i++) {
+    for (i = 0; i < y; i++) {
       mvwaddstr(ov->nc_sep, i, 0, SEPCHAR);
     }
     wattroff(ov->nc_sep, COLOR_PAIR(ov->col_sep));
@@ -220,14 +230,19 @@ void overlay_draw(void **argv)
   }
 
   //TODO: if usr_arg exceeds SZ_USR() then compress /*/*/ to fit
-  int pos = ST_LNUMBOX(ov->ov_size.col) - 2;
-  draw_wide(ov->nc_st, 0, ST_USRARG(), ov->usr_arg, SZ_USR(ov->ov_size.col));
+  int pos = ST_LNUMBOX(x) - 2;
+  draw_wide(ov->nc_st, 0, ST_USRARG(), ov->usr_arg, SZ_USR(x));
   mvwchgat (ov->nc_st, 0, ST_USRARG(), pos, A_NORMAL, ov->col_text, NULL);
 
   draw_wide(ov->nc_st, 0, pos, ov->lineno, SZ_ARGSBOX+1);
   mvwchgat (ov->nc_st, 0, pos, -1, A_NORMAL, ov->col_name, NULL);
 
-  mvwchgat (ov->nc_st, 0, ST_PROG(), ov->prog, A_NORMAL, ov->col_prog, NULL);
+  if (ov->progfin) {
+    ov->progfin = false;
+    mvwchgat (ov->nc_st, 0, ST_PROG(), SZ_PROG(x), A_REVERSE, ov->col_name, NULL);
+  }
+  else
+    mvwchgat (ov->nc_st, 0, ST_PROG(), ov->prog, A_NORMAL, ov->col_prog, NULL);
 
   wnoutrefresh(ov->nc_st);
   if (ov->separator)

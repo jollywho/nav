@@ -14,7 +14,7 @@
 
 #define ISDIGIT(c) ((unsigned) (c) - '0' <= 9)
 #define FFRESH O_CREAT|O_EXCL|O_WRONLY
-#define MAX_WAIT 30
+#define MAX_WAIT 60
 
 static void write_cb(uv_fs_t *);
 static void do_stat(const char *, struct stat *);
@@ -311,22 +311,24 @@ void file_copy(const char *src, const char *dest, FileRet fr)
   //TODO: better approach for multiple listeners
   file.fr = fr;
 
-  int len = strlen(src);
   int prev = 0;
-
-  for (int i = 0; i < len; i++) {
+  int i;
+  for (i = 0; src[i]; i++) {
     if (src[i] == '\n') {
       int pos = (i - prev);
       char *buf = malloc(pos+1);
       strncpy(buf, &src[prev], pos);
       buf[pos] = '\0';
       prev = i + 1;
-
-      FileItem *item = malloc(sizeof(FileItem));
-      item->src = buf;
-      item->dest = strdup(dest);
-      item->parent = NULL;
-      ftw_push(item);
+      ftw_push(buf, dest);
     }
+  }
+
+  if (!prev) {
+    int pos = (i - prev);
+    char *buf = malloc(pos+1);
+    strncpy(buf, &src[prev], pos);
+    buf[pos] = '\0';
+    ftw_push(buf, dest);
   }
 }

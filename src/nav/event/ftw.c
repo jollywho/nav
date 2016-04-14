@@ -132,8 +132,14 @@ static void ftw_start()
   file_start();
 }
 
-void ftw_push(FileItem *item)
+void ftw_push(char *src, const char *dest)
 {
+  log_msg("FILE", "pushed");
+  FileItem *item = malloc(sizeof(FileItem));
+  item->src = src;
+  item->dest = strdup(dest);
+  item->parent = NULL;
+
   TAILQ_INSERT_TAIL(&ftw.p, item, ent);
   if (!ftw.running)
     ftw_start();
