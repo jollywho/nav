@@ -189,7 +189,7 @@ static void write_cb(uv_fs_t *req)
   file.wsize += req->result;
 
   uint64_t now = os_hrtime();
-  if ((now - file.before)/1000000 > 30) {
+  if ((now - file.before)/1000000 > MAX_WAIT) {
     if (file.fr.cb)
       file.fr.cb(file.fr.arg);
     file.before = os_hrtime();

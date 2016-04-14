@@ -4,17 +4,17 @@
 #include "nav/tui/window.h"
 #include "nav/util.h"
 
-#define SZ_BUFBOX  3
-#define SZ_NAMEBOX 8
-#define SZ_ARGSBOX 8
-#define SZ_LNUMBOX 10
-#define ST_USRARG() (SZ_NAMEBOX)
-#define ST_PROG() ((SZ_NAMEBOX)-1)
-#define ST_LNUMBOX(col) ((col) - ((SZ_ARGSBOX)-1))
-#define SZ_USR(col) ((col) - (SZ_BUFBOX + SZ_NAMEBOX + SZ_LNUMBOX))
-#define SZ_PROG(col) (SZ_USR(col) + ST_PROG()-2)
-#define NAME_FMT " %-"STR(SZ_NAMEBOX)"s"
-#define SEPCHAR "╬"
+#define SZ_BUF      3
+#define SZ_LBL      8
+#define SZ_ARGS     8
+#define SZ_LN       10
+#define ST_ARG()    (SZ_LBL)
+#define ST_PRG()    ((SZ_LBL)-1)
+#define ST_LN(col)  ((col)-((SZ_ARGS)-1))
+#define SZ_USR(col) ((col)-(SZ_BUF+SZ_LBL+SZ_LN))
+#define SZ_PRG(col) (SZ_USR(col)+ST_PRG()-2)
+#define LBL_FMT     " %-"STR(SZ_LBL)"s"
+#define SEPCHAR     "╬"
 
 struct Overlay {
   WINDOW *nc_sep;
@@ -27,17 +27,17 @@ struct Overlay {
   bool del;
   bool progfin;
 
-  char *usr_arg;
+  char *arg;
   char *pipe_in;
-  char bufno[SZ_BUFBOX];
-  char name[SZ_NAMEBOX];
-  char lineno[SZ_LNUMBOX];
+  char bufno[SZ_BUF];
+  char name[SZ_LBL];
+  char lineno[SZ_LN];
 
-  short col_name;
+  short col_lbl;
+  short col_text;
+  short col_ln;
   short col_arg;
   short col_sep;
-  short col_line;
-  short col_text;
   short col_bufno;
   short col_prog;
 };
@@ -46,20 +46,22 @@ Overlay* overlay_new()
 {
   Overlay *ov = malloc(sizeof(Overlay));
   memset(ov, 0, sizeof(Overlay));
-  ov->nc_st = newwin(1,1,0,0);
+  ov->nc_st  = newwin(1,1,0,0);
   ov->nc_sep = newwin(1,1,0,0);
-  ov->col_sep = opt_color(OVERLAY_SEP);
-  ov->col_line = opt_color(OVERLAY_LINE);
-  ov->col_text = opt_color(OVERLAY_LINE);
-  ov->col_name = opt_color(OVERLAY_ACTIVE);
-  ov->col_arg = opt_color(OVERLAY_ARGS);
+
+  ov->col_lbl   = opt_color(OVERLAY_ACTIVE);
+  ov->col_text  = opt_color(OVERLAY_LINE);
+  ov->col_ln    = opt_color(OVERLAY_LINE);
+  ov->col_sep   = opt_color(OVERLAY_SEP);
+  ov->col_arg   = opt_color(OVERLAY_ARGS);
   ov->col_bufno = opt_color(OVERLAY_BUFNO);
-  ov->col_prog = opt_color(OVERLAY_PROGRESS);
-  ov->usr_arg = strdup("         ");
+  ov->col_prog  = opt_color(OVERLAY_PROGRESS);
+
+  ov->arg = strdup("         ");
   overlay_bufno(ov, 0);
 
-  memset(ov->name,   ' ', SZ_NAMEBOX);
-  memset(ov->lineno, ' ', SZ_LNUMBOX);
+  memset(ov->name,   ' ', SZ_LBL);
+  memset(ov->lineno, ' ', SZ_LN);
   return ov;
 }
 
@@ -80,8 +82,8 @@ void overlay_delete(Overlay *ov)
   if (ov->del)
     return;
 
-  if (ov->usr_arg)
-    free(ov->usr_arg);
+  if (ov->arg)
+    free(ov->arg);
   if (ov->pipe_in)
     free(ov->pipe_in);
 
@@ -120,23 +122,23 @@ void overlay_clear(Overlay *ov)
 
 void overlay_erase(Overlay *ov)
 {
-  set_string(&ov->usr_arg, "");
+  set_string(&ov->arg, "");
   set_string(&ov->pipe_in, "");
-  memset(ov->name,   ' ', SZ_NAMEBOX);
-  memset(ov->lineno, ' ', SZ_LNUMBOX);
+  memset(ov->name,   ' ', SZ_LBL);
+  memset(ov->lineno, ' ', SZ_LN);
   overlay_clear(ov);
 }
 
 void overlay_focus(Overlay *ov)
 {
-  ov->col_name = opt_color(OVERLAY_ACTIVE);
+  ov->col_lbl = opt_color(OVERLAY_ACTIVE);
   ov->col_text = opt_color(OVERLAY_LINE);
   overlay_refresh(ov);
 }
 
 void overlay_unfocus(Overlay *ov)
 {
-  ov->col_name = opt_color(OVERLAY_INACTIVE);
+  ov->col_lbl = opt_color(OVERLAY_INACTIVE);
   ov->col_text = opt_color(OVERLAY_TEXTINACTIVE);
   overlay_refresh(ov);
 }
@@ -161,24 +163,24 @@ void overlay_set(Overlay *ov, pos_T size, pos_T ofs, int sep)
 
 void overlay_bufno(Overlay *ov, int id)
 {
-  snprintf(ov->bufno, SZ_BUFBOX, "%02d", id);
+  snprintf(ov->bufno, SZ_BUF, "%02d", id);
 }
 
 void overlay_lnum(Overlay *ov, int lnum, int max)
 {
-  snprintf(ov->lineno, SZ_LNUMBOX, " %*d:%-*d ", 3, lnum+1, 3, max);
-  int pos = ST_LNUMBOX(ov->ov_size.col) - 2;
-  draw_wide(ov->nc_st, 0, pos, ov->lineno, SZ_ARGSBOX+1);
-  mvwchgat (ov->nc_st, 0, pos, -1, A_NORMAL, ov->col_name, NULL);
+  snprintf(ov->lineno, SZ_LN, " %*d:%-*d ", 3, lnum+1, 3, max);
+  int pos = ST_LN(ov->ov_size.col) - 2;
+  draw_wide(ov->nc_st, 0, pos, ov->lineno, SZ_ARGS+1);
+  mvwchgat (ov->nc_st, 0, pos, -1, A_NORMAL, ov->col_lbl, NULL);
   wnoutrefresh(ov->nc_st);
 }
 
 void overlay_edit(Overlay *ov, char *name, char *usr, char *in)
 {
-  set_string(&ov->usr_arg, usr);
+  set_string(&ov->arg, usr);
   set_string(&ov->pipe_in, in);
   if (name)
-    snprintf(ov->name, SZ_NAMEBOX, NAME_FMT, name);
+    snprintf(ov->name, SZ_LBL, LBL_FMT, name);
   overlay_refresh(ov);
 }
 
@@ -186,7 +188,7 @@ void overlay_progress(Overlay *ov, long percent)
 {
   log_err("OVERLAY", "prog: %ld", percent);
 
-  int prog = SZ_PROG(ov->ov_size.col) * percent * 0.01;
+  int prog = SZ_PRG(ov->ov_size.col) * percent * 0.01;
   if (prog == 0)
     ov->progfin = true;
 
@@ -210,14 +212,14 @@ void overlay_draw(void **argv)
   int x = ov->ov_size.col;
   int y = ov->ov_size.lnum;
 
-  draw_wide(ov->nc_st, 0, 0, ov->bufno, SZ_BUFBOX+1);
-  mvwchgat (ov->nc_st, 0, 0, SZ_BUFBOX+1, A_NORMAL, ov->col_bufno, NULL);
+  draw_wide(ov->nc_st, 0, 0, ov->bufno, SZ_BUF+1);
+  mvwchgat (ov->nc_st, 0, 0, SZ_BUF+1, A_NORMAL, ov->col_bufno, NULL);
 
-  draw_wide(ov->nc_st, 0, SZ_BUFBOX-1, ov->name, SZ_NAMEBOX+1);
-  mvwchgat (ov->nc_st, 0, SZ_BUFBOX-1, SZ_NAMEBOX+1, A_NORMAL, ov->col_name, NULL);
+  draw_wide(ov->nc_st, 0, SZ_BUF-1, ov->name, SZ_LBL+1);
+  mvwchgat (ov->nc_st, 0, SZ_BUF-1, SZ_LBL+1, A_NORMAL, ov->col_lbl, NULL);
 
-  mvwhline(ov->nc_st, 0, SZ_NAMEBOX-1, ' ', x);
-  mvwchgat(ov->nc_st, 0, SZ_NAMEBOX-1, -1, A_NORMAL, ov->col_line, NULL);
+  mvwhline(ov->nc_st, 0, SZ_LBL-1, ' ', x);
+  mvwchgat(ov->nc_st, 0, SZ_LBL-1, -1, A_NORMAL, ov->col_ln, NULL);
 
   if (ov->separator) {
     wattron(ov->nc_sep, COLOR_PAIR(ov->col_sep));
@@ -226,23 +228,23 @@ void overlay_draw(void **argv)
       mvwaddstr(ov->nc_sep, i, 0, SEPCHAR);
     }
     wattroff(ov->nc_sep, COLOR_PAIR(ov->col_sep));
-    DRAW_CH(ov, nc_sep, i, 0, ' ', col_line);
+    DRAW_CH(ov, nc_sep, i, 0, ' ', col_ln);
   }
 
-  //TODO: if usr_arg exceeds SZ_USR() then compress /*/*/ to fit
-  int pos = ST_LNUMBOX(x) - 2;
-  draw_wide(ov->nc_st, 0, ST_USRARG(), ov->usr_arg, SZ_USR(x));
-  mvwchgat (ov->nc_st, 0, ST_USRARG(), pos, A_NORMAL, ov->col_text, NULL);
+  //TODO: if arg exceeds SZ_USR() then compress /*/*/ to fit
+  int pos = ST_LN(x) - 2;
+  draw_wide(ov->nc_st, 0, ST_ARG(), ov->arg, SZ_USR(x));
+  mvwchgat (ov->nc_st, 0, ST_ARG(), pos, A_NORMAL, ov->col_text, NULL);
 
-  draw_wide(ov->nc_st, 0, pos, ov->lineno, SZ_ARGSBOX+1);
-  mvwchgat (ov->nc_st, 0, pos, -1, A_NORMAL, ov->col_name, NULL);
+  draw_wide(ov->nc_st, 0, pos, ov->lineno, SZ_ARGS+1);
+  mvwchgat (ov->nc_st, 0, pos, -1, A_NORMAL, ov->col_lbl, NULL);
 
   if (ov->progfin) {
     ov->progfin = false;
-    mvwchgat (ov->nc_st, 0, ST_PROG(), SZ_PROG(x), A_REVERSE, ov->col_name, NULL);
+    mvwchgat (ov->nc_st, 0, ST_PRG(), SZ_PRG(x), A_REVERSE, ov->col_lbl, NULL);
   }
   else
-    mvwchgat (ov->nc_st, 0, ST_PROG(), ov->prog, A_NORMAL, ov->col_prog, NULL);
+    mvwchgat (ov->nc_st, 0, ST_PRG(), ov->prog, A_NORMAL, ov->col_prog, NULL);
 
   wnoutrefresh(ov->nc_st);
   if (ov->separator)
