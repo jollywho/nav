@@ -87,6 +87,7 @@ static struct fn_option {
 static fn_group  *groups;
 static fn_syn    *syntaxes;
 static fn_var    *gbl_vars;
+static fn_fldvar *fld_vars;
 static fn_func   *gbl_funcs;
 static fn_option *options;
 
@@ -196,6 +197,20 @@ int get_syn_colpair(const char *name)
   return sy->group->colorpair;
 }
 
+void set_fldvar(void *owner, const char *key, fld_cb cb)
+{
+  fn_fldvar *var = malloc(sizeof(fn_fldvar));
+  var->key = strdup(key);
+  var->var = NULL;
+  var->owner = owner;
+  var->cb = cb;
+
+  log_msg("CONFIG", "%s := %s", var->key, var->var);
+  fn_fldvar **container = &fld_vars;
+  FLUSH_OLD_OPT(fn_fldvar, *container, var->key, free(find->var));
+  HASH_ADD_STR(*container, key, var);
+}
+
 void set_var(fn_var *variable, fn_func *blk)
 {
   fn_var *var = malloc(sizeof(fn_var));
@@ -209,8 +224,28 @@ void set_var(fn_var *variable, fn_func *blk)
   HASH_ADD_STR(*container, key, var);
 }
 
+char* fld_var(const char *name)
+{
+  fn_fldvar *fvar = NULL;
+  HASH_FIND_STR(fld_vars, name, fvar);
+  if (!fvar)
+    return "";
+  if (fvar->var)
+    return fvar->var;
+
+  char *ret = fvar->cb(fvar->owner, name);
+  fvar->var = ret;
+  return fvar->var;
+}
+
 char* opt_var(const char *name, fn_func *blk)
 {
+  if (!name)
+    return "";
+  if (name[0] == '%')
+    return fld_var(name+1);
+
+  name++;
   fn_var *var = NULL;
   if (blk)
     HASH_FIND_STR(blk->locals, name, var);

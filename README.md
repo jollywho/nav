@@ -13,7 +13,9 @@ nav is a **work in progress**.
 * async event-driven core
 * scripting language
 * vim-style autocmds, marks, maps, syntax, colors
-* file executor/opener with 'before/after' cmds
+* multi-selection: move, remove, copy
+* bulkrename (soon)
+* file executor/opener with 'before/after' cmds.
 * [ctrlp](https://kien.github.io/ctrlp.vim/)-inspired autocomplete menu
 * menu hint keys
 

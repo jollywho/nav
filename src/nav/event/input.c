@@ -9,6 +9,7 @@
 #include "nav/log.h"
 #include "nav/option.h"
 #include "nav/event/shell.h"
+#include "nav/util.h"
 
 static uv_poll_t poll_handle;
 static TermKey *tk;
@@ -465,8 +466,10 @@ void reg_set(int ch, char *value, char *show)
 
   if (ch == '0') {
     char *cpy;
-    asprintf(&cpy, "echo -n \'%s\' | %s", show, get_opt_str("copy-pipe"));
+    char *src = lines2argv(show);
+    asprintf(&cpy, "echo -en %s | %s", src, get_opt_str("copy-pipe"));
     shell_exec(cpy, NULL, focus_dir(), NULL);
+    free(src);
     free(cpy);
   }
 }

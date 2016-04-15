@@ -3,12 +3,6 @@
 
 #include <ncurses.h>
 
-typedef struct {
-  char* (*expfn)(char*, char*);
-  char *key;
-} Exparg;
-
-void set_exparg(Exparg *exparg);
 bool exparg_isset();
 wchar_t* str2wide(char *src);
 char* wide2str(wchar_t *src);
@@ -19,7 +13,6 @@ void trans_char(char *src, char from, char to);
 void expand_escapes(char *dest, const char *src);
 char* lines2argv(char *src);
 void del_param_list(char **params, int argc);
-char* do_expansion(char *src, Exparg *arg);
 char* strip_quotes(char *str);
 bool fuzzy_match(char *, const char *);
 

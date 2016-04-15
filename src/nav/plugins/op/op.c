@@ -24,9 +24,10 @@ typedef struct {
   fn_group *grp;
 } Op_proc;
 
-static char* expand_field(char *name, char *key)
+static char* expand_field(void *grp, const char *name)
 {
   log_msg("OP", "expand_field");
+  char *key = grp;
 
   //TODO: lookup field names in table
   int isfld = !strcmp(name, "prev") || !strcmp(name, "next");
@@ -42,6 +43,7 @@ static char* expand_field(char *name, char *key)
     return strdup(ret);
   }
 
+  //TODO: new home for this block
   //TODO: lookup field names in table
   log_msg("OP", "expand_field %s", name);
   char *args = buf_focus_sel(window_get_focus(), name);
@@ -90,11 +92,9 @@ static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal)
   uv_close((uv_handle_t*) req, del_proc);
 
   if (!proc->proc.status) {
-    Exparg exparg = {.expfn = expand_field, .key = proc->grp->key};
-    set_exparg(&exparg);
+    //TODO: add vars
     char *line = grp->opgrp->after;
     cmd_eval(NULL, line);
-    set_exparg(NULL);
   }
 }
 
@@ -133,7 +133,6 @@ static void create_proc(fn_group *grp, char *line)
   proc->opts.cwd = window_cur_dir();
 
   uv_signal_start(&mainloop()->children_watcher, chld_handler, SIGCHLD);
-  uv_disable_stdio_inheritance();
   int ret = uv_spawn(eventloop(), &proc->proc, &proc->opts);
 
   if (ret < 0) {
@@ -162,19 +161,21 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
     return;
 
   //TODO: change expansion symbols:
-  //$@        -> all records;  default field
-  //$@:field  -> all records;  field
-  //$1        -> first record; default field
-  //$1:field  -> first record; field
-  //$#        -> count of records
+  //%@        -> all records;  default field
+  //%@:field  -> all records;  field
+  //%1        -> first record; default field
+  //%1:field  -> first record; field
+  //%#        -> count of records
   //reserve $0-9,$@,$# from 'let'
-  Exparg exparg = {.expfn = expand_field, .key = grp->key};
-  set_exparg(&exparg);
+  set_fldvar(grp, "prev", expand_field);
+  set_fldvar(grp, "next", expand_field);
+  set_fldvar(grp, "fullpath", expand_field);
+
   Cmdstr bfcmd;
   char *line = grp->opgrp->before;
 
   cmd_eval(&bfcmd, line);
-  set_exparg(NULL);
+  //remove vars
   if (bfcmd.ret.type != STRING)
     return;
   create_proc(grp, bfcmd.ret.val.v_str);

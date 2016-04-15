@@ -13,17 +13,6 @@
 
 static wchar_t wstr[CCHARW_MAX + 1];
 static cchar_t wbuf[PATH_MAX];
-static Exparg *gexp;
-
-void set_exparg(Exparg *exparg)
-{
-  gexp = exparg;
-}
-
-bool exparg_isset()
-{
-  return gexp;
-}
 
 wchar_t* str2wide(char *src)
 {
@@ -150,9 +139,9 @@ char* strncat_shell(char *dest, const char *src, int n)
     c = src[len++];
     switch(c) {
       case '\'':
+        *(dest++) = '\'';
         *(dest++) = '\\';
         *(dest++) = '\'';
-        break;
       default:
         *(dest++) = c;
     }
@@ -177,7 +166,7 @@ char* lines2argv(char *src)
     if (src[i] == '\n')
       lines+=3;
     else if (src[i] == '\'')
-      escs++;
+      escs+=3;
   }
   int len = i + escs + lines + 2;
   char *dest = malloc(len+1);
@@ -217,45 +206,6 @@ void del_param_list(char **params, int argc)
       free(params[i]);
     free(params);
   }
-}
-
-char* do_expansion(char *src, Exparg *arg)
-{
-  char *line = strdup(src);
-  if (!strstr(line, "%:"))
-    return line;
-
-  char *head = strtok(line, "%:");
-  char *name = strtok(NULL, "%:");
-
-  char *quote = "\"";
-  char *delim = strchr(name, '"');
-  //FIXME: misses remaining string after first delimit
-  //some token/cmdstr context would be nice
-  if (!delim) {
-    delim = " ";
-    quote = " ";
-  }
-
-  name = strtok(name, delim);
-  char *tail = strtok(NULL, delim);
-
-  Exparg *exparg = arg;
-  if (!exparg)
-    exparg = gexp;
-
-  char *body = exparg->expfn(name, exparg->key);
-  if (!body)
-    return line;
-
-  if (!tail)
-    tail = "";
-
-  char *out;
-  asprintf(&out, "%s%s%s%s", head, body, quote, tail);
-  free(line);
-  free(body);
-  return out;
 }
 
 char* strip_quotes(char *_str)

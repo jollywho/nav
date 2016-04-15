@@ -257,6 +257,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
   int st, ed, pos;
   char *str = cmdline->line;
   int block = 0;
+  int esc = 0;
 
   st = ed = pos = 0;
   for (;;) {
@@ -265,9 +266,13 @@ static void cmdline_tokenize(Cmdline *cmdline)
       cmdline_create_token(cmdline->tokens, str, st, ed, block);
       break;
     }
-    else if (ch[0] == '\"' || ch [0] == '\'') {
+    else if (ch[0] == '\\') {
+      esc = 1;
+      continue;
+    }
+    else if ((ch[0] == '\"' || ch[0] == '\'') && !esc) {
       char *closech = strchr(&str[pos], ch[0]);
-      if (closech) {
+      if (closech && closech[-1] != '\\') {
         int end = (closech - &str[pos]) + pos;
         cmdline_create_token(cmdline->tokens, str, pos, end, block);
         end++;
@@ -275,7 +280,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
         st = end;
       }
     }
-    else if (strpbrk(ch, "~!/:|<>,[]{}() ")) {
+    else if (strpbrk(ch, "~!/:|<>,[]{}() ") && !esc) {
       cmdline_create_token(cmdline->tokens, str, st, ed, block);
       if (*ch == ' ')
         block++;
@@ -287,6 +292,8 @@ static void cmdline_tokenize(Cmdline *cmdline)
     }
     else
       ed = pos;
+
+    esc = 0;
   }
 }
 
@@ -492,6 +499,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         push(list_new(cmdline), stack);
         head.start = word->start;
         break;
+      case '%':
       case '$':
         if (str[1]) {
           utarray_push_back(cmdline->vars, word);

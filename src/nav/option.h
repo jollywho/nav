@@ -26,6 +26,15 @@ struct fn_syn {
   fn_group *group;
 };
 
+typedef char* (*fld_cb)(void *, const char *);
+typedef struct {
+  UT_hash_handle hh;
+  char *key;
+  char *var;
+  void *owner;
+  fld_cb cb;
+} fn_fldvar;
+
 typedef struct {
   UT_hash_handle hh;
   char *key;
@@ -73,6 +82,7 @@ void set_syn(fn_syn *);
 fn_syn* get_syn(const char *);
 int get_syn_colpair(const char *);
 
+void set_fldvar(void *, const char *, fld_cb);
 void set_var(fn_var *, fn_func *);
 char* opt_var(const char *, fn_func *);
 void set_func(fn_func *);

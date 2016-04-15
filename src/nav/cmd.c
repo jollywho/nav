@@ -207,12 +207,6 @@ static void ret2caller(Cmdstr *cmdstr, Cmdret ret)
 
 static void cmd_do(Cmdstr *caller, char *line)
 {
-  char *swap = NULL;
-  if (exparg_isset()) {
-    swap = line;
-    line = do_expansion(line, NULL);
-  }
-
   if (lvlcont > 0) {
     char *str;
     asprintf(&str, "%s%s", lncont, line);
@@ -230,8 +224,6 @@ static void cmd_do(Cmdstr *caller, char *line)
     SWAP_ALLOC_PTR(lncont, strdup(line));
 
   cmdline_cleanup(&cmd);
-  if (swap)
-    free(line);
 }
 
 static Cmdret cmd_call(Cmdstr *caller, fn_func *fn, char *line)
@@ -347,7 +339,7 @@ static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
   for (int i = 0; i < count; i++) {
     Token *word = (Token*)utarray_eltptr(cmdline->vars, i);
     char *name = token_val(word, VAR_STRING);
-    char *var = opt_var(name+1, cmd_callstack());
+    char *var = opt_var(name, cmd_callstack());
     len_lst[i] = strlen(var);
     var_lst[i] = var;
     tok_lst[i] = word;
@@ -771,8 +763,6 @@ void exec_line(Cmdstr *cmd, char *line)
   log_msg("CMD", "exec_line");
   char *str = strstr(line, "!");
   ++str;
-  Exparg exparg = {.expfn = model_str_expansion, .key = NULL};
-  str = do_expansion(str, &exparg);
   char *pidstr;
   int pid = shell_exec(str, NULL, focus_dir(), NULL);
   asprintf(&pidstr, "%d", pid);
