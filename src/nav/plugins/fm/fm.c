@@ -14,6 +14,7 @@
 #include "nav/tui/window.h"
 #include "nav/tui/message.h"
 #include "nav/event/file.h"
+#include "nav/util.h"
 
 void fm_init()
 {
@@ -126,38 +127,6 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   free(path);
 }
 
-char* lines2argv(char *src)
-{
-  int i;
-  int count = 1;
-  int len = 0;
-  char *dest = src;
-  for (i = 0; src[i]; i++) {
-    if (src[i] == '\n')
-      count++;
-  }
-
-  if (count == 1) {
-    asprintf(&dest, "\"%s\"", src);
-    return dest;
-  }
-
-  int prev = 0;
-  len = i+(count*3);
-  dest = malloc(len);
-  dest[0] = '\0';
-  for (int j = 0; j < i; j++) {
-    if (src[j] == '\n') {
-      int pos = (j - prev);
-      strcat(dest, "\"");
-      strncat(dest, &src[prev], pos);
-      strcat(dest, "\" ");
-      prev = j + 1;
-    }
-  }
-  return dest;
-}
-
 static void fm_copy_cb(void *arg)
 {
   FM *self = arg;
@@ -210,17 +179,18 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
       ans = confirm("Remove: %s ?", src);
 
     if (!ans)
-      return;
+      goto cleanup;
   }
   buf_end_sel(host->hndl->buf);
 
   char *cmdstr;
   asprintf(&cmdstr, "%s %s", p_rm, src);
+  fs_fastreq(self->fs);
   system(cmdstr);
+  free(cmdstr);
+cleanup:
   free(args);
   free(src);
-  free(cmdstr);
-  fs_fastreq(self->fs);
 }
 
 #ifdef PIPES_SUPPORTED

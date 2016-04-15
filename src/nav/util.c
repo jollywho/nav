@@ -141,6 +141,75 @@ void expand_escapes(char *dest, const char *src)
   *dest = '\0';
 }
 
+char* strncat_shell(char *dest, const char *src, int n)
+{
+  char c;
+  int len = 0;
+  *(dest++) = '\'';
+  while (len < n) {
+    c = src[len++];
+    switch(c) {
+      case '\'':
+        *(dest++) = '\\';
+        *(dest++) = '\'';
+        break;
+      default:
+        *(dest++) = c;
+    }
+  }
+  *(dest++) = '\'';
+  return dest;
+}
+
+void trans_char(char *src, char from, char to)
+{
+  while (*src) {
+    if (*src == from)
+      *src = to;
+    src++;
+  }
+}
+
+char* lines2argv(char *src)
+{
+  int i, escs, lines;
+  for (i = lines = escs = 0; src[i]; i++) {
+    if (src[i] == '\n')
+      lines+=3;
+    else if (src[i] == '\'')
+      escs++;
+  }
+  int len = i + escs + lines + 2;
+  char *dest = malloc(len+1);
+  char *buf = dest;
+
+  char delim = '\n';
+  if (lines == 0) {
+    i++;
+    delim = '\0';
+  }
+
+  int prev = 0;
+  for (int j = 0; j < i; j++) {
+    if (src[j] != delim)
+      continue;
+
+    if (prev > 0)
+      *(buf++) = ' ';
+
+    int pos = (j - prev);
+    buf = strncat_shell(buf, &src[prev], pos);
+    prev = j + 1;
+
+    /* break before next iteration */
+    if (src[j] == '\0')
+      break;
+  }
+  *buf = '\0';
+
+  return dest;
+}
+
 void del_param_list(char **params, int argc)
 {
   if (argc > 0) {
@@ -183,8 +252,9 @@ char* do_expansion(char *src, Exparg *arg)
     tail = "";
 
   char *out;
-  asprintf(&out, "%s\"%s\"%s%s", head, body, quote, tail);
+  asprintf(&out, "%s%s%s%s", head, body, quote, tail);
   free(line);
+  free(body);
   return out;
 }
 

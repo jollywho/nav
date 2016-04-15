@@ -204,6 +204,7 @@ static void ex_tab(void *none, Keyarg *arg)
   cmd_part *part = ex.cmd_stack[ex.curpart];
   int st = part->st;
 
+//FIXME: potential overwrite with more than one escape?
   char key[strlen(str) + 2];
   expand_escapes(key, str);
   int len = cell_len(key);

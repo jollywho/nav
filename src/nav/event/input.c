@@ -465,7 +465,7 @@ void reg_set(int ch, char *value, char *show)
 
   if (ch == '0') {
     char *cpy;
-    asprintf(&cpy, "echo -n \"%s\" | %s", show, get_opt_str("copy-pipe"));
+    asprintf(&cpy, "echo -n \'%s\' | %s", show, get_opt_str("copy-pipe"));
     shell_exec(cpy, NULL, focus_dir(), NULL);
     free(cpy);
   }

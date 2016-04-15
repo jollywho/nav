@@ -27,24 +27,32 @@ typedef struct {
 static char* expand_field(char *name, char *key)
 {
   log_msg("OP", "expand_field");
-  char *val = model_str_expansion(name, NULL);
-  if (val)
-    return val;
 
+  //TODO: lookup field names in table
+  int isfld = !strcmp(name, "prev") || !strcmp(name, "next");
   ventry *vent = fnd_val("op_procs", "group", key);
-  if (!vent)
-    return NULL;
 
-  //if (strcmp(name, "next") || strcmp(name, "prev"))
-  //  return NULL;
+  if (isfld && !vent)
+    goto nomatch;
 
-  ventry *head = ent_head(vent);
-  //if (!strcmp(name, "next"))
-  //  head = head->next;
+  if (vent) {
+    ventry *head = ent_head(vent);
+    char *ret = rec_fld(head->rec, "pid");
+    log_msg("OP", "%s", ret);
+    return strdup(ret);
+  }
 
-  char *ret = rec_fld(head->rec, "pid");
-  log_msg("OP", "%s", ret);
-  return ret;
+  //TODO: lookup field names in table
+  log_msg("OP", "expand_field %s", name);
+  char *args = buf_focus_sel(window_get_focus(), name);
+  char *src = lines2argv(args);
+  log_msg("OP", "%s", src);
+  free(args);
+  if (src)
+    return src;
+
+nomatch:
+  return strdup("");
 }
 
 static void add_pid(char *name, int pid)
@@ -153,7 +161,13 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
   if (!grp->opgrp)
     return;
 
-  //TODO: add %:fullpath:@ for all selection
+  //TODO: change expansion symbols:
+  //$@        -> all records;  default field
+  //$@:field  -> all records;  field
+  //$1        -> first record; default field
+  //$1:field  -> first record; field
+  //$#        -> count of records
+  //reserve $0-9,$@,$# from 'let'
   Exparg exparg = {.expfn = expand_field, .key = grp->key};
   set_exparg(&exparg);
   Cmdstr bfcmd;

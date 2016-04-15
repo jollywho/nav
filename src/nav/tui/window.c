@@ -36,6 +36,7 @@ static Cmdret win_autocmd();
 static Cmdret win_echo();
 static Cmdret win_reload();
 static Cmdret win_direct();
+static Cmdret win_edit();
 static void win_layout();
 static void window_ex_cmd();
 static void window_reg_cmd();
@@ -58,6 +59,7 @@ static const Cmd_T cmdtable[] = {
   {"echo","ec",     win_echo,    0},
   {"reload","rel",  win_reload,  0},
   {"direct",0,      win_direct,  0},
+  {"edit",0,        win_edit,    0},
 };
 
 static char *compl_cmds[] = {
@@ -420,6 +422,25 @@ Cmdret win_direct(List *args, Cmdarg *ca)
     send_hook_msg("pipe_remove", lhs, rhs, NULL);
   else
     send_hook_msg("pipe_left", lhs, rhs, NULL);
+  return NORET;
+}
+
+Cmdret win_edit(List *args, Cmdarg *ca)
+{
+  log_msg("WINDOW", "win_edit");
+  //TODO:
+  //new buf
+  //new term $EDITOR $tmp
+  //set callback on exit
+  //
+  //callback:
+  //dont close plugin or buf
+  //edit $tmp with confirm contents
+  //reopen $EDITOR $tmp in plugin
+  //set callback on exit
+  //
+  //callback:
+  //run each line
   return NORET;
 }
 

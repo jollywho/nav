@@ -436,6 +436,7 @@ char* buf_focus_sel(Buffer *buf, const char *fld)
       len += strlen(model_fld_line(m, fld, i)) + 2;
   }
 
+//FIXME: escape newlines in filename
   char *str = malloc(len);
   str[0] = '\0';
   for (int i = 0; i < model_count(m); ++i) {
