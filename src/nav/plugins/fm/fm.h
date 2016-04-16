@@ -3,7 +3,6 @@
 
 #include "nav/plugins/plugin.h"
 #include "nav/event/fs.h"
-#include "nav/event/file.h"
 
 typedef struct FM FM;
 
@@ -11,7 +10,6 @@ struct FM {
   Plugin *base;
   char *cur_dir;
   fn_fs *fs;
-  File *file;
 };
 
 void fm_init();

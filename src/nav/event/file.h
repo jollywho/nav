@@ -3,17 +3,12 @@
 
 #include <uv.h>
 #include "nav/lib/sys_queue.h"
-
-typedef struct File File;
-typedef void (*file_copy_cb)(void *);
-typedef struct {
-  file_copy_cb cb;
-  void *arg;
-} FileRet;
+#include "nav/plugins/plugin.h"
 
 typedef struct FileItem FileItem;
 struct FileItem {
   TAILQ_ENTRY(FileItem) ent;
+  Buffer *owner;
   char *src;
   char *dest;
   FileItem *parent;
@@ -21,9 +16,10 @@ struct FileItem {
 
 void file_init();
 void file_cleanup();
-void file_copy(const char *src, const char *dest, FileRet fr);
+void file_copy(const char *src, const char *dest, Buffer *);
 void file_push(FileItem *item, uint64_t len);
 void file_start();
+void file_cancel(Buffer *);
 long file_progress();
 
 #endif

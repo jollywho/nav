@@ -50,12 +50,12 @@ void fm_cleanup()
 {
 }
 
-#include "nav/event/ftw.h"
 void plugin_cancel(Plugin *plugin)
 {
   log_msg("FM", "<|_CANCEL_|>");
   FM *self = (FM*)plugin->top;
-  ftw_cancel();
+  Buffer *buf = plugin->hndl->buf;
+  file_cancel(buf);
   fs_cancel(self->fs);
 }
 
@@ -145,15 +145,6 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   free(path);
 }
 
-static void fm_copy_cb(void *arg)
-{
-  FM *self = arg;
-  log_msg("FM", "copy_cb------------");
-  Buffer *buf = self->base->hndl->buf;
-  buf_set_progress(buf, file_progress());
-  //fs_fastreq(self->fs);
-}
-
 static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_paste");
@@ -166,10 +157,8 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
   if (reg->key == '1')
     arg = "";
 
-  //FIXME: register with multiple values breaks file_copy
-
-  FileRet cb = {fm_copy_cb, self};
-  file_copy(reg->value, self->cur_dir, cb);
+  Buffer *buf = host->hndl->buf;
+  file_copy(reg->value, self->cur_dir, buf);
 
   if (reg->key == '1')
     reg_clear_dcur();

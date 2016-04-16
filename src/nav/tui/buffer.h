@@ -47,13 +47,12 @@ WINDOW* buf_ncwin(Buffer *buf);
 void buf_set_overlay(Buffer *buf, Overlay *ov);
 void buf_set_plugin(Buffer *buf, Plugin *plugin);
 void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs);
-void buf_set_progress(Buffer *buf, long);
 
 void buf_set_pass(Buffer *buf);
-
 void buf_set_linematch(Buffer *buf, LineMatch *match);
 void buf_set_status(Buffer *buf, char *, char *, char *);
 
+void buf_update_progress(Buffer *buf, long);
 void buf_full_invalidate(Buffer *buf, int index, int lnum);
 int buf_input(Buffer *bn, Keyarg *ca);
 

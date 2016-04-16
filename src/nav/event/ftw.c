@@ -96,6 +96,7 @@ static void ftw_cb(const char *str, struct stat *sb, int isdir)
     FileItem *cpy = malloc(sizeof(FileItem));
     cpy->src = strdup(str);
     cpy->dest = NULL;
+    cpy->owner = ftw.cur->owner;
     cpy->parent = ftw.cur;
     file_push(cpy, sb->st_size);
 
@@ -132,10 +133,11 @@ static void ftw_start()
   file_start();
 }
 
-void ftw_push(char *src, const char *dest)
+void ftw_push(char *src, const char *dest, Buffer *owner)
 {
   log_msg("FILE", "pushed");
   FileItem *item = malloc(sizeof(FileItem));
+  item->owner = owner;
   item->src = src;
   item->dest = strdup(dest);
   item->parent = NULL;

@@ -164,8 +164,10 @@ void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs)
   buf_refresh(buf);
 }
 
-void buf_set_progress(Buffer *buf, long percent)
+void buf_update_progress(Buffer *buf, long percent)
 {
+  if (!buf)
+    return;
   overlay_progress(buf->ov, percent);
 }
 

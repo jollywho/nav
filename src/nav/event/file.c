@@ -11,6 +11,7 @@
 #include "nav/event/event.h"
 #include "nav/event/fs.h"
 #include "nav/event/ftw.h"
+#include "nav/tui/buffer.h"
 
 #define ISDIGIT(c) ((unsigned) (c) - '0' <= 9)
 #define FFRESH O_CREAT|O_EXCL|O_WRONLY
@@ -19,6 +20,7 @@
 static void write_cb(uv_fs_t *);
 static void do_stat(const char *, struct stat *);
 
+typedef struct File File;
 struct File {
   uv_fs_t w1;         //writer
   uv_fs_t f1, f2;     //src, dest
@@ -35,7 +37,6 @@ struct File {
   uint64_t before;
   struct stat s1, s2; //file stat
   File *file;
-  FileRet fr;
   FileItem *cur;      //current item
   FileItem *curp;     //parent  item
   TAILQ_HEAD(cont, FileItem) p;
@@ -52,6 +53,7 @@ void file_init()
 
 void file_cleanup()
 {
+  //prompt to cancel queued items.
   //cancel items
   ftw_cleanup();
 }
@@ -80,6 +82,8 @@ static void file_stop()
   log_msg("FILE", "close");
   //TODO: chmod
 
+  Buffer *owner = file.cur->owner;
+
   TAILQ_REMOVE(&file.p, file.cur, ent);
   clear_fileitem(file.cur, file.curp);
 
@@ -97,8 +101,7 @@ static void file_stop()
 
   file.running = false;
   CREATE_EVENT(eventq(), file_start, 0, NULL);
-  if (file.fr.cb)
-    file.fr.cb(file.fr.arg);
+  buf_update_progress(owner, file_progress());
 }
 
 static void close_cb(uv_fs_t *req)
@@ -190,8 +193,7 @@ static void write_cb(uv_fs_t *req)
 
   uint64_t now = os_hrtime();
   if ((now - file.before)/1000000 > MAX_WAIT) {
-    if (file.fr.cb)
-      file.fr.cb(file.fr.arg);
+    buf_update_progress(file.cur->owner, file_progress());
     file.before = os_hrtime();
   }
 
@@ -304,12 +306,16 @@ void file_start()
   do_stat(file.cur->src, &file.s1);
 }
 
-void file_copy(const char *src, const char *dest, FileRet fr)
+void file_cancel(Buffer *owner)
+{
+  //search for owner in queue
+  //cancel matches
+  ftw_cancel();
+}
+
+void file_copy(const char *src, const char *dest, Buffer *owner)
 {
   log_msg("FILE", "copy |%s|%s|", src, dest);
-
-  //TODO: better approach for multiple listeners
-  file.fr = fr;
 
   int prev = 0;
   int i;
@@ -320,7 +326,7 @@ void file_copy(const char *src, const char *dest, FileRet fr)
       strncpy(buf, &src[prev], pos);
       buf[pos] = '\0';
       prev = i + 1;
-      ftw_push(buf, dest);
+      ftw_push(buf, dest, owner);
     }
   }
 
@@ -329,6 +335,6 @@ void file_copy(const char *src, const char *dest, FileRet fr)
     char *buf = malloc(pos+1);
     strncpy(buf, &src[prev], pos);
     buf[pos] = '\0';
-    ftw_push(buf, dest);
+    ftw_push(buf, dest, owner);
   }
 }
