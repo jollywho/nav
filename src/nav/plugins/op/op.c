@@ -29,12 +29,8 @@ static char* expand_field(void *owner, const char *name)
   log_msg("OP", "expand_field");
   fn_group *grp = owner;
 
-  //TODO: lookup field names in table
   int isfld = !strcmp(name, "prev") || !strcmp(name, "next");
   ventry *vent = fnd_val("op_procs", "group", grp->key);
-
-  if (isfld && !vent)
-    goto nomatch;
 
   if (isfld && vent) {
     ventry *head = ent_head(vent);
@@ -43,17 +39,6 @@ static char* expand_field(void *owner, const char *name)
     return strdup(ret);
   }
 
-  //TODO: new home for this block
-  //TODO: lookup field names in table.
-  log_msg("OP", "expand_field %s", name);
-  char *args = buf_focus_sel(window_get_focus(), name);
-  char *src = lines2argv(args);
-  log_msg("OP", "%s", src);
-  free(args);
-  if (src)
-    return src;
-
-nomatch:
   return strdup("");
 }
 
@@ -148,6 +133,7 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("OP", "fileopen_cb");
   char *path = hka->arg;
+//FIXME: should use first item in selection or get_syn each item
   char *name = model_curs_value(host->hndl->model, "name");
   log_msg("OP", "path %s %s", path, name);
   log_msg("OP", "ext %s ", file_ext(name));
@@ -169,7 +155,6 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
   //reserve $0-9,$@,$# from 'let'
   set_fldvar(grp, "prev", expand_field);
   set_fldvar(grp, "next", expand_field);
-  set_fldvar(grp, "fullpath", expand_field);
 
   Cmdstr bfcmd;
   char *line = grp->opgrp->before;

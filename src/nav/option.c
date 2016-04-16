@@ -224,17 +224,21 @@ void set_var(fn_var *variable, fn_func *blk)
   HASH_ADD_STR(*container, key, var);
 }
 
+// expand field variable by callback.
+// lifetime of variable managed by owner.
+// resets each callback if no owner set.
 char* fld_var(const char *name)
 {
   fn_fldvar *fvar = NULL;
   HASH_FIND_STR(fld_vars, name, fvar);
   if (!fvar)
     return "";
-  if (fvar->var)
+
+  else if (fvar->var && fvar->owner)
     return fvar->var;
 
   char *ret = fvar->cb(fvar->owner, name);
-  fvar->var = ret;
+  SWAP_ALLOC_PTR(fvar->var, ret);
   return fvar->var;
 }
 
