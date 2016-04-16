@@ -769,7 +769,6 @@ void exec_line(Cmdstr *cmd, char *line)
 
   //TODO: hook output + block for output
   //TODO: use pid integer
-  free(str);
   ret2caller(cmd, (Cmdret){STRING, .val.v_str = pidstr});
   free(pidstr);
 }

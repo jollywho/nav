@@ -24,19 +24,19 @@ typedef struct {
   fn_group *grp;
 } Op_proc;
 
-static char* expand_field(void *grp, const char *name)
+static char* expand_field(void *owner, const char *name)
 {
   log_msg("OP", "expand_field");
-  char *key = grp;
+  fn_group *grp = owner;
 
   //TODO: lookup field names in table
   int isfld = !strcmp(name, "prev") || !strcmp(name, "next");
-  ventry *vent = fnd_val("op_procs", "group", key);
+  ventry *vent = fnd_val("op_procs", "group", grp->key);
 
   if (isfld && !vent)
     goto nomatch;
 
-  if (vent) {
+  if (isfld && vent) {
     ventry *head = ent_head(vent);
     char *ret = rec_fld(head->rec, "pid");
     log_msg("OP", "%s", ret);
@@ -44,7 +44,7 @@ static char* expand_field(void *grp, const char *name)
   }
 
   //TODO: new home for this block
-  //TODO: lookup field names in table
+  //TODO: lookup field names in table.
   log_msg("OP", "expand_field %s", name);
   char *args = buf_focus_sel(window_get_focus(), name);
   char *src = lines2argv(args);
