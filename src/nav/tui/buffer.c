@@ -97,6 +97,7 @@ static int buf_expire(Buffer *buf)
   wnoutrefresh(buf->nc_win);
   delwin(buf->nc_win);
   free(buf);
+  buf = NULL;
   return 1;
 }
 
@@ -429,8 +430,12 @@ char* buf_focus_sel(Buffer *buf, const char *fld)
   Model *m = buf->hndl->model;
 
   int selcount = select_count();
-  if (selcount < 2)
-    return strdup(model_curs_value(m, fld));
+  if (selcount < 2) {
+    void *val = model_curs_value(m, fld);
+    if (!val)
+      val = "";
+    return strdup(val);
+  }
 
   int len = 0;
   for (int i = 0; i < model_count(m); ++i) {

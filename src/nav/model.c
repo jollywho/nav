@@ -320,6 +320,7 @@ void model_flush(fn_handle *hndl, bool reopen)
 
 void model_recv(Model *m)
 {
+  log_msg("MODEL", "model_recv");
   if (!m->blocking)
     return;
 

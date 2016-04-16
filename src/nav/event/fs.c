@@ -15,6 +15,7 @@
 static void fs_close_req(fentry *);
 static void fs_reopen(fentry *);
 static void stat_cb(uv_fs_t *);
+static void fs_flush_stream(fentry *);
 static void watch_cb(uv_fs_event_t *, const char *, int, int);
 
 #define RFSH_RATE 1000
@@ -279,6 +280,7 @@ void fs_signal_handle(void **data)
   log_msg("FS", "fs_signal_handle");
   fentry *ent = data[0];
   if (ent->cancel) {
+    fs_flush_stream(ent);
     tbl_del_val("fm_files", "dir", ent->key);
     fs_clr_cache(ent->key);
   }
@@ -410,9 +412,17 @@ static void scan_cb(uv_fs_t *req)
 static void stat_cb(uv_fs_t *req)
 {
   log_msg("FS", "stat cb");
+  bool doscan = false;
   fentry *ent = req->data;
   uv_stat_t stat = req->statbuf;
-  int nop = 0;
+  if (req->result < 0) {
+    log_err("FS", "stat_cb: |%s|", uv_strerror(req->result));
+    ent->cancel = true;
+    goto scandir;
+  }
+
+  if (!(doscan = S_ISDIR(stat.st_mode)))
+    goto scandir;
 
   cachedir *cache;
   HASH_FIND_STR(cache_tbl, req->path, cache);
@@ -422,12 +432,12 @@ static void stat_cb(uv_fs_t *req)
 
   if (!difftime(stat.st_ctim.tv_sec, cache->ctimesec)) {
     log_msg("FS", "STAT:NOP");
-    nop = 1;
+    doscan = false;
   }
 
 scandir:
-  uv_fs_req_cleanup(&ent->uv_fs);
-  if (S_ISDIR(stat.st_mode) && !nop)
+  uv_fs_req_cleanup(req);
+  if (doscan)
     uv_fs_scandir(eventloop(), &ent->uv_fs, ent->key, 0, scan_cb);
   else
     fs_close_req(ent);

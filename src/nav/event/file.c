@@ -27,16 +27,15 @@ struct File {
   uv_fs_t c1, c2;     //close
   uv_fs_t m1;         //version scan
   uv_file u1, u2;     //file handles
-  int opencnt;        //ref_count f1+f2
+  int opencnt;        //ref_count files1,2
   bool running;
   uint64_t len;       //file length
   uint64_t offset;    //write offset
   uint64_t blk;       //write blk size
   uint64_t tsize;     //size of queue
   uint64_t wsize;     //written in queue
-  uint64_t before;
+  uint64_t before;    //last eventloop time
   struct stat s1, s2; //file stat
-  File *file;
   FileItem *cur;      //current item
   FileItem *curp;     //parent  item
   TAILQ_HEAD(cont, FileItem) p;
