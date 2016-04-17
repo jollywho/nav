@@ -275,7 +275,7 @@ int fld_type(const char *tn, const char *fld)
 {
   fn_tbl *t = get_tbl(tn);
   if (!tn)
-    return 0;
+    return -1;
 
   fn_fld *f;
   HASH_FIND_STR(t->fields, fld, f);
@@ -287,7 +287,7 @@ int fld_type(const char *tn, const char *fld)
   if (vf)
     return vf->type;
 
-  return 0;
+  return -1;
 }
 
 int tbl_fld_count(const char *tn)

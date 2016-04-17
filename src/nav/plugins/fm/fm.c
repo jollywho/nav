@@ -64,6 +64,7 @@ void plugin_focus(Plugin *plugin)
   log_msg("FM", "plugin_focus");
   FM *self = (FM*)plugin->top;
   window_ch_dir(self->cur_dir);
+  model_ch_focus(plugin->hndl);
   buf_refresh(plugin->hndl->buf);
 }
 
@@ -275,6 +276,7 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
 
   init_fm_hndl(fm, buf, plugin, fm->cur_dir);
   model_init(plugin->hndl);
+  model_inherit(plugin->hndl);
   model_open(plugin->hndl);
   buf_set_plugin(buf, plugin);
   buf_set_status(buf, 0, fm->cur_dir, 0);

@@ -398,6 +398,8 @@ void menu_toggle_hints(Menu *mnu)
 int menu_input(Menu *mnu, int key)
 {
   log_msg("MENU", "menu_input");
+  if (!mnu->active || !mnu->cx)
+    return 0;
 
   char *str = NULL;
   fn_compl *cmpl = mnu->cx->cmpl;

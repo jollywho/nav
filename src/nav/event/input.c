@@ -218,8 +218,10 @@ bool input_map_exists(int key)
 void do_map(int key)
 {
   log_msg("INPUT", "<<<<<<<<<<<<<<<<<<");
-  for (int i = 0; i < key_maps[0][key]->len; i++)
-    window_input(key_maps[0][key]->rhs[i], 0);
+  for (int i = 0; i < key_maps[0][key]->len; i++) {
+    int ch = key_maps[0][key]->rhs[i];
+    window_input(ch, (char[7]){ch,0,0,0,0,0,0});
+  }
 }
 
 static int process_key(TermKeyKey *key)

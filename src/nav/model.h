@@ -4,14 +4,20 @@
 #include "nav/table.h"
 
 typedef struct fn_line fn_line;
+typedef struct {
+  int sort_type; //sort type flag
+  int sort_rev;  //reversed sort flag
+} sort_t;
 
 void model_init(fn_handle *hndl);
 void model_cleanup(fn_handle *hndl);
 void model_open(fn_handle *hndl);
 void model_close(fn_handle *hndl);
 bool model_blocking(fn_handle *hndl);
+void model_inherit(fn_handle *hndl);
 
-void model_sort(Model *m, int sort_type, int flags);
+void model_ch_focus(fn_handle *);
+void model_sort(Model *m, sort_t);
 void model_flush(fn_handle *, bool);
 void model_recv(Model *m);
 void refind_line(Model *m);

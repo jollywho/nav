@@ -551,7 +551,10 @@ void buf_sort(Buffer *buf, char *fld, int flags)
     return;
   DO_EVENTS_UNTIL(!model_blocking(buf->hndl));
   int type = fld_type(buf->hndl->tn, fld);
-  model_sort(buf->hndl->model, type, flags);
+  if (type != -1) {
+    sort_t sort = {type,flags};
+    model_sort(buf->hndl->model, sort);
+  }
 }
 
 /* public fields */

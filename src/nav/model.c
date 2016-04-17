@@ -31,15 +31,15 @@ struct Model {
   char *pfval;      //prev field value
   int plnum;        //prev lnum
   int ptop;         //prev top
-  int sort_type;    //sort type flag
-  int sort_rev;     //reversed sort flag
+  sort_t sort;
   UT_array *lines;
 };
+static sort_t focus = {0,1};
 
 typedef struct {
   int i;
   bool rev;
-} sort_t;
+} sort_ent;
 
 static int cmp_str(const void *, const void *, void *);
 static int cmp_time(const void *, const void *, void *);
@@ -106,7 +106,7 @@ static int cmp_num(const void *a, const void *b, void *arg)
 
 static int sort_by_type(const void *a, const void *b, void *arg)
 {
-  sort_t *srt = (sort_t*)arg;
+  sort_ent *srt = (sort_ent*)arg;
   int ret = sort_tbl[srt->i].cmp(a,b,0);
   if (ret == 0)
     return 0;
@@ -115,10 +115,10 @@ static int sort_by_type(const void *a, const void *b, void *arg)
 
 static void do_sort(Model *m)
 {
-  sort_t srt = {0, m->sort_rev};
+  sort_ent srt = {0, m->sort.sort_rev};
   for (int i = 0; i < LENGTH(sort_tbl); i++) {
     int row_type = sort_tbl[i].val;
-    if ((m->sort_type & row_type) == row_type) {
+    if ((m->sort.sort_type & row_type) == row_type) {
       srt.i = i;
       break;
     }
@@ -128,11 +128,11 @@ static void do_sort(Model *m)
 
 static fn_line* find_by_type(Model *m, fn_line *ln)
 {
-  sort_t srt = {0, m->sort_rev};
+  sort_ent srt = {0, m->sort.sort_rev};
 
   for (int i = 0; i < LENGTH(sort_tbl); i++) {
     int row_type = sort_tbl[i].val;
-    if ((m->sort_type & row_type) == row_type) {
+    if ((m->sort.sort_type & row_type) == row_type) {
       srt.i = i;
       break;
     }
@@ -156,7 +156,8 @@ void model_init(fn_handle *hndl)
   memset(m, 0, sizeof(Model));
   m->hndl = hndl;
   hndl->model = m;
-  m->sort_rev = 1;
+
+  m->sort = (sort_t){0,1};
   m->blocking = true;
   utarray_new(m->lines, &icd);
   Buffer *buf = hndl->buf;
@@ -171,6 +172,11 @@ void model_cleanup(fn_handle *hndl)
   if (m->pfval)
     free(m->pfval);
   free(m);
+}
+
+void model_inherit(fn_handle *hndl)
+{
+  hndl->model->sort = focus;
 }
 
 void model_open(fn_handle *hndl)
@@ -286,16 +292,19 @@ static void model_set_prev(Model *m)
   m->plnum = buf_line(buf);
 }
 
-void model_sort(Model *m, int sort_type, int flags)
+void model_ch_focus(fn_handle *hndl)
+{
+  if (hndl && hndl->model)
+    focus = hndl->model->sort;
+}
+
+void model_sort(Model *m, sort_t srt)
 {
   log_msg("MODEL", "model_sort");
   if (!m->blocking)
     model_set_prev(m);
 
-  if (sort_type != -1) {
-    m->sort_type = sort_type;
-    m->sort_rev = flags;
-  }
+  focus = m->sort = srt;
 
   do_sort(m);
   refind_line(m);
@@ -361,7 +370,7 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   m->cur = head->rec;
   h->model->lis = lis;
   generate_lines(m);
-  model_sort(m, -1, 0);
+  model_sort(m, m->sort);
   m->blocking = false;
 }
 
