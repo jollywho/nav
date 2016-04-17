@@ -209,7 +209,7 @@ bool model_blocking(fn_handle *hndl)
   return hndl->model->blocking;
 }
 
-static void refit(Model *m, fn_lis *lis, Buffer *buf)
+static void refit(Model *m, Buffer *buf)
 {
   int bsize = buf_size(buf).lnum;
 
@@ -304,11 +304,12 @@ void model_sort(Model *m, sort_t srt)
   if (!m->blocking)
     model_set_prev(m);
 
-  focus = m->sort = srt;
+  if (srt.sort_type != -1)
+    focus = m->sort = srt;
 
   do_sort(m);
   refind_line(m);
-  refit(m, m->lis, m->hndl->buf);
+  refit(m, m->hndl->buf);
   buf_full_invalidate(m->hndl->buf, m->ptop, m->plnum);
 }
 
@@ -370,7 +371,7 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   m->cur = head->rec;
   h->model->lis = lis;
   generate_lines(m);
-  model_sort(m, m->sort);
+  model_sort(m, (sort_t){-1,0});
   m->blocking = false;
 }
 

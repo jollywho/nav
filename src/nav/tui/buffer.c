@@ -120,14 +120,10 @@ void buf_detach(Buffer *buf)
 static void resize_adjustment(Buffer *buf)
 {
   log_msg("BUFFER", "resize_adjustment");
-  log_msg("BUFFER", "%d %d", buf->top, buf->ldif);
-  int diff = buf->top + buf->ldif;
-  if (diff < 0)
-    diff = 0;
-
-  int line = (buf->top + buf->lnum) - diff;
-  buf->top = diff;
-  buf->lnum = line;
+  int newtop = MAX(1 + buf_index(buf) - buf->b_size.lnum, 0);
+  int diff = buf->top - newtop;
+  buf->top = newtop;
+  buf->lnum += diff;
 }
 
 void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs)
@@ -551,10 +547,8 @@ void buf_sort(Buffer *buf, char *fld, int flags)
     return;
   DO_EVENTS_UNTIL(!model_blocking(buf->hndl));
   int type = fld_type(buf->hndl->tn, fld);
-  if (type != -1) {
-    sort_t sort = {type,flags};
-    model_sort(buf->hndl->model, sort);
-  }
+  sort_t sort = {type,flags};
+  model_sort(buf->hndl->model, sort);
 }
 
 /* public fields */
