@@ -150,12 +150,9 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("FM", "fm_paste");
   FM *self = (FM*)host->top;
 
-  char *arg = "-r";
   fn_reg *reg = reg_dcur();
   if (!reg || !reg->value)
     return;
-  if (reg->key == '1')
-    arg = "";
 
   Buffer *buf = host->hndl->buf;
   file_copy(reg->value, self->cur_dir, buf);

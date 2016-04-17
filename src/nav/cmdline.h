@@ -39,25 +39,25 @@ struct List {
 };
 
 struct Cmdret {
-  int type;
+  int type;           //cmd type: OUTPUT, BUFFER, STRING, etc
   union {
-    int   v_int;
-    char *v_str;
+    int   v_int;      //integer value
+    char *v_str;      //string  value
   } val;
 };
 
 struct Cmdstr {
-  int flag;               /* pipe flag types */
-  char rev;               /* reverse flag TODO :merge with pipe flags */
+  int flag;            /* pipe flag types */
+  char rev;            /* reverse flag TODO :merge with pipe flags */
   QUEUE stack;
   Token args;
-  int exec;
-  Cmdret ret;
-  int st;
-  int ed;
-  int idx;
-  Cmdstr *caller;
-  UT_array *chlds;  /* Cmdstr */
+  int exec;            //exec flag
+  Cmdret ret;          //return value
+  int st;              //start pos of cmdstr
+  int ed;              //end   pos of cmdstr
+  int idx;             //index in cmdline
+  Cmdstr *caller;      //used for returning values
+  UT_array *chlds;     //list of cmdstr subexpressions
 };
 
 #define PIPE         1
@@ -65,12 +65,12 @@ struct Cmdstr {
 #define PIPE_RIGHT   3
 
 struct Cmdline {
-  UT_array *cmds;
-  UT_array *tokens;
-  UT_array *vars;
-  QUEUE refs;
-  char *line;
-  int lvl;
+  UT_array *cmds;      //list of cmdstr
+  UT_array *tokens;    //list of tokens
+  UT_array *vars;      //list of vars
+  QUEUE refs;          //queue of token refs to avoid recursive cleanup
+  char *line;          //the raw string being built upon
+  int lvl;             //subexpression level
 };
 
 void cmdline_build(Cmdline *cmdline, char *line);

@@ -6,8 +6,6 @@
 #include "nav/lib/utarray.h"
 #include "nav/plugins/op/op.h"
 
-extern char *p_cp;          /* 'copy      cmd' */
-extern char *p_mv;          /* 'move      cmd' */
 extern char *p_rm;          /* 'remove    cmd' */
 extern char *p_xc;          /* 'clipboard cmd' */
 
@@ -43,8 +41,8 @@ typedef struct {
 
 typedef struct {
   UT_hash_handle hh;
-  UT_array *lines;
-  fn_var *locals;
+  UT_array *lines;    //saved lines as string
+  fn_var *locals;     //local vars
   int argc;
   char **argv;
   char *key;

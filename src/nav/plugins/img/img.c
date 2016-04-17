@@ -7,6 +7,7 @@
 #include "nav/tui/buffer.h"
 #include "nav/tui/layout.h"
 #include "nav/event/shell.h"
+#include "nav/event/fs.h"
 
 #define WM_IMG "/usr/lib/w3m/w3mimgdisplay"
 
@@ -89,18 +90,10 @@ static void shell_stdout_font_cb(Plugin *plugin, char *out)
   shell_args(img->sh_size, (char**)args, shell_stdout_size_cb);
 }
 
-static const char* get_path_ext(const char *fspec)
-{
-  char *e = strrchr (fspec, '.');
-  if (e == NULL)
-    e = "";
-  return ++e;
-}
-
 static int valid_ext(const char *path)
 {
   for (int i = 0; i < LENGTH(img_exts); i++) {
-    if (strcmp(get_path_ext(path), img_exts[i]) == 0)
+    if (strcmp(file_ext(path), img_exts[i]) == 0)
       return 1;
   }
   return 0;

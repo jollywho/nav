@@ -17,8 +17,8 @@ typedef struct Cmdarg Cmdarg;
 typedef Cmdret (*Cmd_Func_T)(List *, Cmdarg *);
 
 struct Cmd_T {
-  char *name;
-  char *alt;
+  char *name;             /* cmd name      */
+  char *alt;              /* alt cmd name  */
   Cmd_Func_T cmd_func;
   int flags;              /* cmd     flags */
   int bflags;             /* builtin flags */

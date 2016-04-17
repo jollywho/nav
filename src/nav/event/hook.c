@@ -14,8 +14,8 @@
 #define HK_TMP  3 /* for OP plugin until extension */
 
 typedef struct {
-  char type;
-  char *msg;
+  char type;       //type of hook: HK_{INTL,CMD,TMP}
+  char *msg;       //hooked event msg. TODO: replace with handler ptr
   Plugin *caller;
   Plugin *host;
   Pattern *pat;
@@ -27,7 +27,7 @@ typedef struct {
 
 //TODO: group name for namespace
 typedef struct {
-  char *msg;
+  char *msg;         //group name for hooked event msg
   UT_hash_handle hh;
   UT_array *hooks;   /* Hook */
 } EventHandler;

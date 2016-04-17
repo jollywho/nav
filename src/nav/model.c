@@ -23,16 +23,16 @@ struct fn_line {
 static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
 
 struct Model {
-  fn_handle *hndl;
-  fn_lis *lis;
-  fn_rec *cur;
-  ventry *head;
+  fn_handle *hndl;  //opened handle
+  fn_lis *lis;      //listener
+  fn_rec *cur;      //current rec
+  ventry *head;     //head entry of listener
   bool blocking;
-  char *pfval;
-  int plnum;
-  int ptop;
-  int sort_type;
-  int sort_rev;
+  char *pfval;      //prev field value
+  int plnum;        //prev lnum
+  int ptop;         //prev top
+  int sort_type;    //sort type flag
+  int sort_rev;     //reversed sort flag
   UT_array *lines;
 };
 

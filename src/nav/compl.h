@@ -5,9 +5,9 @@
 #include "nav/lib/uthash.h"
 
 typedef struct {
-  char *key;
-  int colcount;
-  char *columns;
+  char *key;        //key value
+  int colcount;     //count of columns; (supports 0 or 1)
+  char *columns;    //column string
 } compl_item;
 
 typedef struct {
@@ -37,8 +37,8 @@ typedef struct {
   UT_hash_handle hh;
 } compl_entry;
 
-#define COMPL_STATIC  0
-#define COMPL_DYNAMIC 1
+#define COMPL_STATIC  0   //list remains the same
+#define COMPL_DYNAMIC 1   //list is regenerated
 
 void compl_init();
 void compl_cleanup();
