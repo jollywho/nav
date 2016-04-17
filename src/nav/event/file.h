@@ -5,10 +5,16 @@
 #include "nav/lib/sys_queue.h"
 #include "nav/plugins/plugin.h"
 
+#define F_COPY       1
+#define F_MOVE       2
+#define F_VERSIONED  4
+#define F_OVERWRITE  8
+
 typedef struct FileItem FileItem;
 struct FileItem {
   TAILQ_ENTRY(FileItem) ent;
   Buffer *owner;
+  int flags;
   char *src;
   char *dest;
   FileItem *parent;
@@ -16,7 +22,8 @@ struct FileItem {
 
 void file_init();
 void file_cleanup();
-void file_copy(const char *src, const char *dest, Buffer *);
+void file_copy(char *src, char *dest, Buffer *);
+void file_move(char *src, char *dest, Buffer *);
 void file_push(FileItem *item, uint64_t len);
 void file_start();
 void file_cancel(Buffer *);

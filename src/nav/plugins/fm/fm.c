@@ -155,10 +155,14 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
     return;
 
   Buffer *buf = host->hndl->buf;
-  file_copy(reg->value, self->cur_dir, buf);
 
-  if (reg->key == '1')
+  if (reg->key != '1')
+    file_copy(reg->value, self->cur_dir, buf);
+  else {
+    file_move(reg->value, self->cur_dir, buf);
     reg_clear_dcur();
+  }
+
   return;
 }
 

@@ -5,7 +5,7 @@
 
 void ftw_init();
 void ftw_cleanup();
-void ftw_push(char *src, const char *dest, Buffer *);
+void ftw_add(char *src, char *dest, Buffer *, int);
 void ftw_cancel();
 
 #endif

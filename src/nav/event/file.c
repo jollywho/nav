@@ -312,28 +312,27 @@ void file_cancel(Buffer *owner)
   ftw_cancel();
 }
 
-void file_copy(const char *src, const char *dest, Buffer *owner)
+void file_move(char *src, char *dest, Buffer *owner)
+{
+  log_msg("FILE", "move |%s|%s|", src, dest);
+  //TODO:
+  //ftw_add(src, dest, owner, F_MOVE)
+  //
+  //resolve src and dest names similar to file_copy, except
+  //ignore src type and create hard link at dest.
+  //
+  //if EXDEV, default to file_copy with unlink flag. requeue.
+  //otherwise, unlink src and finish.
+  //
+  //**flags**
+  //dest overwrite [edit (rename) default]
+  //  unlink dest if exists.
+  //dest version   [mv,cp default]
+  //  increment version if exists.
+}
+
+void file_copy(char *src, char *dest, Buffer *owner)
 {
   log_msg("FILE", "copy |%s|%s|", src, dest);
-
-  int prev = 0;
-  int i;
-  for (i = 0; src[i]; i++) {
-    if (src[i] == '\n') {
-      int pos = (i - prev);
-      char *buf = malloc(pos+1);
-      strncpy(buf, &src[prev], pos);
-      buf[pos] = '\0';
-      prev = i + 1;
-      ftw_push(buf, dest, owner);
-    }
-  }
-
-  if (!prev) {
-    int pos = (i - prev);
-    char *buf = malloc(pos+1);
-    strncpy(buf, &src[prev], pos);
-    buf[pos] = '\0';
-    ftw_push(buf, dest, owner);
-  }
+  ftw_add(src, dest, owner, F_COPY);
 }

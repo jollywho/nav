@@ -133,16 +133,66 @@ static void ftw_start()
   file_start();
 }
 
-void ftw_push(char *src, const char *dest, Buffer *owner)
+static FileItem* ftw_new(char *src, char *dest, Buffer *owner)
 {
-  log_msg("FILE", "pushed");
   FileItem *item = malloc(sizeof(FileItem));
   item->owner = owner;
   item->src = src;
   item->dest = strdup(dest);
   item->parent = NULL;
+  return item;
+}
+
+void ftw_push_move(char *src, char *dest, Buffer *owner)
+{
+  struct stat sb;
+  if (lstat(src, &sb) == -1)
+    return;
+
+  FileItem *item = ftw_new(src, dest, owner);
+  item->flags = F_MOVE|F_VERSIONED;
+
+  file_push(ftw.cur, sb.st_size);
+  //NOTE: copying across devices will fail and be readded as copy
+}
+
+void ftw_push_copy(char *src, char *dest, Buffer *owner)
+{
+  log_msg("FILE", "pushed");
+  FileItem *item = ftw_new(src, dest, owner);
+  item->flags = F_COPY|F_VERSIONED;
 
   TAILQ_INSERT_TAIL(&ftw.p, item, ent);
   if (!ftw.running)
     ftw_start();
+}
+
+void ftw_add(char *src, char *dest, Buffer *owner, int flag)
+{
+  void (*fn)();
+  if (flag == F_MOVE)
+    fn = ftw_push_move;
+  else
+    fn = ftw_push_copy;
+
+  int prev = 0;
+  int i;
+  for (i = 0; src[i]; i++) {
+    if (src[i] == '\n') {
+      int pos = (i - prev);
+      char *buf = malloc(pos+1);
+      strncpy(buf, &src[prev], pos);
+      buf[pos] = '\0';
+      prev = i + 1;
+      fn(buf, dest, owner);
+    }
+  }
+
+  if (!prev) {
+    int pos = (i - prev);
+    char *buf = malloc(pos+1);
+    strncpy(buf, &src[prev], pos);
+    buf[pos] = '\0';
+    fn(buf, dest, owner);
+  }
 }
