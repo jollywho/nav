@@ -309,7 +309,8 @@ bool fs_blocking(fn_fs *fs)
 void fs_read(fn_fs *fs, const char *dir)
 {
   log_msg("FS", "fs read %s", dir);
-  if (fs->running) return;
+  if (fs->running)
+    return;
   fs->running = true;
   fs->uv_fs.data = fs;
   fs->readkey = strdup(dir);

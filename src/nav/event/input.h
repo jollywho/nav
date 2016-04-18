@@ -43,7 +43,7 @@ typedef void (*key_func)(void *obj, Keyarg *arg);
 typedef struct {
   int cmd_char;                 /* (first) command character */
   key_func cmd_func;            /* function for this command */
-  int cmd_flags;                /* FN_ flags */
+  int cmd_flags;                /* NCH* and EVENT */
   short cmd_arg;                /* value for ca.arg */
 } fn_key;
 

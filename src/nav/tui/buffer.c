@@ -29,9 +29,10 @@ static void buf_draw(void **);
 #define EV_REMOVE 1
 #define EV_LEFT   2
 #define EV_RIGHT  3
+#define EV_JUMP   4
 
 static char *buf_events[] = {
-  "paste","remove","left","right",
+  "paste","remove","left","right","jump",
 };
 
 static fn_key key_defaults[] = {
@@ -50,10 +51,12 @@ static fn_key key_defaults[] = {
   {'d',     oper,            NCH,         OP_DELETE},
   {'m',     oper,            NCH_A,       OP_MARK},
   {'\'',    oper,            NCH_A,       OP_JUMP},
-  {'p',     buf_gen_event,   0,           EV_PASTE},
-  {'X',     buf_gen_event,   0,           EV_REMOVE},
-  {'h',     buf_gen_event,   0,           EV_LEFT},
-  {'l',     buf_gen_event,   0,           EV_RIGHT},
+  {'p',     buf_gen_event,   EV_PASTE,    0},
+  {'X',     buf_gen_event,   EV_REMOVE,   0},
+  {'h',     buf_gen_event,   EV_LEFT,     0},
+  {'l',     buf_gen_event,   EV_RIGHT,    0},
+  {Ctrl_O,  buf_gen_event,   EV_JUMP,     BACKWARD},
+  {Ctrl_I,  buf_gen_event,   EV_JUMP,     FORWARD},
 };
 
 static fn_keytbl key_tbl;
@@ -507,9 +510,9 @@ void buf_gomark(void *_b, Keyarg *ca)
 
 static void buf_gen_event(Buffer *buf, Keyarg *ca)
 {
-  if (ca->arg > LENGTH(buf_events) || ca->arg < 0)
+  if (ca->type > LENGTH(buf_events) || ca->type < 0)
     return;
-  send_hook_msg(buf_events[ca->arg], buf->plugin, NULL, NULL);
+  send_hook_msg(buf_events[ca->type], buf->plugin, NULL, &(HookArg){ca,NULL});
 }
 
 static void buf_toggle_sel(Buffer *buf, Keyarg *ca)

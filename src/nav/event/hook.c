@@ -40,7 +40,7 @@ struct HookHandler {
 static const char *events_list[] = {
   "open", "fileopen", "cursor_change", "window_resize", "diropen",
   "pipe_left", "pipe_right", "left", "right", "paste", "remove",
-  "execopen", "execclose", "pipe_remove",
+  "execopen", "execclose", "pipe_remove","jump",
 };
 
 static UT_icd hook_icd = { sizeof(Hook),NULL,NULL,NULL };

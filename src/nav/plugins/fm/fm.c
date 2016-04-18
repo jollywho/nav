@@ -144,6 +144,11 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   free(path);
 }
 
+static void fm_jump(Plugin *plugin, Plugin *caller, HookArg *hka)
+{
+  log_msg("WINDOW", "fm_jump");
+}
+
 static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_paste");
@@ -272,6 +277,7 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
     fm->cur_dir = strdup(window_cur_dir());
   }
 
+  TAILQ_INIT(&fm->p);
   init_fm_hndl(fm, buf, plugin, fm->cur_dir);
   model_init(plugin->hndl);
   model_inherit(plugin->hndl);
@@ -279,11 +285,12 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   buf_set_plugin(buf, plugin);
   buf_set_status(buf, 0, fm->cur_dir, 0);
   hook_init_host(plugin);
-  hook_add_intl(plugin, plugin, fm_paste,      "paste"     );
-  hook_add_intl(plugin, plugin, fm_remove,     "remove"    );
-  hook_add_intl(plugin, plugin, fm_left,       "left"      );
-  hook_add_intl(plugin, plugin, fm_right,      "right"     );
-  hook_add_intl(plugin, plugin, fm_req_dir,    "open"      );
+  hook_add_intl(plugin, plugin, fm_paste,   "paste" );
+  hook_add_intl(plugin, plugin, fm_remove,  "remove");
+  hook_add_intl(plugin, plugin, fm_left,    "left"  );
+  hook_add_intl(plugin, plugin, fm_right,   "right" );
+  hook_add_intl(plugin, plugin, fm_req_dir, "open"  );
+  hook_add_intl(plugin, plugin, fm_jump,    "jump"  );
 #ifdef PIPES_SUPPORTED
   hook_add_intl(plugin, plugin, fm_pipe_left,  "pipe_left" );
   hook_add_intl(plugin, plugin, fm_pipe_right, "pipe_right");

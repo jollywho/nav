@@ -105,8 +105,8 @@ static char *cur_dir;
 void sigwinch_handler(int sig)
 {
   log_msg("WINDOW", "Signal received: **term resize**");
-  //TODO: workaround to avoid flicker at startup
-  endwin();
+  if (sig == SIGWINCH)
+    endwin();
   refresh();
   clear();
   window_refresh();
@@ -149,7 +149,7 @@ void window_init(void)
   for (int i = 0; i < LENGTH(compl_args); i++)
     compl_add_arg(compl_args[i][0], compl_args[i][1]);
 
-  sigwinch_handler(0);
+  sigwinch_handler(~SIGWINCH); //flush window without endwin
   plugin_init();
   buf_init();
 }
@@ -239,9 +239,10 @@ Buffer* window_get_focus()
 
 Plugin* window_get_plugin()
 {
-  if (!layout_buf(&win.layout))
+  Buffer *buf = window_get_focus();
+  if (!buf)
     return NULL;
-  return window_get_focus()->plugin;
+  return buf->plugin;
 }
 
 int window_focus_attached()

@@ -4,12 +4,18 @@
 #include "nav/plugins/plugin.h"
 #include "nav/event/fs.h"
 
-typedef struct FM FM;
+typedef struct jump_item jump_item;
+struct jump_item {
+  char *path;
+  TAILQ_ENTRY(jump_item) ent;
+};
 
+typedef struct FM FM;
 struct FM {
   Plugin *base;
   char *cur_dir;
   fn_fs *fs;
+  TAILQ_HEAD(cont, jump_item) p;
 };
 
 void fm_init();
