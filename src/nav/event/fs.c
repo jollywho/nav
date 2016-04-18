@@ -181,6 +181,7 @@ char* valid_full_path(char *base, char *path)
   if (!path)
     return strdup(base);
 
+  //FIXME: without quotes, breaks on spaces
   char *dir = fs_expand_path(path);
   if (path[0] == '@') {
     char *tmp = mark_path(dir);
@@ -197,17 +198,6 @@ char* valid_full_path(char *base, char *path)
   }
   SWAP_ALLOC_PTR(dir, valid);
   return dir;
-}
-
-bool isdir(const char *path)
-{
-  if (!path) return false;
-  ventry *ent = fnd_val("fm_files", "fullpath", path);
-  if (!ent) return false;
-  struct stat *st = (struct stat*)rec_fld(ent->rec, "stat");
-  if (!st) return false;
-  if (!st->st_mode) return false;
-  return (S_ISDIR(st->st_mode));
 }
 
 static void stat_cleanup(void **args)

@@ -34,7 +34,6 @@ void fs_cancel(fn_fs *fs);
 void fs_fastreq(fn_fs *fs);
 bool fs_blocking(fn_fs *fs);
 
-bool isdir(const char *);
 bool isrecdir(fn_rec *);
 bool isreclnk(fn_rec *rec);
 bool isrecreg(fn_rec *rec);

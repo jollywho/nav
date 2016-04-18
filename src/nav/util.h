@@ -14,7 +14,8 @@ void expand_escapes(char *dest, const char *src);
 char* lines2argv(int, char **);
 char* lines2yank(int argc, char **argv);
 void del_param_list(char **params, int argc);
-char* strip_quotes(char *str);
+char* strip_quotes(char *);
+char* add_quotes(char *);
 bool fuzzy_match(char *, const char *);
 
 #endif

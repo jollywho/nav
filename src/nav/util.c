@@ -208,19 +208,27 @@ void del_param_list(char **params, int argc)
   }
 }
 
-char* strip_quotes(char *_str)
+char* strip_quotes(char *src)
 {
-  if (*_str == '"')
-    _str++;
+  if (*src == '"')
+    src++;
 
-  char *str = strdup(_str);
+  char *dest = strdup(src);
   int i;
-  for (i = 0; str[i] != '\0'; ++i);
+  for (i = 0; dest[i] != '\0'; ++i);
 
-  if (str[i-1] == '"')
-    str[i-1] = '\0';
+  if (dest[i-1] == '"')
+    dest[i-1] = '\0';
 
-  return str;
+  return dest;
+}
+
+char* add_quotes(char *src)
+{
+  int len = strlen(src) + 3;
+  char *dest = malloc(len);
+  snprintf(dest, len, "\"%s\"", src);
+  return dest;
 }
 
 bool fuzzy_match(char *s, const char *accept)

@@ -157,16 +157,21 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_req_dir");
   FM *self = plugin->top;
-  if (!hka->arg)
-    hka->arg = "~";
+  char *req = hka->arg;
+
+  if (!req)
+    req = strdup("~");
+  else if (req[0] != '\"')
+    req = add_quotes(req);
 
   DO_EVENTS_UNTIL(!fs_blocking(self->fs));
 
-  char *path = valid_full_path(window_cur_dir(), hka->arg);
+  char *path = valid_full_path(window_cur_dir(), req);
 
   if (path)
     fs_read(self->fs, path);
 
+  free(req);
   free(path);
 }
 
