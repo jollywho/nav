@@ -113,7 +113,6 @@ static int fm_opendir(Plugin *plugin, char *path, short arg)
   model_close(h);
   free(cur_dir);
   cur_dir = strdup(path);
-  jump_push(self, cur_dir);
 
   if (arg == BACKWARD)
     cur_dir = fs_parent_dir(cur_dir);
@@ -129,36 +128,17 @@ static int fm_opendir(Plugin *plugin, char *path, short arg)
   return 1;
 }
 
-static void fm_left(Plugin *host, Plugin *caller, HookArg *hka)
-{
-  log_msg("FM", "cmd left");
-  FM *self = host->top;
-  char *path = strdup(self->cur_dir);
-  fm_opendir(host, path, BACKWARD);
-  free(path);
-}
-
-static void fm_right(Plugin *host, Plugin *caller, HookArg *hka)
-{
-  log_msg("FM", "cmd right");
-  FM *self = host->top;
-  fn_handle *h = host->hndl;
-
-  char *path = model_curs_value(h->model, "fullpath");
-  if (!path)
-    return;
-
-  fs_read(self->fs, path);
-}
-
 static void fm_ch_dir(void **args)
 {
   log_msg("FM", "fm_ch_dir");
   Plugin *plugin = args[0];
+  FM *self = plugin->top;
   char *path = args[1];
   bool path_ok = args[2];
-  if (path_ok)
+  if (path_ok) {
+    jump_push(self, path);
     fm_opendir(plugin, path, FORWARD);
+  }
   else
     send_hook_msg("fileopen", plugin, NULL, &(HookArg){NULL,path});
 }
@@ -178,6 +158,28 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
     fs_read(self->fs, path);
 
   free(path);
+}
+
+static void fm_left(Plugin *host, Plugin *caller, HookArg *hka)
+{
+  log_msg("FM", "cmd left");
+  fn_handle *h = host->hndl;
+  char *path = model_curs_value(h->model, "dir");
+  if (!path)
+    return;
+  path = fs_parent_dir(strdup(path));
+  fm_req_dir(host, NULL, &(HookArg){NULL,path});
+  free(path);
+}
+
+static void fm_right(Plugin *host, Plugin *caller, HookArg *hka)
+{
+  log_msg("FM", "cmd right");
+  fn_handle *h = host->hndl;
+  char *path = model_curs_value(h->model, "fullpath");
+  if (!path)
+    return;
+  fm_req_dir(host, NULL, &(HookArg){NULL,path});
 }
 
 static void fm_jump(Plugin *plugin, Plugin *caller, HookArg *hka)
