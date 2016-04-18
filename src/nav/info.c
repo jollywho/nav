@@ -149,7 +149,7 @@ void mark_strchr_str(const char *str, const char *dir)
 
 void mark_chr_str(int chr, const char *dir)
 {
-  log_msg("FM", "mark_key_str");
+  log_msg("INFO", "mark_key_str");
   char *key;
   asprintf(&key, "'%c", chr);
 

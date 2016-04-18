@@ -68,6 +68,41 @@ void plugin_focus(Plugin *plugin)
   buf_refresh(plugin->hndl->buf);
 }
 
+static void jump_init(FM *self)
+{
+  TAILQ_INIT(&self->p);
+  self->jump_max = get_opt_uint("jumplist");
+  self->jump_count = 0;
+  self->jump_cur = NULL;
+}
+
+static void jump_push(FM *self, char *path)
+{
+  log_msg("FM", "jump_push");
+
+  if (self->jump_cur && !strcmp(self->jump_cur->path, path))
+    return;
+
+  jump_item *item = malloc(sizeof(jump_item));
+  item->path = strdup(path);
+  self->jump_count++;
+  self->jump_cur = item;
+  TAILQ_INSERT_TAIL(&self->p, item, ent);
+
+  if (self->jump_count < self->jump_max)
+    return;
+
+  self->jump_max = get_opt_uint("jumplist");
+  if (self->jump_count > self->jump_max) {
+    log_msg("FM", "jumplist maxexceed");
+    jump_item *first = TAILQ_FIRST(&self->p);
+    TAILQ_REMOVE(&self->p, first, ent);
+    free(first->path);
+    free(first);
+    self->jump_count--;
+  }
+}
+
 static int fm_opendir(Plugin *plugin, char *path, short arg)
 {
   log_msg("FM", "fm_opendir %s", path);
@@ -78,6 +113,7 @@ static int fm_opendir(Plugin *plugin, char *path, short arg)
   model_close(h);
   free(cur_dir);
   cur_dir = strdup(path);
+  jump_push(self, cur_dir);
 
   if (arg == BACKWARD)
     cur_dir = fs_parent_dir(cur_dir);
@@ -147,6 +183,21 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
 static void fm_jump(Plugin *plugin, Plugin *caller, HookArg *hka)
 {
   log_msg("WINDOW", "fm_jump");
+  FM *self = plugin->top;
+  jump_item *item = NULL;
+
+  if (hka->ka->arg == BACKWARD)
+    item = TAILQ_PREV(self->jump_cur, cont, ent);
+  if (hka->ka->arg == FORWARD)
+    item = TAILQ_NEXT(self->jump_cur, ent);
+
+  if (!item)
+    item = self->jump_cur;
+  else
+    self->jump_cur = item;
+
+  hka->arg = item->path;
+  fm_req_dir(plugin, caller, hka);
 }
 
 static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
@@ -277,7 +328,7 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
     fm->cur_dir = strdup(window_cur_dir());
   }
 
-  TAILQ_INIT(&fm->p);
+  jump_init(fm);
   init_fm_hndl(fm, buf, plugin, fm->cur_dir);
   model_init(plugin->hndl);
   model_inherit(plugin->hndl);
@@ -299,7 +350,7 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   fm->fs = fs_init(plugin->hndl);
   fm->fs->stat_cb = fm_ch_dir;
   fm->fs->data = plugin;
-  fs_open(fm->fs, fm->cur_dir);
+  fm_req_dir(plugin, NULL, &(HookArg){NULL,fm->cur_dir});
   window_ch_dir(fm->cur_dir);
 }
 

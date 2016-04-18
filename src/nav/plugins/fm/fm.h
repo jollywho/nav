@@ -15,6 +15,9 @@ struct FM {
   Plugin *base;
   char *cur_dir;
   fn_fs *fs;
+  int jump_count;
+  int jump_max;
+  jump_item *jump_cur;
   TAILQ_HEAD(cont, jump_item) p;
 };
 

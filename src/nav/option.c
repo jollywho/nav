@@ -34,6 +34,7 @@ static const char *default_groups[] = {
 
 static int dummy = 0;
 static uint history = 50;
+static uint jumplist = 20;
 static int menu_rows = 5;
 static int default_syn_color;
 static int ask_delete = 1;
@@ -52,6 +53,7 @@ static struct fn_option {
   {"dummy",         OPTION_INT,       &dummy},
   {"ask_delete",    OPTION_INT,       &ask_delete},
   {"history",       OPTION_UINT,      &history},
+  {"jumplist",      OPTION_UINT,      &jumplist},
   {"menu_rows",     OPTION_INT,       &menu_rows},
   {"hintkeys",      OPTION_STRING,    &hintskey},
   {"shell",         OPTION_STRING,    &p_sh},
@@ -342,7 +344,7 @@ void options_list(List *args)
     compl_set_key(i, "%s", it->key);
     if (it->type == OPTION_STRING)
       compl_set_col(i, "%s", (char*)it->value);
-    else if (it->type == OPTION_INT)
+    else if (it->type == OPTION_INT || it->type == OPTION_UINT)
       compl_set_col(i, "%d", *(int*)it->value);
     i++;
   }
