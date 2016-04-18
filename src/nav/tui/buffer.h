@@ -63,7 +63,7 @@ void buf_move_invalid(Buffer *buf, int index, int lnum);
 void buf_move(Buffer *buf, int y, int x);
 void buf_scroll(Buffer *buf, int y, int max);
 
-char* buf_focus_sel(Buffer *buf, const char *fld);
+varg_T buf_focus_sel(Buffer *buf, const char *fld);
 void buf_end_sel(Buffer *buf);
 void buf_g(void *, Keyarg *);
 void buf_mark(void *, Keyarg *);

@@ -55,10 +55,10 @@ static struct key_name_entry {
 };
 
 static fn_reg reg_tbl[] = {
-  {NUL,  NULL},
-  {'0',  NULL},
-  {'1',  NULL},
-  {'_',  NULL},
+  {NUL,  {0}},
+  {'0',  {0}},
+  {'1',  {0}},
+  {'_',  {0}},
 };
 
 static fn_oper key_operators[] = {
@@ -439,37 +439,38 @@ fn_reg* reg_get(int ch)
 
 fn_reg* reg_dcur()
 {
-  fn_reg *reg0 = reg_get(NUL);
-  fn_reg *reg1 = reg_get('1');
-  if (reg0->value && reg1->value && !strcmp(reg0->value, reg1->value))
+  fn_reg *regNUL = reg_get(NUL);
+  fn_reg *reg1   = reg_get('1');
+  char **argv_nul = regNUL->value.argv;
+  char **argv_1   = reg1->value.argv;
+  if (argv_nul == argv_1 && reg1->value.argc > 0)
     return reg1;
   else
-    return reg0;
+    return regNUL;
 }
 
 void reg_clear_dcur()
 {
-  reg_set('1', NULL, NULL);
+  reg_set('1', (varg_T){0,0});
 }
 
-void reg_set(int ch, char *value, char *show)
+void reg_set(int ch, varg_T args)
 {
   log_msg("INPUT", "reg_set");
   fn_reg *find = reg_get(ch);
   if (!find)
     return;
-  if (find->value) {
-    free(find->value);
-    find->value = NULL;
+  if (find->value.argc > 0) {
+    for (int i = 0; i < find->value.argc; i++)
+      free(find->value.argv[i]);
+    free(find->value.argv);
   }
-  if (!value)
-    return;
-  find->value = strdup(value);
+  find->value = args;
 
   if (ch == '0') {
     char *cpy;
-    char *src = lines2argv(show);
-    asprintf(&cpy, "echo -en %s | %s", src, get_opt_str("copy-pipe"));
+    char *src = lines2yank(args.argc, args.argv);
+    asprintf(&cpy, "echo -n \"%s\" | %s", src, get_opt_str("copy-pipe"));
     shell_exec(cpy, NULL, focus_dir(), NULL);
     free(src);
     free(cpy);

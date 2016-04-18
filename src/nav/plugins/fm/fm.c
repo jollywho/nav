@@ -20,10 +20,10 @@ static char* expand_field(void *owner, const char *name)
 {
   log_msg("FM", "expand_field %s", name);
 
-  char *args = buf_focus_sel(window_get_focus(), name);
-  char *src = lines2argv(args);
+  varg_T args = buf_focus_sel(window_get_focus(), name);
+  char *src = lines2argv(args.argc, args.argv);
   log_msg("FM", "%s", src);
-  free(args);
+  del_param_list(args.argv, args.argc);
 
   if (src)
     return src;
@@ -152,7 +152,7 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
   FM *self = (FM*)host->top;
 
   fn_reg *reg = reg_dcur();
-  if (!reg || !reg->value)
+  if (!reg || reg->value.argc < 1)
     return;
 
   Buffer *buf = host->hndl->buf;
@@ -175,8 +175,8 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
     return;
 
   int count = buf_sel_count(host->hndl->buf);
-  char *args = buf_focus_sel(host->hndl->buf, "fullpath");
-  char *src = lines2argv(args);
+  varg_T args = buf_focus_sel(host->hndl->buf, "fullpath");
+  char *src = lines2argv(args.argc, args.argv);
   log_msg("FM", "src |%s|", src);
 
   if (get_opt_int("ask_delete")) {
@@ -198,7 +198,7 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
   system(cmdstr);
   free(cmdstr);
 cleanup:
-  free(args);
+  del_param_list(args.argv, args.argc);
   free(src);
 }
 

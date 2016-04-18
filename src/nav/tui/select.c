@@ -22,6 +22,8 @@ static Select sel;
 void select_toggle(Buffer *buf, int max)
 {
   log_msg("SELECT", "toggle");
+  if (max < 1)
+    return;
   if (select_active() && !select_owner(buf)) {
     select_clear(sel.owner);
     buf_refresh(sel.owner);
@@ -32,10 +34,8 @@ void select_toggle(Buffer *buf, int max)
   if (!sel.enabled)
     return;
 
-  if (!select_active()) {
+  if (!select_active())
     sel.lines = calloc(max, sizeof(int));
-    sel.count = 1;
-  }
 
   int idx = buf_index(buf);
   sel.aditv = !sel.lines[idx];
@@ -46,6 +46,7 @@ void select_toggle(Buffer *buf, int max)
   sel.orgn_lnum = buf_line(buf);
   sel.orgn_index = buf_top(buf);
   sel.lines[idx] = 1;
+  sel.count++;
 }
 
 void select_clear(Buffer *buf)

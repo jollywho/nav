@@ -137,7 +137,7 @@ static FileItem* ftw_new(char *src, char *dest, Buffer *owner)
 {
   FileItem *item = malloc(sizeof(FileItem));
   item->owner = owner;
-  item->src = src;
+  item->src = strdup(src);
   item->dest = strdup(dest);
   item->parent = NULL;
   return item;
@@ -167,32 +167,12 @@ void ftw_push_copy(char *src, char *dest, Buffer *owner)
     ftw_start();
 }
 
-void ftw_add(char *src, char *dest, Buffer *owner, int flag)
+void ftw_add(varg_T args, char *dest, Buffer *owner, int flag)
 {
-  void (*fn)();
-  if (flag == F_MOVE)
-    fn = ftw_push_move;
-  else
-    fn = ftw_push_copy;
-
-  int prev = 0;
-  int i;
-  for (i = 0; src[i]; i++) {
-    if (src[i] == '\n') {
-      int pos = (i - prev);
-      char *buf = malloc(pos+1);
-      strncpy(buf, &src[prev], pos);
-      buf[pos] = '\0';
-      prev = i + 1;
-      fn(buf, dest, owner);
-    }
-  }
-
-  if (!prev) {
-    int pos = (i - prev);
-    char *buf = malloc(pos+1);
-    strncpy(buf, &src[prev], pos);
-    buf[pos] = '\0';
-    fn(buf, dest, owner);
+  for (int i = 0; i < args.argc; i++) {
+    if (flag == F_MOVE)
+      ftw_push_move(args.argv[i], dest, owner);
+    else
+      ftw_push_move(args.argv[i], dest, owner);
   }
 }

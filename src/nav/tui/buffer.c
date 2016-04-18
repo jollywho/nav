@@ -420,35 +420,34 @@ void buf_g(void *_b, Keyarg *ca)
   buf_move(buf, y, 0);
 }
 
-char* buf_focus_sel(Buffer *buf, const char *fld)
+varg_T buf_focus_sel(Buffer *buf, const char *fld)
 {
   log_msg("BUFFER", "buf_focus_sel");
   Model *m = buf->hndl->model;
 
-  int selcount = select_count();
-  if (selcount < 2) {
+  if (!select_active()) {
     void *val = model_curs_value(m, fld);
     if (!val)
       val = "";
-    return strdup(val);
+    char **str = malloc(sizeof(char*));
+    str[0] = strdup(val);
+    return (varg_T){1,str};
   }
 
-  int len = 0;
+  int count = 0;
   for (int i = 0; i < model_count(m); ++i) {
     if (select_has_line(buf, i))
-      len += strlen(model_fld_line(m, fld, i)) + 2;
+      count++;
   }
 
-  char *str = malloc(len);
-  str[0] = '\0';
+  int j = 0;
+  char **str = malloc((1+count)*sizeof(char*));
   for (int i = 0; i < model_count(m); ++i) {
-    if (select_has_line(buf, i)) {
-      strcat(str, model_fld_line(m, fld, i));
-      strcat(str, "\n");
-    }
+    if (select_has_line(buf, i))
+      str[j++] = strdup(model_fld_line(m, fld, i));
   }
 
-  return str;
+  return (varg_T){count,str};
 }
 
 void buf_end_sel(Buffer *buf)
@@ -472,12 +471,8 @@ void buf_yank(void *_b, Keyarg *ca)
   else if (ca->key != 'y')
     return;
 
-  char *val = buf_focus_sel(buf, "fullpath");
-  char *shw = buf_focus_sel(buf, field);
-  reg_set(NUL, val, shw);
-  reg_set('0', val, shw);
-  free(val);
-  free(shw);
+  reg_set(NUL, buf_focus_sel(buf, "fullpath"));
+  reg_set('0', buf_focus_sel(buf, field));
   buf_end_sel(buf);
 }
 
@@ -485,12 +480,8 @@ void buf_del(void *_b, Keyarg *ca)
 {
   Buffer *buf = (Buffer*)_b;
   fn_handle *h = buf->hndl;
-  char *val = buf_focus_sel(buf, "fullpath");
-  char *shw = buf_focus_sel(buf, h->fname);
-  reg_set(NUL, val, shw);
-  reg_set('1', val, shw);
-  free(val);
-  free(shw);
+  reg_set(NUL, buf_focus_sel(buf, "fullpath"));
+  reg_set('1', buf_focus_sel(buf, h->fname));
   buf_end_sel(buf);
 }
 

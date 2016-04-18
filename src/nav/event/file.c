@@ -312,9 +312,9 @@ void file_cancel(Buffer *owner)
   ftw_cancel();
 }
 
-void file_move(char *src, char *dest, Buffer *owner)
+void file_move(varg_T args, char *dest, Buffer *owner)
 {
-  log_msg("FILE", "move |%s|%s|", src, dest);
+  log_msg("FILE", "move |%d|%s|", args.argc, dest);
   //TODO:
   //ftw_add(src, dest, owner, F_MOVE)
   //
@@ -331,8 +331,8 @@ void file_move(char *src, char *dest, Buffer *owner)
   //  increment version if exists.
 }
 
-void file_copy(char *src, char *dest, Buffer *owner)
+void file_copy(varg_T args, char *dest, Buffer *owner)
 {
-  log_msg("FILE", "copy |%s|%s|", src, dest);
-  ftw_add(src, dest, owner, F_COPY);
+  log_msg("FILE", "copy |%d|%s|", args.argc, dest);
+  ftw_add(args, dest, owner, F_COPY);
 }

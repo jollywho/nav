@@ -46,6 +46,11 @@ typedef struct {
   int col;     /* column number */
 } pos_T;
 
+typedef struct {
+  int argc;
+  char **argv;
+} varg_T;
+
 void plugin_init();
 void plugin_cleanup();
 int plugin_isloaded(const char *);

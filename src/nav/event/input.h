@@ -62,7 +62,7 @@ typedef struct {
 
 struct fn_reg {
   int key;
-  char *value;
+  varg_T value;
 };
 
 void input_init(void);
@@ -84,6 +84,6 @@ bool op_pending(Keyarg *arg);
 fn_reg* reg_get(int ch);
 fn_reg* reg_dcur();
 void reg_clear_dcur();
-void reg_set(int ch, char *value, char *show);
+void reg_set(int ch, varg_T);
 
 #endif

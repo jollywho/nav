@@ -130,13 +130,11 @@ void expand_escapes(char *dest, const char *src)
   *dest = '\0';
 }
 
-char* strncat_shell(char *dest, const char *src, int n)
+char* strncat_shell(char *dest, const char *src)
 {
   char c;
-  int len = 0;
   *(dest++) = '\'';
-  while (len < n) {
-    c = src[len++];
+  while ((c = *(src++))) {
     switch(c) {
       case '\'':
         *(dest++) = '\'';
@@ -159,42 +157,44 @@ void trans_char(char *src, char from, char to)
   }
 }
 
-char* lines2argv(char *src)
+char* lines2argv(int argc, char **argv)
 {
-  int i, escs, lines;
-  for (i = lines = escs = 0; src[i]; i++) {
-    if (src[i] == '\n')
-      lines+=3;
-    else if (src[i] == '\'')
-      escs+=3;
+  int len = 0;
+  for (int i = 0; i < argc; i++) {
+    len += 3;  //quotes + space
+    for (int j = 0; argv[i][j]; j++) {
+      len++;
+      if (argv[i][j] == '\'')
+        len+=3;  //escapes
+    }
   }
-  int len = i + escs + lines + 2;
+
   char *dest = malloc(len+1);
   char *buf = dest;
 
-  char delim = '\n';
-  if (lines == 0) {
-    i++;
-    delim = '\0';
-  }
-
-  int prev = 0;
-  for (int j = 0; j < i; j++) {
-    if (src[j] != delim)
-      continue;
-
-    if (prev > 0)
+  for (int i = 0; i < argc; i++) {
+    if (i > 0)
       *(buf++) = ' ';
-
-    int pos = (j - prev);
-    buf = strncat_shell(buf, &src[prev], pos);
-    prev = j + 1;
-
-    /* break before next iteration */
-    if (src[j] == '\0')
-      break;
+    buf = strncat_shell(buf, argv[i]);
   }
   *buf = '\0';
+
+  return dest;
+}
+
+char* lines2yank(int argc, char **argv)
+{
+  int len = 0;
+  for (int i = 0; i < argc; i++)
+    len += strlen(argv[i]) + 1;
+
+  char *dest = malloc(len+1);
+  *dest = '\0';
+  for (int i = 0; i < argc; i++) {
+    if (i > 0)
+      strcat(dest, "\n");
+    strcat(dest, argv[i]);
+  }
 
   return dest;
 }
