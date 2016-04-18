@@ -76,6 +76,16 @@ static void jump_init(FM *self)
   self->jump_cur = NULL;
 }
 
+static void jump_cleanup(FM *self)
+{
+  while (!TAILQ_EMPTY(&self->p)) {
+    jump_item *it = TAILQ_FIRST(&self->p);
+    TAILQ_REMOVE(&self->p, it, ent);
+    free(it->path);
+    free(it);
+  }
+}
+
 static void jump_push(FM *self, char *path)
 {
   log_msg("FM", "jump_push");
@@ -362,6 +372,7 @@ void fm_delete(Plugin *plugin)
   FM *fm = plugin->top;
   fn_handle *h = fm->base->hndl;
   DO_EVENTS_UNTIL(!fs_blocking(fm->fs));
+  jump_cleanup(fm);
   model_close(h);
   model_cleanup(h);
   hook_clear_host(fm->base);

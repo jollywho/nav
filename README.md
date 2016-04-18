@@ -15,6 +15,7 @@ nav is a **work in progress**.
 * vim-style autocmds, marks, maps, syntax, colors
 * multi-selection: move, remove, copy
 * bulkrename (soon)
+* directory jumplist
 * file executor/opener with 'before/after' cmds.
 * [ctrlp](https://kien.github.io/ctrlp.vim/)-inspired autocomplete menu
 * menu hint keys
