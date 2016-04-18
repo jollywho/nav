@@ -313,7 +313,7 @@ void fs_read(fn_fs *fs, const char *dir)
   fs->running = true;
   fs->uv_fs.data = fs;
   fs->readkey = strdup(dir);
-  uv_fs_lstat(eventloop(), &fs->uv_fs, fs->readkey, stat_read_cb);
+  uv_fs_stat(eventloop(), &fs->uv_fs, fs->readkey, stat_read_cb);
 }
 
 void fs_open(fn_fs *fs, const char *dir)
@@ -326,7 +326,7 @@ void fs_open(fn_fs *fs, const char *dir)
     ent->running = true;
     ent->fastreq = false;
 
-    uv_fs_lstat(eventloop(), &ent->uv_fs, ent->key, stat_cb);
+    uv_fs_stat(eventloop(), &ent->uv_fs, ent->key, stat_cb);
     uv_fs_event_start(&ent->watcher, watch_cb, ent->key, 1);
   }
 }

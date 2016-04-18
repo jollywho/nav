@@ -105,16 +105,14 @@ static void fm_left(Plugin *host, Plugin *caller, HookArg *hka)
 static void fm_right(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "cmd right");
+  FM *self = host->top;
   fn_handle *h = host->hndl;
 
   char *path = model_curs_value(h->model, "fullpath");
   if (!path)
     return;
 
-  if (isdir(path))
-    fm_opendir(host, path, FORWARD);
-  else
-    send_hook_msg("fileopen", host, NULL, &(HookArg){NULL,path});
+  fs_read(self->fs, path);
 }
 
 static void fm_ch_dir(void **args)
@@ -126,7 +124,7 @@ static void fm_ch_dir(void **args)
   if (path_ok)
     fm_opendir(plugin, path, FORWARD);
   else
-    nv_err("not a valid path: %s", path);
+    send_hook_msg("fileopen", plugin, NULL, &(HookArg){NULL,path});
 }
 
 static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
