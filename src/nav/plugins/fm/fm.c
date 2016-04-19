@@ -144,8 +144,14 @@ static void fm_ch_dir(void **args)
   Plugin *plugin = args[0];
   FM *self = plugin->top;
   char *path = args[1];
-  bool path_ok = args[2];
-  if (path_ok) {
+  uv_stat_t *stat = args[2];
+
+  if (!stat) {
+    nv_err("not a valid path: %s", path);
+    return;
+  }
+
+  if (S_ISDIR(stat->st_mode)) {
     jump_push(self, path);
     fm_opendir(plugin, path, FORWARD);
   }
@@ -165,6 +171,11 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   DO_EVENTS_UNTIL(!fs_blocking(self->fs));
 
   char *path = valid_full_path(window_cur_dir(), req);
+  if (!path) {
+    char *trypath = add_quotes(req);
+    path = valid_full_path(window_cur_dir(), trypath);
+    free(trypath);
+  }
 
   if (path)
     fs_read(self->fs, path);
@@ -334,6 +345,7 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   plugin->name = "fm";
   plugin->fmt_name = "FM";
 
+  /* check manually because won't be initialized to use req_dir */
   char *path = valid_full_path(window_cur_dir(), arg);
   if (path)
     fm->cur_dir = path;

@@ -191,8 +191,11 @@ char* valid_full_path(char *base, char *path)
     SWAP_ALLOC_PTR(dir, conspath(base, dir));
 
   char *valid = realpath(dir, NULL);
-  if (valid)
-    SWAP_ALLOC_PTR(dir, valid);
+  if (!valid) {
+    free(dir);
+    return NULL;
+  }
+  SWAP_ALLOC_PTR(dir, valid);
   return dir;
 }
 
@@ -209,14 +212,17 @@ static void stat_read_cb(uv_fs_t *req)
 {
   log_msg("FS", "stat_read_cb");
   fn_fs *fs = req->data;
-  uv_stat_t stat = req->statbuf;
+  if (req->result < 0) {
+    log_err("FILE", "stat_read_cb: |%s|", uv_strerror(req->result));
+    CREATE_EVENT(eventq(), fs->stat_cb, 3, fs->data, fs->readkey, 0);
+    CREATE_EVENT(eventq(), stat_cleanup, 2, fs, NULL);
+    return;
+  }
 
-  //FIXME: handle possible failure of realpath
   char *path = realpath(fs->readkey, NULL);
   log_msg("FS", "req_stat_cb %s", req->path);
 
-  int path_state = S_ISDIR(stat.st_mode);
-  CREATE_EVENT(eventq(), fs->stat_cb, 3, fs->data, path, path_state);
+  CREATE_EVENT(eventq(), fs->stat_cb, 3, fs->data, path, &req->statbuf);
   CREATE_EVENT(eventq(), stat_cleanup, 2, fs, path);
 }
 

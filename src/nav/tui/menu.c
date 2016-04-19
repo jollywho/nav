@@ -82,7 +82,8 @@ void menu_ch_dir(void **args)
     return;
 
   char *dir = args[1];
-  if (!dir)
+  uv_stat_t *stat = args[2];
+  if (!dir || !stat || !S_ISDIR(stat->st_mode))
     return;
 
   SWAP_ALLOC_PTR(cur_menu->hndl->key, strdup(dir));
