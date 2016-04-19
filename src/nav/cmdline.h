@@ -25,7 +25,6 @@ struct Token {
   int block;                /* block level flag           */
   int start;                /* start pos of token in line */
   int end;                  /* start pos of token in line */
-  char esc;                 /* escape char for token      */
   typ_T var;
 };
 

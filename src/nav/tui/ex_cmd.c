@@ -197,26 +197,30 @@ static void ex_esc()
 static void ex_tab(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "TAB");
-  char *str = menu_next(ex.menu, arg->arg);
-  if (!str)
+  char *line = menu_next(ex.menu, arg->arg);
+  if (!line)
     return;
 
   cmd_part *part = ex.cmd_stack[ex.curpart];
   int st = part->st;
+  char *newline;
 
-//FIXME: potential overwrite with more than one escape?
-  char key[strlen(str) + 2];
-  expand_escapes(key, str);
-  int len = cell_len(key);
-  free(str);
+  if (line[0] == '/')
+    newline = add_quotes(line);
+  else
+    newline = strdup(line);
 
+  int len = cell_len(newline);
   if (st + len >= ex.maxpos)
     ex.line = realloc(ex.line, ex.maxpos = (2*ex.maxpos)+len+1);
 
   ex.line[ex.curpos] = ' ';
-  strcpy(&ex.line[st], key);
+  strcpy(&ex.line[st], newline);
   ex.curpos = cell_len(ex.line);
   ex.inrstate = EX_CYCLE;
+
+  free(line);
+  free(newline);
 }
 
 static void ex_hist(void *none, Keyarg *arg)

@@ -274,7 +274,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
       char *closech = strchr(&str[pos], ch[0]);
       if (closech && closech[-1] != '\\') {
         int end = (closech - &str[pos]) + pos;
-        cmdline_create_token(cmdline->tokens, str, pos, end, block);
+        cmdline_create_token(cmdline->tokens, str, pos-1, end, block);
         end++;
         pos = end;
         st = end;
@@ -485,8 +485,6 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         pcmd->idx = --idx;
         if (!word)
           goto breakout;
-        break;
-      case '"':
         break;
       case ':':
         break;

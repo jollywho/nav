@@ -163,6 +163,8 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
     req = strdup("~");
   else if (req[0] != '\"')
     req = add_quotes(req);
+  else
+    req = strdup(req);
 
   DO_EVENTS_UNTIL(!fs_blocking(self->fs));
 
