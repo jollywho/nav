@@ -186,10 +186,8 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
 static void fm_left(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "cmd left");
-  fn_handle *h = host->hndl;
-  char *path = model_curs_value(h->model, "dir");
-  if (!path)
-    return;
+  FM *self = host->top;
+  char *path = self->cur_dir;
   path = fs_parent_dir(strdup(path));
   fm_req_dir(host, NULL, &(HookArg){NULL,path});
   free(path);

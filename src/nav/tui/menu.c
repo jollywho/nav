@@ -391,6 +391,9 @@ void menu_toggle_hints(Menu *mnu)
     log_err("MENU", "not enough hintkeys for menu rows!");
     return;
   }
+  if (mnu->cx->cmpl->matchcount < 1)
+    return;
+
   mnu->hints = !mnu->hints;
   if (!mnu->cx || !mnu->cx->cmpl || ex_cmd_state() & EX_EXEC)
     mnu->hints = false;
@@ -401,12 +404,19 @@ int menu_input(Menu *mnu, int key)
   log_msg("MENU", "menu_input");
   if (!mnu->active || !mnu->cx)
     return 0;
+  log_err("MENU", "[%s]", mnu->cx->key);
 
   char *str = NULL;
   fn_compl *cmpl = mnu->cx->cmpl;
   for (int i = 0; i < ROW_MAX; i++) {
     if (mnu->hintkeys[i] == key)
       str = cmpl->matches[i+mnu->top]->key;
+  }
+
+  if (key == CAR) {
+    int idx = mnu->top + mnu->lnum;
+    if (idx < cmpl->matchcount)
+      str = cmpl->matches[idx]->key;
   }
   if (!str)
     return 0;
