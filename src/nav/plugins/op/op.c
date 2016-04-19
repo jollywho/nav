@@ -204,8 +204,8 @@ static Cmdret op_kill(List *args, Cmdarg *ca)
 Op_group* op_newgrp(const char *before, const char *after)
 {
   Op_group *opgrp = malloc(sizeof(Op_group));
-  opgrp->before = strdup(before);
-  opgrp->after = strdup(after);
+  opgrp->before = strip_quotes(before);
+  opgrp->after = strip_quotes(after);
   return opgrp;
 }
 

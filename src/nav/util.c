@@ -192,7 +192,7 @@ void del_param_list(char **params, int argc)
   }
 }
 
-char* strip_quotes(char *src)
+char* strip_quotes(const char *src)
 {
   if (*src == '"')
     src++;
@@ -201,7 +201,7 @@ char* strip_quotes(char *src)
   int i;
   for (i = 0; dest[i] != '\0'; ++i);
 
-  if (dest[i-1] == '"')
+  if (i > 0 && dest[i-1] == '"')
     dest[i-1] = '\0';
 
   return dest;

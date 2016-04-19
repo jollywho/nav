@@ -13,7 +13,7 @@ void trans_char(char *src, char from, char to);
 char* lines2argv(int, char **);
 char* lines2yank(int argc, char **argv);
 void del_param_list(char **params, int argc);
-char* strip_quotes(char *);
+char* strip_quotes(const char *);
 char* add_quotes(char *);
 bool fuzzy_match(char *, const char *);
 
