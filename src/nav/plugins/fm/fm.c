@@ -160,11 +160,7 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   char *req = hka->arg;
 
   if (!req)
-    req = strdup("~");
-  else if (req[0] != '\"')
-    req = add_quotes(req);
-  else
-    req = strdup(req);
+    req = "~";
 
   DO_EVENTS_UNTIL(!fs_blocking(self->fs));
 
@@ -173,7 +169,6 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   if (path)
     fs_read(self->fs, path);
 
-  free(req);
   free(path);
 }
 

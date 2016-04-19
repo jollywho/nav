@@ -313,7 +313,6 @@ Cmdret win_autocmd(List *args, Cmdarg *ca)
 Cmdret win_echo(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_echo");
-  //TODO: print from cmdstr, not tokens or raw
   char *out = cmdline_line_from(ca->cmdline, 1);
   if (!out)
     return NORET;

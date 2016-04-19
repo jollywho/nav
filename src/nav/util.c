@@ -114,6 +114,36 @@ void readable_fs(double size/*in bytes*/, char buf[])
     sprintf(buf, "%4.0f%s", size, units[i]);
 }
 
+char* escape_shell(char *src)
+{
+  const char escs[] = "() []";
+  char c;
+  int len = 0;
+
+  char *str = src;
+  while ((c = *(str++))) {
+    for (int i = 0; i < LENGTH(escs); i++) {
+      if (escs[i] == c)
+        len++;
+    }
+    len++;
+  }
+
+  char *buf = malloc(len+1);
+  char *dest = buf;
+
+  str = src;
+  while ((c = *(str++))) {
+    for (int i = 0; i < LENGTH(escs); i++) {
+      if (escs[i] == c)
+        *(buf++) = '\\';
+    }
+    *(buf++) = c;
+  }
+  *buf = '\0';
+  return dest;
+}
+
 char* strncat_shell(char *dest, const char *src)
 {
   char c;

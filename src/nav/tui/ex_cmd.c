@@ -203,12 +203,7 @@ static void ex_tab(void *none, Keyarg *arg)
 
   cmd_part *part = ex.cmd_stack[ex.curpart];
   int st = part->st;
-  char *newline;
-
-  if (line[0] == '/')
-    newline = add_quotes(line);
-  else
-    newline = strdup(line);
+  char *newline = escape_shell(line);
 
   int len = cell_len(newline);
   if (st + len >= ex.maxpos)

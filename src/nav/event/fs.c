@@ -181,7 +181,6 @@ char* valid_full_path(char *base, char *path)
   if (!path)
     return strdup(base);
 
-  //FIXME: without quotes, breaks on spaces
   char *dir = fs_expand_path(path);
   if (path[0] == '@') {
     char *tmp = mark_path(dir);
@@ -192,11 +191,8 @@ char* valid_full_path(char *base, char *path)
     SWAP_ALLOC_PTR(dir, conspath(base, dir));
 
   char *valid = realpath(dir, NULL);
-  if (!valid) {
-    free(dir);
-    return NULL;
-  }
-  SWAP_ALLOC_PTR(dir, valid);
+  if (valid)
+    SWAP_ALLOC_PTR(dir, valid);
   return dir;
 }
 
@@ -215,6 +211,7 @@ static void stat_read_cb(uv_fs_t *req)
   fn_fs *fs = req->data;
   uv_stat_t stat = req->statbuf;
 
+  //FIXME: handle possible failure of realpath
   char *path = realpath(fs->readkey, NULL);
   log_msg("FS", "req_stat_cb %s", req->path);
 
