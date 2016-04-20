@@ -171,6 +171,20 @@ void trans_char(char *src, char from, char to)
   }
 }
 
+int count_lines(char *src)
+{
+  char *next = NULL;
+  int count = 0;
+  while ((next = strstr(src, "\n"))) {
+    next++;
+    if (!next)
+      break;
+    count++;
+    src = next;
+  }
+  return count;
+}
+
 char* lines2argv(int argc, char **argv)
 {
   int len = 0;

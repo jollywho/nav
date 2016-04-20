@@ -11,6 +11,7 @@ void draw_wide(WINDOW *win, int row, int col, char *src, int max);
 void readable_fs(double size/*in bytes*/, char buf[]);
 char* escape_shell(char *src);
 void trans_char(char *src, char from, char to);
+int count_lines(char *src);
 char* lines2argv(int, char **);
 char* lines2yank(int argc, char **argv);
 void del_param_list(char **params, int argc);

@@ -71,12 +71,13 @@ void term_set_editor(Plugin *plugin, Ed *ed)
   term->ed = ed;
 }
 
-static void term_close_poll(uv_handle_t *hndl)
+static void term_cleanup(void **args)
 {
-  log_msg("TERM", "term_close_poll");
-  Term *term = hndl->data;
+  log_msg("TERM", "term_cleanup");
+  Term *term = args[0];
   vt_destroy(term->vt);
   free(term);
+  term = NULL;
 }
 
 void term_delete(Plugin *plugin)
@@ -91,7 +92,8 @@ void term_delete(Plugin *plugin)
   hook_cleanup_host(term->base);
 
   uv_handle_t *hp = (uv_handle_t*)&term->readfd;
-  uv_close(hp, term_close_poll);
+  uv_close(hp, NULL);
+  CREATE_EVENT(eventq(), term_cleanup, 1, term);
 }
 
 static void plugin_focus(Plugin *plugin)
@@ -135,6 +137,7 @@ void term_keypress(Plugin *plugin, int key)
 
 static void term_draw(Term *term)
 {
+  log_msg("TERM", "term_draw");
   vt_draw(term->vt, buf_ncwin(term->buf), 0, 0);
   wnoutrefresh(buf_ncwin(term->buf));
   doupdate();

@@ -8,9 +8,13 @@ typedef struct Ed Ed;
 
 struct Ed {
   Plugin *base;
+  Buffer *buf;
+  varg_T src;
+  varg_T dest;
   char tmp_name[PATH_MAX];
   int bufno;
   int fd;
+  int state;
 };
 
 void ed_new(Plugin *plugin, Buffer *buf, char *arg);
