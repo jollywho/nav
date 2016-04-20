@@ -15,6 +15,11 @@
 #define ED_PASSVE 0
 #define ED_RENAME 1
 #define ED_CONFRM 2
+#define ED_CLOSED 4
+
+static const char* ED_MSG =
+  "# This file will be executed when you close the editor.\n"
+  "# Please double-check everything, clear the file to abort.";
 
 static void ed_chown_plugin(Ed *ed)
 {
@@ -26,23 +31,31 @@ static void ed_chown_plugin(Ed *ed)
 static void ed_cleanup(Ed *ed)
 {
   log_msg("ED", "ed_cleanup");
+  //TODO: cleanup based on state
   del_param_list(ed->src.argv,  ed->src.argc);
   del_param_list(ed->dest.argv, ed->dest.argc);
   ed_chown_plugin(ed);
+  unlink(ed->tmp_name);
+  close(ed->fd);
   window_close_focus();
 }
 
-static bool ed_dump_contents(Ed *ed, varg_T *args)
+static void ed_dump_contents(Ed *ed, varg_T *args)
 {
   log_msg("ED", "ed_dump_contents");
 
   lseek(ed->fd, 0, SEEK_SET);
+
+  if (ed->state == ED_CONFRM) {
+    write(ed->fd, ED_MSG, strlen(ED_MSG));
+    write(ed->fd, "\n", 1);
+  }
+
   for (int i = 0; i < args->argc; i++) {
     log_err("ED", "write: [%s]", args->argv[i]);
     write(ed->fd, args->argv[i], strlen(args->argv[i]));
     write(ed->fd, "\n", 1);
   }
-  return true;
 }
 
 static bool ed_read_temp(Ed *ed)
@@ -65,6 +78,12 @@ static bool ed_read_temp(Ed *ed)
   }
   dest[off] = '\0';
   log_err("ED", "read: [%s]", dest);
+
+  if (ed->state == ED_CONFRM) {
+    //  if read 0 lines || # > dest.argc
+    //    nv_msg. cleanup
+    del_param_list(ed->dest.argv, ed->dest.argc);
+  }
 
   ed->dest.argc = count_lines(dest);
   ed->dest.argv = malloc((1+ed->dest.argc)*sizeof(char*));
@@ -90,9 +109,6 @@ static bool ed_read_temp(Ed *ed)
   //  if no remaining
   //    nv_msg. cleanup
   //
-  //if (ed->state == ED_CONFRM)
-  //  if read 0 lines
-  //    nv_msg. cleanup
   return true;
 }
 
@@ -106,10 +122,12 @@ static void ed_start_term(Ed *ed, varg_T *arg)
   }
 
   ed_dump_contents(ed, arg);
+
   char *line;
   asprintf(&line, "$EDITOR %s", ed->tmp_name);
   term_new(ed->base, ed->buf, line);
   free(line);
+
   term_set_editor(ed->base, ed);
   buf_set_status(ed->buf, "ED", NULL, NULL);
 }
@@ -117,16 +135,29 @@ static void ed_start_term(Ed *ed, varg_T *arg)
 static void ed_stage_confirm(Ed *ed)
 {
   log_msg("ED", "ed_stage_confirm");
-  //replace args with "mv -f src dest"
-  //ed_dump_select
+  int max = 0;
+  for (int i = 0; i < ed->src.argc; i++)
+    max = MAX(max, strlen(ed->src.argv[i]));
+
+  char buf[PATH_MAX];
+  for (int i = 0; i < ed->dest.argc; i++) {
+    char **src  = &ed->src.argv[i];
+    char **dest = &ed->dest.argv[i];
+    sprintf(buf, "%-*s  %s", max, *src, *dest);
+    SWAP_ALLOC_PTR(*dest, strdup(buf));
+  }
+
   ed_start_term(ed, &ed->dest);
 }
 
 static void ed_eval_temp(Ed *ed)
 {
   log_msg("ED", "ed_eval_temp");
-  //eval dest
-  //cleanup
+  //TODO:
+  //split string after src != dest
+  //strip spaces
+  //file_move_str(src, split_dest)
+  ed_cleanup(ed);
 }
 
 void ed_close_cb(Plugin *plugin, Ed *ed)
@@ -181,8 +212,5 @@ void ed_delete(Plugin *plugin)
 {
   log_msg("ED", "delete");
   Ed *ed = plugin->top;
-
-  unlink(ed->tmp_name);
-  close(ed->fd);
   free(ed);
 }

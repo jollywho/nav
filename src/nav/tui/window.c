@@ -59,7 +59,7 @@ static const Cmd_T cmdtable[] = {
   {"echo","ec",     win_echo,    0},
   {"reload","rel",  win_reload,  0},
   {"direct",0,      win_direct,  0},
-  {"edit",0,        win_edit,    0},
+  {"edit","ed",     win_edit,    0},
 };
 
 static char *compl_cmds[] = {
