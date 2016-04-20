@@ -427,19 +427,16 @@ Cmdret win_direct(List *args, Cmdarg *ca)
 Cmdret win_edit(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_edit");
-  //TODO:
-  //new buf
-  //new term $EDITOR $tmp
-  //set callback on exit
-  //
-  //callback:
-  //dont close plugin or buf
-  //edit $tmp with confirm contents
-  //reopen $EDITOR $tmp in plugin
-  //set callback on exit
-  //
-  //callback:
-  //run each line
+  Buffer *buf = window_get_focus();
+  if (!buf)
+    return NORET;
+
+  int id = buf_id(buf);
+  char *line;
+  asprintf(&line, "new ed %d", id);
+  cmd_eval(NULL, line);
+  free(line);
+
   return NORET;
 }
 

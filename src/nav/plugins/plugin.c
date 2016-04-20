@@ -5,6 +5,7 @@
 #include "nav/plugins/img/img.h"
 #include "nav/plugins/term/term.h"
 #include "nav/plugins/dt/dt.h"
+#include "nav/plugins/ed/ed.h"
 #include "nav/compl.h"
 #include "nav/log.h"
 #include "nav/option.h"
@@ -34,8 +35,9 @@ static struct plugin_ent {
 #if W3M_SUPPORTED
   {"img",  NULL,    img_new,  img_delete,  0},
 #endif
+  {"ed"  , NULL,    ed_new,   ed_delete,   0},
   {"term", NULL,    term_new, term_delete, 0},
-  //{"dt",   NULL,    dt_new,   dt_delete,   0},
+//{"dt",   NULL,    dt_new,   dt_delete,   0},
 };
 
 static int max_callable;

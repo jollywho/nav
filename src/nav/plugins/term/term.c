@@ -1,5 +1,4 @@
 #include <sys/wait.h>
-
 #include "nav/lib/utarray.h"
 
 #include "nav/plugins/term/term.h"
@@ -64,6 +63,12 @@ void term_new(Plugin *plugin, Buffer *buf, char *arg)
 
   hook_init_host(plugin);
   hook_add_intl(plugin, plugin, plugin_resize, "window_resize");
+}
+
+void term_set_editor(Plugin *plugin, Ed *ed)
+{
+  Term *term = plugin->top;
+  term->ed = ed;
 }
 
 static void term_close_poll(uv_handle_t *hndl)
@@ -160,7 +165,11 @@ static void term_close(Term *term)
 {
   log_msg("TERM", "term_close");
   term->closed = true;
-  window_close_focus();
+
+  if (term->ed)
+    ed_close_cb(term->base, term->ed);
+  else
+    window_close_focus();
 }
 
 static void chld_handler(uv_signal_t *handle, int signum)

@@ -177,6 +177,7 @@ void overlay_lnum(Overlay *ov, int lnum, int max)
 
 void overlay_edit(Overlay *ov, char *name, char *usr, char *in)
 {
+  log_err("OVERLAY", "edit: %s ", name);
   set_string(&ov->arg, usr);
   set_string(&ov->pipe_in, in);
   if (name)

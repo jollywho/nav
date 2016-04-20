@@ -173,6 +173,6 @@ void ftw_add(varg_T args, char *dest, Buffer *owner, int flag)
     if (flag == F_MOVE)
       ftw_push_move(args.argv[i], dest, owner);
     else
-      ftw_push_move(args.argv[i], dest, owner);
+      ftw_push_copy(args.argv[i], dest, owner);
   }
 }

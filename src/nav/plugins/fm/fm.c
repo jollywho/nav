@@ -188,6 +188,7 @@ static void fm_left(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("FM", "cmd left");
   FM *self = host->top;
   char *path = self->cur_dir;
+  //FIXME: can get stuck if depth > 1 of dead dirs
   path = fs_parent_dir(strdup(path));
   fm_req_dir(host, NULL, &(HookArg){NULL,path});
   free(path);
