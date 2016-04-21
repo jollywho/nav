@@ -92,8 +92,12 @@ void term_delete(Plugin *plugin)
   hook_cleanup_host(term->base);
 
   uv_handle_t *hp = (uv_handle_t*)&term->readfd;
+  uv_cancel((uv_req_t*)&term->readfd);
   uv_close(hp, NULL);
   CREATE_EVENT(eventq(), term_cleanup, 1, term);
+
+  if (term->ed && !term->closed)
+    ed_close_cb(term->base, term->ed, true);
 }
 
 static void plugin_focus(Plugin *plugin)
@@ -168,9 +172,8 @@ static void term_close(Term *term)
 {
   log_msg("TERM", "term_close");
   term->closed = true;
-
   if (term->ed)
-    ed_close_cb(term->base, term->ed);
+    ed_close_cb(term->base, term->ed, false);
   else
     window_close_focus();
 }

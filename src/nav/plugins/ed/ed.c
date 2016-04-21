@@ -13,9 +13,9 @@
 #include "nav/table.h"
 #include "nav/util.h"
 
-#define ED_PASSVE 0
-#define ED_RENAME 1
-#define ED_CONFRM 2
+#define ED_PASSVE 1
+#define ED_RENAME 2
+#define ED_CONFRM 3
 #define ED_CLOSED 4
 
 static const char* ED_MSG =
@@ -32,13 +32,22 @@ static void ed_chown_plugin(Ed *ed)
 static void ed_cleanup(Ed *ed)
 {
   log_msg("ED", "ed_cleanup");
-  //TODO: cleanup based on state
-  del_param_list(ed->src.argv,  ed->src.argc);
-  del_param_list(ed->dest.argv, ed->dest.argc);
-  ed_chown_plugin(ed);
-  unlink(ed->tmp_name);
-  close(ed->fd);
-  window_close_focus();
+  log_msg("ED", "%d", ed->state);
+
+  if ((ed->state & ED_RENAME) == ED_RENAME) {
+    del_param_list(ed->src.argv,  ed->src.argc);
+    unlink(ed->tmp_name);
+    close(ed->fd);
+  }
+  if ((ed->state & ED_CONFRM) == ED_CONFRM)
+    del_param_list(ed->dest.argv, ed->dest.argc);
+
+  if ((ed->state & ED_CLOSED) != ED_CLOSED) {
+    ed_chown_plugin(ed);
+    window_close_focus();
+  }
+  else
+    free(ed);
 }
 
 static void ed_dump_contents(Ed *ed, varg_T *args)
@@ -199,12 +208,19 @@ static void ed_do_rename(Ed *ed)
     }
     file_intl_move(src, to, ed->buf);
   }
+  ed->state &= ~ED_CLOSED;
   ed_cleanup(ed);
 }
 
-void ed_close_cb(Plugin *plugin, Ed *ed)
+void ed_close_cb(Plugin *plugin, Ed *ed, bool closed)
 {
   log_msg("ED", "ed_close_cb");
+
+  if (closed) {
+    ed->state |= ED_CLOSED;
+    ed_cleanup(ed);
+    return;
+  }
 
   term_delete(ed->base);
   window_refresh();

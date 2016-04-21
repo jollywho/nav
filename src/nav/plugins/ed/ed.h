@@ -19,6 +19,6 @@ struct Ed {
 
 void ed_new(Plugin *plugin, Buffer *buf, char *arg);
 void ed_delete(Plugin *plugin);
-void ed_close_cb(Plugin *plugin, Ed *ed);
+void ed_close_cb(Plugin *plugin, Ed *ed, bool closed);
 
 #endif
