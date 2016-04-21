@@ -22,6 +22,7 @@ struct FileItem {
 
 void file_init();
 void file_cleanup();
+void file_intl_move(char *str, char *dest, Buffer *);
 void file_copy(varg_T, char *dest, Buffer *);
 void file_move(varg_T, char *dest, Buffer *);
 void file_push(FileItem *item, uint64_t len);

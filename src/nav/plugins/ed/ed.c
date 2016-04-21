@@ -8,6 +8,7 @@
 #include "nav/tui/buffer.h"
 #include "nav/tui/window.h"
 #include "nav/event/hook.h"
+#include "nav/event/file.h"
 #include "nav/log.h"
 #include "nav/table.h"
 #include "nav/util.h"
@@ -58,6 +59,15 @@ static void ed_dump_contents(Ed *ed, varg_T *args)
   }
 }
 
+static void resize_src(varg_T *a, varg_T *b)
+{
+  log_msg("ED", "resize_src");
+  for (int i = a->argc - 1; i > b->argc - 1; i--)
+    free(a->argv[i]);
+  a->argc = b->argc;
+  a->argv = realloc(a->argv, a->argc*sizeof(char*));
+}
+
 static bool ed_read_temp(Ed *ed)
 {
   log_msg("ED", "ed_read_temp");
@@ -77,13 +87,9 @@ static bool ed_read_temp(Ed *ed)
     off += len;
   }
   dest[off] = '\0';
-  log_err("ED", "read: [%s]", dest);
 
-  if (ed->state == ED_CONFRM) {
-    //  if read 0 lines || # > dest.argc
-    //    nv_msg. cleanup
+  if (ed->state == ED_CONFRM)
     del_param_list(ed->dest.argv, ed->dest.argc);
-  }
 
   ed->dest.argc = count_lines(dest);
   ed->dest.argv = malloc((1+ed->dest.argc)*sizeof(char*));
@@ -95,20 +101,27 @@ static bool ed_read_temp(Ed *ed)
   while ((next = strstr(prev, "\n"))) {
     log_err("ED", "newline");
     *next = '\0';
-    log_err("ED", "read: [%s]", prev);
-    ed->dest.argv[i] = strdup(prev);
-    i++;
+    log_err("ED", "[%s]", prev);
+    if (*prev != '#') {
+      ed->dest.argv[i] = strdup(prev);
+      i++;
+    }
     prev = next+1;
     if (!prev)
       break;
   }
   free(dest);
 
-  //if (ed->state == ED_RENAME)
-  //  remove from dest where src != dest
-  //  if no remaining
-  //    nv_msg. cleanup
-  //
+  int src_count = ed->src.argc;
+  int dst_count = ed->dest.argc;
+  if (dst_count > src_count || dst_count < 1) {
+    //err
+    return false;
+  }
+
+  if (ed->state == ED_RENAME && dst_count < src_count)
+    resize_src(&ed->src, &ed->dest);
+
   return true;
 }
 
@@ -150,13 +163,42 @@ static void ed_stage_confirm(Ed *ed)
   ed_start_term(ed, &ed->dest);
 }
 
-static void ed_eval_temp(Ed *ed)
+static char* crop_dest(char *src, char *dst)
 {
-  log_msg("ED", "ed_eval_temp");
-  //TODO:
-  //split string after src != dest
-  //strip spaces
-  //file_move_str(src, split_dest)
+  int i;
+  /* NOTE: assume src portion untouched.
+   * will fail later anyway. */
+  for (i = 0; dst[i]; i++) {
+    if (src[i] != dst[i])
+      break;
+  }
+  /* src error or no space delimit */
+  if (dst[i] == '\0' || dst[i] != ' ')
+    return NULL;
+
+  /* strip spaces */
+  while (dst[i] == ' ')
+    i++;
+
+  return &dst[i];
+}
+
+static void ed_do_rename(Ed *ed)
+{
+  log_msg("ED", "ed_do_rename");
+
+  for (int i = 0; i < ed->dest.argc; i++) {
+    char *src = ed->src.argv[i];
+    char *dst = ed->dest.argv[i];
+    log_err("ED", "[%s] [%s]", src, dst);
+
+    char *to = crop_dest(src, dst);
+    if (!to) {
+      //error
+      continue;
+    }
+    file_intl_move(src, to, ed->buf);
+  }
   ed_cleanup(ed);
 }
 
@@ -173,7 +215,7 @@ void ed_close_cb(Plugin *plugin, Ed *ed)
   if (ed->state == ED_RENAME)
     return ed_stage_confirm(ed);
   if (ed->state == ED_CONFRM)
-    return ed_eval_temp(ed);
+    return ed_do_rename(ed);
 }
 
 static bool ed_prepare(Ed *ed)

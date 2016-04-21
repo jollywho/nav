@@ -312,6 +312,11 @@ void file_cancel(Buffer *owner)
   ftw_cancel();
 }
 
+void file_intl_move(char *src, char *dest, Buffer *owner)
+{
+  log_msg("FILE", "intl_move |%s|%s|", src, dest);
+}
+
 void file_move(varg_T args, char *dest, Buffer *owner)
 {
   log_msg("FILE", "move |%d|%s|", args.argc, dest);

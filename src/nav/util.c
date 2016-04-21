@@ -179,7 +179,8 @@ int count_lines(char *src)
     next++;
     if (!next)
       break;
-    count++;
+    if (*src != '#')
+      count++;
     src = next;
   }
   return count;

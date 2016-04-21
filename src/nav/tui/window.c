@@ -436,6 +436,7 @@ Cmdret win_edit(List *args, Cmdarg *ca)
   asprintf(&line, "new ed %d", id);
   cmd_eval(NULL, line);
   free(line);
+  buf_end_sel(buf);
 
   return NORET;
 }
