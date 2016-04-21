@@ -145,6 +145,7 @@ static FileItem* ftw_new(char *src, char *dest, Buffer *owner)
 
 void ftw_push_move(char *src, char *dest, Buffer *owner)
 {
+  log_msg("FILE", "pushed_move");
   struct stat sb;
   if (lstat(src, &sb) == -1)
     return;
@@ -152,13 +153,14 @@ void ftw_push_move(char *src, char *dest, Buffer *owner)
   FileItem *item = ftw_new(src, dest, owner);
   item->flags = F_MOVE|F_VERSIONED;
 
-  file_push(ftw.cur, sb.st_size);
   //NOTE: copying across devices will fail and be readded as copy
+  file_push(item, sb.st_size);
+  file_start();
 }
 
 void ftw_push_copy(char *src, char *dest, Buffer *owner)
 {
-  log_msg("FILE", "pushed");
+  log_msg("FILE", "pushed_copy");
   FileItem *item = ftw_new(src, dest, owner);
   item->flags = F_COPY|F_VERSIONED;
 
@@ -167,12 +169,16 @@ void ftw_push_copy(char *src, char *dest, Buffer *owner)
     ftw_start();
 }
 
-void ftw_add(varg_T args, char *dest, Buffer *owner, int flag)
+void ftw_add(char *src, char *dst, Buffer *owner, int flag)
 {
-  for (int i = 0; i < args.argc; i++) {
-    if (flag == F_MOVE)
-      ftw_push_move(args.argv[i], dest, owner);
-    else
-      ftw_push_copy(args.argv[i], dest, owner);
-  }
+  if (flag == F_MOVE)
+    ftw_push_move(src, dst, owner);
+  else
+    ftw_push_copy(src, dst, owner);
+}
+
+void ftw_add_bulk(varg_T args, char *dest, Buffer *owner, int flag)
+{
+  for (int i = 0; i < args.argc; i++)
+    ftw_add(args.argv[i], dest, owner, flag);
 }

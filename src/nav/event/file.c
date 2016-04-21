@@ -230,9 +230,32 @@ static void open_cb(uv_fs_t *req)
 
 static void get_cur_dest_name(const char *dest, FileItem *parent)
 {
+  if ((file.cur->flags & F_MOVE) == F_MOVE)
+    return;
+
   if (parent)
     dest = parent->dest;
   SWAP_ALLOC_PTR(file.cur->dest, conspath(dest, basename(file.cur->src)));
+}
+
+static void do_link(const char *oldpath, const char *newpath)
+{
+  log_err("FILE", "do_link");
+  log_err("FILE", "%s %s", oldpath, newpath);
+
+  int ret = link(oldpath, newpath);
+  if (ret < 0)
+    log_err("FILE", "%s", strerror(errno));
+
+  if (errno == EXDEV) {
+    log_err("FILE", "requeue as copy");
+    return;
+  }
+
+  if (ret == 0) {
+    unlink(oldpath);
+    file_stop();
+  }
 }
 
 static void do_stat(const char *path, struct stat *sb)
@@ -256,6 +279,15 @@ static void do_stat(const char *path, struct stat *sb)
 
   /* dest does not exist */
   if (sb == &file.s2 && errno == ENOENT) {
+
+    if ((file.cur->flags & F_MOVE) == F_MOVE) {
+      do_link(file.cur->src, file.cur->dest);
+      return;
+    }
+
+    return;
+
+
     if (S_ISDIR(file.s1.st_mode)) {
       mkdir(file.cur->dest, file.s1.st_mode);
       file_stop();
@@ -312,22 +344,17 @@ void file_cancel(Buffer *owner)
   ftw_cancel();
 }
 
-void file_intl_move(char *src, char *dest, Buffer *owner)
+void file_move_str(char *src, char *dest, Buffer *owner)
 {
-  log_msg("FILE", "intl_move |%s|%s|", src, dest);
+  log_msg("FILE", "move_str |%s|%s|", src, dest);
+  ftw_add(src, dest, owner, F_MOVE);
 }
 
 void file_move(varg_T args, char *dest, Buffer *owner)
 {
   log_msg("FILE", "move |%d|%s|", args.argc, dest);
   //TODO:
-  //ftw_add(src, dest, owner, F_MOVE)
-  //
-  //resolve src and dest names similar to file_copy, except
-  //ignore src type and create hard link at dest.
-  //
-  //if EXDEV, default to file_copy with unlink flag. requeue.
-  //otherwise, unlink src and finish.
+  //ftw_add_bulk(src, dest, owner, F_MOVE)
   //
   //**flags**
   //dest overwrite [edit (rename) default]
@@ -339,5 +366,5 @@ void file_move(varg_T args, char *dest, Buffer *owner)
 void file_copy(varg_T args, char *dest, Buffer *owner)
 {
   log_msg("FILE", "copy |%d|%s|", args.argc, dest);
-  ftw_add(args, dest, owner, F_COPY);
+  ftw_add_bulk(args, dest, owner, F_COPY);
 }

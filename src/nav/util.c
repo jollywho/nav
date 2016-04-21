@@ -114,6 +114,13 @@ void readable_fs(double size/*in bytes*/, char buf[])
     sprintf(buf, "%4.0f%s", size, units[i]);
 }
 
+void conspath_buf(char *buf, char *base, char *name)
+{
+  strcpy(buf, base);
+  strcat(buf, "/");
+  strcat(buf, name);
+}
+
 char* escape_shell(char *src)
 {
   const char escs[] = "() []";

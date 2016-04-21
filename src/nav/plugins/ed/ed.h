@@ -12,6 +12,7 @@ struct Ed {
   varg_T src;
   varg_T dest;
   char tmp_name[PATH_MAX];
+  char curdir[PATH_MAX];
   int bufno;
   int fd;
   int state;

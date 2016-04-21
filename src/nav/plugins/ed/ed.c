@@ -9,6 +9,7 @@
 #include "nav/tui/window.h"
 #include "nav/event/hook.h"
 #include "nav/event/file.h"
+#include "nav/event/fs.h"
 #include "nav/log.h"
 #include "nav/table.h"
 #include "nav/util.h"
@@ -195,18 +196,22 @@ static char* crop_dest(char *src, char *dst)
 static void ed_do_rename(Ed *ed)
 {
   log_msg("ED", "ed_do_rename");
+  char from[PATH_MAX];
+  char to[PATH_MAX];
 
   for (int i = 0; i < ed->dest.argc; i++) {
     char *src = ed->src.argv[i];
     char *dst = ed->dest.argv[i];
     log_err("ED", "[%s] [%s]", src, dst);
 
-    char *to = crop_dest(src, dst);
-    if (!to) {
+    char *str = crop_dest(src, dst);
+    if (!str) {
       //error
       continue;
     }
-    file_intl_move(src, to, ed->buf);
+    conspath_buf(from, ed->curdir, src);
+    conspath_buf(to,   ed->curdir, str);
+    file_move_str(from, to, ed->buf);
   }
   ed->state &= ~ED_CLOSED;
   ed_cleanup(ed);
@@ -242,6 +247,7 @@ static bool ed_prepare(Ed *ed)
 
   Buffer *buf = lis->hndl->buf;
   ed->src = buf_focus_sel(buf, "name");
+  sprintf(ed->curdir, "%s", window_cur_dir());
 
   sprintf(ed->tmp_name, "/tmp/navedit-XXXXXX");
   ed->fd = mkstemp(ed->tmp_name);

@@ -9,6 +9,7 @@
 #define F_MOVE       2
 #define F_VERSIONED  4
 #define F_OVERWRITE  8
+#define F_UNLINK     (F_COPY|F_OVERWRITE)
 
 typedef struct FileItem FileItem;
 struct FileItem {
@@ -22,7 +23,7 @@ struct FileItem {
 
 void file_init();
 void file_cleanup();
-void file_intl_move(char *str, char *dest, Buffer *);
+void file_move_str(char *src, char *dst, Buffer *);
 void file_copy(varg_T, char *dest, Buffer *);
 void file_move(varg_T, char *dest, Buffer *);
 void file_push(FileItem *item, uint64_t len);
