@@ -57,23 +57,28 @@ void file_cleanup()
   ftw_cleanup();
 }
 
-static void clear_fileitem(FileItem *cur, FileItem *p)
+static void clear_fileitem(FileItem *item)
 {
+  free(item->src);
+  free(item->dest);
+  free(item);
+}
+
+static void cleanup_fileitems(FileItem *cur, FileItem *p)
+{
+  if ((file.cur->flags & F_MOVE) == F_MOVE)
+    return clear_fileitem(cur);
+
   if (S_ISDIR(file.s1.st_mode)) {
     file.curp = cur;
     return;
   }
 
-  if (p && (cur->parent != p || TAILQ_EMPTY(&file.p))) {
-    free(p->src);
-    free(p->dest);
-    free(p);
-  }
-  file.curp = cur->parent;
+  if (p && (cur->parent != p || TAILQ_EMPTY(&file.p)))
+    clear_fileitem(p);
 
-  free(cur->src);
-  free(cur->dest);
-  free(cur);
+  file.curp = cur->parent;
+  clear_fileitem(cur);
 }
 
 static void file_stop()
@@ -84,7 +89,7 @@ static void file_stop()
   Buffer *owner = file.cur->owner;
 
   TAILQ_REMOVE(&file.p, file.cur, ent);
-  clear_fileitem(file.cur, file.curp);
+  cleanup_fileitems(file.cur, file.curp);
 
   if (TAILQ_EMPTY(&file.p))
     file.tsize = file.wsize = 0;
@@ -284,10 +289,6 @@ static void do_stat(const char *path, struct stat *sb)
       do_link(file.cur->src, file.cur->dest);
       return;
     }
-
-    return;
-
-
     if (S_ISDIR(file.s1.st_mode)) {
       mkdir(file.cur->dest, file.s1.st_mode);
       file_stop();

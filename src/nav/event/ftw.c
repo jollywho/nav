@@ -98,6 +98,7 @@ static void ftw_cb(const char *str, struct stat *sb, int isdir)
     cpy->dest = NULL;
     cpy->owner = ftw.cur->owner;
     cpy->parent = ftw.cur;
+    cpy->flags = ftw.cur->flags;
     file_push(cpy, sb->st_size);
 
     if (isdir)
