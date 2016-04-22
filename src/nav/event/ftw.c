@@ -146,7 +146,7 @@ static FileItem* ftw_new(char *src, char *dest, Buffer *owner)
 
 void ftw_push_move(char *src, char *dest, Buffer *owner)
 {
-  log_msg("FILE", "pushed_move");
+  log_msg("FTW", "pushed_move");
   struct stat sb;
   if (lstat(src, &sb) == -1)
     return;
@@ -161,7 +161,7 @@ void ftw_push_move(char *src, char *dest, Buffer *owner)
 
 void ftw_push_copy(char *src, char *dest, Buffer *owner)
 {
-  log_msg("FILE", "pushed_copy");
+  log_msg("FTW", "pushed_copy");
   FileItem *item = ftw_new(src, dest, owner);
   item->flags = F_COPY|F_VERSIONED;
 
@@ -172,14 +172,9 @@ void ftw_push_copy(char *src, char *dest, Buffer *owner)
 
 void ftw_add(char *src, char *dst, Buffer *owner, int flag)
 {
+  log_msg("FILE", "ftw add |%s|%s|", src, dst);
   if (flag == F_MOVE)
     ftw_push_move(src, dst, owner);
   else
     ftw_push_copy(src, dst, owner);
-}
-
-void ftw_add_bulk(varg_T args, char *dest, Buffer *owner, int flag)
-{
-  for (int i = 0; i < args.argc; i++)
-    ftw_add(args.argv[i], dest, owner, flag);
 }

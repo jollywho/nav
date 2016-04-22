@@ -483,8 +483,8 @@ void buf_del(void *_b, Keyarg *ca)
 {
   Buffer *buf = (Buffer*)_b;
   fn_handle *h = buf->hndl;
-  reg_set(NUL, buf_focus_sel(buf, "fullpath"));
-  reg_set('1', buf_focus_sel(buf, h->fname));
+  reg_set(NUL, buf_focus_sel(buf, h->fname));
+  reg_set('1', buf_focus_sel(buf, "fullpath"));
   buf_end_sel(buf);
 }
 

@@ -439,14 +439,10 @@ fn_reg* reg_get(int ch)
 
 fn_reg* reg_dcur()
 {
-  fn_reg *regNUL = reg_get(NUL);
-  fn_reg *reg1   = reg_get('1');
-  char **argv_nul = regNUL->value.argv;
-  char **argv_1   = reg1->value.argv;
-  if (argv_nul == argv_1 && reg1->value.argc > 0)
+  fn_reg *reg1 = reg_get('1');
+  if (reg1->value.argc > 0)
     return reg1;
-  else
-    return regNUL;
+  return reg_get(NUL);
 }
 
 void reg_clear_dcur()

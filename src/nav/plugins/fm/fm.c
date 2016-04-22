@@ -239,8 +239,8 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
     file_copy(reg->value, self->cur_dir, buf);
   else {
     file_move(reg->value, self->cur_dir, buf);
-    reg_clear_dcur();
   }
+  reg_clear_dcur();
 
   return;
 }

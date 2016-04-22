@@ -7,6 +7,7 @@
 #include "nav/nav.h"
 #include "nav/log.h"
 #include "nav/macros.h"
+#include "nav/util.h"
 #include "nav/event/file.h"
 #include "nav/event/event.h"
 #include "nav/event/fs.h"
@@ -233,16 +234,6 @@ static void open_cb(uv_fs_t *req)
     try_sendfile();
 }
 
-static void get_cur_dest_name(const char *dest, FileItem *parent)
-{
-  if ((file.cur->flags & F_MOVE) == F_MOVE)
-    return;
-
-  if (parent)
-    dest = parent->dest;
-  SWAP_ALLOC_PTR(file.cur->dest, conspath(dest, basename(file.cur->src)));
-}
-
 static void do_link(const char *oldpath, const char *newpath)
 {
   log_err("FILE", "do_link");
@@ -263,9 +254,21 @@ static void do_link(const char *oldpath, const char *newpath)
   }
 }
 
+static void get_cur_dest_name(const char *dest, FileItem *parent)
+{
+  if ((file.cur->flags & F_MOVE) == F_MOVE)
+    return;
+  log_err("FILE", "%s", dest);
+
+  if (parent)
+    dest = parent->dest;
+  SWAP_ALLOC_PTR(file.cur->dest, conspath(dest, basename(file.cur->src)));
+}
+
 static void do_stat(const char *path, struct stat *sb)
 {
   log_err("FILE", "do_stat");
+  log_err("FILE", "%s", path);
 
   int ret = lstat(path, sb);
   if (ret < 0)
@@ -354,8 +357,11 @@ void file_move_str(char *src, char *dest, Buffer *owner)
 void file_move(varg_T args, char *dest, Buffer *owner)
 {
   log_msg("FILE", "move |%d|%s|", args.argc, dest);
-  //TODO:
-  //ftw_add_bulk(src, dest, owner, F_MOVE)
+  char buf[PATH_MAX];
+  for (int i = 0; i < args.argc; i++) {
+    conspath_buf(buf, dest, basename(args.argv[i]));
+    ftw_add(args.argv[i], buf, owner, F_MOVE);
+  }
   //
   //**flags**
   //dest overwrite [edit (rename) default]
@@ -367,5 +373,7 @@ void file_move(varg_T args, char *dest, Buffer *owner)
 void file_copy(varg_T args, char *dest, Buffer *owner)
 {
   log_msg("FILE", "copy |%d|%s|", args.argc, dest);
-  ftw_add_bulk(args, dest, owner, F_COPY);
+  for (int i = 0; i < args.argc; i++) {
+    ftw_add(args.argv[i], dest, owner, F_COPY);
+  }
 }
