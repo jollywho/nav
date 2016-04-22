@@ -104,8 +104,7 @@ static void set_string(char **from, char *to)
 {
   if (!to)
     return;
-  if (*from)
-    free(*from);
+  free(*from);
 
   *from = strdup(to);
 }

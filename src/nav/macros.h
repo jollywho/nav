@@ -33,5 +33,6 @@
     (a) = _tmp_str;           \
   } while (0)                 \
 
+#define BITMASK_CHECK(x,y) (((x) & (y)) == (x))
 
 #endif

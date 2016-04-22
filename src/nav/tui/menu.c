@@ -448,11 +448,11 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   mnu->lnum = 0;
   mnu->moved = true;
 
-  if ((ex_cmd_state() & EX_POP) == EX_POP) {
+  if (BITMASK_CHECK(EX_POP, ex_cmd_state())) {
     mnu->cx = ex_cmd_pop(1)->cx;
     mnu->docmpl = true;
   }
-  else if ((ex_cmd_state() & EX_PUSH) == EX_PUSH) {
+  else if (BITMASK_CHECK(EX_PUSH, ex_cmd_state())) {
     char *key = ex_cmd_curstr();
 
     fn_context *find = find_context(mnu->cx, key);

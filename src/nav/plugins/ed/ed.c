@@ -35,15 +35,15 @@ static void ed_cleanup(Ed *ed)
   log_msg("ED", "ed_cleanup");
   log_msg("ED", "%d", ed->state);
 
-  if ((ed->state & ED_RENAME) == ED_RENAME) {
+  if (BITMASK_CHECK(ED_RENAME, ed->state)) {
     del_param_list(ed->src.argv,  ed->src.argc);
     unlink(ed->tmp_name);
     close(ed->fd);
   }
-  if ((ed->state & ED_CONFRM) == ED_CONFRM)
+  if (BITMASK_CHECK(ED_CONFRM, ed->state))
     del_param_list(ed->dest.argv, ed->dest.argc);
 
-  if ((ed->state & ED_CLOSED) != ED_CLOSED) {
+  if (!BITMASK_CHECK(ED_CLOSED, ed->state)) {
     ed_chown_plugin(ed);
     window_close_focus();
   }

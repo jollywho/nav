@@ -67,7 +67,7 @@ static void clear_fileitem(FileItem *item)
 
 static void cleanup_fileitems(FileItem *cur, FileItem *p)
 {
-  if ((file.cur->flags & F_MOVE) == F_MOVE)
+  if (BITMASK_CHECK(F_MOVE, file.cur->flags))
     return clear_fileitem(cur);
 
   if (S_ISDIR(file.s1.st_mode)) {
@@ -256,7 +256,7 @@ static void do_link(const char *oldpath, const char *newpath)
 
 static void get_cur_dest_name(const char *dest, FileItem *parent)
 {
-  if ((file.cur->flags & F_MOVE) == F_MOVE)
+  if (BITMASK_CHECK(F_MOVE, file.cur->flags))
     return;
   log_err("FILE", "%s", dest);
 
@@ -288,7 +288,7 @@ static void do_stat(const char *path, struct stat *sb)
   /* dest does not exist */
   if (sb == &file.s2 && errno == ENOENT) {
 
-    if ((file.cur->flags & F_MOVE) == F_MOVE) {
+    if (BITMASK_CHECK(F_MOVE, file.cur->flags)) {
       do_link(file.cur->src, file.cur->dest);
       return;
     }
@@ -345,6 +345,7 @@ void file_cancel(Buffer *owner)
 {
   //search for owner in queue
   //cancel matches
+  //  F_COPY: unlink dest if opened
   ftw_cancel();
 }
 
@@ -357,10 +358,9 @@ void file_move_str(char *src, char *dest, Buffer *owner)
 void file_move(varg_T args, char *dest, Buffer *owner)
 {
   log_msg("FILE", "move |%d|%s|", args.argc, dest);
-  char buf[PATH_MAX];
   for (int i = 0; i < args.argc; i++) {
-    conspath_buf(buf, dest, basename(args.argv[i]));
-    ftw_add(args.argv[i], buf, owner, F_MOVE);
+    conspath_buf(target, dest, basename(args.argv[i]));
+    ftw_add(args.argv[i], target, owner, F_MOVE);
   }
   //
   //**flags**

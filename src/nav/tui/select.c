@@ -54,8 +54,7 @@ void select_clear(Buffer *buf)
   if (!select_owner(buf))
     return;
 
-  if (sel.lines)
-    free(sel.lines);
+  free(sel.lines);
   sel.lines = NULL;
   sel.enabled = false;
   sel.active = false;
