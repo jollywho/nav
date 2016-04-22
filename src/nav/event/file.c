@@ -109,6 +109,15 @@ static void file_stop()
   buf_update_progress(owner, file_progress());
 }
 
+static void file_retry_as_copy()
+{
+  log_msg("FILE", "file_retry_as_copy");
+  char *dst = dirname(file.cur->dest);
+  FileItem *cpy = ftw_new(file.cur->src, dst, file.cur->owner);
+  file_stop();
+  ftw_retry(cpy);
+}
+
 static void close_cb(uv_fs_t *req)
 {
   if (req->result < 0)
@@ -121,6 +130,12 @@ static void close_cb(uv_fs_t *req)
 
 static void file_close()
 {
+  log_msg("FILE", "close state: %d", BITMASK_CHECK(F_ERROR, file.cur->flags));
+  log_msg("FILE", "close state: %d", BITMASK_CHECK(F_UNLINK, file.cur->flags));
+  if (BITMASK_CHECK(F_UNLINK, file.cur->flags)) {
+    if (!BITMASK_CHECK(F_ERROR, file.cur->flags))
+      unlink(file.cur->src);
+  }
   uv_fs_close(eventloop(), &file.c1, file.u1, close_cb);
   uv_fs_close(eventloop(), &file.c2, file.u2, close_cb);
 }
@@ -190,6 +205,7 @@ static void write_cb(uv_fs_t *req)
 {
   if (req->result < 0) {
     log_err("FILE", "write_cb: |%s|", uv_strerror(req->result));
+    file.cur->flags |= F_ERROR;
     return file_close();
   }
 
@@ -234,24 +250,35 @@ static void open_cb(uv_fs_t *req)
     try_sendfile();
 }
 
-static void do_link(const char *oldpath, const char *newpath)
+static void mk_dest(const char *oldpath, const char *newpath)
 {
-  log_err("FILE", "do_link");
+  log_err("FILE", "mk_dest");
   log_err("FILE", "%s %s", oldpath, newpath);
 
-  int ret = link(oldpath, newpath);
-  if (ret < 0)
-    log_err("FILE", "%s", strerror(errno));
+  int ret;
+  if (S_ISDIR(file.s1.st_mode))
+    ret = mkdir(newpath, file.s1.st_mode);
+  else
+    ret = link(oldpath, newpath);
 
-  if (errno == EXDEV) {
-    log_err("FILE", "requeue as copy");
+  //FIXME: move should always default to copy for dirs
+  if (ret != 0) {
+    log_err("FILE", "%s", strerror(errno));
+    if (errno == EXDEV)
+      return file_retry_as_copy();
+
+    log_err("FILE", "unhandled error");
+    file.cur->flags |= F_ERROR;
     return;
   }
 
-  if (ret == 0) {
-    unlink(oldpath);
-    file_stop();
-  }
+  if (S_ISDIR(file.s1.st_mode))
+    ret = rmdir(oldpath);
+  else
+    ret = unlink(oldpath);
+
+  log_err("FILE", "%s", strerror(errno));
+  file_stop();
 }
 
 static void get_cur_dest_name(const char *dest, FileItem *parent)
@@ -289,7 +316,7 @@ static void do_stat(const char *path, struct stat *sb)
   if (sb == &file.s2 && errno == ENOENT) {
 
     if (BITMASK_CHECK(F_MOVE, file.cur->flags)) {
-      do_link(file.cur->src, file.cur->dest);
+      mk_dest(file.cur->src, file.cur->dest);
       return;
     }
     if (S_ISDIR(file.s1.st_mode)) {
@@ -343,6 +370,7 @@ void file_start()
 
 void file_cancel(Buffer *owner)
 {
+  //TODO:
   //search for owner in queue
   //cancel matches
   //  F_COPY: unlink dest if opened
@@ -362,12 +390,6 @@ void file_move(varg_T args, char *dest, Buffer *owner)
     conspath_buf(target, dest, basename(args.argv[i]));
     ftw_add(args.argv[i], target, owner, F_MOVE);
   }
-  //
-  //**flags**
-  //dest overwrite [edit (rename) default]
-  //  unlink dest if exists.
-  //dest version   [mv,cp default]
-  //  increment version if exists.
 }
 
 void file_copy(varg_T args, char *dest, Buffer *owner)

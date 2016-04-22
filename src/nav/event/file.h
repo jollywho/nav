@@ -9,7 +9,8 @@
 #define F_MOVE       2
 #define F_VERSIONED  4
 #define F_OVERWRITE  8
-#define F_UNLINK     (F_COPY|F_OVERWRITE)
+#define F_UNLINK     16
+#define F_ERROR      32
 
 typedef struct FileItem FileItem;
 struct FileItem {

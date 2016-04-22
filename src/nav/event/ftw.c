@@ -134,13 +134,14 @@ static void ftw_start()
   file_start();
 }
 
-static FileItem* ftw_new(char *src, char *dest, Buffer *owner)
+FileItem* ftw_new(char *src, char *dest, Buffer *owner)
 {
   FileItem *item = malloc(sizeof(FileItem));
   item->owner = owner;
   item->src = strdup(src);
   item->dest = strdup(dest);
   item->parent = NULL;
+  item->flags = 0;
   return item;
 }
 
@@ -163,7 +164,16 @@ void ftw_push_copy(char *src, char *dest, Buffer *owner)
 {
   log_msg("FTW", "pushed_copy");
   FileItem *item = ftw_new(src, dest, owner);
-  item->flags = F_COPY|F_VERSIONED;
+  item->flags |= F_COPY|F_VERSIONED;
+
+  TAILQ_INSERT_TAIL(&ftw.p, item, ent);
+  if (!ftw.running)
+    ftw_start();
+}
+
+void ftw_retry(FileItem *item)
+{
+  item->flags |= F_COPY|F_VERSIONED|F_UNLINK;
 
   TAILQ_INSERT_TAIL(&ftw.p, item, ent);
   if (!ftw.running)
