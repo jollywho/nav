@@ -170,16 +170,17 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
 
   DO_EVENTS_UNTIL(!fs_blocking(self->fs));
 
-  char *path = valid_full_path(window_cur_dir(), req);
+  char *trypath = add_quotes(req);
+  char *path = valid_full_path(window_cur_dir(), trypath);
   if (!path) {
-    char *trypath = add_quotes(req);
-    path = valid_full_path(window_cur_dir(), trypath);
-    free(trypath);
+    free(path);
+    path = valid_full_path(window_cur_dir(), req);
   }
 
   if (path)
     fs_read(self->fs, path);
 
+  free(trypath);
   free(path);
 }
 
@@ -199,6 +200,7 @@ static void fm_right(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("FM", "cmd right");
   fn_handle *h = host->hndl;
   char *path = model_curs_value(h->model, "fullpath");
+  log_msg("FM", "PATH %s", path);
   if (!path)
     return;
   fm_req_dir(host, NULL, &(HookArg){NULL,path});

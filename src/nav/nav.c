@@ -78,13 +78,6 @@ void cleanup(void)
   log_cleanup();
 }
 
-void sigsegv_handler(int sig)
-{
-  endwin();
-  signal(sig, SIG_DFL);
-  kill(getpid(), sig);
-}
-
 static const char* usage =
 "Usage: nav [options] [command]\n"
 "\n"
@@ -145,9 +138,6 @@ int main(int argc, char **argv)
     }
   }
 
-#ifdef DEBUG
-  signal(SIGSEGV, sigsegv_handler);
-#endif
   init(debug, config_path);
   start_event_loop();
   DO_EVENTS_UNTIL(!mainloop_busy());

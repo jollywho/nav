@@ -9,7 +9,7 @@
 #define init_mb(state) memset(&state, 0, sizeof(state))
 #define reset_mbytes(state) init_mb(state)
 #define check_mbytes(wch,buffer,length,state) \
-	(int) mbrtowc(&wch, buffer, length, &state)
+  (int) mbrtowc(&wch, buffer, length, &state)
 
 static wchar_t wstr[CCHARW_MAX + 1];
 static cchar_t wbuf[PATH_MAX];
