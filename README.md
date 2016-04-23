@@ -17,7 +17,7 @@ nav is a **work in progress**.
 * bulkrename
 * directory jumplist
 * file executor/opener with 'before/after' cmds.
-* [ctrlp](https://kien.github.io/ctrlp.vim/)-inspired autocomplete menu
+* [ctrlp](http://kien.github.io/ctrlp.vim/)-inspired autocomplete menu
 * menu hint keys
 
 ## Installation
@@ -30,7 +30,7 @@ Install dependencies:
 * ncurses
 * pcre
 * [libtermkey](http://www.leonerd.org.uk/code/libtermkey/)
-* [libuv](https://github.com/libuv/libuv)
+* [libuv](http://github.com/libuv/libuv)
 * [w3m](http://w3m.sourceforge.net/) (optional: image support)
 
 ```bash
@@ -48,14 +48,24 @@ With w3mimgdisplay installed
 :direct #BUFFER_ID
 ```
 
+## Clipboard
+
+```
+:set copy-pipe #SELECT_PROGRAM
+```
+example:
+```
+:set copy-pipe xclip -i
+```
+
 ## Contributing
 
 ...is much welcome.
 
 ## Non Goals
 
-Text editor
-Navscript to become a full-featured language.
+* text editor
+* making Navscript into full-featured language
 
 ## Future
 
