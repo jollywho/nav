@@ -11,10 +11,10 @@ nav is a **work in progress**.
 * w3mimgdisplay buffers
 * embedded dvtm terminal
 * async event-driven core
-* scripting language
+* simple scripting language (Navscript)
 * vim-style autocmds, marks, maps, syntax, colors
 * multi-selection: move, remove, copy
-* bulkrename (soon)
+* bulkrename
 * directory jumplist
 * file executor/opener with 'before/after' cmds.
 * [ctrlp](https://kien.github.io/ctrlp.vim/)-inspired autocomplete menu
@@ -55,6 +55,7 @@ With w3mimgdisplay installed
 ## Non Goals
 
 Text editor
+Navscript to become a full-featured language.
 
 ## Future
 
