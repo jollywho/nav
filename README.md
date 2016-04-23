@@ -11,7 +11,7 @@ nav is a **work in progress**.
 * w3mimgdisplay buffers
 * embedded dvtm terminal
 * async event-driven core
-* simple scripting language (Navscript)
+* simple script language (Navscript)
 * vim-style autocmds, marks, maps, syntax, colors
 * multi-selection: move, remove, copy
 * bulkrename
@@ -47,6 +47,9 @@ With w3mimgdisplay installed
 :vnew img
 :direct #BUFFER_ID
 ```
+```viml
+:vnew img #BUFFER_ID
+```
 
 ## Clipboard
 
@@ -65,7 +68,7 @@ example:
 ## Non Goals
 
 * text editor
-* making Navscript into full-featured language
+* making Navscript into a full-featured language
 
 ## Future
 
