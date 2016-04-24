@@ -175,7 +175,7 @@ void ftw_add_again(char *src, char *dst, FileGroup *fg)
   FileItem *item = ftw_new(src, dst);
   TAILQ_INSERT_TAIL(&fg->p, item, ent);
   TAILQ_INSERT_HEAD(&ftw.p, fg, ent);
-  fg->flags |= F_COPY|F_UNLINK;
+  fg->flags |= F_COPY;
 }
 
 void ftw_retry()
