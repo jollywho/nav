@@ -18,7 +18,7 @@ static void stat_cb(uv_fs_t *);
 static void fs_flush_stream(fentry *);
 static void watch_cb(uv_fs_event_t *, const char *, int, int);
 
-#define RFSH_RATE 1000
+#define MAX_WAIT 1000
 
 struct fentry {
   char *key;
@@ -26,10 +26,10 @@ struct fentry {
   uv_fs_t uv_fs;
   uv_timer_t watcher_timer;
   bool running;
-  bool fastreq;
   bool flush;
   bool cancel;
   bool reopen;
+  uint64_t before;
   int refs;
   fn_fs *listeners;
   UT_hash_handle hh;
@@ -51,7 +51,6 @@ static fentry* fs_mux(fn_fs *fs)
   if (!ent) {
     ent = malloc(sizeof(fentry));
     ent->running = false;
-    ent->fastreq = false;
     ent->flush = false;
     ent->cancel = false;
     ent->reopen = false;
@@ -318,7 +317,6 @@ void fs_open(fn_fs *fs, const char *dir)
 
   if (!ent->running) {
     ent->running = true;
-    ent->fastreq = false;
 
     uv_fs_stat(eventloop(), &ent->uv_fs, ent->key, stat_cb);
     uv_fs_event_start(&ent->watcher, watch_cb, ent->key, 1);
@@ -430,6 +428,7 @@ static void stat_cb(uv_fs_t *req)
   }
 
 scandir:
+  ent->before = os_hrtime();
   uv_fs_req_cleanup(req);
   if (doscan)
     uv_fs_scandir(eventloop(), &ent->uv_fs, ent->key, 0, scan_cb);
@@ -452,19 +451,16 @@ void fs_reopen(fentry *ent)
 void fs_fastreq(fn_fs *fs)
 {
   log_msg("FS", "fs_fastreq %d", fs->ent->running);
-  //::try direct reopen for now (unsafe)
-  //fs->ent->fastreq = true;
-  //if (!fs->ent->running) {
-    fs->ent->flush = true;
+  fs->ent->before = MAX_WAIT;
+  fs->ent->flush = true;
+  if (!fs->ent->running)
     fs_reopen(fs->ent);
-  //}
 }
 
 static void watch_timer_cb(uv_timer_t *handle)
 {
   log_msg("FS", "--watch_timer--");
   fentry *ent = handle->data;
-  ent->fastreq = false;
   if (!ent->running)
     fs_reopen(ent);
 }
@@ -474,12 +470,12 @@ static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int s)
   log_msg("FS", "--watch--");
   fentry *ent = hndl->data;
 
-  //TODO: convert to waiting if run too quickly
   uv_fs_event_stop(&ent->watcher);
-  if (ent->fastreq)
+  uv_timer_start(&ent->watcher_timer, watch_timer_cb, MAX_WAIT, MAX_WAIT);
+
+  uint64_t now = os_hrtime();
+  if ((now - ent->before)/1000000 > MAX_WAIT)
     watch_timer_cb(&ent->watcher_timer);
-  else
-    uv_timer_start(&ent->watcher_timer, watch_timer_cb, RFSH_RATE, RFSH_RATE);
 }
 
 static void fs_close_req(fentry *ent)
