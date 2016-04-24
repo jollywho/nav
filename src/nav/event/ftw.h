@@ -2,6 +2,7 @@
 #define FN_EVENT_FTW_H
 
 #include "nav/event/file.h"
+#define MAX_WAIT 60
 
 void ftw_init();
 void ftw_cleanup();

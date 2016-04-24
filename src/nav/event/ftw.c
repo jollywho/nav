@@ -1,3 +1,4 @@
+//file tree walk
 #include <malloc.h>
 #include <string.h>
 #include <uv.h>
@@ -6,9 +7,6 @@
 #include "nav/util.h"
 #include "nav/event/event.h"
 
-#define MAX_WAIT 30
-
-typedef void (*recurse_cb)(const char *, struct stat *, int);
 typedef struct {
   bool running;
   bool cancel;
@@ -16,7 +14,7 @@ typedef struct {
   int count;
   int depth;
   FileItem  *cur;
-  FileGroup *cur_fg;
+  FileGroup *fg;
   TAILQ_HEAD(Groups, FileGroup) p;
 } Ftw;
 static Ftw ftw;
@@ -32,7 +30,28 @@ void ftw_cleanup()
   //cancel items
 }
 
-static void do_ftw(const char *path, recurse_cb fn)
+static void add_ent(const char *str, struct stat *sb, int isdir)
+{
+  log_msg("FTW", "add ent %s %d", str, ftw.depth);
+  ftw.count++;
+  ftw.fg->tsize += sb->st_size;
+
+  if (ftw.depth == 0)
+    return;
+
+  FileItem *item = calloc(1, sizeof(FileItem));
+  item->src = strdup(str);
+  item->parent = ftw.cur;
+  ftw.cur->refs++;
+  TAILQ_INSERT_TAIL(&ftw.fg->p, item, ent);
+
+  if (isdir)
+    ftw.cur = item;
+
+  //TODO: onerror, pop item from ftw_queue
+}
+
+static void do_ftw(const char *path)
 {
   char buf[PATH_MAX], *p;
   struct dirent *d;
@@ -44,7 +63,7 @@ static void do_ftw(const char *path, recurse_cb fn)
 
   int isdir = S_ISDIR(st.st_mode);
 
-  fn(path, &st, isdir);
+  add_ent(path, &st, isdir);
 
   if (!isdir)
     return;
@@ -80,33 +99,12 @@ static void do_ftw(const char *path, recurse_cb fn)
     strcat(buf, "/");
     strcat(buf, d->d_name);
 
-    do_ftw(buf, fn);
+    do_ftw(buf);
   }
 
   ftw.depth--;
   ftw.cur = ftw.cur->parent;
   closedir(dp);
-}
-
-static void ftw_cb(const char *str, struct stat *sb, int isdir)
-{
-  log_msg("FTW", "%s %d", str, ftw.depth);
-  ftw.count++;
-  ftw.cur_fg->tsize += sb->st_size;
-
-  if (ftw.depth == 0)
-    return;
-
-  FileItem *item = calloc(1, sizeof(FileItem));
-  item->src = strdup(str);
-  item->parent = ftw.cur;
-  ftw.cur->refs++;
-  TAILQ_INSERT_TAIL(&ftw.cur_fg->p, item, ent);
-
-  if (isdir)
-    ftw.cur = item;
-
-  //onerror: pop item from ftw_queue
 }
 
 void ftw_cancel()
@@ -121,16 +119,16 @@ static void ftw_start()
   ftw.depth = 0;
   ftw.before = os_hrtime();
 
-  ftw.cur_fg = TAILQ_FIRST(&ftw.p);
-  ftw.cur = TAILQ_FIRST(&ftw.cur_fg->p);
-  do_ftw(ftw.cur->src, ftw_cb);
-  TAILQ_REMOVE(&ftw.p, ftw.cur_fg, ent);
+  ftw.fg = TAILQ_FIRST(&ftw.p);
+  ftw.cur = TAILQ_FIRST(&ftw.fg->p);
+  do_ftw(ftw.cur->src);
+  TAILQ_REMOVE(&ftw.p, ftw.fg, ent);
 
   log_msg("FTW", "Finished");
 
   //check for more entries
   ftw.running = false;
-  file_push(ftw.cur_fg);
+  file_push(ftw.fg);
 }
 
 FileItem* ftw_new(char *src, char *dest)
@@ -170,6 +168,7 @@ void ftw_push_copy(char *src, char *dest, FileGroup *fg)
     ftw_start();
 }
 
+//enqueue but don't start
 void ftw_add_again(char *src, char *dst, FileGroup *fg)
 {
   FileItem *item = ftw_new(src, dst);

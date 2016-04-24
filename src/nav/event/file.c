@@ -1,12 +1,10 @@
-#include <stdlib.h>
+//file copy and move, including queues and callback per request
 #include <unistd.h>
 #include <stdio.h>
-#include <string.h>
 #include <ctype.h>
 #include <libgen.h>
 #include "nav/nav.h"
 #include "nav/log.h"
-#include "nav/macros.h"
 #include "nav/util.h"
 #include "nav/event/file.h"
 #include "nav/event/event.h"
@@ -14,14 +12,13 @@
 #include "nav/event/ftw.h"
 #include "nav/tui/buffer.h"
 
-#define ISDIGIT(c) ((unsigned) (c) - '0' <= 9)
-#define FFRESH O_CREAT|O_EXCL|O_WRONLY
-#define MAX_WAIT 60
-
 static void write_cb(uv_fs_t *);
 static void do_stat(const char *, struct stat *);
 static void file_check_update();
-static void do_unlink(const char *path, bool isdir);
+static void do_unlink(const char *, bool);
+
+#define ISDIGIT(c) ((unsigned) (c) - '0' <= 9)
+#define FFRESH O_CREAT|O_EXCL|O_WRONLY
 
 typedef struct File File;
 struct File {
@@ -72,13 +69,12 @@ static void clear_fileitem(FileItem *item, bool isdir)
   if (item->refs != 0)
     return;
 
-  if (isdir)
-    do_unlink(item->src, true);
+  do_unlink(item->src, isdir);
 
   FileItem *parent = item->parent;
   if (parent) {
     parent->refs--;
-    clear_fileitem(parent, 1);
+    clear_fileitem(parent, true);
   }
   free(item->src);
   free(item->dest);
@@ -88,13 +84,17 @@ static void clear_fileitem(FileItem *item, bool isdir)
 static void try_clear_filegroup()
 {
   if (TAILQ_EMPTY(&file.fg->p)) {
-    log_err("FILE", "###");
     TAILQ_REMOVE(&file.p, file.fg, ent);
+
+    /* flush progress */
     file.before = MAX_WAIT;
     file_check_update();
+
     free(file.fg);
     file.fg = NULL;
   }
+  else
+    file_check_update();
 }
 
 static void file_stop()
@@ -145,11 +145,12 @@ static void close_cb(uv_fs_t *req)
 static void do_unlink(const char *path, bool isdir)
 {
   log_msg("FILE", "do_unlink");
-  if (BITMASK_CHECK(F_ERROR, file.fg->flags))
-    return;
   if (!BITMASK_CHECK(F_UNLINK, file.fg->flags))
     return;
+  if (BITMASK_CHECK(F_ERROR, file.fg->flags))
+    return;
 
+  log_msg("FILE", "unlink dir? %d", isdir);
   if (isdir)
     rmdir(path);
   else
@@ -158,10 +159,6 @@ static void do_unlink(const char *path, bool isdir)
 
 static void file_close()
 {
-  log_msg("FILE", "close state: %d", BITMASK_CHECK(F_ERROR, file.fg->flags));
-  log_msg("FILE", "close state: %d", BITMASK_CHECK(F_UNLINK, file.fg->flags));
-  do_unlink(file.cur->src, false);
-
   uv_fs_close(eventloop(), &file.c1, file.u1, close_cb);
   uv_fs_close(eventloop(), &file.c2, file.u2, close_cb);
 }
@@ -282,12 +279,11 @@ static void open_cb(uv_fs_t *req)
 
 static void mk_dest(const char *oldpath, const char *newpath)
 {
-  log_err("FILE", "mk_dest");
-  log_err("FILE", "%s %s", oldpath, newpath);
+  log_err("FILE", "mk_dest %s %s", oldpath, newpath);
 
   int ret;
   if (S_ISDIR(file.s1.st_mode))
-    ret = mkdir(newpath, file.s1.st_mode);
+    ret = rename(oldpath, newpath);
   else
     ret = link(oldpath, newpath);
 
@@ -301,14 +297,33 @@ static void mk_dest(const char *oldpath, const char *newpath)
     return;
   }
 
-  ret = lstat(newpath, &file.s2);
-  if (file.s1.st_dev != file.s2.st_dev) {
-    rmdir(newpath);
-    return file_retry_as_copy();
-  }
-
+  file.fg->flags |= F_UNLINK;
   do_unlink(file.cur->src, S_ISDIR(file.s1.st_mode));
   file_stop();
+}
+
+static void do_copy(const char *src, const char *dst)
+{
+  log_err("FILE", "do_copy");
+  int r;
+  switch (file.s1.st_mode & S_IFMT) {
+    case S_IFDIR:
+      mkdir(dst, file.s1.st_mode);
+      file.fg->wsize += file.s1.st_size;
+      file_stop();
+      break;
+    case S_IFLNK:
+      r = readlink(src, target, sizeof(target));
+      target[r] = '\0';
+      symlink(target, dst);
+      file.fg->wsize += file.s1.st_size;
+      file_stop();
+      break;
+    case S_IFREG:
+      uv_fs_open(eventloop(), &file.f1, src, O_RDONLY, 0644, open_cb);
+      uv_fs_open(eventloop(), &file.f2, dst, FFRESH,   0644, open_cb);
+      break;
+  }
 }
 
 static void get_cur_dest_name(const char *dest)
@@ -336,33 +351,16 @@ static void do_stat(const char *path, struct stat *sb)
   }
 
   /* dest already exists */
-  if (sb == &file.s2 && ret == 0) {
+  if (sb == &file.s2 && ret == 0)
     return find_dest_name();
-  }
 
   /* dest does not exist */
   if (sb == &file.s2 && errno == ENOENT) {
 
-    if (BITMASK_CHECK(F_MOVE, file.fg->flags)) {
-      mk_dest(file.cur->src, file.cur->dest);
-      return;
-    }
-    if (S_ISDIR(file.s1.st_mode)) {
-      mkdir(file.cur->dest, file.s1.st_mode);
-      file_stop();
-      return;
-    }
-    if (S_ISLNK(file.s1.st_mode)) {
-      int r = readlink(file.cur->src, target, sizeof(target));
-      target[r] = '\0';
-      symlink(target, file.cur->dest);
-      file_stop();
-      return;
-    }
-    if (!S_ISREG(file.s1.st_mode))
-      return;
-    uv_fs_open(eventloop(), &file.f1, file.cur->src,  O_RDONLY, 0644, open_cb);
-    uv_fs_open(eventloop(), &file.f2, file.cur->dest, FFRESH,   0644, open_cb);
+    if (BITMASK_CHECK(F_MOVE, file.fg->flags))
+      return mk_dest(file.cur->src, file.cur->dest);
+
+    do_copy(file.cur->src, file.cur->dest);
   }
 }
 
