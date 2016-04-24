@@ -18,7 +18,7 @@ struct FM {
   int jump_count;
   int jump_max;
   jump_item *jump_cur;
-  TAILQ_HEAD(cont, jump_item) p;
+  TAILQ_HEAD(jlst, jump_item) p;
 };
 
 void fm_init();

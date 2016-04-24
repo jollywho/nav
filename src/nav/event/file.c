@@ -33,13 +33,11 @@ struct File {
   uint64_t len;       //file length
   uint64_t offset;    //write offset
   uint64_t blk;       //write blk size
-  uint64_t tsize;     //size of queue
-  uint64_t wsize;     //written in queue
   uint64_t before;    //last eventloop time
   struct stat s1, s2; //file stat
-  FileItem *cur;      //current item
-  FileItem *curp;     //parent  item
-  TAILQ_HEAD(cont, FileItem) p;
+  FileItem  *cur;     //current fileitem
+  FileGroup *fg;      //current filegroup
+  TAILQ_HEAD(Groups, FileGroup) p;
 };
 static File file;
 static char target[PATH_MAX];
@@ -58,28 +56,37 @@ void file_cleanup()
   ftw_cleanup();
 }
 
+static FileGroup* fg_new(Buffer *owner, int flags)
+{
+  FileGroup *fg = calloc(1, sizeof(FileGroup));
+  TAILQ_INIT(&fg->p);
+  fg->owner = owner;
+  fg->flags = flags;
+  return fg;
+}
+
 static void clear_fileitem(FileItem *item)
 {
+  if (item->refs != 0)
+    return;
+
+  FileItem *parent = item->parent;
+  if (parent) {
+    parent->refs--;
+    clear_fileitem(parent);
+  }
   free(item->src);
   free(item->dest);
   free(item);
 }
 
-static void cleanup_fileitems(FileItem *cur, FileItem *p)
+static void try_clear_filegroup()
 {
-  if (BITMASK_CHECK(F_MOVE, file.cur->flags))
-    return clear_fileitem(cur);
-
-  if (S_ISDIR(file.s1.st_mode)) {
-    file.curp = cur;
-    return;
+  if (TAILQ_EMPTY(&file.fg->p)) {
+    TAILQ_REMOVE(&file.p, file.fg, ent);
+    free(file.fg);
+    file.fg = NULL;
   }
-
-  if (p && (cur->parent != p || TAILQ_EMPTY(&file.p)))
-    clear_fileitem(p);
-
-  file.curp = cur->parent;
-  clear_fileitem(cur);
 }
 
 static void file_stop()
@@ -87,13 +94,11 @@ static void file_stop()
   log_msg("FILE", "close");
   //TODO: chmod
 
-  Buffer *owner = file.cur->owner;
+  Buffer *buf = file.fg->owner;
 
-  TAILQ_REMOVE(&file.p, file.cur, ent);
-  cleanup_fileitems(file.cur, file.curp);
-
-  if (TAILQ_EMPTY(&file.p))
-    file.tsize = file.wsize = 0;
+  TAILQ_REMOVE(&file.fg->p, file.cur, ent);
+  clear_fileitem(file.cur);
+  try_clear_filegroup();
 
   memset(&file.s1, 0, sizeof(struct stat));
   memset(&file.s2, 0, sizeof(struct stat));
@@ -106,16 +111,19 @@ static void file_stop()
 
   file.running = false;
   CREATE_EVENT(eventq(), file_start, 0, NULL);
-  buf_update_progress(owner, file_progress());
+  buf_update_progress(buf, file_progress());
 }
 
 static void file_retry_as_copy()
 {
   log_msg("FILE", "file_retry_as_copy");
+
+  char *src = file.cur->src;
   char *dst = dirname(file.cur->dest);
-  FileItem *cpy = ftw_new(file.cur->src, dst, file.cur->owner);
+
+  ftw_add_again(src, dst, fg_new(file.fg->owner, F_MOVE));
   file_stop();
-  ftw_retry(cpy);
+  ftw_retry();
 }
 
 static void close_cb(uv_fs_t *req)
@@ -130,10 +138,10 @@ static void close_cb(uv_fs_t *req)
 
 static void file_close()
 {
-  log_msg("FILE", "close state: %d", BITMASK_CHECK(F_ERROR, file.cur->flags));
-  log_msg("FILE", "close state: %d", BITMASK_CHECK(F_UNLINK, file.cur->flags));
-  if (BITMASK_CHECK(F_UNLINK, file.cur->flags)) {
-    if (!BITMASK_CHECK(F_ERROR, file.cur->flags))
+  log_msg("FILE", "close state: %d", BITMASK_CHECK(F_ERROR, file.fg->flags));
+  log_msg("FILE", "close state: %d", BITMASK_CHECK(F_UNLINK, file.fg->flags));
+  if (BITMASK_CHECK(F_UNLINK, file.fg->flags)) {
+    if (!BITMASK_CHECK(F_ERROR, file.fg->flags))
       unlink(file.cur->src);
   }
   uv_fs_close(eventloop(), &file.c1, file.u1, close_cb);
@@ -205,16 +213,16 @@ static void write_cb(uv_fs_t *req)
 {
   if (req->result < 0) {
     log_err("FILE", "write_cb: |%s|", uv_strerror(req->result));
-    file.cur->flags |= F_ERROR;
+    file.fg->flags |= F_ERROR;
     return file_close();
   }
 
   file.offset += req->result;
-  file.wsize += req->result;
+  file.fg->wsize += req->result;
 
   uint64_t now = os_hrtime();
   if ((now - file.before)/1000000 > MAX_WAIT) {
-    buf_update_progress(file.cur->owner, file_progress());
+    buf_update_progress(file.fg->owner, file_progress());
     file.before = os_hrtime();
   }
 
@@ -262,13 +270,26 @@ static void mk_dest(const char *oldpath, const char *newpath)
     ret = link(oldpath, newpath);
 
   //FIXME: move should always default to copy for dirs
+  //
+  //'move f1 to f2'
+  //if exdev or dir
+  //  retry_as_copy()
+  //else
+  //  link f2, unlink f2
+  //
+  //if unlink flag & isdir: mkdir f2
+  //if unlink flag & !isdir: link f2
+  //
+  //parent clear:
+  //  if unlink flag &  isdir: rmdir
+  //  if unlink flag & !isdir: unlink
   if (ret != 0) {
     log_err("FILE", "%s", strerror(errno));
     if (errno == EXDEV)
       return file_retry_as_copy();
 
     log_err("FILE", "unhandled error");
-    file.cur->flags |= F_ERROR;
+    file.fg->flags |= F_ERROR;
     return;
   }
 
@@ -281,21 +302,19 @@ static void mk_dest(const char *oldpath, const char *newpath)
   file_stop();
 }
 
-static void get_cur_dest_name(const char *dest, FileItem *parent)
+static void get_cur_dest_name(const char *dest)
 {
-  if (BITMASK_CHECK(F_MOVE, file.cur->flags))
+  if (BITMASK_CHECK(F_MOVE, file.fg->flags))
     return;
-  log_err("FILE", "%s", dest);
 
-  if (parent)
-    dest = parent->dest;
+  if (file.cur->parent)
+    dest = file.cur->parent->dest;
   SWAP_ALLOC_PTR(file.cur->dest, conspath(dest, basename(file.cur->src)));
 }
 
 static void do_stat(const char *path, struct stat *sb)
 {
   log_err("FILE", "do_stat");
-  log_err("FILE", "%s", path);
 
   int ret = lstat(path, sb);
   if (ret < 0)
@@ -303,7 +322,7 @@ static void do_stat(const char *path, struct stat *sb)
 
   /* src exists, check dest */
   if (sb == &file.s1 && ret == 0) {
-    get_cur_dest_name(file.cur->dest, file.cur->parent);
+    get_cur_dest_name(file.cur->dest);
     return do_stat(file.cur->dest, &file.s2);
   }
 
@@ -315,7 +334,7 @@ static void do_stat(const char *path, struct stat *sb)
   /* dest does not exist */
   if (sb == &file.s2 && errno == ENOENT) {
 
-    if (BITMASK_CHECK(F_MOVE, file.cur->flags)) {
+    if (BITMASK_CHECK(F_MOVE, file.fg->flags)) {
       mk_dest(file.cur->src, file.cur->dest);
       return;
     }
@@ -340,20 +359,21 @@ static void do_stat(const char *path, struct stat *sb)
 
 long file_progress()
 {
-  if (TAILQ_EMPTY(&file.p) || file.tsize < 1)
+  if (TAILQ_EMPTY(&file.p) || file.fg->tsize < 1)
     return 0;
 
-  long long sofar = file.wsize * 100;
-  sofar /= file.tsize;
+  long long sofar = file.fg->wsize * 100;
+  sofar /= file.fg->tsize;
   if (sofar > 100)
     sofar = 100;
   return sofar;
 }
 
-void file_push(FileItem *item, uint64_t len)
+void file_push(FileGroup *item)
 {
-  file.tsize += len;
   TAILQ_INSERT_TAIL(&file.p, item, ent);
+  if (!file.running)
+    file_start();
 }
 
 void file_start()
@@ -362,7 +382,8 @@ void file_start()
     return;
 
   file.running = true;
-  file.cur = TAILQ_FIRST(&file.p);
+  file.fg = TAILQ_FIRST(&file.p);
+  file.cur = TAILQ_FIRST(&file.fg->p);
   file.offset = 0;
   file.before = os_hrtime();
   do_stat(file.cur->src, &file.s1);
@@ -380,7 +401,7 @@ void file_cancel(Buffer *owner)
 void file_move_str(char *src, char *dest, Buffer *owner)
 {
   log_msg("FILE", "move_str |%s|%s|", src, dest);
-  ftw_add(src, dest, owner, F_MOVE);
+  ftw_add(src, dest, fg_new(owner, F_MOVE));
 }
 
 void file_move(varg_T args, char *dest, Buffer *owner)
@@ -388,14 +409,13 @@ void file_move(varg_T args, char *dest, Buffer *owner)
   log_msg("FILE", "move |%d|%s|", args.argc, dest);
   for (int i = 0; i < args.argc; i++) {
     conspath_buf(target, dest, basename(args.argv[i]));
-    ftw_add(args.argv[i], target, owner, F_MOVE);
+    ftw_add(args.argv[i], target, fg_new(owner, F_MOVE));
   }
 }
 
 void file_copy(varg_T args, char *dest, Buffer *owner)
 {
   log_msg("FILE", "copy |%d|%s|", args.argc, dest);
-  for (int i = 0; i < args.argc; i++) {
-    ftw_add(args.argv[i], dest, owner, F_COPY);
-  }
+  for (int i = 0; i < args.argc; i++)
+    ftw_add(args.argv[i], dest, fg_new(owner, F_COPY));
 }

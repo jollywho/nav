@@ -213,7 +213,7 @@ static void fm_jump(Plugin *plugin, Plugin *caller, HookArg *hka)
   jump_item *item = NULL;
 
   if (hka->ka->arg == BACKWARD)
-    item = TAILQ_PREV(self->jump_cur, cont, ent);
+    item = TAILQ_PREV(self->jump_cur, jlst, ent);
   if (hka->ka->arg == FORWARD)
     item = TAILQ_NEXT(self->jump_cur, ent);
 

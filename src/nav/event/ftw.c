@@ -15,8 +15,9 @@ typedef struct {
   uint64_t before;
   int count;
   int depth;
-  FileItem *cur;
-  TAILQ_HEAD(cont, FileItem) p;
+  FileItem  *cur;
+  FileGroup *cur_fg;
+  TAILQ_HEAD(Groups, FileGroup) p;
 } Ftw;
 static Ftw ftw;
 
@@ -91,23 +92,19 @@ static void ftw_cb(const char *str, struct stat *sb, int isdir)
 {
   log_msg("FTW", "%s %d", str, ftw.depth);
   ftw.count++;
+  ftw.cur_fg->tsize += sb->st_size;
 
-  if (ftw.depth > 0) {
-    FileItem *cpy = malloc(sizeof(FileItem));
-    cpy->src = strdup(str);
-    cpy->dest = NULL;
-    cpy->owner = ftw.cur->owner;
-    cpy->parent = ftw.cur;
-    cpy->flags = ftw.cur->flags;
-    file_push(cpy, sb->st_size);
+  if (ftw.depth == 0)
+    return;
 
-    if (isdir)
-      ftw.cur = cpy;
-  }
-  else {
-    TAILQ_REMOVE(&ftw.p, ftw.cur, ent);
-    file_push(ftw.cur, sb->st_size);
-  }
+  FileItem *item = calloc(1, sizeof(FileItem));
+  item->src = strdup(str);
+  item->parent = ftw.cur;
+  ftw.cur->refs++;
+  TAILQ_INSERT_TAIL(&ftw.cur_fg->p, item, ent);
+
+  if (isdir)
+    ftw.cur = item;
 
   //onerror: pop item from ftw_queue
 }
@@ -124,67 +121,74 @@ static void ftw_start()
   ftw.depth = 0;
   ftw.before = os_hrtime();
 
-  ftw.cur = TAILQ_FIRST(&ftw.p);
+  ftw.cur_fg = TAILQ_FIRST(&ftw.p);
+  ftw.cur = TAILQ_FIRST(&ftw.cur_fg->p);
   do_ftw(ftw.cur->src, ftw_cb);
+  TAILQ_REMOVE(&ftw.p, ftw.cur_fg, ent);
 
   log_msg("FTW", "Finished");
 
   //check for more entries
   ftw.running = false;
-  file_start();
+  file_push(ftw.cur_fg);
 }
 
-FileItem* ftw_new(char *src, char *dest, Buffer *owner)
+FileItem* ftw_new(char *src, char *dest)
 {
   FileItem *item = malloc(sizeof(FileItem));
-  item->owner = owner;
   item->src = strdup(src);
   item->dest = strdup(dest);
   item->parent = NULL;
-  item->flags = 0;
+  item->refs = 0;
   return item;
 }
 
-void ftw_push_move(char *src, char *dest, Buffer *owner)
+void ftw_push_move(char *src, char *dest, FileGroup *fg)
 {
   log_msg("FTW", "pushed_move");
   struct stat sb;
   if (lstat(src, &sb) == -1)
     return;
 
-  FileItem *item = ftw_new(src, dest, owner);
-  item->flags = F_MOVE|F_VERSIONED;
+  FileItem *item = ftw_new(src, dest);
+  TAILQ_INSERT_TAIL(&fg->p, item, ent);
+  fg->flags = F_MOVE|F_VERSIONED;
 
   //NOTE: copying across devices will fail and be readded as copy
-  file_push(item, sb.st_size);
-  file_start();
+  file_push(fg);
 }
 
-void ftw_push_copy(char *src, char *dest, Buffer *owner)
+void ftw_push_copy(char *src, char *dest, FileGroup *fg)
 {
   log_msg("FTW", "pushed_copy");
-  FileItem *item = ftw_new(src, dest, owner);
-  item->flags |= F_COPY|F_VERSIONED;
+  FileItem *item = ftw_new(src, dest);
+  TAILQ_INSERT_TAIL(&fg->p, item, ent);
+  TAILQ_INSERT_TAIL(&ftw.p, fg, ent);
 
-  TAILQ_INSERT_TAIL(&ftw.p, item, ent);
+  fg->flags |= F_COPY|F_VERSIONED;
   if (!ftw.running)
     ftw_start();
 }
 
-void ftw_retry(FileItem *item)
+void ftw_add_again(char *src, char *dst, FileGroup *fg)
 {
-  item->flags |= F_COPY|F_VERSIONED|F_UNLINK;
+  FileItem *item = ftw_new(src, dst);
+  TAILQ_INSERT_TAIL(&fg->p, item, ent);
+  TAILQ_INSERT_HEAD(&ftw.p, fg, ent);
+  fg->flags |= F_COPY|F_UNLINK;
+}
 
-  TAILQ_INSERT_TAIL(&ftw.p, item, ent);
+void ftw_retry()
+{
   if (!ftw.running)
     ftw_start();
 }
 
-void ftw_add(char *src, char *dst, Buffer *owner, int flag)
+void ftw_add(char *src, char *dst, FileGroup *fg)
 {
   log_msg("FILE", "ftw add |%s|%s|", src, dst);
-  if (flag == F_MOVE)
-    ftw_push_move(src, dst, owner);
+  if (fg->flags == F_MOVE)
+    ftw_push_move(src, dst, fg);
   else
-    ftw_push_copy(src, dst, owner);
+    ftw_push_copy(src, dst, fg);
 }

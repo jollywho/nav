@@ -15,11 +15,20 @@
 typedef struct FileItem FileItem;
 struct FileItem {
   TAILQ_ENTRY(FileItem) ent;
-  Buffer *owner;
-  int flags;
   char *src;
   char *dest;
   FileItem *parent;
+  int refs;
+};
+
+typedef struct FileGroup FileGroup;
+struct FileGroup {
+  TAILQ_HEAD(cont, FileItem) p;
+  TAILQ_ENTRY(FileGroup) ent;
+  Buffer *owner;
+  int flags;       //F_MOVE, F_COPY etc
+  uint64_t tsize;  //size to write
+  uint64_t wsize;  //size written
 };
 
 void file_init();
@@ -27,7 +36,7 @@ void file_cleanup();
 void file_move_str(char *src, char *dst, Buffer *);
 void file_copy(varg_T, char *dest, Buffer *);
 void file_move(varg_T, char *dest, Buffer *);
-void file_push(FileItem *item, uint64_t len);
+void file_push(FileGroup *fg);
 void file_start();
 void file_cancel(Buffer *);
 long file_progress();
