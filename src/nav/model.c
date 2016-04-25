@@ -15,8 +15,6 @@
 #include "nav/tui/window.h"
 #include "nav/event/fs.h"
 
-static void generate_lines(Model *m);
-
 struct fn_line {
   fn_rec *rec;
 };
@@ -162,12 +160,14 @@ void model_init(fn_handle *hndl)
   utarray_new(m->lines, &icd);
   Buffer *buf = hndl->buf;
   buf->matches = regex_new(hndl);
+  buf->filter = filter_new(hndl);
 }
 
 void model_cleanup(fn_handle *hndl)
 {
   Model *m = hndl->model;
   regex_destroy(hndl);
+  filter_destroy(hndl);
   utarray_free(m->lines);
   if (m->pfval)
     free(m->pfval);
@@ -253,6 +253,8 @@ static void try_old_val(Model *m, fn_lis *lis, ventry *it)
   fn_line ln = { .rec = it->rec };
 
   find = find_by_type(m, &ln);
+  if (!find)
+    return;
 
   /* if found value is not stored value */
   if (strcmp(m->pfval, rec_fld(find->rec, m->hndl->kname)))
@@ -357,6 +359,18 @@ void model_null_entry(Model *m, fn_lis *lis)
   m->blocking = false;
 }
 
+static void generate_lines(Model *m)
+{
+  /* generate hash set of index,line. */
+  ventry *it = m->head;
+  for (int i = 0; i < tbl_ent_count(m->head); i++) {
+    fn_line ln;
+    ln.rec = it->rec;
+    utarray_push_back(m->lines, &ln);
+    it = it->next;
+  }
+}
+
 void model_read_entry(Model *m, fn_lis *lis, ventry *head)
 {
   log_msg("MODEL", "model_read_entry");
@@ -371,20 +385,9 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
   m->cur = head->rec;
   h->model->lis = lis;
   generate_lines(m);
+  filter_apply(m->hndl);
   model_sort(m, (sort_t){-1,0});
   m->blocking = false;
-}
-
-static void generate_lines(Model *m)
-{
-  /* generate hash set of index,line. */
-  ventry *it = m->head;
-  for (int i = 0; i < tbl_ent_count(m->head); i++) {
-    fn_line ln;
-    ln.rec = it->rec;
-    utarray_push_back(m->lines, &ln);
-    it = it->next;
-  }
 }
 
 char* model_str_line(Model *m, int index)
@@ -427,6 +430,20 @@ void model_set_curs(Model *m, int index)
   fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
   if (res)
     m->cur = res->rec;
+}
+
+void model_clear_filter(Model *m)
+{
+  log_msg("MODEL", "clear filter");
+  utarray_clear(m->lines);
+  generate_lines(m);
+  log_msg("MODEL", "clear %d", model_count(m));
+}
+
+void model_filter_line(Model *m, int index)
+{
+  log_msg("MODEL", "filter line %d", index);
+  utarray_erase(m->lines, index, 1);
 }
 
 char* model_str_expansion(char *val, char *key)

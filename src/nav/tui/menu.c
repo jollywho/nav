@@ -262,8 +262,10 @@ void menu_restart(Menu *mnu)
 
 void menu_killword(Menu *mnu)
 {
-  mnu->cx = ex_cmd_pop(1)->cx;
-  mnu->docmpl = true;
+  if (mnu->active) {
+    mnu->cx = ex_cmd_pop(1)->cx;
+    mnu->docmpl = true;
+  }
 }
 
 static void rebuild_contexts(Menu *mnu, Cmdline *cmd)

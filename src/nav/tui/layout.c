@@ -197,6 +197,7 @@ void layout_remove_buffer(Layout *layout)
 
   Container *next = next_or_prev(c);
   TAILQ_REMOVE(&hc->p, c, ent);
+  //FIXME: shared ov on split inherits deleted ov. check hc or fix sharing
   overlay_delete(c->ov);
   free(c);
   layout->focus = NULL;

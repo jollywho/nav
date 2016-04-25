@@ -29,9 +29,12 @@ char* model_str_line(Model *m, int index);
 void* model_fld_line(Model *m, const char *fld, int index);
 void* model_curs_value(Model *m, const char *fld);
 fn_rec* model_rec_line(Model *m, int index);
+
+void model_clear_filter(Model *m);
+void model_filter_line(Model *m, int);
+
 void model_set_curs(Model *m, int index);
 int model_count(Model *m);
-
 char* model_str_expansion(char* val, char *key);
 
 #endif

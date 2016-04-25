@@ -40,6 +40,7 @@ struct Ex_cmd {
   char *line;
   Menu *menu;
   LineMatch *lm;
+  Filter *fil;
 
   char state_symbol;
   int ex_state;
@@ -96,17 +97,22 @@ void start_ex_cmd(char symbol, int state)
   ex.inrstate = 0;
   ex.col_text = opt_color(COMPL_TEXT);
   ex.col_symb = opt_color(BUF_TEXT);
+  ex.curpart = -1;
 
-  if (state == EX_REG_STATE) {
-    Buffer *buf = window_get_focus();
-    ex.lm = buf->matches;
-    regex_mk_pivot(ex.lm);
-  }
-  else {
-    ex.cmd_stack = malloc(STACK_MIN * sizeof(cmd_part*));
-    ex.curpart = -1;
-    ex.maxpart = STACK_MIN;
-    menu_start(ex.menu);
+  switch (state) {
+    case EX_CMD_STATE:
+      ex.cmd_stack = malloc(STACK_MIN * sizeof(cmd_part*));
+      ex.maxpart = STACK_MIN;
+      menu_start(ex.menu);
+      break;
+    case EX_REG_STATE:
+      ex.lm = window_get_focus()->matches;
+      regex_mk_pivot(ex.lm);
+      break;
+    case EX_FIL_STATE:
+      ex.fil = window_get_focus()->filter;
+      //swap exline with filter string
+      break;
   }
   ex.line = calloc(max.col, sizeof(char*));
   ex.cmd.cmds = NULL;
@@ -124,6 +130,7 @@ void stop_ex_cmd()
     menu_stop(ex.menu);
   }
   ex.lm = NULL;
+  ex.fil = NULL;
   free(ex.line);
   cmdline_cleanup(&ex.cmd);
   if (!message_pending) {
@@ -404,15 +411,23 @@ static void ex_onkey()
   cmdline_cleanup(&ex.cmd);
   cmdline_build(&ex.cmd, ex.line);
 
-  if (ex.ex_state == EX_CMD_STATE) {
-    check_new_state();
-    menu_update(ex.menu, &ex.cmd);
-  }
-  if (ex.ex_state == EX_REG_STATE) {
-    if (window_focus_attached() && ex.curpos > 0) {
-      regex_build(ex.lm, ex.line);
-      regex_hover(ex.lm);
-    }
+  switch (ex.ex_state) {
+    case EX_CMD_STATE:
+      check_new_state();
+      menu_update(ex.menu, &ex.cmd);
+      break;
+    case EX_REG_STATE:
+      if (window_focus_attached() && ex.curpos > 0) {
+        regex_build(ex.lm, ex.line);
+        regex_hover(ex.lm);
+      }
+      break;
+    case EX_FIL_STATE:
+      if (ex.fil) {
+        filter_build(ex.fil, ex.line);
+        filter_update(ex.fil);
+      }
+      break;
   }
   ex.inrstate &= ~EX_CLEAR;
   window_req_draw(NULL, NULL);
@@ -516,11 +531,16 @@ int ex_cmd_curpos()
 
 Token* ex_cmd_curtok()
 {
-  cmd_part *part = ex.cmd_stack[ex.curpart];
-  int st = part->st;
-  int ed = ex.curpos + 1;
   if (!ex.cmd.cmds)
     return NULL;
+  if (ex.curpart > -1) {
+    cmd_part *part = ex.cmd_stack[ex.curpart];
+    int st = part->st;
+    int ed = ex.curpos + 1;
+    return cmdline_tokbtwn(&ex.cmd, st, ed);
+  }
+  int st = rev_strchr_pos(ex.line, ex.curpos-1, ' ');
+  int ed = ex.curpos+1;
   return cmdline_tokbtwn(&ex.cmd, st, ed);
 }
 

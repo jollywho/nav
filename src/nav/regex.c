@@ -1,4 +1,5 @@
 #include <pcre.h>
+#include "nav/lib/utarray.h"
 
 #include "nav/regex.h"
 #include "nav/log.h"
@@ -159,7 +160,6 @@ void regex_pat_delete(Pattern *pat)
 
 bool regex_match(Pattern *pat, const char *line)
 {
-  log_msg("REGEX", "regex_match");
   if (!line)
     return false;
 

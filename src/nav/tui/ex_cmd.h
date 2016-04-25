@@ -5,9 +5,10 @@
 #include "nav/compl.h"
 
 // these need to align with state_symbol array
-#define EX_CMD_STATE 1
+#define EX_OFF_STATE 10
 #define EX_REG_STATE 0
-#define EX_OFF_STATE -1
+#define EX_CMD_STATE 1
+#define EX_FIL_STATE 2
 
 #define EX_EMPTY  1
 #define EX_LEFT   2

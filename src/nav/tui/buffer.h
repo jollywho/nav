@@ -3,6 +3,7 @@
 
 #include <ncurses.h>
 #include "nav/regex.h"
+#include "nav/filter.h"
 
 struct Buffer {
   WINDOW *nc_win;
@@ -10,6 +11,7 @@ struct Buffer {
   Overlay *ov;
 
   LineMatch *matches;
+  Filter *filter;
 
   pos_T b_size;
   pos_T b_ofs;

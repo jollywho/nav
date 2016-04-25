@@ -178,6 +178,16 @@ void trans_char(char *src, char from, char to)
   }
 }
 
+int rev_strchr_pos(char *src, int n, int ch)
+{
+  int i;
+  for (i = MAX(n-1, 0); i > n; i--) {
+    if (src[i] == ch)
+      break;
+  }
+  return i;
+}
+
 int count_lines(char *src)
 {
   char *next = NULL;

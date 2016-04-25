@@ -1,7 +1,7 @@
 #ifndef FN_REGEX_H
 #define FN_REGEX_H
 
-#include "nav/cmdline.h"
+#include "nav/plugins/plugin.h"
 
 typedef struct LineMatch LineMatch;
 typedef struct Pattern Pattern;
@@ -13,6 +13,7 @@ void regex_del_matches(LineMatch *lm);
 void regex_setsign(int sign);
 
 Pattern* regex_pat_new(const char *);
+void regex_pat_delete(Pattern *pat);
 bool regex_match(Pattern *pat, const char *);
 
 void regex_mk_pivot(LineMatch *lm);

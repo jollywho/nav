@@ -37,9 +37,11 @@ static Cmdret win_echo();
 static Cmdret win_reload();
 static Cmdret win_direct();
 static Cmdret win_edit();
+static Cmdret win_filter();
 static void win_layout();
 static void window_ex_cmd();
 static void window_reg_cmd();
+static void window_fltr_cmd();
 static void window_update(uv_timer_t *);
 
 
@@ -60,6 +62,7 @@ static const Cmd_T cmdtable[] = {
   {"reload","rel",  win_reload,  0},
   {"direct",0,      win_direct,  0},
   {"edit","ed",     win_edit,    0},
+  {"filter","fil",  win_filter,  0},
 };
 
 static char *compl_cmds[] = {
@@ -94,6 +97,7 @@ static fn_key key_defaults[] = {
   {'K',     win_layout,      0,           MOVE_UP},
   {'L',     win_layout,      0,           MOVE_RIGHT},
   {Ctrl_W,  oper,            NCH_A,       OP_WIN},
+  {'f',     window_fltr_cmd, 0,           FORWARD},
 };
 
 static fn_keytbl key_tbl;
@@ -441,6 +445,12 @@ Cmdret win_edit(List *args, Cmdarg *ca)
   return NORET;
 }
 
+Cmdret win_filter(List *args, Cmdarg *ca)
+{
+  log_msg("WINDOW", "win_filter");
+  return NORET;
+}
+
 void win_move(void *_w, Keyarg *ca)
 {
   log_msg("WINDOW", "win_move");
@@ -457,7 +467,7 @@ void window_close_focus()
 
 static void window_ex_cmd(Window *_w, Keyarg *arg)
 {
-  if (!window_focus_attached() && arg->arg == EX_REG_STATE)
+  if (!window_focus_attached() && arg->arg != EX_CMD_STATE)
     return;
   win.ex = true;
   start_ex_cmd(arg->key, arg->arg);
@@ -467,6 +477,13 @@ static void window_reg_cmd(Window *_w, Keyarg *arg)
 {
   regex_setsign(arg->arg);
   arg->arg = EX_REG_STATE;
+  window_ex_cmd(_w, arg);
+}
+
+static void window_fltr_cmd(Window *_w, Keyarg *arg)
+{
+  arg->arg = EX_FIL_STATE;
+  arg->key = '*';
   window_ex_cmd(_w, arg);
 }
 
