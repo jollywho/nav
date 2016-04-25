@@ -14,7 +14,6 @@
 #define SZ_USR(col) ((col)-(SZ_BUF+SZ_LBL+SZ_LN))
 #define SZ_PRG(col) (SZ_USR(col)+ST_PRG()-2)
 #define LBL_FMT     " %-"STR(SZ_LBL)"s"
-#define SEPCHAR     "╬"
 
 struct Overlay {
   WINDOW *nc_sep;
@@ -42,6 +41,8 @@ struct Overlay {
   short col_prog;
 };
 
+static char *sep_char;
+
 Overlay* overlay_new()
 {
   Overlay *ov = malloc(sizeof(Overlay));
@@ -56,6 +57,8 @@ Overlay* overlay_new()
   ov->col_arg   = opt_color(OVERLAY_ARGS);
   ov->col_bufno = opt_color(OVERLAY_BUFNO);
   ov->col_prog  = opt_color(OVERLAY_PROGRESS);
+
+  sep_char  = get_opt_str("sepchar");
 
   ov->arg = strdup("         ");
   overlay_bufno(ov, 0);
@@ -225,7 +228,7 @@ void overlay_draw(void **argv)
     wattron(ov->nc_sep, COLOR_PAIR(ov->col_sep));
     int i;
     for (i = 0; i < y; i++) {
-      mvwaddstr(ov->nc_sep, i, 0, SEPCHAR);
+      mvwaddstr(ov->nc_sep, i, 0, sep_char);
     }
     wattroff(ov->nc_sep, COLOR_PAIR(ov->col_sep));
     DRAW_CH(ov, nc_sep, i, 0, ' ', col_ln);

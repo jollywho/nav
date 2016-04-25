@@ -42,6 +42,7 @@ static char *hintskey = "wasgd";
 static char *p_sh = "/bin/sh";
 char *p_rm = "rm -r";
 char *p_xc = "xclip -i";
+char *sep_chr = "│";
 
 typedef struct fn_option fn_option;
 static struct fn_option {
@@ -57,6 +58,7 @@ static struct fn_option {
   {"menu_rows",     OPTION_INT,       &menu_rows},
   {"hintkeys",      OPTION_STRING,    &hintskey},
   {"shell",         OPTION_STRING,    &p_sh},
+  {"sepchar",       OPTION_STRING,    &sep_chr},
   {"copy-pipe",     OPTION_STRING,    &p_xc},
 };
 

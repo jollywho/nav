@@ -26,6 +26,7 @@ void term_new(Plugin *plugin, Buffer *buf, char *arg)
   Term *term = malloc(sizeof(Term));
   term->base = plugin;
   term->closed = false;
+  term->ed = NULL;
   plugin->top = term;
   plugin->name = "term";
   plugin->fmt_name = "VT";
