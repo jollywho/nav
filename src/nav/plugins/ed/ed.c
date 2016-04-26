@@ -10,6 +10,7 @@
 #include "nav/event/hook.h"
 #include "nav/event/file.h"
 #include "nav/event/fs.h"
+#include "nav/cmdline.h"
 #include "nav/log.h"
 #include "nav/table.h"
 #include "nav/util.h"

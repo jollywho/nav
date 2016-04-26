@@ -186,7 +186,7 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
 
 static void fm_left(Plugin *host, Plugin *caller, HookArg *hka)
 {
-  log_msg("FM", "cmd left");
+  log_msg("FM", "left");
   FM *self = host->top;
   char *path = self->cur_dir;
   //FIXME: can get stuck if depth > 1 of dead dirs
@@ -197,7 +197,7 @@ static void fm_left(Plugin *host, Plugin *caller, HookArg *hka)
 
 static void fm_right(Plugin *host, Plugin *caller, HookArg *hka)
 {
-  log_msg("FM", "cmd right");
+  log_msg("FM", "right");
   fn_handle *h = host->hndl;
   char *path = model_curs_value(h->model, "fullpath");
   log_msg("FM", "PATH %s", path);

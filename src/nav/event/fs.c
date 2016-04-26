@@ -436,7 +436,7 @@ scandir:
     fs_close_req(ent);
 }
 
-void fs_reopen(fentry *ent)
+static void fs_reopen(fentry *ent)
 {
   log_msg("FS", "--reopen--");
   uv_timer_stop(&ent->watcher_timer);
@@ -476,6 +476,17 @@ static void watch_cb(uv_fs_event_t *hndl, const char *fname, int events, int s)
   uint64_t now = os_hrtime();
   if ((now - ent->before)/1000000 > MAX_WAIT)
     watch_timer_cb(&ent->watcher_timer);
+}
+
+void fs_reload(char *path)
+{
+  fentry *ent = NULL;
+  HASH_FIND_STR(ent_tbl, path, ent);
+  if (!ent)
+    return;
+  ent->before = MAX_WAIT;
+  ent->flush = true;
+  uv_timer_start(&ent->watcher_timer, watch_timer_cb, 0, MAX_WAIT);
 }
 
 static void fs_close_req(fentry *ent)

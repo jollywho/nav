@@ -333,6 +333,7 @@ void model_flush(fn_handle *hndl, bool reopen)
 void model_recv(Model *m)
 {
   log_msg("MODEL", "model_recv");
+  log_msg("MODEL", "block? %d", m->blocking);
   if (!m->blocking)
     return;
 

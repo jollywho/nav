@@ -29,6 +29,7 @@ void fs_close(fn_fs *fs);
 void fs_read(fn_fs *fs, const char *);
 void fs_clr_cache(char *);
 void fs_clr_all_cache();
+void fs_reload(char *);
 
 void fs_cancel(fn_fs *fs);
 void fs_fastreq(fn_fs *fs);

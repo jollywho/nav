@@ -3,6 +3,7 @@
 #include "nav/log.h"
 #include "nav/table.h"
 #include "nav/model.h"
+#include "nav/cmdline.h"
 #include "nav/event/hook.h"
 #include "nav/tui/buffer.h"
 #include "nav/tui/layout.h"

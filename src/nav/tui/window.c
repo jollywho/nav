@@ -338,9 +338,7 @@ Cmdret win_reload(List *args, Cmdarg *ca)
   log_msg("WINDOW", "win_reload");
   char *path = window_cur_dir();
   fs_clr_cache(path);
-  Plugin *plugin = buf_plugin(layout_buf(&win.layout));
-  if (plugin)
-    send_hook_msg("open", plugin, NULL, &(HookArg){NULL,path});
+  fs_reload(path);
   return NORET;
 }
 
