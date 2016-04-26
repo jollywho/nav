@@ -442,7 +442,6 @@ void model_clear_filter(Model *m)
 
 void model_filter_line(Model *m, int index)
 {
-  log_msg("MODEL", "filter line %d", index);
   utarray_erase(m->lines, index, 1);
 }
 

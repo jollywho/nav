@@ -22,6 +22,7 @@ Filter* filter_new(fn_handle *hndl)
 void filter_destroy(fn_handle *hndl)
 {
   Filter *fil = hndl->buf->filter;
+  free(fil->line);
   free(fil);
 }
 

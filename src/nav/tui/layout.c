@@ -27,23 +27,25 @@ pos_T layout_size()
   return (pos_T){w.ws_row, w.ws_col};
 }
 
-static void create_container(Container *c, enum move_dir dir)
+static Container* create_container(enum move_dir dir, Overlay *ov, Buffer *buf)
 {
-  memset(c, 0, sizeof(Container));
+  Container *c = calloc(1, sizeof(Container));
   if (dir == MOVE_UP   || dir == MOVE_DOWN )
     c->dir = L_HORIZ;
   if (dir == MOVE_LEFT || dir == MOVE_RIGHT)
     c->dir = L_VERT;
   TAILQ_INIT(&c->p);
-  c->ov = overlay_new();
+
+  c->ov = ov ? ov : overlay_new();
+  c->buf = buf;
+
+  return c;
 }
 
 void layout_init(Layout *layout)
 {
   log_msg("LAYOUT", "layout_init");
-  Container *root = malloc(sizeof(Container));
-  create_container(root, MOVE_UP);
-  root->buf = NULL;
+  Container *root = create_container(MOVE_UP, NULL, NULL);
   root->parent = root;
   root->size = layout_size();
   root->size.lnum--;  //cmdline, status
@@ -104,6 +106,7 @@ static void resize_container(Container *c)
       buf_set_size_ofs(it->buf, it->size, it->ofs);
     }
     else {
+      log_err("LAYOUT", "it %p", it->ov);
       overlay_clear(it->ov);
       resize_container(it);
     }
@@ -140,27 +143,21 @@ static void swap_focus(Layout *layout, Container *c)
   layout->focus = c;
 }
 
-void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir)
+void layout_add_buffer(Layout *layout, Buffer *nbuf, enum move_dir dir)
 {
   log_msg("LAYOUT", "layout_add_buffer");
   Container *focus = layout->focus;
   Container *hc = focus->parent;
 
-  Container *c = malloc(sizeof(Container));
   if (focus->root)
     dir = MOVE_UP;
 
-  create_container(c, dir);
-  c->buf = next;
+  Container *c = create_container(dir, NULL, nbuf);
 
   /* copy container and leave the old inplace as the parent of subitems */
   if (c->dir != focus->dir) {
-    Container *sub = malloc(sizeof(Container));
-    create_container(sub, dir);
-    overlay_delete(sub->ov);
-    sub->buf = focus->buf;
+    Container *sub = create_container(dir, focus->ov, focus->buf);
     sub->parent = focus;
-    sub->ov = focus->ov;
     focus->count++;
 
     TAILQ_INSERT_TAIL(&focus->p, sub, ent);
@@ -187,6 +184,12 @@ static Container* next_or_prev(Container *it)
     TAILQ_PREV(it, cont, ent);
 }
 
+static void remove_overlay(Container *c, Container *hc, Container *n)
+{
+  if (!n || (c->ov != hc->ov && c->ov != n->ov))
+    overlay_delete(c->ov);
+}
+
 void layout_remove_buffer(Layout *layout)
 {
   log_msg("LAYOUT", "layout_remove_buffer");
@@ -197,13 +200,13 @@ void layout_remove_buffer(Layout *layout)
 
   Container *next = next_or_prev(c);
   TAILQ_REMOVE(&hc->p, c, ent);
-  //FIXME: shared ov on split inherits deleted ov. check hc or fix sharing
-  overlay_delete(c->ov);
+  hc->count--;
+  remove_overlay(c, hc, next);
   free(c);
   layout->focus = NULL;
-  hc->count--;
 
   if (hc->count == 1 && !hc->root) {
+    remove_overlay(hc, hc->parent, next);
     hc->buf = next->buf;
     hc->ov = next->ov;
     hc->count = next->count;
@@ -215,9 +218,8 @@ void layout_remove_buffer(Layout *layout)
   }
 
   if (next) {
-    while (!TAILQ_EMPTY(&next->p)) {
+    while (!TAILQ_EMPTY(&next->p))
       next = TAILQ_FIRST(&next->p);
-    }
   }
 
   swap_focus(layout, next);
