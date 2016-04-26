@@ -22,6 +22,7 @@ struct Overlay {
   pos_T ov_ofs;
   int separator;
   int prog;
+  int filter;
   bool queued;
   bool del;
   bool progfin;
@@ -39,6 +40,7 @@ struct Overlay {
   short col_sep;
   short col_bufno;
   short col_prog;
+  short col_fil;
 };
 
 static char *sep_char;
@@ -57,6 +59,7 @@ Overlay* overlay_new()
   ov->col_arg   = opt_color(OVERLAY_ARGS);
   ov->col_bufno = opt_color(OVERLAY_BUFNO);
   ov->col_prog  = opt_color(OVERLAY_PROGRESS);
+  ov->col_fil   = opt_color(OVERLAY_FILTER);
 
   sep_char  = get_opt_str("sepchar");
 
@@ -173,8 +176,21 @@ void overlay_lnum(Overlay *ov, int lnum, int max)
   snprintf(ov->lineno, SZ_LN, " %*d:%-*d ", 3, lnum+1, 3, max);
   int pos = ST_LN(ov->ov_size.col) - 2;
   draw_wide(ov->nc_st, 0, pos, ov->lineno, SZ_ARGS+1);
-  mvwchgat (ov->nc_st, 0, pos, -1, A_NORMAL, ov->col_lbl, NULL);
+  mvwchgat (ov->nc_st, 0, pos,  -1, A_NORMAL, ov->col_lbl, NULL);
+  mvwchgat (ov->nc_st, 0, pos+5, ov->filter, A_NORMAL, ov->col_fil, NULL);
   wnoutrefresh(ov->nc_st);
+}
+
+void overlay_filter(Overlay *ov, int max, bool enable)
+{
+  if (!enable) {
+    ov->filter = 0;
+    return;
+  }
+  char szbuf[4];
+  snprintf(szbuf, 4, "%d", max);
+  ov->filter = strlen(szbuf);
+  log_err("OVERLAY", "filter: %d ", max);
 }
 
 void overlay_edit(Overlay *ov, char *name, char *usr, char *in)
@@ -227,9 +243,8 @@ void overlay_draw(void **argv)
   if (ov->separator) {
     wattron(ov->nc_sep, COLOR_PAIR(ov->col_sep));
     int i;
-    for (i = 0; i < y; i++) {
+    for (i = 0; i < y; i++)
       mvwaddstr(ov->nc_sep, i, 0, sep_char);
-    }
     wattroff(ov->nc_sep, COLOR_PAIR(ov->col_sep));
     DRAW_CH(ov, nc_sep, i, 0, ' ', col_ln);
   }
@@ -240,7 +255,8 @@ void overlay_draw(void **argv)
   mvwchgat (ov->nc_st, 0, ST_ARG(), pos, A_NORMAL, ov->col_text, NULL);
 
   draw_wide(ov->nc_st, 0, pos, ov->lineno, SZ_ARGS+1);
-  mvwchgat (ov->nc_st, 0, pos, -1, A_NORMAL, ov->col_lbl, NULL);
+  mvwchgat (ov->nc_st, 0, pos,  -1, A_NORMAL, ov->col_lbl, NULL);
+  mvwchgat (ov->nc_st, 0, pos+5, ov->filter, A_NORMAL, ov->col_fil, NULL);
 
   if (ov->progfin) {
     ov->progfin = false;

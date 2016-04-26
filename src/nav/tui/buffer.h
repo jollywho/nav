@@ -60,6 +60,7 @@ int buf_input(Buffer *bn, Keyarg *ca);
 
 void buf_refresh(Buffer *buf);
 void buf_toggle_focus(Buffer *buf, int focus);
+void buf_signal_filter(Buffer *buf, int count);
 
 void buf_move_invalid(Buffer *buf, int index, int lnum);
 void buf_move(Buffer *buf, int y, int x);

@@ -22,6 +22,8 @@ Filter* filter_new(fn_handle *hndl)
 void filter_destroy(fn_handle *hndl)
 {
   Filter *fil = hndl->buf->filter;
+  if (fil->pat)
+    regex_pat_delete(fil->pat);
   free(fil->line);
   free(fil);
 }
@@ -40,11 +42,15 @@ void filter_build(Filter *fil, const char *line)
   model_clear_filter(m);
 
   int max = model_count(m);
+  int count = 0;
   for (int i = max; i > 0; i--) {
     char *str = model_str_line(m, i-1);
-    if (!regex_match(fil->pat, str))
+    if (!regex_match(fil->pat, str)) {
       model_filter_line(m, i-1);
+      count++;
+    }
   }
+  buf_signal_filter(fil->hndl->buf, count);
 }
 
 void filter_update(Filter *fil)

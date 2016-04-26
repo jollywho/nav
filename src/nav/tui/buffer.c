@@ -214,6 +214,15 @@ void buf_toggle_focus(Buffer *buf, int focus)
   buf_refresh(buf);
 }
 
+void buf_signal_filter(Buffer *buf, int count)
+{
+  if (!buf)
+    return;
+  int max = model_count(buf->hndl->model);
+  overlay_filter(buf->ov, max, count);
+  overlay_lnum(buf->ov, buf_index(buf), model_count(buf->hndl->model));
+}
+
 void buf_refresh(Buffer *buf)
 {
   log_msg("BUFFER", "refresh");
