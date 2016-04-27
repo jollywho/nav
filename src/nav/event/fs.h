@@ -40,6 +40,7 @@ bool isreclnk(fn_rec *rec);
 bool isrecreg(fn_rec *rec);
 time_t rec_ctime(fn_rec *rec);
 off_t rec_stsize(fn_rec *rec);
+mode_t rec_stmode(fn_rec *rec);
 char* fs_expand_path(const char *);
 char* valid_full_path(char *, char *);
 char* fs_parent_dir(char *);

@@ -261,6 +261,12 @@ off_t rec_stsize(fn_rec *rec)
   return stat->st_size;
 }
 
+mode_t rec_stmode(fn_rec *rec)
+{
+  struct stat *stat = (struct stat*)rec_fld(rec, "stat");
+  return stat->st_mode;
+}
+
 bool fs_vt_isdir_resolv(fn_rec *rec)
 {
   struct stat *st = (struct stat*)rec_fld(rec, "stat");

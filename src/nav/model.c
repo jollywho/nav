@@ -14,6 +14,7 @@
 #include "nav/tui/buffer.h"
 #include "nav/tui/window.h"
 #include "nav/event/fs.h"
+#include "nav/option.h"
 
 struct fn_line {
   fn_rec *rec;
@@ -43,7 +44,7 @@ static int cmp_str(const void *, const void *, void *);
 static int cmp_time(const void *, const void *, void *);
 static int cmp_dir(const void *, const void *, void *);
 static int cmp_num(const void *, const void *, void *);
-//static int cmp_type(const void *, const void *, void *);
+static int cmp_type(const void *, const void *, void *);
 typedef struct Sort_T Sort_T;
 static struct Sort_T {
   int val;
@@ -53,7 +54,7 @@ static struct Sort_T {
   {SRT_TIME,   cmp_time},
   {SRT_DIR,    cmp_dir},
   {SRT_NUM,    cmp_num},
-  //{SRT_TYPE, cmp_type},
+  {SRT_TYPE,   cmp_type},
 };
 //TODO: remove field name from cmp functions:
 //field name can be passed into each cmp fn within an arg struct.
@@ -80,8 +81,8 @@ static int cmp_dir(const void *a, const void *b, void *arg)
 {
   fn_line l1 = *(fn_line*)a;
   fn_line l2 = *(fn_line*)b;
-  int b1 = isrecdir(l1.rec);
-  int b2 = isrecdir(l2.rec);
+  int b1 = rec_stmode(l1.rec);
+  int b2 = rec_stmode(l2.rec);
   if (b1 < b2)
     return -1;
   if (b1 > b2)
@@ -100,6 +101,27 @@ static int cmp_num(const void *a, const void *b, void *arg)
   if (t1 > t2)
     return 1;
   return 0;
+}
+
+static int cmp_type(const void *a, const void *b, void *arg)
+{
+  fn_line l1 = *(fn_line*)a;
+  fn_line l2 = *(fn_line*)b;
+  char *s1 = rec_fld(l1.rec, "name");
+  char *s2 = rec_fld(l2.rec, "name");
+
+  fn_syn *sy1 = get_syn(file_ext(s1));
+  fn_syn *sy2 = get_syn(file_ext(s2));
+  if (isrecdir(l1.rec))
+    s1 = "";
+  else if (sy1)
+    s1 = sy1->key;
+  if (isrecdir(l2.rec))
+    s2 = "";
+  else if (sy1)
+    s2 = sy2->key;
+
+  return strcmp(s2, s1);
 }
 
 static int sort_by_type(const void *a, const void *b, void *arg)

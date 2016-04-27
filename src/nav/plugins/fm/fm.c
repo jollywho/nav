@@ -40,6 +40,7 @@ void fm_init()
     tbl_mk_fld("fm_files", "stat",     TYP_VOID);
     tbl_mk_vt_fld("fm_files", "ctime", SRT_TIME);
     tbl_mk_vt_fld("fm_files", "size",  SRT_NUM);
+    tbl_mk_vt_fld("fm_files", "type",  SRT_TYPE);
     set_fldvar(NULL, "name",     expand_field);
     set_fldvar(NULL, "dir",      expand_field);
     set_fldvar(NULL, "fullpath", expand_field);
