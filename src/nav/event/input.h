@@ -12,32 +12,6 @@
 #define OP_DELETE       5       /* "d"  delete operator */
 #define OP_WIN          6       /* "^w" window operator */
 
-typedef struct {
-  int key;                      // current pending operator type
-  int regname;                  // register to use for the operator
-  int motion_type;              // type of the current cursor motion
-  int motion_force;             // force motion type: 'v', 'V' or CTRL-V
-  pos_T start;                  // start of the operator
-  pos_T end;                    // end of the operator
-  pos_T cursor_start;           // cursor position before motion for "gw"
-
-  long line_count;              // number of lines from op_start to op_end
-                                // (inclusive)
-  bool is_VIsual;               // operator on Visual area
-} Oparg;
-
-struct Keyarg {
-  Oparg oap;                    /* Operator arguments */
-  pos_T start;                  /* start of the operator */
-  pos_T end;                    /* end of the operator */
-  long opcount;                 /* count before an operator */
-  int type;
-  int key;
-  int nkey;
-  int mkey;
-  short arg;
-};
-
 typedef void (*key_func)(void *obj, Keyarg *arg);
 
 typedef struct {
@@ -65,17 +39,44 @@ struct fn_reg {
   varg_T value;
 };
 
+typedef struct {
+  int key;                      // current pending operator type
+  int regname;                  // register to use for the operator
+  int motion_type;              // type of the current cursor motion
+  int motion_force;             // force motion type: 'v', 'V' or CTRL-V
+  pos_T start;                  // start of the operator
+  pos_T end;                    // end of the operator
+  pos_T cursor_start;           // cursor position before motion for "gw"
+
+  long line_count;              // number of lines from op_start to op_end
+                                // (inclusive)
+  bool is_VIsual;               // operator on Visual area
+  bool is_unused;               // op cmd rejected key
+} Oparg;
+
+struct Keyarg {
+  fn_keytbl *optbl;             /* table that set operator */
+  Oparg oap;                    /* Operator arguments */
+  pos_T start;                  /* start of the operator */
+  pos_T end;                    /* end of the operator */
+  long opcount;                 /* count before an operator */
+  int type;
+  int key;
+  int nkey;
+  int mkey;
+  short arg;
+};
+
 void input_init(void);
 void input_cleanup(void);
 void input_setup_tbl(fn_keytbl *kt);
 
 bool input_map_exists(int key);
 void set_map(char *lhs, char *rhs);
-void do_map(int key);
+void do_map(Keyarg *ca, int key);
 
 int find_command(fn_keytbl *kt, int cmdchar);
-int find_do_cmd(fn_keytbl *kt, Keyarg *ca, void *obj);
-int find_do_op(Keyarg *ca, void *obj);
+int find_do_key(fn_keytbl *kt, Keyarg *ca, void *obj);
 void input_check();
 void oper(void *, Keyarg *ca);
 void clearop(Keyarg *ca);

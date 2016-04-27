@@ -215,7 +215,7 @@ bool input_map_exists(int key)
   return key_maps[0][key];
 }
 
-void do_map(int key)
+void do_map(Keyarg *ca, int key)
 {
   log_msg("INPUT", "<<<<<<<<<<<<<<<<<<");
   for (int i = 0; i < key_maps[0][key]->len; i++) {
@@ -352,26 +352,6 @@ int find_command(fn_keytbl *kt, int cmdchar)
   return idx;
 }
 
-int find_do_cmd(fn_keytbl *kt, Keyarg *ca, void *obj)
-{
-  if (op_pending(ca)) {
-    if (ca->key == ESC) {
-      clearop(ca);
-      reg_clear_dcur();
-    }
-    return 0;
-  }
-
-  int idx = find_command(kt, ca->key);
-  if (idx >= 0) {
-    ca->arg  = kt->tbl[idx].cmd_arg;
-    ca->type = kt->tbl[idx].cmd_flags;
-    kt->tbl[idx].cmd_func(obj, ca);
-    return 1;
-  }
-  return 0;
-}
-
 void oper(void *none, Keyarg *ca)
 {
   log_msg("INPUT", "oper");
@@ -387,18 +367,20 @@ void oper(void *none, Keyarg *ca)
 static int do_op(Keyarg *ca, void *obj)
 {
   key_operators[ca->oap.key].cmd_func(obj, ca);
+  if (ca->oap.is_unused)
+    return 0;
+
   clearop(ca);
   return 1;
 }
 
-int find_do_op(Keyarg *ca, void *obj)
+static int find_do_op(Keyarg *ca, void *obj)
 {
-  if (!op_pending(ca)) return 0;
-  log_msg("INPUT", "do_op");
+  log_msg("INPUT", "find_do_op");
+
   log_msg("INPUT", "%c %c %c", ca->key, ca->oap.key, ca->nkey);
-  if (ca->type == NCH_A || ca->key == ca->nkey) {
+  if (ca->type == NCH_A || ca->key == ca->nkey)
     return do_op(ca, obj);
-  }
 
   if (ca->type == NCH_S) {
     if (ca->nkey == key_operators[ca->oap.key].nchar)
@@ -413,6 +395,7 @@ int find_do_op(Keyarg *ca, void *obj)
     else
       ca->nkey = ca->key;
   }
+  clearop(ca);
   return 0;
 }
 
@@ -427,6 +410,38 @@ void clearop(Keyarg *ca)
 bool op_pending(Keyarg *arg)
 {
   return (arg->oap.key != OP_NOP);
+}
+
+int find_do_key(fn_keytbl *kt, Keyarg *ca, void *obj)
+{
+  log_msg("INPUT", "dokey");
+  if (op_pending(ca)) {
+    if (ca->optbl == kt) {
+      int ret = find_do_op(ca, obj);
+      if (ret)
+        return ret;
+    }
+    if (ca->key == ESC) {
+      clearop(ca);
+      reg_clear_dcur();
+      return 0;
+    }
+  }
+
+  if (input_map_exists(ca->key)) {
+    do_map(ca, ca->key);
+    return 1;
+  }
+
+  int idx = find_command(kt, ca->key);
+  if (idx >= 0) {
+    ca->arg  = kt->tbl[idx].cmd_arg;
+    ca->type = kt->tbl[idx].cmd_flags;
+    ca->optbl = kt;
+    kt->tbl[idx].cmd_func(obj, ca);
+    return 1;
+  }
+  return 0;
 }
 
 fn_reg* reg_get(int ch)

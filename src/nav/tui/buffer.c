@@ -220,7 +220,6 @@ void buf_signal_filter(Buffer *buf, int count)
     return;
   int max = model_count(buf->hndl->model);
   overlay_filter(buf->ov, max, count);
-  overlay_lnum(buf->ov, buf_index(buf), model_count(buf->hndl->model));
 }
 
 void buf_refresh(Buffer *buf)
@@ -409,11 +408,7 @@ int buf_input(Buffer *buf, Keyarg *ca)
   if (!buf->plugin)
     return 0;
 
-  int ret = find_do_cmd(&key_tbl, ca, buf);
-  if (!ret)
-    ret = find_do_op(ca, buf);
-
-  return ret;
+  return find_do_key(&key_tbl, ca, buf);
 }
 
 static void buf_mv_page(Buffer *buf, Keyarg *ca)
@@ -480,8 +475,10 @@ void buf_yank(void *_b, Keyarg *ca)
     field = "fullpath";
   else if (ca->key == 'd')
     field = "dir";
-  else if (ca->key != 'y')
+  else if (ca->key != 'y') {
+    ca->oap.is_unused = true;
     return;
+  }
 
   reg_set(NUL, buf_focus_sel(buf, "fullpath"));
   reg_set('0', buf_focus_sel(buf, field));

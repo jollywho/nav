@@ -190,7 +190,6 @@ void overlay_filter(Overlay *ov, int max, bool enable)
   char szbuf[4];
   snprintf(szbuf, 4, "%d", max);
   ov->filter = strlen(szbuf);
-  log_err("OVERLAY", "filter: %d ", max);
 }
 
 void overlay_edit(Overlay *ov, char *name, char *usr, char *in)

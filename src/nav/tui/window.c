@@ -200,16 +200,11 @@ void window_input(int key, char utf8[7])
   if (win.ex)
     return ex_input(key, utf8);
 
-  if (input_map_exists(key))
-    return do_map(key);
-
   int ret = 0;
   if (window_get_focus())
     ret = buf_input(layout_buf(&win.layout), &win.ca);
   if (!ret)
-    ret = find_do_cmd(&key_tbl, &win.ca, &win);
-  if (!ret)
-    find_do_op(&win.ca, &win);
+    ret = find_do_key(&key_tbl, &win.ca, &win);
 }
 
 void window_start_override(Plugin *term)
