@@ -118,7 +118,7 @@ static int cmp_type(const void *a, const void *b, void *arg)
     s1 = sy1->key;
   if (isrecdir(l2.rec))
     s2 = "";
-  else if (sy1)
+  else if (sy2)
     s2 = sy2->key;
 
   return strcmp(s2, s1);
@@ -140,10 +140,9 @@ static void do_sort(Model *m)
     int row_type = sort_tbl[i].val;
     if ((m->sort.sort_type & row_type) == row_type) {
       srt.i = i;
-      break;
+      utarray_sort(m->lines, sort_by_type, &srt);
     }
   }
-  utarray_sort(m->lines, sort_by_type, &srt);
 }
 
 static fn_line* find_by_type(Model *m, fn_line *ln)
@@ -460,7 +459,6 @@ void model_clear_filter(Model *m)
   log_msg("MODEL", "clear filter");
   utarray_clear(m->lines);
   generate_lines(m);
-  log_msg("MODEL", "clear %d", model_count(m));
 }
 
 void model_filter_line(Model *m, int index)

@@ -194,7 +194,7 @@ void overlay_filter(Overlay *ov, int max, bool enable)
 
 void overlay_edit(Overlay *ov, char *name, char *usr, char *in)
 {
-  log_err("OVERLAY", "edit: %s ", name);
+  log_msg("OVERLAY", "edit: %s ", name);
   set_string(&ov->arg, usr);
   set_string(&ov->pipe_in, in);
   if (name)

@@ -75,5 +75,4 @@ example:
 * stronger UTF-8 support
 * parser remake for more advanced features
 * 'datatable' buffers for aggregate content
-* filters
 * command pipes
