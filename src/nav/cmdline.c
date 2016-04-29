@@ -552,6 +552,7 @@ void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
 
   if (utarray_len(cmdline->cmds) == 1) {
     Cmdstr *single = cmdline_getcmd(cmdline);
+    single->caller = caller;
     return cmd_run(single, cmdline);
   }
 
@@ -562,7 +563,6 @@ void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
   bool waspipe = false;
   Cmdstr *cmd = NULL;
   while (NEXT_CMD(cmdline, cmd)) {
-    cmd->caller = caller;
 
     char *line = &full_line[cmd->st];
     if (line < last && waspipe)
@@ -570,7 +570,7 @@ void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
     if (cmd->flag == PIPE)
       full_line[cmd->ed] = '\0';
 
-    cmd_eval(cmd, line);
+    cmd_eval(NULL, line);
     waspipe = cmd->flag == PIPE;
   }
 }
