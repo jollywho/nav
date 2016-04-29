@@ -41,11 +41,13 @@ void cmdstr_copy(void *_dst, const void *_src)
   dst->ret = src->ret;
 }
 
-void cmdret_dtor(void *_elt)
+void cmds_dtor(void *_elt)
 {
   Cmdstr *elt = (Cmdstr*)_elt;
   if (elt->ret.type == STRING)
     free(elt->ret.val.v_str);
+  if (elt->chlds)
+    utarray_free(elt->chlds);
 }
 
 void cmdstr_dtor(void *_elt)
@@ -57,7 +59,7 @@ void cmdstr_dtor(void *_elt)
 }
 
 static UT_icd list_icd = { sizeof(Token),  NULL };
-static UT_icd cmd_icd  = { sizeof(Cmdstr), NULL, NULL, cmdret_dtor };
+static UT_icd cmd_icd  = { sizeof(Cmdstr), NULL, NULL, cmds_dtor };
 static UT_icd chld_icd = { sizeof(Cmdstr), NULL, cmdstr_copy, cmdstr_dtor };
 
 int str_num(const char *str, int *tmp)
@@ -133,8 +135,6 @@ void cmdline_cleanup(Cmdline *cmdline)
     free(word->var.vval.v_string);
   while (!QUEUE_EMPTY(&cmdline->refs))
     ref_pop(&cmdline->refs);
-  Cmdstr *root = (Cmdstr*)utarray_front(cmdline->cmds);
-  utarray_free(root->chlds);
   utarray_free(cmdline->cmds);
   utarray_free(cmdline->tokens);
   utarray_free(cmdline->vars);
@@ -444,7 +444,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
 {
   char ch;
   bool seek;
-  Cmdstr cmd = {.flag = 0};
+  Cmdstr cmd = {.flag = 0, .ed = 0};
   if (word)
     cmd.st = word->start;
 
@@ -464,11 +464,11 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
     char *str = token_val(word, VAR_STRING);
 
     switch(ch = str[0]) {
-#ifdef PIPES_SUPPORTED
       case '|':
-        word = pipe_type(cmdline, word, &cmd);
+        cmd.flag = PIPE;
+        cmd.ed = word->start;
+        log_err("CMD", "pipe");
         goto breakout;
-#endif
       case '!':
         cmd.rev = 1;
         break;
@@ -533,7 +533,7 @@ void cmdline_build(Cmdline *cmdline, char *line)
 
   /* parse until empty */
   Token *word = NULL;
-  for(;;) {
+  while (1) {
     word = cmdline_parse(cmdline, word, cmdline->cmds);
     if (!word)
       break;
@@ -545,75 +545,32 @@ int cmdline_can_exec(Cmdstr *cmd, char *line)
   return !(!cmd->exec || !line || strlen(line) < 2);
 }
 
-#ifdef PIPES_SUPPORTED
-static void do_pipe(Cmdstr *lhs, Cmdstr *rhs)
-{
-  log_msg("CMDLINE", "do_pipe");
-  if ((lhs)->flag == PIPE_LEFT)
-    send_hook_msg("pipe_left", lhs->ret, rhs->ret, NULL);
-  if ((lhs)->flag == PIPE_RIGHT)
-    send_hook_msg("pipe_right", rhs->ret, lhs->ret, NULL);
-}
-
-static void exec_pipe(Cmdline *cmdline, Cmdstr *cmd, Cmdstr *prev)
-{
-  log_msg("CMDLINE", "exec_pipe");
-  List *args = token_val(&cmd->args, VAR_LIST);
-  char *arg = list_arg(args, 0, VAR_STRING);
-
-  if (!prev->ret) {
-    prev->ret = focus_plugin();
-    prev->ret_t = PLUGIN;
-  }
-
-  if (prev->ret_t == PLUGIN && cmd->ret_t == PLUGIN)
-    return do_pipe(prev, cmd);
-
-  cmd->ret = plugin_open(arg, NULL, cmdline->line);
-  log_msg("CMDLINE", "%p %d %p %d",
-      prev->ret,
-      prev->ret_t,
-      cmd->ret,
-      cmd->ret_t);
-
-  if (cmd->ret) {
-    cmd->ret_t = PLUGIN;
-    return do_pipe(prev, cmd);
-  }
-
-  int wnum;
-  if (!str_num(arg, &wnum))
-    return;
-
-  cmd->ret = plugin_from_id(wnum);
-  if (cmd->ret) {
-    cmd->ret_t = PLUGIN;
-    return do_pipe(prev, cmd);
-  }
-}
-#endif
-
 void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
 {
-  Cmdstr *cmd = NULL;
-#ifdef PIPES_SUPPORTED
-  Cmdstr *prev = NULL;
-#endif
-
   if (!cmdline->cmds)
     return;
 
+  if (utarray_len(cmdline->cmds) == 1) {
+    Cmdstr *single = cmdline_getcmd(cmdline);
+    return cmd_run(single, cmdline);
+  }
+
+  char *full_line = cmdline->line;
+  int len = strlen(full_line);
+  char *last = &full_line[len+1];
+
+  bool waspipe = false;
+  Cmdstr *cmd = NULL;
   while (NEXT_CMD(cmdline, cmd)) {
-    if (cmd->flag & (PIPE_LEFT|PIPE_RIGHT))
-      continue;
-
     cmd->caller = caller;
-    cmd_run(cmd, cmdline);
 
-#ifdef PIPES_SUPPORTED
-    prev = (Cmdstr*)utarray_prev(cmdline->cmds, cmd);
-    if (prev && (prev->flag & (PIPE_LEFT|PIPE_RIGHT)))
-      exec_pipe(cmdline, cmd, prev);
-#endif
+    char *line = &full_line[cmd->st];
+    if (line < last && waspipe)
+      line++;
+    if (cmd->flag == PIPE)
+      full_line[cmd->ed] = '\0';
+
+    cmd_eval(cmd, line);
+    waspipe = cmd->flag == PIPE;
   }
 }

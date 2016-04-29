@@ -416,15 +416,15 @@ int find_do_key(fn_keytbl *kt, Keyarg *ca, void *obj)
 {
   log_msg("INPUT", "dokey");
   if (op_pending(ca)) {
-    if (ca->optbl == kt) {
-      int ret = find_do_op(ca, obj);
-      if (ret)
-        return ret;
-    }
     if (ca->key == ESC) {
       clearop(ca);
       reg_clear_dcur();
       return 0;
+    }
+    if (ca->optbl == kt) {
+      int ret = find_do_op(ca, obj);
+      if (ret)
+        return ret;
     }
   }
 
