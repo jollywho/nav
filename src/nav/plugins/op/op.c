@@ -146,13 +146,6 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
   if (!grp->opgrp)
     return;
 
-  //TODO: change expansion symbols:
-  //%@        -> all records;  default field
-  //%@:field  -> all records;  field
-  //%1        -> first record; default field
-  //%1:field  -> first record; field
-  //%#        -> count of records
-  //reserve $0-9,$@,$# from 'let'
   set_fldvar(grp, "prev", expand_field);
   set_fldvar(grp, "next", expand_field);
 

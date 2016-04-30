@@ -83,6 +83,7 @@ Token* cmdline_tokindex(Cmdline *cmdline, int idx);
 Token* cmdline_last(Cmdline *cmdline);
 char* cmdline_line_from(Cmdline *cmdline, int idx);
 char* cmdline_line_after(Cmdline *cmdline, int idx);
+char* cmdline_line_tok(Cmdline *cmdline, Token *word);
 Cmdstr* cmdline_getcmd(Cmdline *cmdline);
 List* cmdline_lst(Cmdline *cmd);
 int cmdline_can_exec(Cmdstr *cmd, char *line);
@@ -92,5 +93,6 @@ void* list_arg(List *lst, int argc, char v_type);
 void* tok_arg(List *lst, int argc);
 int str_num(const char *, int *);
 int str_tfmt(const char *str, char *fmt, void *tmp);
+Token* access_container(Token *token, List *args, int st, int ed);
 
 #endif

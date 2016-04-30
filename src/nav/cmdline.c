@@ -73,6 +73,27 @@ int str_tfmt(const char *str, char *fmt, void *tmp)
   return sscanf(str, fmt, tmp);
 }
 
+Token* access_container(Token *token, List *args, int st, int ed)
+{
+  log_msg("CMDLINE", "access_container");
+  Token *get = token;
+  for (int i = st; i < ed; i++) {
+    List *accessor = list_arg(args, i, VAR_LIST);
+    if (!accessor || utarray_len(accessor->items) > 1)
+      return NULL;
+
+    int index = -1;
+    if (!str_num(list_arg(accessor, 0, VAR_STRING), &index))
+      return NULL;
+
+    List *ary = token_val(get, VAR_LIST);
+    if (!ary)
+      return NULL;
+    get = tok_arg(ary, index);
+  }
+  return get;
+}
+
 void* token_val(Token *token, char v_type)
 {
   if (!token)
@@ -399,6 +420,11 @@ char* cmdline_line_after(Cmdline *cmdline, int idx)
   return &cmdline->line[word->end];
 }
 
+char* cmdline_line_tok(Cmdline *cmdline, Token *word)
+{
+  return &cmdline->line[word->end];
+}
+
 static void pop(QUEUE *stack)
 {
   Token token = stack_pop(stack);
@@ -420,8 +446,9 @@ static void pop(QUEUE *stack)
   }
 }
 
-static void push(Token token, QUEUE *stack)
+static void push(Token token, QUEUE *stack, int st)
 {
+  token.start = st;
   stack_push(stack, token);
 }
 
@@ -433,7 +460,7 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
 
   char *str = token_val(next, VAR_STRING);
   if (str && str[0] == ':') {
-    push(pair_new(cmdline), stack);
+    push(pair_new(cmdline), stack, token->start);
     return true;
   }
 
@@ -467,7 +494,6 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
       case '|':
         cmd.flag = PIPE;
         cmd.ed = word->start;
-        log_err("CMD", "pipe");
         goto breakout;
       case '!':
         cmd.rev = 1;
@@ -494,7 +520,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         pop(stack);
         break;
       case '[':
-        push(list_new(cmdline), stack);
+        push(list_new(cmdline), stack, word->start);
         head.start = word->start;
         break;
       case '%':
@@ -506,7 +532,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
       default:
         /*FALLTHROUGH*/
         seek = seek_ahead(cmdline, stack, word);
-        push(*word, stack);
+        push(*word, stack, word->start);
         if (!seek)
           pop(stack);
     }
@@ -533,11 +559,9 @@ void cmdline_build(Cmdline *cmdline, char *line)
 
   /* parse until empty */
   Token *word = NULL;
-  while (1) {
+  do
     word = cmdline_parse(cmdline, word, cmdline->cmds);
-    if (!word)
-      break;
-  }
+  while (word);
 }
 
 int cmdline_can_exec(Cmdstr *cmd, char *line)

@@ -297,19 +297,54 @@ static Cmdret edit_syntax(List *args)
 static Cmdret edit_variable(List *args, Cmdarg *ca)
 {
   log_msg("CONFIG", "edit_variable");
+  log_err("CONFIG", "%s", ca->cmdline->line);
+
+  /* statement needs valid name */
   Token *lhs = tok_arg(args, 1);
-  Token *oper = tok_arg(args, 2);
-  Token *rhs = tok_arg(args, 3);
-  if (!lhs || !oper || !rhs
-      || lhs->var.v_type != VAR_STRING
-      || rhs->var.v_type != VAR_STRING)
+  char *key = list_arg(args, 1, VAR_STRING);
+  if (!lhs || !key)
     return NORET;
-  char *key = token_val(lhs, VAR_STRING);
-  char *str = cmdline_line_from(ca->cmdline, 3);
+
+  /* find where '=' delimits statement */
+  int delm = -1;
+  for (int i = 0; i < utarray_len(args->items); i++) {
+    char *op = list_arg(args, i, VAR_STRING);
+    if (op && !strcmp(op, "=")) {
+      delm = i+1;
+      break;
+    }
+  }
+  if (delm == -1 || delm >= utarray_len(args->items))
+    return NORET;
+
+  char *expr = cmdline_line_from(ca->cmdline, delm);
   fn_var var = {
     .key = strdup(key),
-    .var = strdup(str),
+    .var = strdup(expr),
   };
+
+  /* when delm isn't 3 the key should be expanded */
+  if (delm != 3) {
+    char *pvar = opt_var(key, cmd_callstack());
+    if (!pvar)
+      return NORET;
+
+    Cmdline cmd;
+    cmdline_build(&cmd, pvar);
+    Token *get = access_container(cmdline_tokindex(&cmd, 0), args, 2, delm - 1);
+    if (!get)
+      return NORET;
+
+    int len = strlen(pvar) - (get->end - get->start) + strlen(expr);
+    char *newexpr = malloc(sizeof(char*)*len);
+    newexpr[0] = '\0';
+    strncat(newexpr, pvar, get->start);
+    strcat(newexpr, expr);
+    strcat(newexpr, &pvar[get->end]);
+    SWAP_ALLOC_PTR(var.var, newexpr);
+    cmdline_cleanup(&cmd);
+  }
+
   fn_func *blk = cmd_callstack();
   if (!ca->flags)
     blk = NULL;

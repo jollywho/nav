@@ -251,8 +251,9 @@ char* opt_var(const char *name, fn_func *blk)
     return "";
   if (name[0] == '%')
     return fld_var(name+1);
+  if (name[0] == '$')
+    name++;
 
-  name++;
   fn_var *var = NULL;
   if (blk)
     HASH_FIND_STR(blk->locals, name, var);
