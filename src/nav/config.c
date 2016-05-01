@@ -327,20 +327,23 @@ static Cmdret edit_variable(List *args, Cmdarg *ca)
   if (delm != 3) {
     char *pvar = opt_var(key, cmd_callstack());
     if (!pvar)
-      return NORET;
+      goto cleanup;
 
     Cmdline cmd;
     cmdline_build(&cmd, pvar);
     Token *get = access_container(cmdline_tokindex(&cmd, 0), args, 2, delm - 1);
-    if (!get)
-      return NORET;
+    if (!get) {
+      cmdline_cleanup(&cmd);
+      goto cleanup;
+    }
 
+    int pad = (get->end - get->start) < 2 ? 0 : 1;
     int len = strlen(pvar) - (get->end - get->start) + strlen(expr);
     char *newexpr = malloc(sizeof(char*)*len);
     newexpr[0] = '\0';
     strncat(newexpr, pvar, get->start);
     strcat(newexpr, expr);
-    strcat(newexpr, &pvar[get->end]);
+    strcat(newexpr, &pvar[get->end + pad]);
     SWAP_ALLOC_PTR(var.var, newexpr);
     cmdline_cleanup(&cmd);
   }
@@ -349,6 +352,11 @@ static Cmdret edit_variable(List *args, Cmdarg *ca)
   if (!ca->flags)
     blk = NULL;
   set_var(&var, blk);
+
+  return NORET;
+cleanup:
+  free(var.key);
+  free(var.var);
   return NORET;
 }
 

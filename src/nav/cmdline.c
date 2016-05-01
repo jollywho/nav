@@ -221,11 +221,11 @@ static Token stack_pop(QUEUE *stack)
   return token;
 }
 
-static Token stack_head(QUEUE *stack)
+static Token* stack_head(QUEUE *stack)
 {
   QUEUE *h = QUEUE_HEAD(stack);
   queue_item *item = queue_node_data(h);
-  Token token = item->item;
+  Token *token = &item->item;
   return token;
 }
 
@@ -428,11 +428,11 @@ char* cmdline_line_tok(Cmdline *cmdline, Token *word)
 static void pop(QUEUE *stack)
 {
   Token token = stack_pop(stack);
-  Token parent = stack_head(stack);
+  Token *parent = stack_head(stack);
 
-  if (parent.var.v_type == VAR_LIST) {
-    utarray_push_back(parent.var.vval.v_list->items, &token);
-    parent.end = token.end;
+  if (parent->var.v_type == VAR_LIST) {
+    utarray_push_back(parent->var.vval.v_list->items, &token);
+    parent->end = token.end;
   }
   else if (stack_prevprev(stack).var.v_type == VAR_PAIR) {
     Token key = stack_pop(stack);
@@ -441,8 +441,8 @@ static void pop(QUEUE *stack)
     p.var.vval.v_pair->value = &token;
 
     stack_pop(stack);
-    Token pt = stack_head(stack);
-    utarray_push_back(pt.var.vval.v_list->items, &p);
+    Token *pt = stack_head(stack);
+    utarray_push_back(pt->var.vval.v_list->items, &p);
   }
 }
 
@@ -480,7 +480,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
 
   cmd.args = list_new(cmdline);
   stack_push(stack, cmd.args);
-  Token head = stack_head(stack);
+  Token *head = stack_head(stack);
   utarray_new(cmd.chlds, &chld_icd);
 
   check_if_exec(cmdline, &cmd, word);
@@ -517,11 +517,12 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
       case ',':
         break;
       case ']':
+        head->end = word->end;
         pop(stack);
         break;
       case '[':
         push(list_new(cmdline), stack, word->start);
-        head.start = word->start;
+        head->start = word->start;
         break;
       case '%':
       case '$':
