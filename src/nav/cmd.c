@@ -359,6 +359,41 @@ static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
   cmd_do(caller->caller, base);
 }
 
+char* cmd_elem_substitute(char *expr, char *var, List *args, int st, int ed)
+{
+  Cmdline cmd;
+  cmdline_build(&cmd, var);
+  Token *get = access_container(cmdline_tokindex(&cmd, 0), args, st, ed);
+  if (!get) {
+    cmdline_cleanup(&cmd);
+    return NULL;
+  }
+
+  int pad = (get->end - get->start) < 2 ? 0 : 1;
+  int len = strlen(var) - (get->end - get->start) + strlen(expr);
+  char *newexpr = malloc(sizeof(char*)*len);
+  newexpr[0] = '\0';
+  strncat(newexpr, var, get->start);
+  strcat(newexpr, expr);
+  strcat(newexpr, &var[get->end + pad]);
+  cmdline_cleanup(&cmd);
+  return newexpr;
+}
+
+static void cmd_arrys(Cmdstr *caller, Cmdline *cmdline)
+{
+  //iterate arrys
+  //  cur = entry
+  //  seek until current end doesnt align with next's start
+  //
+  //  find token in cmdstr behind entry
+  //  if token is string and also variable, dont expand
+  //
+  //  expand:
+  //  var = string from line between cur and entry
+  //  cmd_elem_substitute(line, var, cmdline_lst, cur->st, entry->ed);
+}
+
 static char* op_arg(List *args, int argc, int st, char *line)
 {
   Token *tok = tok_arg(args, argc);
@@ -787,6 +822,9 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
 
     if (utarray_len(cmdline->vars) > 0)
       return cmd_vars(cmdstr, cmdline);
+
+    if (utarray_len(cmdline->arry) > 0)
+      return cmd_arrys(cmdstr, cmdline);
   }
 
   if (cmdline_can_exec(cmdstr, word))

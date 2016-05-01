@@ -67,6 +67,7 @@ struct Cmdline {
   UT_array *cmds;      //list of cmdstr
   UT_array *tokens;    //list of tokens
   UT_array *vars;      //list of vars
+  UT_array *arry;      //list of arrays
   QUEUE refs;          //queue of token refs to avoid recursive cleanup
   char *line;          //the raw string being built upon
   int lvl;             //subexpression level

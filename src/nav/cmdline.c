@@ -159,6 +159,7 @@ void cmdline_cleanup(Cmdline *cmdline)
   utarray_free(cmdline->cmds);
   utarray_free(cmdline->tokens);
   utarray_free(cmdline->vars);
+  utarray_free(cmdline->arry);
   free(cmdline->line);
 }
 
@@ -231,8 +232,7 @@ static Token* stack_head(QUEUE *stack)
 
 static Token pair_new(Cmdline *cmdline)
 {
-  Token token;
-  memset(&token, 0, sizeof(Token));
+  Token token = {0};
   Pair *p = malloc(sizeof(Pair));
   ref_push(&cmdline->refs, p, VAR_PAIR);
   token.var.v_type = VAR_PAIR;
@@ -242,8 +242,7 @@ static Token pair_new(Cmdline *cmdline)
 
 static Token list_new(Cmdline *cmdline)
 {
-  Token token;
-  memset(&token, 0, sizeof(Token));
+  Token token = {0};
   List *l = malloc(sizeof(List));
   ref_push(&cmdline->refs, l, VAR_LIST);
   token.var.v_type = VAR_LIST;
@@ -467,6 +466,17 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
   return false;
 }
 
+static void push_arry_cont(Cmdline *cmdline, Token *token, int idx)
+{
+  Token *next = (Token*)utarray_eltptr(cmdline->tokens, idx + 1);
+  if (!next)
+    return;
+
+  char *str = token_val(next, VAR_STRING);
+  if (str && str[0] == '[')
+    utarray_push_back(cmdline->arry, token);
+}
+
 static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
 {
   char ch;
@@ -518,6 +528,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         break;
       case ']':
         head->end = word->end;
+        push_arry_cont(cmdline, head, idx);
         pop(stack);
         break;
       case '[':
@@ -555,6 +566,7 @@ void cmdline_build(Cmdline *cmdline, char *line)
   utarray_new(cmdline->cmds,   &cmd_icd);
   utarray_new(cmdline->tokens, &list_icd);
   utarray_new(cmdline->vars,   &list_icd);
+  utarray_new(cmdline->arry,   &list_icd);
 
   cmdline_tokenize(cmdline);
 

@@ -42,6 +42,7 @@ void cmd_flush();
 void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline);
 Cmd_T* cmd_find(const char *);
 void cmd_list(List *args);
+char* cmd_elem_substitute(char *, char *, List *, int, int);
 void cmd_eval(Cmdstr *caller, char *line);
 fn_func* cmd_callstack();
 

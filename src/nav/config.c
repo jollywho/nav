@@ -328,24 +328,10 @@ static Cmdret edit_variable(List *args, Cmdarg *ca)
     char *pvar = opt_var(key, cmd_callstack());
     if (!pvar)
       goto cleanup;
-
-    Cmdline cmd;
-    cmdline_build(&cmd, pvar);
-    Token *get = access_container(cmdline_tokindex(&cmd, 0), args, 2, delm - 1);
-    if (!get) {
-      cmdline_cleanup(&cmd);
+    char *newexpr = cmd_elem_substitute(expr, pvar, args, 2, delm -1);
+    if (!newexpr)
       goto cleanup;
-    }
-
-    int pad = (get->end - get->start) < 2 ? 0 : 1;
-    int len = strlen(pvar) - (get->end - get->start) + strlen(expr);
-    char *newexpr = malloc(sizeof(char*)*len);
-    newexpr[0] = '\0';
-    strncat(newexpr, pvar, get->start);
-    strcat(newexpr, expr);
-    strcat(newexpr, &pvar[get->end + pad]);
     SWAP_ALLOC_PTR(var.var, newexpr);
-    cmdline_cleanup(&cmd);
   }
 
   fn_func *blk = cmd_callstack();
