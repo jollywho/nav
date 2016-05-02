@@ -47,7 +47,7 @@ struct Cmdret {
 
 struct Cmdstr {
   int flag;            /* pipe flag types */
-  char rev;            /* reverse flag TODO :merge with pipe flags */
+  bool rev;            /* reverse flag */
   QUEUE stack;
   Token args;
   int exec;            //exec flag
@@ -67,10 +67,10 @@ struct Cmdline {
   UT_array *cmds;      //list of cmdstr
   UT_array *tokens;    //list of tokens
   UT_array *vars;      //list of vars
-  UT_array *arry;      //list of arrays
   QUEUE refs;          //queue of token refs to avoid recursive cleanup
   char *line;          //the raw string being built upon
   int lvl;             //subexpression level
+  bool ary;
 };
 
 void cmdline_build(Cmdline *cmdline, char *line);
@@ -94,6 +94,6 @@ void* list_arg(List *lst, int argc, char v_type);
 void* tok_arg(List *lst, int argc);
 int str_num(const char *, int *);
 int str_tfmt(const char *str, char *fmt, void *tmp);
-Token* access_container(Token *token, List *args, int st, int ed);
+Token* access_container(Token *token, List *args);
 
 #endif

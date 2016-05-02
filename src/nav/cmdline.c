@@ -73,15 +73,16 @@ int str_tfmt(const char *str, char *fmt, void *tmp)
   return sscanf(str, fmt, tmp);
 }
 
-Token* access_container(Token *token, List *args, int st, int ed)
+Token* access_container(Token *token, List *args)
 {
   log_msg("CMDLINE", "access_container");
   Token *get = token;
-  for (int i = st; i < ed; i++) {
+  for (int i = 1; i < utarray_len(args->items); i++) {
     List *accessor = list_arg(args, i, VAR_LIST);
     if (!accessor || utarray_len(accessor->items) > 1)
       return NULL;
 
+    log_msg("CMDLINE", "%p", accessor);
     int index = -1;
     if (!str_num(list_arg(accessor, 0, VAR_STRING), &index))
       return NULL;
@@ -159,7 +160,6 @@ void cmdline_cleanup(Cmdline *cmdline)
   utarray_free(cmdline->cmds);
   utarray_free(cmdline->tokens);
   utarray_free(cmdline->vars);
-  utarray_free(cmdline->arry);
   free(cmdline->line);
 }
 
@@ -466,15 +466,15 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
   return false;
 }
 
-static void push_arry_cont(Cmdline *cmdline, Token *token, int idx)
+static void push_arry_cont(Cmdline *cmdline, int idx)
 {
   Token *next = (Token*)utarray_eltptr(cmdline->tokens, idx + 1);
   if (!next)
     return;
 
   char *str = token_val(next, VAR_STRING);
-  if (str && str[0] == '[')
-    utarray_push_back(cmdline->arry, token);
+  if (str[0] == '[')
+    cmdline->ary = true;
 }
 
 static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
@@ -528,7 +528,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         break;
       case ']':
         head->end = word->end;
-        push_arry_cont(cmdline, head, idx);
+        push_arry_cont(cmdline, idx);
         pop(stack);
         break;
       case '[':
@@ -562,11 +562,11 @@ void cmdline_build(Cmdline *cmdline, char *line)
   log_msg("CMDSTR", "cmdline_build");
   cmdline->lvl = 0;
   cmdline->line = strdup(line);
+  cmdline->ary = false;
   QUEUE_INIT(&cmdline->refs);
   utarray_new(cmdline->cmds,   &cmd_icd);
   utarray_new(cmdline->tokens, &list_icd);
   utarray_new(cmdline->vars,   &list_icd);
-  utarray_new(cmdline->arry,   &list_icd);
 
   cmdline_tokenize(cmdline);
 

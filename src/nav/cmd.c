@@ -359,39 +359,80 @@ static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
   cmd_do(caller->caller, base);
 }
 
-char* cmd_elem_substitute(char *expr, char *var, List *args, int st, int ed)
+char* cmd_elem_substitute(char *substr, char *var)
 {
   Cmdline cmd;
   cmdline_build(&cmd, var);
-  Token *get = access_container(cmdline_tokindex(&cmd, 0), args, st, ed);
+  log_msg("cmd", "elem %s", cmd.line);
+  List *args = cmdline_lst(&cmd);
+  Token *get = access_container(cmdline_tokindex(&cmd, 0), args);
   if (!get) {
     cmdline_cleanup(&cmd);
     return NULL;
   }
 
   int pad = (get->end - get->start) < 2 ? 0 : 1;
-  int len = strlen(var) - (get->end - get->start) + strlen(expr);
+  int len = strlen(var) - (get->end - get->start) + strlen(substr);
   char *newexpr = malloc(sizeof(char*)*len);
   newexpr[0] = '\0';
   strncat(newexpr, var, get->start);
-  strcat(newexpr, expr);
+  strcat(newexpr, substr);
   strcat(newexpr, &var[get->end + pad]);
   cmdline_cleanup(&cmd);
   return newexpr;
 }
 
-static void cmd_arrys(Cmdstr *caller, Cmdline *cmdline)
+char* cmd_elem_expand(char *line, char *var, int st, int ed)
 {
-  //iterate arrys
-  //  cur = entry
-  //  seek until current end doesnt align with next's start
-  //
-  //  find token in cmdstr behind entry
-  //  if token is string and also variable, dont expand
-  //
-  //  expand:
-  //  var = string from line between cur and entry
-  //  cmd_elem_substitute(line, var, cmdline_lst, cur->st, entry->ed);
+  Cmdline cmd;
+  cmdline_build(&cmd, var);
+  List *args = cmdline_lst(&cmd);
+  Token *get = access_container(cmdline_tokindex(&cmd, 0), args);
+  if (!get) {
+    cmdline_cleanup(&cmd);
+    return NULL;
+  }
+  int len = (ed - st) + (get->end - get->start);
+  char *newexpr = malloc(sizeof(char*)*len);
+  newexpr[0] = '\0';
+  strncat(newexpr, line, st);
+  strncat(newexpr, &var[get->start], get->end - 1);
+  strcat(newexpr, &line[ed]);
+  cmdline_cleanup(&cmd);
+  return newexpr;
+}
+
+static void cmd_arrys(Cmdstr *caller, Cmdline *cmdline, List *args)
+{
+  Token *t1 = NULL;
+  Token *t2 = NULL;
+  for (int i = 0; i < utarray_len(args->items); i++) {
+    Token *tmp = (Token*)utarray_eltptr(args->items, i);
+
+    bool is_list = tmp->var.v_type == VAR_LIST;
+
+    if (t1 && t2 && !is_list)
+      break;
+
+    if (is_list && !t1)
+      t1 = tmp;
+    else if (is_list)
+      t2 = tmp;
+  }
+  //TODO:
+  //find token in cmdstr behind entry
+  //if token is string and also variable, dont expand
+
+  t2->end++;
+  int len = (t2->end - t1->start);
+  char var[len];
+  strncpy(var, &cmdline->line[t1->start], len);
+  var[len] = '\0';
+
+  char *newexpr = cmd_elem_expand(cmdline->line, var, t1->start, t2->end);
+  log_err("CMD", "arys %s", newexpr);
+  cmd_do(caller->caller, newexpr);
+  free(newexpr);
 }
 
 static char* op_arg(List *args, int argc, int st, char *line)
@@ -823,8 +864,8 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
     if (utarray_len(cmdline->vars) > 0)
       return cmd_vars(cmdstr, cmdline);
 
-    if (utarray_len(cmdline->arry) > 0)
-      return cmd_arrys(cmdstr, cmdline);
+    if (cmdline->ary)
+      return cmd_arrys(cmdstr, cmdline, args);
   }
 
   if (cmdline_can_exec(cmdstr, word))
