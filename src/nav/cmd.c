@@ -395,8 +395,11 @@ char* cmd_elem_expand(char *line, char *var, int st, int ed)
   int len = (ed - st) + (get->end - get->start);
   char *newexpr = malloc(sizeof(char*)*len);
   newexpr[0] = '\0';
-  if (var[get->start] == '[')
+  if (var[get->start] == '[') {
     get->end++;
+    if (var[get->end] == ']')
+      get->end++;
+  }
   strncat(newexpr, line, st);
   strncat(newexpr, &var[get->start], (get->end - get->start));
   strcat(newexpr, &line[ed]);
@@ -433,6 +436,10 @@ static void cmd_arrys(Cmdstr *caller, Cmdline *cmdline, List *args)
 
   char *newexpr = cmd_elem_expand(cmdline->line, var, t1->start, t2->end);
   log_err("CMD", "arys %s", newexpr);
+  if (!newexpr) {
+    nv_err("parse error: index not found");
+    return;
+  }
   cmd_do(caller->caller, newexpr);
   free(newexpr);
 }
