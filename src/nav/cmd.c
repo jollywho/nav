@@ -395,8 +395,10 @@ char* cmd_elem_expand(char *line, char *var, int st, int ed)
   int len = (ed - st) + (get->end - get->start);
   char *newexpr = malloc(sizeof(char*)*len);
   newexpr[0] = '\0';
+  if (var[get->start] == '[')
+    get->end++;
   strncat(newexpr, line, st);
-  strncat(newexpr, &var[get->start], get->end - 1);
+  strncat(newexpr, &var[get->start], (get->end - get->start));
   strcat(newexpr, &line[ed]);
   cmdline_cleanup(&cmd);
   return newexpr;
