@@ -387,7 +387,6 @@ char* cmd_elem_expand(char *line, char *var, int st, int ed)
   Cmdline cmd;
   cmdline_build(&cmd, var);
   List *args = cmdline_lst(&cmd);
-  log_err("CMD", "var %s", var);
   Token *get = access_container(cmdline_tokindex(&cmd, 0), args);
   if (!get) {
     cmdline_cleanup(&cmd);
@@ -435,7 +434,7 @@ static void cmd_arrys(Cmdstr *caller, Cmdline *cmdline, List *args)
   var[len] = '\0';
 
   char *newexpr = cmd_elem_expand(cmdline->line, var, t1->start, t2->end);
-  log_err("CMD", "arys %s", newexpr);
+  log_msg("CMD", "arys %s", newexpr);
   if (!newexpr) {
     nv_err("parse error: index not found");
     return;

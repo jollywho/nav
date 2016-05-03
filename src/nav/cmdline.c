@@ -204,12 +204,12 @@ static queue_item *queue_node_data(QUEUE *queue)
   return QUEUE_DATA(queue, queue_item, node);
 }
 
-static Token stack_prevprev(QUEUE *stack)
+static Token* stack_prevprev(QUEUE *stack)
 {
   QUEUE *p = QUEUE_PREV(stack);
   p = QUEUE_PREV(p);
   queue_item *item = queue_node_data(p);
-  return item->item;
+  return &item->item;
 }
 
 static Token stack_pop(QUEUE *stack)
@@ -226,8 +226,7 @@ static Token* stack_head(QUEUE *stack)
 {
   QUEUE *h = QUEUE_HEAD(stack);
   queue_item *item = queue_node_data(h);
-  Token *token = &item->item;
-  return token;
+  return &item->item;
 }
 
 static Token pair_new(Cmdline *cmdline)
@@ -433,11 +432,11 @@ static void pop(QUEUE *stack)
     utarray_push_back(parent->var.vval.v_list->items, &token);
     parent->end = token.end;
   }
-  else if (stack_prevprev(stack).var.v_type == VAR_PAIR) {
+  else if (stack_prevprev(stack)->var.v_type == VAR_PAIR) {
     Token key = stack_pop(stack);
-    Token p = stack_prevprev(stack);
-    p.var.vval.v_pair->key = &key;
-    p.var.vval.v_pair->value = &token;
+    Token *p = stack_prevprev(stack);
+    p->var.vval.v_pair->key = &key;
+    p->var.vval.v_pair->value = &token;
 
     stack_pop(stack);
     Token *pt = stack_head(stack);
@@ -477,6 +476,14 @@ static void push_arry_cont(Cmdline *cmdline, int idx)
     cmdline->ary = true;
 }
 
+static bool valid_arry(Cmdline *cmdline, QUEUE *stack, Token *headref)
+{
+  Token *head = stack_head(stack);
+  bool valid = (head->var.v_type == VAR_LIST && head != headref);
+  cmdline->err += !valid;
+  return valid;
+}
+
 static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
 {
   char ch;
@@ -490,7 +497,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
 
   cmd.args = list_new(cmdline);
   stack_push(stack, cmd.args);
-  Token *head = stack_head(stack);
+  Token *headref = stack_head(stack);
   utarray_new(cmd.chlds, &chld_icd);
 
   check_if_exec(cmdline, &cmd, word);
@@ -527,13 +534,15 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
       case ',':
         break;
       case ']':
+        if (!valid_arry(cmdline, stack, headref))
+          break;
         stack_head(stack)->end = word->end;
         push_arry_cont(cmdline, idx);
         pop(stack);
         break;
       case '[':
         push(list_new(cmdline), stack, word->start);
-        head->start = word->start;
+        stack_head(stack)->start = word->start;
         break;
       case '%':
       case '$':
@@ -563,6 +572,7 @@ void cmdline_build(Cmdline *cmdline, char *line)
   cmdline->lvl = 0;
   cmdline->line = strdup(line);
   cmdline->ary = false;
+  cmdline->err = false;
   QUEUE_INIT(&cmdline->refs);
   utarray_new(cmdline->cmds,   &cmd_icd);
   utarray_new(cmdline->tokens, &list_icd);
@@ -584,7 +594,7 @@ int cmdline_can_exec(Cmdstr *cmd, char *line)
 
 void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
 {
-  if (!cmdline->cmds)
+  if (!cmdline->cmds || cmdline->err)
     return;
 
   if (utarray_len(cmdline->cmds) == 1) {

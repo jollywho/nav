@@ -71,6 +71,7 @@ struct Cmdline {
   char *line;          //the raw string being built upon
   int lvl;             //subexpression level
   bool ary;
+  bool err;
 };
 
 void cmdline_build(Cmdline *cmdline, char *line);
