@@ -527,7 +527,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
       case ',':
         break;
       case ']':
-        head->end = word->end;
+        stack_head(stack)->end = word->end;
         push_arry_cont(cmdline, idx);
         pop(stack);
         break;

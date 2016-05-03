@@ -387,6 +387,7 @@ char* cmd_elem_expand(char *line, char *var, int st, int ed)
   Cmdline cmd;
   cmdline_build(&cmd, var);
   List *args = cmdline_lst(&cmd);
+  log_err("CMD", "var %s", var);
   Token *get = access_container(cmdline_tokindex(&cmd, 0), args);
   if (!get) {
     cmdline_cleanup(&cmd);
@@ -395,13 +396,8 @@ char* cmd_elem_expand(char *line, char *var, int st, int ed)
   int len = (ed - st) + (get->end - get->start);
   char *newexpr = malloc(sizeof(char*)*len);
   newexpr[0] = '\0';
-  if (var[get->start] == '[') {
-    get->end++;
-    if (var[get->end] == ']')
-      get->end++;
-  }
   strncat(newexpr, line, st);
-  strncat(newexpr, &var[get->start], (get->end - get->start));
+  strncat(newexpr, &var[get->start], get->end - get->start);
   strcat(newexpr, &line[ed]);
   cmdline_cleanup(&cmd);
   return newexpr;
@@ -424,11 +420,15 @@ static void cmd_arrys(Cmdstr *caller, Cmdline *cmdline, List *args)
     else if (is_list)
       t2 = tmp;
   }
+  if (!t1 || !t2) {
+    nv_err("parse error: malformed sequence");
+    return;
+  }
+
   //TODO:
   //find token in cmdstr behind entry
   //if token is string and also variable, dont expand
 
-  t2->end++;
   int len = (t2->end - t1->start);
   char var[len];
   strncpy(var, &cmdline->line[t1->start], len);
