@@ -67,10 +67,10 @@ struct Cmdline {
   UT_array *cmds;      //list of cmdstr
   UT_array *tokens;    //list of tokens
   UT_array *vars;      //list of vars
+  UT_array *arys;      //list of arys
   QUEUE refs;          //queue of token refs to avoid recursive cleanup
   char *line;          //the raw string being built upon
   int lvl;             //subexpression level
-  bool ary;
   bool err;
 };
 
@@ -95,6 +95,8 @@ void* list_arg(List *lst, int argc, char v_type);
 void* tok_arg(List *lst, int argc);
 int str_num(const char *, int *);
 int str_tfmt(const char *str, char *fmt, void *tmp);
-Token* access_container(Token *token, List *args);
+Token* container_elem(Token *ary, List *args, int idx, int n);
+char* container_str(char *line, Token *elem);
+char* repl_elem(char *line, char *expr, List *args, int fst, int lst);
 
 #endif

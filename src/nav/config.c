@@ -328,7 +328,8 @@ static Cmdret edit_variable(List *args, Cmdarg *ca)
     char *pvar = opt_var(key, cmd_callstack());
     if (!pvar)
       goto cleanup;
-    char *newexpr = cmd_elem_substitute(expr, pvar);
+
+    char *newexpr = repl_elem(pvar, expr, args, 2, delm - 1);
     if (!newexpr)
       goto cleanup;
     SWAP_ALLOC_PTR(var.var, newexpr);

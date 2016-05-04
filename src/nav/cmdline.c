@@ -29,9 +29,6 @@ typedef struct {
 
 static void ref_pop(QUEUE *refs);
 
-#define NEXT_CMD(cl,c) \
-  (c = (Cmdstr*)utarray_next(cl->cmds, c))
-
 void cmdstr_copy(void *_dst, const void *_src)
 {
   Cmdstr *dst = (Cmdstr*)_dst, *src = (Cmdstr*)_src;
@@ -73,26 +70,57 @@ int str_tfmt(const char *str, char *fmt, void *tmp)
   return sscanf(str, fmt, tmp);
 }
 
-Token* access_container(Token *token, List *args)
+Token* container_elem(Token *ary, List *args, int fst, int lst)
 {
   log_msg("CMDLINE", "access_container");
-  Token *get = token;
-  for (int i = 1; i < utarray_len(args->items); i++) {
+  Token *get = ary;
+  for (int i = fst; i < lst; i++) {
     List *accessor = list_arg(args, i, VAR_LIST);
     if (!accessor || utarray_len(accessor->items) > 1)
       return NULL;
 
-    log_msg("CMDLINE", "%p", accessor);
     int index = -1;
     if (!str_num(list_arg(accessor, 0, VAR_STRING), &index))
       return NULL;
 
-    List *ary = token_val(get, VAR_LIST);
-    if (!ary)
+    List *ret = token_val(get, VAR_LIST);
+    if (!ret)
       return NULL;
-    get = tok_arg(ary, index);
+    get = tok_arg(ret, index);
   }
   return get;
+}
+
+char* container_str(char *line, Token *elem)
+{
+  log_msg("CMDLINE", "elem %d %d", elem->start, elem->end);
+  int len = (elem->end - elem->start);
+  char *newexpr = malloc(sizeof(char*)*len);
+  strncpy(newexpr, &line[elem->start], len);
+  newexpr[len] = '\0';
+  return newexpr;
+}
+
+char* repl_elem(char *line, char *expr, List *args, int fst, int lst)
+{
+  Cmdline cmd;
+  cmdline_build(&cmd, line);
+  Token *ary = tok_arg(cmdline_lst(&cmd), 0);
+  log_msg("CMDLINE", "line %s", cmd.line);
+  Token *elem = container_elem(ary, args, fst, lst);
+  if (!elem) {
+    cmdline_cleanup(&cmd);
+    return NULL;
+  }
+
+  int len = strlen(line) - (elem->end - elem->start) + strlen(expr);
+  char *newexpr = malloc(sizeof(char*)*len);
+  newexpr[0] = '\0';
+  strncat(newexpr, line, elem->start);
+  strcat(newexpr, expr);
+  strcat(newexpr, &line[elem->end]);
+  cmdline_cleanup(&cmd);
+  return newexpr;
 }
 
 void* token_val(Token *token, char v_type)
@@ -160,6 +188,7 @@ void cmdline_cleanup(Cmdline *cmdline)
   utarray_free(cmdline->cmds);
   utarray_free(cmdline->tokens);
   utarray_free(cmdline->vars);
+  utarray_free(cmdline->arys);
   free(cmdline->line);
 }
 
@@ -371,7 +400,7 @@ Cmdstr* cmdline_cmdbtwn(Cmdline *cmdline, int st, int ed)
 {
   Cmdstr *cmd = NULL;
   for (int i = 0; i < utarray_len(cmdline->cmds); i++) {
-    NEXT_CMD(cmdline, cmd);
+    cmd = (Cmdstr*)utarray_next(cmdline->cmds, cmd);
     List *list = token_val(&cmd->args, VAR_LIST);
     Token *word = (Token*)utarray_back(list->items);
     if (!word)
@@ -465,15 +494,18 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
   return false;
 }
 
-static void push_arry_cont(Cmdline *cmdline, int idx)
+static void push_arry_cont(Cmdline *cmdline, int idx, Token *headref)
 {
+  Token *cur  = (Token*)utarray_eltptr(cmdline->tokens, idx);
   Token *next = (Token*)utarray_eltptr(cmdline->tokens, idx + 1);
-  if (!next)
+  if (!next || cur->end != next->start)
     return;
 
   char *str = token_val(next, VAR_STRING);
+  List *args = token_val(headref, VAR_LIST);
+
   if (str[0] == '[')
-    cmdline->ary = true;
+    utarray_push_back(cmdline->arys, &utarray_len(args->items));
 }
 
 static bool valid_arry(Cmdline *cmdline, QUEUE *stack, Token *headref)
@@ -537,7 +569,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         if (!valid_arry(cmdline, stack, headref))
           break;
         stack_head(stack)->end = word->end;
-        push_arry_cont(cmdline, idx);
+        push_arry_cont(cmdline, idx, headref);
         pop(stack);
         break;
       case '[':
@@ -571,12 +603,12 @@ void cmdline_build(Cmdline *cmdline, char *line)
   log_msg("CMDSTR", "cmdline_build");
   cmdline->lvl = 0;
   cmdline->line = strdup(line);
-  cmdline->ary = false;
   cmdline->err = false;
   QUEUE_INIT(&cmdline->refs);
   utarray_new(cmdline->cmds,   &cmd_icd);
   utarray_new(cmdline->tokens, &list_icd);
   utarray_new(cmdline->vars,   &list_icd);
+  utarray_new(cmdline->arys,   &ut_int_icd);
 
   cmdline_tokenize(cmdline);
 
@@ -609,7 +641,7 @@ void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
 
   bool waspipe = false;
   Cmdstr *cmd = NULL;
-  while (NEXT_CMD(cmdline, cmd)) {
+  while ((cmd = (Cmdstr*)utarray_next(cmdline->cmds, cmd))) {
 
     char *line = &full_line[cmd->st];
     if (line < last && waspipe)

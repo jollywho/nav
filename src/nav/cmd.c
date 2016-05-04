@@ -359,88 +359,64 @@ static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
   cmd_do(caller->caller, base);
 }
 
-char* cmd_elem_substitute(char *substr, char *var)
-{
-  Cmdline cmd;
-  cmdline_build(&cmd, var);
-  log_msg("cmd", "elem %s", cmd.line);
-  List *args = cmdline_lst(&cmd);
-  Token *get = access_container(cmdline_tokindex(&cmd, 0), args);
-  if (!get) {
-    cmdline_cleanup(&cmd);
-    return NULL;
-  }
-
-  int pad = (get->end - get->start) < 2 ? 0 : 1;
-  int len = strlen(var) - (get->end - get->start) + strlen(substr);
-  char *newexpr = malloc(sizeof(char*)*len);
-  newexpr[0] = '\0';
-  strncat(newexpr, var, get->start);
-  strcat(newexpr, substr);
-  strcat(newexpr, &var[get->end + pad]);
-  cmdline_cleanup(&cmd);
-  return newexpr;
-}
-
-char* cmd_elem_expand(char *line, char *var, int st, int ed)
-{
-  Cmdline cmd;
-  cmdline_build(&cmd, var);
-  List *args = cmdline_lst(&cmd);
-  Token *get = access_container(cmdline_tokindex(&cmd, 0), args);
-  if (!get) {
-    cmdline_cleanup(&cmd);
-    return NULL;
-  }
-  int len = (ed - st) + (get->end - get->start);
-  char *newexpr = malloc(sizeof(char*)*len);
-  newexpr[0] = '\0';
-  strncat(newexpr, line, st);
-  strncat(newexpr, &var[get->start], get->end - get->start);
-  strcat(newexpr, &line[ed]);
-  cmdline_cleanup(&cmd);
-  return newexpr;
-}
-
 static void cmd_arrys(Cmdstr *caller, Cmdline *cmdline, List *args)
 {
-  Token *t1 = NULL;
-  Token *t2 = NULL;
-  for (int i = 0; i < utarray_len(args->items); i++) {
-    Token *tmp = (Token*)utarray_eltptr(args->items, i);
+  log_msg("CMD", "cmd_arrys");
+  int count = utarray_len(cmdline->arys);
+  char *var_lst[count];
+  int len_lst[count];
+  int st_lst[count], ed_lst[count];
+  int size = strlen(cmdline->line);
+  int num = 0;
 
-    bool is_list = tmp->var.v_type == VAR_LIST;
+  for (int i = 0; i < count; i++) {
+    int fst = *(int*)utarray_eltptr(cmdline->arys, i);
+    Token *ary = tok_arg(args, fst);
 
-    if (t1 && t2 && !is_list)
-      break;
+    int lst = ++fst;
+    Token *get = ary;
+    Token *tmp;
+    while ((tmp = tok_arg(args, lst++))) {
+      if (get->end != tmp->start)
+        break;
+      get = tmp;
+      i++;
+    }
 
-    if (is_list && !t1)
-      t1 = tmp;
-    else if (is_list)
-      t2 = tmp;
+    if (!ary || get == ary) {
+      nv_err("parse error: invalid expression");
+      return;
+    }
+
+    Token *elem = container_elem(ary, args, fst, lst - 1);
+    if (!elem) {
+      nv_err("parse error: index not found");
+      return;
+    }
+
+    char *var = container_str(cmdline->line, elem);
+    log_msg("CMD", "var %s", var);
+
+    len_lst[num] = strlen(var);
+    var_lst[num] = var;
+    st_lst[num] = ary->start;
+    ed_lst[num] = get->end;
+    size += len_lst[num];
+    num++;
   }
-  if (!t1 || !t2) {
-    nv_err("parse error: malformed sequence");
-    return;
+
+  char base[size];
+  int pos = 0, prevst = 0;
+  for (int i = 0; i < num; i++) {
+    strncpy(base+pos, &cmdline->line[prevst], st_lst[i] - prevst);
+    pos += st_lst[i] - prevst;
+    prevst = ed_lst[i];
+    strcpy(base+pos, var_lst[i]);
+    free(var_lst[i]);
+    pos += len_lst[i];
   }
-
-  //TODO:
-  //find token in cmdstr behind entry
-  //if token is string and also variable, dont expand
-
-  int len = (t2->end - t1->start);
-  char var[len];
-  strncpy(var, &cmdline->line[t1->start], len);
-  var[len] = '\0';
-
-  char *newexpr = cmd_elem_expand(cmdline->line, var, t1->start, t2->end);
-  log_msg("CMD", "arys %s", newexpr);
-  if (!newexpr) {
-    nv_err("parse error: index not found");
-    return;
-  }
-  cmd_do(caller->caller, newexpr);
-  free(newexpr);
+  strcpy(base+pos, &cmdline->line[prevst]);
+  cmd_do(caller->caller, base);
 }
 
 static char* op_arg(List *args, int argc, int st, char *line)
@@ -872,7 +848,7 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
     if (utarray_len(cmdline->vars) > 0)
       return cmd_vars(cmdstr, cmdline);
 
-    if (cmdline->ary)
+    if (utarray_len(cmdline->arys) > 0)
       return cmd_arrys(cmdstr, cmdline, args);
   }
 
