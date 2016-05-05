@@ -379,20 +379,17 @@ static void cmd_arrys(Cmdstr *caller, Cmdline *cmdline, List *args)
     while ((tmp = tok_arg(args, lst++))) {
       if (get->end != tmp->start)
         break;
+      if (get != ary)
+        i++;
       get = tmp;
-      i++;
     }
 
-    if (!ary || get == ary) {
-      nv_err("parse error: invalid expression");
-      return;
-    }
+    if (!ary)
+      return nv_err("parse error: invalid expression");
 
     Token *elem = container_elem(ary, args, fst, lst - 1);
-    if (!elem) {
+    if (!elem)
       nv_err("parse error: index not found");
-      return;
-    }
 
     char *var = container_str(cmdline->line, elem);
     log_msg("CMD", "var %s", var);

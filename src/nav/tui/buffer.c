@@ -376,7 +376,7 @@ static void buf_mv(Buffer *buf, Keyarg *ca)
   /* move cursor N times in a dimension;
    * scroll if cursor is on an edge. */
   Model *m = buf->hndl->model;
-  int y = ca->arg;
+  int y = ca->arg * MAX(1, ca->opcount);
   int m_max = model_count(buf->hndl->model);
   buf->lnum += y;
 
@@ -424,6 +424,8 @@ void buf_g(void *_b, Keyarg *ca)
   Buffer *buf = (Buffer*)_b;
   int dir = ca->arg;
   int y = model_count(buf->hndl->model) * dir;
+  if (ca->opcount)
+    y = (-(buf_index(buf))) + (ca->opcount - 1);
   buf_move(buf, y, 0);
 }
 

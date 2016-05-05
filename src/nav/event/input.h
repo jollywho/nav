@@ -44,8 +44,6 @@ typedef struct {
   int regname;                  // register to use for the operator
   int motion_type;              // type of the current cursor motion
   int motion_force;             // force motion type: 'v', 'V' or CTRL-V
-  pos_T start;                  // start of the operator
-  pos_T end;                    // end of the operator
   pos_T cursor_start;           // cursor position before motion for "gw"
 
   long line_count;              // number of lines from op_start to op_end
@@ -57,8 +55,6 @@ typedef struct {
 struct Keyarg {
   fn_keytbl *optbl;             /* table that set operator */
   Oparg oap;                    /* Operator arguments */
-  pos_T start;                  /* start of the operator */
-  pos_T end;                    /* end of the operator */
   long opcount;                 /* count before an operator */
   int type;
   int key;

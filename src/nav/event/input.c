@@ -405,6 +405,7 @@ void clearop(Keyarg *ca)
   memset(&ca->oap, 0, sizeof(Oparg));
   ca->nkey = OP_NOP;
   ca->mkey = OP_NOP;
+  ca->opcount = 0;
 }
 
 bool op_pending(Keyarg *arg)
@@ -433,14 +434,22 @@ int find_do_key(fn_keytbl *kt, Keyarg *ca, void *obj)
     return 1;
   }
 
+  if (ISDIGIT(ca->key)) {
+    ca->opcount *= 10;
+    ca->opcount += ca->key - '0';
+    return 1;
+  }
+
   int idx = find_command(kt, ca->key);
   if (idx >= 0) {
     ca->arg  = kt->tbl[idx].cmd_arg;
     ca->type = kt->tbl[idx].cmd_flags;
     ca->optbl = kt;
     kt->tbl[idx].cmd_func(obj, ca);
+    ca->opcount = 0;
     return 1;
   }
+
   return 0;
 }
 

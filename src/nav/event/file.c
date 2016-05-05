@@ -17,7 +17,6 @@ static void do_stat(const char *, struct stat *);
 static void file_check_update();
 static void do_unlink(const char *, bool);
 
-#define ISDIGIT(c) ((unsigned) (c) - '0' <= 9)
 #define FFRESH O_CREAT|O_EXCL|O_WRONLY
 
 typedef struct File File;

@@ -34,5 +34,6 @@
   } while (0)                 \
 
 #define BITMASK_CHECK(x,y) (((x) & (y)) == (x))
+#define ISDIGIT(c) ((unsigned) (c) - '0' <= 9)
 
 #endif
