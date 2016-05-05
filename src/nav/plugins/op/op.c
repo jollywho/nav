@@ -68,6 +68,21 @@ static void del_proc(uv_handle_t *hndl)
   free(hndl->data);
 }
 
+static void run_group(fn_group *grp, char *line, bool proc)
+{
+  Cmdstr cmd;
+  set_fldvar(grp, "prev", expand_field);
+  set_fldvar(grp, "next", expand_field);
+
+  Cmdstr *cmdptr = proc ? &cmd : NULL;
+  cmd_eval(cmdptr, line);
+
+  if (proc && cmd.ret.type == STRING) {
+    create_proc(grp, cmd.ret.val.v_str);
+    free(cmd.ret.val.v_str);
+  }
+}
+
 static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal)
 {
   log_msg("OP", "exit_cb");
@@ -76,11 +91,8 @@ static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal)
   remove_pid(grp->key, proc->proc.pid);
   uv_close((uv_handle_t*) req, del_proc);
 
-  if (!proc->proc.status) {
-    //TODO: add vars
-    char *line = grp->opgrp->after;
-    cmd_eval(NULL, line);
-  }
+  if (!proc->proc.status)
+    run_group(grp, grp->opgrp->after, false);
 }
 
 static void chld_handler(uv_signal_t *handle, int signum)
@@ -146,18 +158,7 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
   if (!grp->opgrp)
     return;
 
-  set_fldvar(grp, "prev", expand_field);
-  set_fldvar(grp, "next", expand_field);
-
-  Cmdstr bfcmd;
-  char *line = grp->opgrp->before;
-
-  cmd_eval(&bfcmd, line);
-  //remove vars
-  if (bfcmd.ret.type != STRING)
-    return;
-  create_proc(grp, bfcmd.ret.val.v_str);
-  free(bfcmd.ret.val.v_str);
+  run_group(grp, grp->opgrp->before, true);
 }
 
 static void execopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
