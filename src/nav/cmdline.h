@@ -71,6 +71,7 @@ struct Cmdline {
   QUEUE refs;          //queue of token refs to avoid recursive cleanup
   char *line;          //the raw string being built upon
   int lvl;             //subexpression level
+  bool cont;           //line continuation
   bool err;
 };
 
@@ -85,6 +86,7 @@ Token* cmdline_tokindex(Cmdline *cmdline, int idx);
 Token* cmdline_last(Cmdline *cmdline);
 char* cmdline_line_from(Cmdline *cmdline, int idx);
 char* cmdline_line_after(Cmdline *cmdline, int idx);
+char* cmdline_cont_line(Cmdline *cmdline);
 char* cmdline_line_tok(Cmdline *cmdline, Token *word);
 Cmdstr* cmdline_getcmd(Cmdline *cmdline);
 List* cmdline_lst(Cmdline *cmd);

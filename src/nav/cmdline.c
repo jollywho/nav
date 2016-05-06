@@ -279,7 +279,7 @@ static Token list_new(Cmdline *cmdline)
   return token;
 }
 
-static void cmdline_create_token(UT_array *ar, char *str, int st, int ed, int b)
+static void create_token(UT_array *ar, char *str, int st, int ed, int b)
 {
   int len = ed - st;
   if (len < 1)
@@ -305,35 +305,35 @@ static void cmdline_tokenize(Cmdline *cmdline)
   int st, ed, pos;
   char *str = cmdline->line;
   int block = 0;
-  int esc = 0;
+  bool esc = false;
 
   st = ed = pos = 0;
   for (;;) {
     ch[0] = str[pos++];
     if (ch[0] == '\0') {
-      cmdline_create_token(cmdline->tokens, str, st, ed, block);
+      create_token(cmdline->tokens, str, st, ed, block);
       break;
     }
-    else if (ch[0] == '\\') {
-      esc = 1;
+    else if (ch[0] == '\\' && !esc) {
+      esc = true;
       continue;
     }
     else if ((ch[0] == '\"' || ch[0] == '\'') && !esc) {
       char *closech = strchr(&str[pos], ch[0]);
       if (closech && closech[-1] != '\\') {
         int end = (closech - &str[pos]) + pos;
-        cmdline_create_token(cmdline->tokens, str, pos-1, end+1, block);
+        create_token(cmdline->tokens, str, pos-1, end+1, block);
         end++;
         pos = end;
         st = end;
       }
     }
     else if (strpbrk(ch, "~!/:|<>,[]{}() ") && !esc) {
-      cmdline_create_token(cmdline->tokens, str, st, ed, block);
+      create_token(cmdline->tokens, str, st, ed, block);
       if (*ch == ' ')
         block++;
       else {
-        cmdline_create_token(cmdline->tokens, str, pos-1, pos, block);
+        create_token(cmdline->tokens, str, pos-1, pos, block);
         ed = pos;
       }
       st = pos;
@@ -341,8 +341,12 @@ static void cmdline_tokenize(Cmdline *cmdline)
     else
       ed = pos;
 
-    esc = 0;
+    if (esc)
+      st++;
+    esc = false;
   }
+
+  cmdline->cont = esc;
 }
 
 #ifdef PIPES_SUPPORTED
@@ -445,6 +449,16 @@ char* cmdline_line_after(Cmdline *cmdline, int idx)
   if (word->end >= strlen(cmdline->line))
     return NULL;
   return &cmdline->line[word->end];
+}
+
+char* cmdline_cont_line(Cmdline *cmdline)
+{
+  int count = utarray_len(cmdline->tokens) - 1;
+  if (count < 0)
+    return "";
+  Token *word = (Token*)utarray_eltptr(cmdline->tokens, count);
+  cmdline->line[word->end] = '\0';
+  return cmdline->line;
 }
 
 char* cmdline_line_tok(Cmdline *cmdline, Token *word)
@@ -604,6 +618,7 @@ void cmdline_build(Cmdline *cmdline, char *line)
   cmdline->lvl = 0;
   cmdline->line = strdup(line);
   cmdline->err = false;
+  cmdline->cont = false;
   QUEUE_INIT(&cmdline->refs);
   utarray_new(cmdline->cmds,   &cmd_icd);
   utarray_new(cmdline->tokens, &list_icd);

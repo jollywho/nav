@@ -36,6 +36,23 @@ struct Cmdblock {
   Cmdret ret;
 };
 
+typedef struct Script Script;
+struct Script {
+  fn_func *fndef;
+  Cmdblock *callstack;
+  Symb *tape;
+  Symb *cur;
+  Symb root;
+  int pos;
+  int lvl;
+  int maxpos;
+  char *line;
+  bool lncont;
+  bool lvlcont;
+  bool opendef;
+  bool error;
+};
+
 static Cmdret cmd_ifblock();
 static Cmdret cmd_elseifblock();
 static Cmdret cmd_elseblock();
@@ -43,26 +60,13 @@ static Cmdret cmd_endblock();
 static Cmdret cmd_funcblock();
 static Cmdret cmd_returnblock();
 
-//TODO: wrap these into cmdblock
 static Cmd_T *cmd_table;
 static Cmd_alt *alt_tbl;
-static Symb *tape;
-static Symb *cur;
-static Symb root;
-static int pos;
-static int lvl;
-static int maxpos;
-static char *lncont;
-static int lvlcont;
-static int fndefopen;
-static int parse_error;
+static Script nvs;
 
-#define IS_READ  (fndefopen)
-#define IS_SEEK  (lvl > 0 && !IS_READ)
+#define IS_READ  (nvs.opendef)
+#define IS_SEEK  (nvs.lvl > 0 && !IS_READ)
 #define IS_PARSE (IS_READ || IS_SEEK)
-
-static fn_func *fndef;
-static Cmdblock *callstack;
 
 static const Cmd_T builtins[] = {
   {NULL,             NULL,               0, 0},
@@ -76,56 +80,57 @@ static const Cmd_T builtins[] = {
 
 static void stack_push(char *line)
 {
-  if (pos + 2 > maxpos) {
-    maxpos *= 2;
-    tape = realloc(tape, maxpos*sizeof(Symb));
-    for (int i = pos+1; i < maxpos; i++)
-      memset(&tape[i], 0, sizeof(Symb));
+  if (nvs.pos + 2 > nvs.maxpos) {
+    nvs.maxpos *= 2;
+    nvs.tape = realloc(nvs.tape, nvs.maxpos*sizeof(Symb));
+    for (int i = nvs.pos+1; i < nvs.maxpos; i++)
+      memset(&nvs.tape[i], 0, sizeof(Symb));
   }
   if (!line)
     line = "";
-  tape[++pos].line = strdup(line);
-  tape[pos].parent = cur;
-  STAILQ_INIT(&tape[pos].childs);
-  STAILQ_INSERT_TAIL(&cur->childs, &tape[pos], ent);
+  nvs.tape[++nvs.pos].line = strdup(line);
+  nvs.tape[nvs.pos].parent = nvs.cur;
+  STAILQ_INIT(&nvs.tape[nvs.pos].childs);
+  STAILQ_INSERT_TAIL(&nvs.cur->childs, &nvs.tape[nvs.pos], ent);
 }
 
 static void read_line(char *line)
 {
-  utarray_push_back(fndef->lines, &line);
+  utarray_push_back(nvs.fndef->lines, &line);
 }
 
 static void cmd_reset()
 {
-  if (!IS_READ || parse_error) {
-    fndef = NULL;
-    fndefopen = 0;
+  if (!IS_READ || nvs.error) {
+    nvs.fndef = NULL;
+    nvs.opendef = 0;
   }
-  lncont = NULL;
-  lvlcont = 0;
-  parse_error = 0;
-  lvl = 0;
-  pos = -1;
-  maxpos = BUFSIZ;
-  tape = calloc(maxpos, sizeof(Symb));
-  cur = &root;
-  cur->parent = &root;
-  STAILQ_INIT(&cur->childs);
+  nvs.line = NULL;
+  nvs.error = false;
+  nvs.lncont = false;
+  nvs.lvlcont = false;
+  nvs.lvl = 0;
+  nvs.pos = -1;
+  nvs.maxpos = BUFSIZ;
+  nvs.tape = calloc(nvs.maxpos, sizeof(Symb));
+  nvs.cur = &nvs.root;
+  nvs.cur->parent = &nvs.root;
+  STAILQ_INIT(&nvs.cur->childs);
 }
 
 void cmd_init()
 {
   cmd_reset();
-  callstack = NULL;
+  nvs.callstack = NULL;
   for (int i = 1; i < LENGTH(builtins); i++)
     cmd_add(&builtins[i]);
 }
 
 void cmd_cleanup()
 {
-  for (int i = 0; tape[i].line; i++)
-    free(tape[i].line);
-  free(tape);
+  for (int i = 0; nvs.tape[i].line; i++)
+    free(nvs.tape[i].line);
+  free(nvs.tape);
   cmd_clearall();
 }
 
@@ -143,43 +148,43 @@ void cmd_flush()
 {
   log_msg("CMD", "flush");
 
-  if (parse_error && fndefopen) {
+  if (nvs.error && nvs.opendef) {
     nv_err("parse error: open definition not closed!");
-    del_param_list(fndef->argv, fndef->argc);
-    utarray_free(fndef->lines);
-    free(fndef->key);
-    free(fndef);
+    del_param_list(nvs.fndef->argv, nvs.fndef->argc);
+    utarray_free(nvs.fndef->lines);
+    free(nvs.fndef->key);
+    free(nvs.fndef);
   }
-  if (lvl > 0)
+  if (nvs.lvl > 0)
     nv_err("parse error: open block not closed!");
-  if (lvlcont > 0)
+  if (nvs.lvlcont)
     nv_err("parse error: open '(' not closed!");
-  for (int i = 0; tape[i].line; i++)
-    free(tape[i].line);
+  for (int i = 0; nvs.tape[i].line; i++)
+    free(nvs.tape[i].line);
 
-  free(tape);
-  free(lncont);
+  free(nvs.tape);
+  free(nvs.line);
   cmd_reset();
 }
 
 static void push_callstack(Cmdblock *blk, fn_func *fn)
 {
-  if (!callstack)
-    callstack = blk;
-  blk->parent = callstack;
+  if (!nvs.callstack)
+    nvs.callstack = blk;
+  blk->parent = nvs.callstack;
   blk->func = fn;
-  callstack = blk;
+  nvs.callstack = blk;
 }
 
 static void pop_callstack()
 {
-  if (!callstack)
+  if (!nvs.callstack)
     return;
-  clear_locals(callstack->func);
-  if (callstack == callstack->parent)
-    callstack = NULL;
+  clear_locals(nvs.callstack->func);
+  if (nvs.callstack == nvs.callstack->parent)
+    nvs.callstack = NULL;
   else
-    callstack = callstack->parent;
+    nvs.callstack = nvs.callstack->parent;
 }
 
 static void ret2caller(Cmdstr *cmdstr, Cmdret ret)
@@ -207,21 +212,22 @@ static void ret2caller(Cmdstr *cmdstr, Cmdret ret)
 
 static void cmd_do(Cmdstr *caller, char *line)
 {
-  if (lvlcont > 0) {
+  if (nvs.lncont) {
     char *str;
-    asprintf(&str, "%s%s", lncont, line);
-    SWAP_ALLOC_PTR(lncont, str);
-    line = lncont;
+    asprintf(&str, "%s%s", nvs.line, line);
+    SWAP_ALLOC_PTR(nvs.line, str);
+    line = nvs.line;
   }
 
   Cmdline cmd;
   cmdline_build(&cmd, line);
-  lvlcont = cmd.lvl;
+  nvs.lncont = MAX(cmd.lvl, cmd.cont);
+  nvs.lvlcont = cmd.lvl;
 
-  if (lvlcont == 0)
+  if (!nvs.lncont)
     cmdline_req_run(caller, &cmd);
   else
-    SWAP_ALLOC_PTR(lncont, strdup(line));
+    SWAP_ALLOC_PTR(nvs.line, strdup(cmdline_cont_line(&cmd)));
 
   cmdline_cleanup(&cmd);
 }
@@ -238,10 +244,10 @@ static Cmdret cmd_call(Cmdstr *caller, fn_func *fn, char *line)
 
   Cmdblock blk = {.brk = 0};
   push_callstack(&blk, fn);
-  caller->ret = callstack->ret;
+  caller->ret = nvs.callstack->ret;
 
   if (argc != fn->argc) {
-    //TODO: send error up callstack
+    //TODO: send error up nvs.callstack
     nv_err("incorrect arguments to call: expected %d, got %d!",
         fn->argc, argc);
     goto cleanup;
@@ -260,10 +266,10 @@ static Cmdret cmd_call(Cmdstr *caller, fn_func *fn, char *line)
   for (int i = 0; i < utarray_len(fn->lines); i++) {
     char *line = *(char**)utarray_eltptr(fn->lines, i);
     cmd_eval(NULL, line);
-    if (callstack->brk)
+    if (nvs.callstack->brk)
       break;
   }
-  caller->ret = callstack->ret;
+  caller->ret = nvs.callstack->ret;
 cleanup:
   cmdline_cleanup(&cmd);
   pop_callstack();
@@ -543,7 +549,7 @@ static int cond_do(char *line)
 
   goto cleanup;
 error:
-  parse_error = 1;
+  nvs.error = 1;
   nv_err("%s:%s", err, condline);
 cleanup:
   cmdline_cleanup(&cmd);
@@ -562,14 +568,14 @@ static Symb* cmd_next(Symb *node)
 static void cmd_start()
 {
   log_msg("CMD", "start");
-  Symb *it = STAILQ_FIRST(&root.childs);
+  Symb *it = STAILQ_FIRST(&nvs.root.childs);
   int cond;
   while (it) {
     switch (it->type) {
       case CTL_IF:
       case CTL_ELSEIF:
         cond = cond_do(it->line);
-        if (parse_error)
+        if (nvs.error)
           return;
         log_err("CMD", "cond ret %d", cond);
         if (cond)
@@ -581,7 +587,7 @@ static void cmd_start()
         it = STAILQ_FIRST(&it->childs);
         break;
       case CTL_END:
-        if (it->parent == &root)
+        if (it->parent == &nvs.root)
           it = NULL;
         else
           it++;
@@ -608,7 +614,7 @@ static int ctl_cmd(const char *line)
 
 void cmd_eval(Cmdstr *caller, char *line)
 {
-  if (parse_error)
+  if (nvs.error)
     return;
   log_msg("CMD", ": %s", line);
 
@@ -624,17 +630,17 @@ static Cmdret cmd_ifblock(List *args, Cmdarg *ca)
 {
   log_msg("CMD", "ifblock");
   if (IS_READ) {
-    ++lvl;
+    ++nvs.lvl;
     read_line(ca->cmdline->line);
     return NORET;
   }
   if (!IS_SEEK)
     cmd_flush();
-  ++lvl;
+  ++nvs.lvl;
   stack_push(cmdline_line_after(ca->cmdline, 0));
-  cur = &tape[pos];
-  cur->st = pos;
-  tape[pos].type = CTL_IF;
+  nvs.cur = &nvs.tape[nvs.pos];
+  nvs.cur->st = nvs.pos;
+  nvs.tape[nvs.pos].type = CTL_IF;
   return NORET;
 }
 
@@ -644,12 +650,12 @@ static Cmdret cmd_elseifblock(List *args, Cmdarg *ca)
     read_line(ca->cmdline->line);
     return NORET;
   }
-  int st = cur->st;
-  cur = cur->parent;
-  cur->st = st;
+  int st = nvs.cur->st;
+  nvs.cur = nvs.cur->parent;
+  nvs.cur->st = st;
   stack_push(cmdline_line_after(ca->cmdline, 0));
-  tape[pos].type = CTL_ELSEIF;
-  cur = &tape[pos];
+  nvs.tape[nvs.pos].type = CTL_ELSEIF;
+  nvs.cur = &nvs.tape[nvs.pos];
   return NORET;
 }
 
@@ -659,22 +665,22 @@ static Cmdret cmd_elseblock(List *args, Cmdarg *ca)
     read_line(ca->cmdline->line);
     return NORET;
   }
-  int st = cur->st;
-  cur = cur->parent;
-  cur->st = st;
+  int st = nvs.cur->st;
+  nvs.cur = nvs.cur->parent;
+  nvs.cur->st = st;
   stack_push(cmdline_line_after(ca->cmdline, 0));
-  tape[pos].type = CTL_ELSE;
-  cur = &tape[pos];
+  nvs.tape[nvs.pos].type = CTL_ELSE;
+  nvs.cur = &nvs.tape[nvs.pos];
   return NORET;
 }
 
 static Cmdret cmd_endblock(List *args, Cmdarg *ca)
 {
   log_msg("CMD", "endblock");
-  --lvl;
-  if (IS_READ && lvl == 0) {
-    set_func(fndef);
-    fndefopen = 0;
+  --nvs.lvl;
+  if (IS_READ && nvs.lvl == 0) {
+    set_func(nvs.fndef);
+    nvs.opendef = 0;
     cmd_flush();
     return NORET;
   }
@@ -682,13 +688,13 @@ static Cmdret cmd_endblock(List *args, Cmdarg *ca)
     read_line(ca->cmdline->line);
     return NORET;
   }
-  cur = cur->parent;
+  nvs.cur = nvs.cur->parent;
   stack_push("");
-  tape[cur->st].end = &tape[pos];
-  tape[pos].type = CTL_END;
+  nvs.tape[nvs.cur->st].end = &nvs.tape[nvs.pos];
+  nvs.tape[nvs.pos].type = CTL_END;
   if (!IS_SEEK) {
     cmd_start();
-    lvl = 0;
+    nvs.lvl = 0;
   }
   return NORET;
 }
@@ -735,17 +741,17 @@ static Cmdret cmd_funcblock(List *args, Cmdarg *ca)
 {
   const char *name = list_arg(args, 1, VAR_STRING);
   if (!name || IS_PARSE) {
-    parse_error = 1;
+    nvs.error = 1;
     return NORET;
   }
 
   if (ca->cmdstr->rev) {
-    ++lvl;
-    fndef = malloc(sizeof(fn_func));
-    fndef->argc = mk_param_list(ca, &fndef->argv);
-    utarray_new(fndef->lines, &ut_str_icd);
-    fndef->key = strdup(name);
-    fndefopen = 1;
+    ++nvs.lvl;
+    nvs.fndef = malloc(sizeof(fn_func));
+    nvs.fndef->argc = mk_param_list(ca, &nvs.fndef->argv);
+    utarray_new(nvs.fndef->lines, &ut_str_icd);
+    nvs.fndef->key = strdup(name);
+    nvs.opendef = 1;
   }
   else { /* print */
     fn_func *fn = opt_func(name);
@@ -758,12 +764,12 @@ static Cmdret cmd_funcblock(List *args, Cmdarg *ca)
 static Cmdret cmd_returnblock(List *args, Cmdarg *ca)
 {
   log_msg("CMD", "cmd_return");
-  callstack->brk = 1;
+  nvs.callstack->brk = 1;
   char *line = cmdline_line_after(ca->cmdline, 0);
   Cmdstr nstr;
   cmd_eval(&nstr, line);
-  callstack->ret = nstr.ret;
-  return callstack->ret;
+  nvs.callstack->ret = nstr.ret;
+  return nvs.callstack->ret;
 }
 
 void cmd_clearall()
@@ -861,8 +867,8 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
 
 fn_func* cmd_callstack()
 {
-  if (callstack)
-    return callstack->func;
+  if (nvs.callstack)
+    return nvs.callstack->func;
   return NULL;
 }
 
