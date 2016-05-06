@@ -15,6 +15,7 @@ typedef struct {
   fn_context *cx;
   UT_hash_handle hh;
 } fn_context_arg;
+static const UT_icd icd = {sizeof(compl_item),NULL,NULL,NULL};
 
 static compl_entry compl_defaults[] = {
   { "cmds",      cmd_list      },
@@ -229,7 +230,21 @@ fn_context* context_start()
   return cxroot;
 }
 
-void compl_update(fn_context *cx, const char *line)
+int cmp_match(const void *a, const void *b, void *arg)
+{
+  compl_item c1 = *(compl_item*)a;
+  compl_item c2 = *(compl_item*)b;
+
+  int n1 = strspn(c1.key, arg);
+  int n2 = strspn(c2.key, arg);
+  if (n1 > n2)
+    return -1;
+  if (n2 > n1)
+    return 1;
+  return 0;
+}
+
+void compl_update(fn_context *cx, char *line)
 {
   log_msg("COMPL", "compl_update");
   if (!cx || !line || !cx->cmpl)
@@ -237,16 +252,16 @@ void compl_update(fn_context *cx, const char *line)
 
   fn_compl *cmpl = cx->cmpl;
   cmpl->matchcount = 0;
+  utarray_clear(cmpl->matches);
 
   for (int i = 0; i < cmpl->rowcount; i++) {
     char *key = cmpl->rows[i]->key;
     if (fuzzy_match(key, line)) {
-      cmpl->matches[cmpl->matchcount] = cmpl->rows[i];
+      utarray_push_back(cmpl->matches, cmpl->rows[i]);
       cmpl->matchcount++;
     }
-    else
-      cmpl->matches[i] = NULL;
   }
+  utarray_sort(cmpl->matches, cmp_match, line);
 }
 
 void compl_new(int size, int dynamic)
@@ -255,7 +270,7 @@ void compl_new(int size, int dynamic)
   compl_destroy(cur_cx);
   cur_cx->cmpl = malloc(sizeof(fn_compl));
   cur_cx->cmpl->rows    = malloc(size*sizeof(compl_item));
-  cur_cx->cmpl->matches = malloc(size*sizeof(compl_item));
+  utarray_new(cur_cx->cmpl->matches, &icd);
   cur_cx->cmpl->rowcount = size;
   cur_cx->cmpl->matchcount = 0;
   cur_cx->cmpl->comp_type = dynamic;
@@ -274,7 +289,7 @@ void compl_delete(fn_compl *cmpl)
   }
 
   free(cmpl->rows);
-  free(cmpl->matches);
+  utarray_free(cmpl->matches);
   free(cmpl);
 }
 
@@ -327,4 +342,9 @@ bool compl_isdynamic(fn_context *cx)
   if (!cx || !cx->cmpl)
     return false;
   return cx->cmpl->comp_type == COMPL_DYNAMIC;
+}
+
+compl_item* compl_idx_match(fn_compl *cmpl, int idx)
+{
+  return (compl_item*)utarray_eltptr(cmpl->matches, idx);
 }

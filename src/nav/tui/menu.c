@@ -335,7 +335,7 @@ static char* cycle_matches(Menu *mnu, int dir, int mov)
     idx = mnu->top + mnu->lnum;
   }
 
-  char *before = cmpl->matches[idx]->key;
+  char *before = compl_idx_match(cmpl, idx)->key;
   mnu->moved = mov;
 
   return before;
@@ -412,13 +412,13 @@ int menu_input(Menu *mnu, int key)
   fn_compl *cmpl = mnu->cx->cmpl;
   for (int i = 0; i < ROW_MAX; i++) {
     if (mnu->hintkeys[i] == key)
-      str = cmpl->matches[i+mnu->top]->key;
+      str = compl_idx_match(cmpl, i+mnu->top)->key;
   }
 
   if (key == CAR) {
     int idx = mnu->top + mnu->lnum;
     if (idx < cmpl->matchcount)
-      str = cmpl->matches[idx]->key;
+      str = compl_idx_match(cmpl, idx)->key;
   }
   if (!str)
     return 0;
@@ -514,7 +514,7 @@ void menu_draw(Menu *mnu)
   int colmax = mnu->size.col - 3;
 
   for (int i = 0; i < MIN(ROW_MAX, cmpl->matchcount); i++) {
-    compl_item *row = cmpl->matches[mnu->top + i];
+    compl_item *row = compl_idx_match(cmpl, mnu->top + i);
 
     /* draw hints */
     if (mnu->hints)

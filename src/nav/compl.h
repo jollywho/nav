@@ -15,7 +15,7 @@ typedef struct {
   int matchcount;
   char comp_type;       /* COMPL_STATIC, COMPL_DYNAMIC */
   compl_item **rows;
-  compl_item **matches;
+  UT_array *matches;
 } fn_compl;
 
 typedef struct fn_context fn_context;
@@ -46,7 +46,7 @@ void compl_add_context(char *);
 void compl_add_arg(const char *, char *);
 
 fn_context* context_start();
-void compl_update(fn_context *cx, const char *);
+void compl_update(fn_context *cx, char *line);
 void compl_build(fn_context *cx, List *args);
 void compl_destroy(fn_context *cx);
 
@@ -55,8 +55,8 @@ void compl_delete(fn_compl *cmpl);
 void compl_set_key(int idx, char *fmt, ...);
 void compl_set_col(int idx, char *fmt, ...);
 
-fn_compl* compl_match_index(int idx);
 fn_context* find_context(fn_context *cx, char *);
 bool compl_isdynamic(fn_context *cx);
+compl_item* compl_idx_match(fn_compl *cmpl, int idx);
 
 #endif
