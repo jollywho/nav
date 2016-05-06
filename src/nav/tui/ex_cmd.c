@@ -401,7 +401,7 @@ static void check_new_state()
   Token *tok = cmdline_last(&ex.cmd);
   if (!tok)
     return;
-  if (ex.curpos > tok->end && ex.curpos > 0)
+  if (ex.curpos > tok->end && ex.curpos > 0 && !ex.cmd.cont)
     ex.inrstate |= EX_NEW;
 }
 

@@ -151,6 +151,28 @@ char* escape_shell(char *src)
   return dest;
 }
 
+char* strip_shell(char *src)
+{
+  int len = strlen(src);
+  if (len < 1)
+    return strdup("");
+
+  char *dest = malloc(len+1);
+  char c;
+  char *str = dest;
+  while ((c = *(src++))) {
+    switch(c) {
+      case '"':
+      case '\\':
+        break;
+      default:
+        *(str++) = c;
+    }
+  }
+  *str = '\0';
+  return dest;
+}
+
 char* strncat_shell(char *dest, const char *src)
 {
   char c;
@@ -281,12 +303,10 @@ bool fuzzy_match(char *s, const char *accept)
 {
   char *sub = s;
   for (int i = 0; accept[i]; i++) {
-    int c = TOUPPER_ASC(accept[i]);
-    char *next = strchr(sub, c);
-    if (!next) {
-      c = TOLOWER_ASC(accept[i]);
-      next = strchr(sub, c);
-    }
+    int c = accept[i];
+    char *lc = strchr(sub, TOLOWER_ASC(c));
+    char *hc = strchr(sub, TOUPPER_ASC(c));
+    char *next = lc - s < 0 ? hc : lc;
     if (!next)
       return false;
     sub = next;

@@ -250,6 +250,8 @@ void compl_update(fn_context *cx, char *line)
   if (!cx || !line || !cx->cmpl)
     return;
 
+  line = strip_shell(line);
+
   fn_compl *cmpl = cx->cmpl;
   cmpl->matchcount = 0;
   utarray_clear(cmpl->matches);
@@ -262,6 +264,7 @@ void compl_update(fn_context *cx, char *line)
     }
   }
   utarray_sort(cmpl->matches, cmp_match, line);
+  free(line);
 }
 
 void compl_new(int size, int dynamic)

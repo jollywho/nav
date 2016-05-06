@@ -341,8 +341,6 @@ static void cmdline_tokenize(Cmdline *cmdline)
     else
       ed = pos;
 
-    if (esc)
-      st++;
     esc = false;
   }
 
