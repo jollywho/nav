@@ -6,27 +6,37 @@
 #include "nav/option.h"
 #include "nav/cmdline.h"
 #include "nav/cmd.h"
+#include "nav/compl.h"
 #include "nav/info.h"
 #include "nav/event/input.h"
 #include "nav/event/fs.h"
+#include "nav/event/hook.h"
 
-static Cmdret edit_setting();
-static Cmdret edit_color();
-static Cmdret edit_syntax();
-static Cmdret edit_variable();
-static Cmdret edit_mapping();
-static Cmdret edit_op();
-static Cmdret add_source();
+static Cmdret conf_autocmd();
+static Cmdret conf_setting();
+static Cmdret conf_color();
+static Cmdret conf_syntax();
+static Cmdret conf_variable();
+static Cmdret conf_mapping();
+static Cmdret conf_op();
+static Cmdret conf_source();
 
 static const Cmd_T cmdtable[] = {
-  {"set",0,       edit_setting,   0},
-  {"hi",0,        edit_color,     0},
-  {"syn",0,       edit_syntax,    0},
-  {"let",0,       edit_variable,  0},
-  {"local",0,     edit_variable,  1},
-  {"map",0,       edit_mapping,   0},
-  {"op",0,        edit_op,        0},
-  {"source","so", add_source,     0},
+  {"autocmd","au",   conf_autocmd,  0},
+  {"set",0,          conf_setting,  0},
+  {"highlight","hi", conf_color,    0},
+  {"syntax","syn",   conf_syntax,   0},
+  {"let",0,          conf_variable, 0},
+  {"local",0,        conf_variable, 1},
+  {"map",0,          conf_mapping,  0},
+  {"op",0,           conf_op,       0},
+  {"source","so",    conf_source,   0},
+};
+
+static char *compl_cmds[] = {
+  "set;option:string:options",
+  "hi;group:string:groups",
+  "op;group:string:groups",
 };
 
 static const char *config_paths[] = {
@@ -44,6 +54,8 @@ void config_init()
 {
   for (int i = 0; i < LENGTH(cmdtable); i++)
     cmd_add(&cmdtable[i]);
+  for (int i = 0; i < LENGTH(compl_cmds); i++)
+    compl_add_context(compl_cmds[i]);
 }
 
 static bool file_exists(const char *path)
@@ -225,9 +237,26 @@ bool config_read(FILE *file)
   return 1;
 }
 
-static Cmdret edit_setting(List *args, Cmdarg *ca)
+Cmdret conf_autocmd(List *args, Cmdarg *ca)
 {
-  log_msg("CONFIG", "edit_setting");
+  log_msg("CONFIG", "autocmd");
+  int len = utarray_len(args->items);
+  char *event = list_arg(args, 1, VAR_STRING);
+  int pos = len > 3 ? 2 : -1;
+  int rem = len > 3 ? 3 : 2;
+  char *pat = list_arg(args, pos, VAR_STRING);
+  char *cur = cmdline_line_after(ca->cmdline, rem-1);
+
+  if (event && ca->cmdstr->rev)
+    hook_remove(event, pat);
+  else if (event && cur)
+    hook_add(event, pat, cur+1);
+  return NORET;
+}
+
+static Cmdret conf_setting(List *args, Cmdarg *ca)
+{
+  log_msg("CONFIG", "conf_setting");
   char *name = list_arg(args, 1, VAR_STRING);
   Token *oper = tok_arg(args, 2);
   Token *rhs = tok_arg(args, 3);
@@ -238,9 +267,9 @@ static Cmdret edit_setting(List *args, Cmdarg *ca)
   return NORET;
 }
 
-static Cmdret edit_color(List *args, Cmdarg *ca)
+static Cmdret conf_color(List *args, Cmdarg *ca)
 {
-  log_msg("CONFIG", "edit_color");
+  log_msg("CONFIG", "conf_color");
   if (utarray_len(args->items) < 3)
     return NORET;
 
@@ -261,9 +290,9 @@ static Cmdret edit_color(List *args, Cmdarg *ca)
   return NORET;
 }
 
-static Cmdret edit_syntax(List *args)
+static Cmdret conf_syntax(List *args)
 {
-  log_msg("CONFIG", "edit_syntax");
+  log_msg("CONFIG", "conf_syntax");
   char *group = list_arg(args, 1, VAR_STRING);
   List *words = list_arg(args, 2, VAR_LIST);
   char *single = list_arg(args, 2, VAR_STRING);
@@ -294,9 +323,9 @@ static Cmdret edit_syntax(List *args)
   return NORET;
 }
 
-static Cmdret edit_variable(List *args, Cmdarg *ca)
+static Cmdret conf_variable(List *args, Cmdarg *ca)
 {
-  log_msg("CONFIG", "edit_variable");
+  log_msg("CONFIG", "conf_variable");
   log_err("CONFIG", "%s", ca->cmdline->line);
 
   /* statement needs valid name */
@@ -347,7 +376,7 @@ cleanup:
   return NORET;
 }
 
-static Cmdret edit_mapping(List *args, Cmdarg *ca)
+static Cmdret conf_mapping(List *args, Cmdarg *ca)
 {
   if (strlen(ca->cmdline->line) < strlen("map ") + 3)
     return NORET;
@@ -363,9 +392,9 @@ static Cmdret edit_mapping(List *args, Cmdarg *ca)
   return NORET;
 }
 
-static Cmdret edit_op(List *args, Cmdarg *ca)
+static Cmdret conf_op(List *args, Cmdarg *ca)
 {
-  log_msg("CONFIG", "edit_op");
+  log_msg("CONFIG", "conf_op");
   char *group  = list_arg(args, 1, VAR_STRING);
   char *before = list_arg(args, 2, VAR_STRING);
   char *after  = list_arg(args, 3, VAR_STRING);
@@ -382,7 +411,7 @@ static Cmdret edit_op(List *args, Cmdarg *ca)
   return NORET;
 }
 
-static Cmdret add_source(List *args, Cmdarg *ca)
+static Cmdret conf_source(List *args, Cmdarg *ca)
 {
   char *file = cmdline_line_after(ca->cmdline, 0);
   if (!file)

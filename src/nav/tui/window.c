@@ -32,7 +32,6 @@ static Cmdret win_buf();
 static Cmdret win_bdel();
 static Cmdret win_cd();
 static Cmdret win_mark();
-static Cmdret win_autocmd();
 static Cmdret win_echo();
 static Cmdret win_reload();
 static Cmdret win_direct();
@@ -49,7 +48,6 @@ static const Cmd_T cmdtable[] = {
   {"version","ver", win_version, 0},
   {"qa",0,          win_shut,    0},
   {"close","q",     win_close,   0},
-  {"autocmd","au",  win_autocmd, 0},
   {"buffer","bu",   win_buf,     0},
   {"bdelete","bd",  win_bdel,    0},
   {"new",0,         win_new,     MOVE_UP},
@@ -79,8 +77,6 @@ static char *compl_cmds[] = {
   "sort;field:string:fields",
   "cd;path:string:paths",
   "mark;label:string:marklbls",
-  "set;option:string:options",
-  "op;group:string:groups",
 };
 static char *compl_args[][2] = {
   {"plugin", "fm;path:string:paths"},
@@ -288,24 +284,6 @@ Cmdret win_mark(List *args, Cmdarg *ca)
   Plugin *plugin = buf_plugin(layout_buf(&win.layout));
   if (plugin)
     mark_label_dir(label, window_cur_dir());
-  return NORET;
-}
-
-Cmdret win_autocmd(List *args, Cmdarg *ca)
-{
-  log_msg("WINDOW", "win_autocmd");
-  int len = utarray_len(args->items);
-  log_msg("WINDOW", "%d %d", len, ca->cmdstr->rev);
-  char *event = list_arg(args, 1, VAR_STRING);
-  int pos = len > 3 ? 2 : -1;
-  int rem = len > 3 ? 3 : 2;
-  char *pat = list_arg(args, pos, VAR_STRING);
-  char *cur = cmdline_line_after(ca->cmdline, rem-1);
-
-  if (event && ca->cmdstr->rev)
-    hook_remove(event, pat);
-  else if (event && cur)
-    hook_add(event, pat, cur+1);
   return NORET;
 }
 
