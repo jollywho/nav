@@ -37,7 +37,7 @@ static struct plugin_ent {
 #endif
   {"ed"  , NULL,    ed_new,   ed_delete,   0},
   {"term", NULL,    term_new, term_delete, 0},
-//{"dt",   NULL,    dt_new,   dt_delete,   0},
+  {"dt",   NULL,    dt_new,   dt_delete,   0},
 };
 
 static int max_callable;

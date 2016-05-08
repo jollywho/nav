@@ -271,6 +271,8 @@ static void try_old_val(Model *m, fn_lis *lis, ventry *it)
   int pos = m->ptop + m->plnum;
   fn_line *find;
   it = ent_rec(it->rec, "dir");
+  if (!it)
+    return;
   fn_line ln = { .rec = it->rec };
 
   find = find_by_type(m, &ln);

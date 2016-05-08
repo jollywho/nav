@@ -177,6 +177,11 @@ void buf_set_pass(Buffer *buf)
   buf->attached = false;
 }
 
+void buf_set_flat(Buffer *buf)
+{
+  buf->flat = true;
+}
+
 void buf_set_plugin(Buffer *buf, Plugin *plugin)
 {
   log_msg("BUFFER", "buf_set_plugin");
@@ -184,6 +189,7 @@ void buf_set_plugin(Buffer *buf, Plugin *plugin)
   buf->hndl = plugin->hndl;
   buf->attached = true;
   buf->nodraw = false;
+  buf->flat = false;
   overlay_bufno(buf->ov, plugin->id);
   overlay_edit(buf->ov, plugin->fmt_name, 0, 0);
 }
@@ -239,7 +245,24 @@ static void draw_cur_line(Buffer *buf)
   mvwchgat(buf->nc_win, buf->lnum, 0, -1, attr, buf->col_focus, NULL);
 }
 
-static void draw_lines(Buffer *buf, Model *m)
+static void draw_flat(Buffer *buf, Model *m)
+{
+  for (int i = 0; i < buf->b_size.lnum; ++i) {
+    char *it = model_str_line(m, buf->top + i);
+    if (!it)
+      break;
+
+    attr_t attr = A_NORMAL;
+    if (select_has_line(buf, buf->top + i))
+      attr = A_REVERSE;
+
+    int max = MAX_POS(buf->b_size.col);
+    draw_wide(buf->nc_win, i, 0, it, max - 1);
+    mvwchgat(buf->nc_win, i, 0, -1, attr, buf->col_text, NULL);
+  }
+}
+
+static void draw_formatted(Buffer *buf, Model *m)
 {
   for (int i = 0; i < buf->b_size.lnum; ++i) {
     char *it = model_str_line(m, buf->top + i);
@@ -299,7 +322,11 @@ void buf_draw(void **argv)
   overlay_lnum(buf->ov, buf_index(buf), model_count(buf->hndl->model));
 
   Model *m = buf->hndl->model;
-  draw_lines(buf, m);
+  if (buf->flat)
+    draw_flat(buf, m);
+  else
+    draw_formatted(buf, m);
+
   draw_cur_line(buf);
   wnoutrefresh(buf->nc_win);
 }
@@ -433,6 +460,8 @@ varg_T buf_focus_sel(Buffer *buf, const char *fld)
 {
   log_msg("BUFFER", "buf_focus_sel");
   Model *m = buf->hndl->model;
+  if (buf->flat)
+    fld = "name";
 
   if (!select_active()) {
     void *val = model_curs_value(m, fld);

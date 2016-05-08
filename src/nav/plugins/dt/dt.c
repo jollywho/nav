@@ -42,6 +42,7 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   dt->m = hndl->model;
   buf_set_plugin(buf, plugin);
   buf_set_status(buf, 0, arg, 0);
+  buf_set_flat(buf);
   hook_init_host(plugin);
 
   // open file
@@ -55,6 +56,13 @@ void dt_delete(Plugin *plugin)
 {
   log_msg("DT", "delete");
   DT *dt = plugin->top;
+  fn_handle *h = plugin->hndl;
+  hook_clear_host(plugin);
+  hook_cleanup_host(plugin);
+  model_close(h);
+  model_cleanup(h);
+  free(dt->filename);
+  free(h);
   free(dt);
 }
 
@@ -67,6 +75,8 @@ static void dt_signal_model(void **data)
 static void dt_readfile(DT *dt)
 {
   dt->f = fopen(dt->filename, "rw");
+  if (!dt->f)
+    return;
   char * line = NULL;
   size_t len = 0;
   ssize_t size;

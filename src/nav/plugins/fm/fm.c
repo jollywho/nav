@@ -386,13 +386,13 @@ void fm_delete(Plugin *plugin)
 {
   log_msg("FM", "delete");
   FM *fm = plugin->top;
-  fn_handle *h = fm->base->hndl;
+  fn_handle *h = plugin->hndl;
   DO_EVENTS_UNTIL(!fs_blocking(fm->fs));
   jump_cleanup(fm);
   model_close(h);
   model_cleanup(h);
-  hook_clear_host(fm->base);
-  hook_cleanup_host(fm->base);
+  hook_clear_host(plugin);
+  hook_cleanup_host(plugin);
   fs_cleanup(fm->fs);
   free(fm->cur_dir);
   free(h);

@@ -27,6 +27,7 @@ struct Buffer {
   bool del;
   bool attached;
   bool nodraw;
+  bool flat;
 
   short col_focus;
   short col_text;
@@ -51,6 +52,7 @@ void buf_set_plugin(Buffer *buf, Plugin *plugin);
 void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs);
 
 void buf_set_pass(Buffer *buf);
+void buf_set_flat(Buffer *buf);
 void buf_set_linematch(Buffer *buf, LineMatch *match);
 void buf_set_status(Buffer *buf, char *, char *, char *);
 
