@@ -64,6 +64,8 @@ static void shell_stdout_size_cb(Plugin *plugin, char  *out)
   log_msg("IMG", "shell_stdout_size_cb");
   log_msg("IMG", "%s", out);
   Img *img = (Img*)plugin->top;
+  if (!strchr(out, ' '))
+    return;
 
   char *w = strtok(out, " ");
   char *h = strtok(NULL, " ");

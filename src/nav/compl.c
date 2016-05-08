@@ -235,13 +235,9 @@ int cmp_match(const void *a, const void *b, void *arg)
   compl_item c1 = *(compl_item*)a;
   compl_item c2 = *(compl_item*)b;
 
-  int n1 = strspn(c1.key, arg);
-  int n2 = strspn(c2.key, arg);
-  if (n1 > n2)
-    return -1;
-  if (n2 > n1)
-    return 1;
-  return 0;
+  int n1 = fuzzystrspn(c1.key, arg);
+  int n2 = fuzzystrspn(c2.key, arg);
+  return n2 - n1;
 }
 
 void compl_update(fn_context *cx, char *line)

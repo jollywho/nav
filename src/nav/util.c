@@ -299,6 +299,32 @@ char* add_quotes(char *src)
   return dest;
 }
 
+int fuzzystrspn(const char *s, const char *accept)
+{
+  const char *p;
+  const char *a;
+  size_t count = 0;
+
+  char *n = strcasestr(s, accept);
+  if (!n)
+    return -1;
+
+  for (p = n; *p != '\0'; ++p)
+  {
+    for (a = accept; *a != '\0'; ++a)
+      if (*p == *a ||
+          *p == TOLOWER_ASC(*a) ||
+          *p == TOUPPER_ASC(*a))
+        break;
+    if (*a == '\0')
+      return count;
+    else
+      ++count;
+  }
+
+  return count;
+}
+
 bool fuzzy_match(char *s, const char *accept)
 {
   char *sub = s;
@@ -306,10 +332,15 @@ bool fuzzy_match(char *s, const char *accept)
     int c = accept[i];
     char *lc = strchr(sub, TOLOWER_ASC(c));
     char *hc = strchr(sub, TOUPPER_ASC(c));
-    char *next = lc - s < 0 ? hc : lc;
-    if (!next)
+    int lw = lc - s;
+    int hw = hc - s;
+
+    /* lower result above origin is next valid char */
+    sub = lw < 0 ? hc :
+          hw < 0 ? lc :
+          lc < hc ? lc : hc;
+    if (!sub)
       return false;
-    sub = next;
   }
   return true;
 }

@@ -20,6 +20,7 @@ char* lines2yank(int argc, char **argv);
 void del_param_list(char **params, int argc);
 char* strip_quotes(const char *);
 char* add_quotes(char *);
+int fuzzystrspn(const char *p, const char *s);
 bool fuzzy_match(char *, const char *);
 
 #endif
