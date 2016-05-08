@@ -407,6 +407,11 @@ static Cmdret conf_op(List *args, Cmdarg *ca)
   if (!grp)
     return NORET;
 
+  if (grp->opgrp) {
+    free(grp->opgrp->before);
+    free(grp->opgrp->after);
+    free(grp->opgrp);
+  }
   grp->opgrp = op_newgrp(before, after);
   return NORET;
 }

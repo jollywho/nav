@@ -207,6 +207,12 @@ void set_map(char *from, char *to)
   replace_termcodes(&mp->lhs, from);
   mp->len = replace_termcodes(&mp->rhs, to);
 
+  fn_map *get = key_maps[0][(int)mp->lhs[0]];
+  if (get) {
+    free(get->lhs);
+    free(get->rhs);
+    free(get);
+  }
   key_maps[0][(int)mp->lhs[0]] = mp;
 }
 
