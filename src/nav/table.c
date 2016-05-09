@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
-
 #include "nav/lib/sys_queue.h"
 #include "nav/table.h"
 #include "nav/log.h"
@@ -584,7 +580,9 @@ void clear_trans(trans_rec *r, int flush)
 
 void field_list(List *args)
 {
-  if (HASH_COUNT(FN_MASTER) < 1) return;
+  if (HASH_COUNT(FN_MASTER) < 1)
+    return;
+
   fn_tbl *t = get_tbl("fm_files");
   unsigned int count = t->vis_fld_count;
 

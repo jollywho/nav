@@ -243,14 +243,14 @@ int cmp_match(const void *a, const void *b, void *arg)
 void compl_update(fn_context *cx, char *line)
 {
   log_msg("COMPL", "compl_update");
-  if (!cx || !line || !cx->cmpl)
+  if (!cx || !line || !cx->cmpl || cx->cmpl->invalid_pos)
     return;
 
   line = strip_shell(line);
 
   fn_compl *cmpl = cx->cmpl;
-  cmpl->matchcount = 0;
   utarray_clear(cmpl->matches);
+  cmpl->matchcount = 0;
 
   for (int i = 0; i < cmpl->rowcount; i++) {
     char *key = cmpl->rows[i]->key;
@@ -259,6 +259,7 @@ void compl_update(fn_context *cx, char *line)
       cmpl->matchcount++;
     }
   }
+
   utarray_sort(cmpl->matches, cmp_match, line);
   free(line);
 }
@@ -273,6 +274,7 @@ void compl_new(int size, int dynamic)
   cur_cx->cmpl->rowcount = size;
   cur_cx->cmpl->matchcount = 0;
   cur_cx->cmpl->comp_type = dynamic;
+  cur_cx->cmpl->invalid_pos = 0;
 }
 
 void compl_delete(fn_compl *cmpl)
@@ -346,4 +348,18 @@ bool compl_isdynamic(fn_context *cx)
 compl_item* compl_idx_match(fn_compl *cmpl, int idx)
 {
   return (compl_item*)utarray_eltptr(cmpl->matches, idx);
+}
+
+void compl_invalidate(fn_context *cx, int pos)
+{
+  fn_compl *cmpl = cur_cx->cmpl;
+  utarray_clear(cmpl->matches);
+  cmpl->matchcount = 0;
+  cmpl->invalid_pos = pos;
+}
+
+bool compl_validate(fn_context *cx, int pos)
+{
+  fn_compl *cmpl = cur_cx->cmpl;
+  return cmpl->invalid_pos > pos;
 }

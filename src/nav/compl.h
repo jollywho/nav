@@ -16,6 +16,7 @@ typedef struct {
   char comp_type;       /* COMPL_STATIC, COMPL_DYNAMIC */
   compl_item **rows;
   UT_array *matches;
+  int invalid_pos;
 } fn_compl;
 
 typedef struct fn_context fn_context;
@@ -58,5 +59,7 @@ void compl_set_col(int idx, char *fmt, ...);
 fn_context* find_context(fn_context *cx, char *);
 bool compl_isdynamic(fn_context *cx);
 compl_item* compl_idx_match(fn_compl *cmpl, int idx);
+void compl_invalidate(fn_context *cx, int pos);
+bool compl_validate(fn_context *cx, int pos);
 
 #endif

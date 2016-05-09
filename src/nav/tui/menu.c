@@ -83,8 +83,10 @@ void menu_ch_dir(void **args)
 
   char *dir = args[1];
   uv_stat_t *stat = args[2];
-  if (!dir || !stat || !S_ISDIR(stat->st_mode))
+  if (!dir || !stat || !S_ISDIR(stat->st_mode)) {
+    compl_invalidate(cur_menu->cx, ex_cmd_curpos());
     return;
+  }
 
   SWAP_ALLOC_PTR(cur_menu->hndl->key, strdup(dir));
   fs_open(cur_menu->fs, dir);
@@ -94,7 +96,7 @@ static int last_dir_in_path(Token *tok, List *args, int pos, char **path)
 {
   char *val = NULL;
   int prev = tok->block;
-  int exec = 0;
+  bool exec = false;
   while ((tok = tok_arg(args, ++pos))) {
     if (prev != tok->block)
       break;
@@ -102,12 +104,12 @@ static int last_dir_in_path(Token *tok, List *args, int pos, char **path)
     val = token_val(tok, VAR_STRING);
 
     if (val[0] == '/') {
-      exec = 1;
+      exec = true;
       cur_menu->line_key = "";
       continue;
     }
     else {
-      exec = 0;
+      exec = false;
       cur_menu->line_key = val;
       char *tmp = conspath(*path, val);
       free(*path);
@@ -168,7 +170,13 @@ void path_list(List *args)
     if (exec)
       exec = last_dir_in_path(tok, args, pos, &path);
 
+    if (compl_validate(cur_menu->cx, ex_cmd_curpos())) {
+      exec = true;
+      path = fs_parent_dir(path);
+    }
+
     cur_menu->line_key = strdup(cur_menu->line_key);
+
     if (exec)
       fs_read(cur_menu->fs, path);
 
