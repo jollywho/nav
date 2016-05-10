@@ -212,7 +212,7 @@ static void ed_do_rename(Ed *ed)
     }
     conspath_buf(from, ed->curdir, src);
     conspath_buf(to,   ed->curdir, str);
-    file_move_str(from, to, ed->buf);
+    file_move_str(from, to, NULL);
   }
   ed->state &= ~ED_CLOSED;
   ed_cleanup(ed);

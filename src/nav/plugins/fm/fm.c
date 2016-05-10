@@ -180,6 +180,8 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
 
   if (path)
     fs_read(self->fs, path);
+  else
+    nv_err("not a valid path: %s", req);
 
   free(trypath);
   free(path);

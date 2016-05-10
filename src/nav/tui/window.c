@@ -263,8 +263,10 @@ Cmdret win_cd(List *args, Cmdarg *ca)
       window_ch_dir(newpath);
       free(newpath);
     }
-    else
+    else {
       nv_err("not a valid path: %s", path);
+      return NORET;
+    }
   }
 
   if (plugin)
