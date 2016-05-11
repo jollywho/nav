@@ -15,7 +15,6 @@
 struct Window {
   Layout layout;
   uv_timer_t draw_timer;
-  Keyarg ca;
   bool ex;
   bool dirty;
   int refs;
@@ -94,6 +93,7 @@ static fn_key key_defaults[] = {
   {'L',     win_layout,      0,           MOVE_RIGHT},
   {Ctrl_W,  oper,            NCH_A,       OP_WIN},
   {'f',     window_fltr_cmd, 0,           FORWARD},
+  {KEY_LEFT, win_layout, 0,           MOVE_LEFT},
 };
 
 static fn_keytbl key_tbl;
@@ -181,26 +181,25 @@ static void win_layout(Window *_w, Keyarg *ca)
   layout_movement(&win.layout, dir);
 }
 
-void window_input(int key, char utf8[7])
+void window_input(Keyarg *ca)
 {
   log_msg("WINDOW", "input");
-  win.ca.key = key;
 
   if (message_pending)
     msg_clear();
 
   if (dialog_pending)
-    return dialog_input(key);
+    return dialog_input(ca->key);
   if (win.input_override)
-    return term_keypress(win.term, key);
+    return term_keypress(win.term, ca);
   if (win.ex)
-    return ex_input(key, utf8);
+    return ex_input(ca);
 
   int ret = 0;
   if (window_get_focus())
-    ret = buf_input(layout_buf(&win.layout), &win.ca);
+    ret = buf_input(layout_buf(&win.layout), ca);
   if (!ret)
-    ret = find_do_key(&key_tbl, &win.ca, &win);
+    ret = find_do_key(&key_tbl, ca, &win);
 }
 
 void window_start_override(Plugin *term)

@@ -433,28 +433,27 @@ static void ex_onkey()
   window_req_draw(NULL, NULL);
 }
 
-void ex_input(int key, char utf8[7])
+void ex_input(Keyarg *ca)
 {
   log_msg("EXCMD", "input");
   if (menu_hints_enabled(ex.menu)) {
-    if (menu_input(ex.menu, key))
+    if (menu_input(ex.menu, ca->key))
       ex_car();
   }
 
-  Keyarg ca;
-  int idx = find_command(&key_tbl, key);
-  ca.arg = key_defaults[idx].cmd_arg;
+  int idx = find_command(&key_tbl, ca->key);
+  ca->arg = key_defaults[idx].cmd_arg;
   if (idx >= 0)
-    key_defaults[idx].cmd_func(NULL, &ca);
+    key_defaults[idx].cmd_func(NULL, ca);
   else {
     ex.inrstate |= EX_RIGHT;
     ex.inrstate &= ~(EX_FRESH|EX_NEW);
 
     char instr[7] = {0,0};
-    if (!utf8)
-      instr[0] = key;
+    if (!ca->utf8)
+      instr[0] = ca->key;
     else
-      strcpy(instr, utf8);
+      strcpy(instr, ca->utf8);
 
     int len = cell_len(instr);
 

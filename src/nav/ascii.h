@@ -95,6 +95,11 @@
 #define K_ZERO          TERMCAP2KEY(KS_ZERO, KE_FILLER)
 #define HC_S_TAB            ("S-Tab")
 
+#define K_UP            TERMCAP2KEY('k', 'u')
+#define K_DOWN          TERMCAP2KEY('k', 'd')
+#define K_LEFT          TERMCAP2KEY('k', 'l')
+#define K_RIGHT         TERMCAP2KEY('k', 'r')
+
 # define ASCII_ISLOWER(c) ((unsigned)(c) >= 'a' && (unsigned)(c) <= 'z')
 # define ASCII_ISUPPER(c) ((unsigned)(c) >= 'A' && (unsigned)(c) <= 'Z')
 # define ASCII_ISALPHA(c) (ASCII_ISUPPER(c) || ASCII_ISLOWER(c))

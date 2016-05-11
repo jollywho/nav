@@ -6,6 +6,7 @@
 #include "nav/event/wstream.h"
 #include "nav/event/event.h"
 #include "nav/event/hook.h"
+#include "nav/event/input.h"
 #include "nav/tui/buffer.h"
 #include "nav/log.h"
 #include "nav/ascii.h"
@@ -123,21 +124,21 @@ static void plugin_cancel(Plugin *plugin)
   vt_keypress(term->vt, Ctrl_C);
 }
 
-void term_keypress(Plugin *plugin, int key)
+void term_keypress(Plugin *plugin, Keyarg *ca)
 {
   Term *term = plugin->top;
-  if (key == Meta('['))
+  if (ca->key == Meta('['))
     window_stop_override();
-  else if (key == Meta('k')) {
+  else if (ca->key == Meta('k')) {
     vt_scroll(term->vt, -1);
     readfd_ready(&term->readfd, 0, 0);
   }
-  else if (key == Meta('j')) {
+  else if (ca->key == Meta('j')) {
     vt_scroll(term->vt, 1);
     readfd_ready(&term->readfd, 0, 0);
   }
   else
-    vt_keypress(term->vt, key);
+    vt_keypress(term->vt, 4294941589);
 }
 
 static void term_draw(Term *term)

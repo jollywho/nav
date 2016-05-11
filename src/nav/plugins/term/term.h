@@ -23,7 +23,7 @@ struct term {
 
 void term_new(Plugin *plugin, Buffer *buf, char *arg);
 void term_delete(Plugin *plugin);
-void term_keypress(Plugin *plugin, int key);
+void term_keypress(Plugin *plugin, Keyarg *ca);
 void term_cursor(Plugin *plugin);
 void term_set_editor(Plugin *plugin, Ed *ed);
 

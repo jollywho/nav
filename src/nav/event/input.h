@@ -61,6 +61,7 @@ struct Keyarg {
   int nkey;
   int mkey;
   short arg;
+  char *utf8;
 };
 
 void input_init(void);

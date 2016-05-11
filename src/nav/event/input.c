@@ -51,6 +51,10 @@ static struct key_name_entry {
   {BS,                (char *)"Backspace"},
   {BS,                (char *)"Del"},
   {DEL,               (char *)"Delete"},      /* Alternative name */
+  {K_UP,              (char *)"Up"},
+  {K_DOWN,            (char *)"Down"},
+  {K_LEFT,            (char *)"Left"},
+  {K_RIGHT,           (char *)"Right"},
   {0,                 NULL}
 };
 
@@ -218,6 +222,9 @@ void set_map(char *from, char *to)
 
 bool input_map_exists(int key)
 {
+  //FIXME: key_maps handle negative termcap keys
+  if (key < 0)
+    return false;
   return key_maps[0][key];
 }
 
@@ -226,7 +233,8 @@ void do_map(Keyarg *ca, int key)
   log_msg("INPUT", "<<<<<<<<<<<<<<<<<<");
   for (int i = 0; i < key_maps[0][key]->len; i++) {
     int ch = key_maps[0][key]->rhs[i];
-    window_input(ch, (char[7]){ch,0,0,0,0,0,0});
+    Keyarg ca = {.key = ch, .utf8 = (char[7]){ch,0,0,0,0,0,0}};
+    window_input(&ca);
   }
 }
 
@@ -262,12 +270,13 @@ void input_check()
 {
   log_msg("INPUT", ">>>>>>>>>>>>>>>>>>>>>>>>>");
   TermKeyKey key;
-  TermKeyResult ret;
 
   termkey_advisereadable(tk);
 
-  while ((ret = termkey_getkey_force(tk, &key)) == TERMKEY_RES_KEY)
-    window_input(process_key(&key), key.utf8);
+  while ((termkey_getkey_force(tk, &key)) == TERMKEY_RES_KEY) {
+    Keyarg ca = {.key = process_key(&key), .utf8 = key.utf8};
+    window_input(&ca);
+  }
 }
 
 /*
@@ -435,6 +444,7 @@ int find_do_key(fn_keytbl *kt, Keyarg *ca, void *obj)
     }
   }
 
+  log_err("MAP", "? %d", ca->key);
   if (input_map_exists(ca->key)) {
     do_map(ca, ca->key);
     return 1;
