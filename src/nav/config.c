@@ -326,7 +326,7 @@ static Cmdret conf_syntax(List *args)
 static Cmdret conf_variable(List *args, Cmdarg *ca)
 {
   log_msg("CONFIG", "conf_variable");
-  log_err("CONFIG", "%s", ca->cmdline->line);
+  log_msg("CONFIG", "%s", ca->cmdline->line);
 
   /* statement needs valid name */
   Token *lhs = tok_arg(args, 1);

@@ -4,6 +4,7 @@
 #include "nav/plugins/op/op.h"
 #include "nav/plugins/img/img.h"
 #include "nav/plugins/term/term.h"
+#include "nav/plugins/out/out.h"
 #include "nav/plugins/dt/dt.h"
 #include "nav/plugins/ed/ed.h"
 #include "nav/compl.h"
@@ -30,14 +31,15 @@ static struct plugin_ent {
   plugin_close_cb close_cb;
   int type_bg;
 } plugin_table[] = {
-  {"fm",   fm_init, fm_new,   fm_delete,   0},
-  {"op",   NULL,    op_new,   op_delete,   1},
+  {"fm",   fm_init,  fm_new,   fm_delete,   0},
+  {"op",   NULL,     op_new,   op_delete,   1},
+  {"out",  out_init, out_new,  out_delete,  0},
 #if W3M_SUPPORTED
-  {"img",  NULL,    img_new,  img_delete,  0},
+  {"img",  NULL,     img_new,  img_delete,  0},
 #endif
-  {"ed"  , NULL,    ed_new,   ed_delete,   0},
-  {"term", NULL,    term_new, term_delete, 0},
-  {"dt",   NULL,    dt_new,   dt_delete,   0},
+  {"ed"  , NULL,     ed_new,   ed_delete,   0},
+  {"term", NULL,     term_new, term_delete, 0},
+  {"dt",   NULL,     dt_new,   dt_delete,   0},
 };
 
 static int max_callable;
