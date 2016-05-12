@@ -32,29 +32,35 @@ static struct modmasktable {
 
 static struct key_name_entry {
   int key;              /* Special key code or ascii value */
-  char  *name;        /* Name of key */
+  char_u  *name;        /* Name of key */
 } key_names_table[] = {
-  {' ',               (char *)"Space"},
-  {TAB,               (char *)"Tab"},
-  {NL,                (char *)"NL"},
-  {NL,                (char *)"NewLine"},     /* Alternative name */
-  {NL,                (char *)"LineFeed"},    /* Alternative name */
-  {NL,                (char *)"LF"},          /* Alternative name */
-  {CAR,               (char *)"CR"},
-  {CAR,               (char *)"Return"},      /* Alternative name */
-  {CAR,               (char *)"Enter"},       /* Alternative name */
-  {ESC,               (char *)"Esc"},
-  {ESC,               (char *)"Escape"},
-  {CSI,               (char *)"CSI"},
-  {'|',               (char *)"Bar"},
-  {'\\',              (char *)"Bslash"},
-  {BS,                (char *)"Backspace"},
-  {BS,                (char *)"Del"},
-  {DEL,               (char *)"Delete"},      /* Alternative name */
-  {K_UP,              (char *)"Up"},
-  {K_DOWN,            (char *)"Down"},
-  {K_LEFT,            (char *)"Left"},
-  {K_RIGHT,           (char *)"Right"},
+  {' ',               (char_u *)"Space"},
+  {TAB,               (char_u *)"Tab"},
+  {NL,                (char_u *)"NL"},
+  {NL,                (char_u *)"NewLine"},     /* Alternative name */
+  {NL,                (char_u *)"LineFeed"},    /* Alternative name */
+  {NL,                (char_u *)"LF"},          /* Alternative name */
+  {CAR,               (char_u *)"CR"},
+  {CAR,               (char_u *)"Return"},      /* Alternative name */
+  {CAR,               (char_u *)"Enter"},       /* Alternative name */
+  {ESC,               (char_u *)"Esc"},
+  {ESC,               (char_u *)"Escape"},
+  {CSI,               (char_u *)"CSI"},
+  {'|',               (char_u *)"Bar"},
+  {'\\',              (char_u *)"Bslash"},
+  {BS,                (char_u *)"Backspace"},
+  {BS,                (char_u *)"Del"},
+  {DEL,               (char_u *)"Delete"},      /* Alternative name */
+  {K_UP,              (char_u *)"Up"},
+  {K_DOWN,            (char_u *)"Down"},
+  {K_LEFT,            (char_u *)"Left"},
+  {K_RIGHT,           (char_u *)"Right"},
+  {K_INS,             (char_u *)"Insert"},
+  {K_INS,             (char_u *)"Ins"},         /* Alternative name */
+  {K_HOME,            (char_u *)"Home"},
+  {K_END,             (char_u *)"End"},
+  {K_PAGEUP,          (char_u *)"PageUp"},
+  {K_PAGEDOWN,        (char_u *)"PageDown"},
   {0,                 NULL}
 };
 
@@ -86,15 +92,17 @@ static fn_map *key_maps[2][256];
 
 int get_special_key_code(char *name)
 {
-  char  *table_name;
-  int i;
+  char_u *table_name;
+  int i, j;
 
   for (i = 0; key_names_table[i].name != NULL; i++) {
     table_name = key_names_table[i].name;
-    if (strcasecmp(name, table_name) == 0) {
-      log_msg("_", "%s", key_names_table[i].name);
+
+    for (j = 0; table_name[j] != NUL; j++)
+      if (TOLOWER_ASC(table_name[j]) != TOLOWER_ASC(name[j]))
+        break;
+    if (table_name[j] == NUL)
       return key_names_table[i].key;
-    }
   }
 
   return 0;
@@ -444,7 +452,6 @@ int find_do_key(fn_keytbl *kt, Keyarg *ca, void *obj)
     }
   }
 
-  log_err("MAP", "? %d", ca->key);
   if (input_map_exists(ca->key)) {
     do_map(ca, ca->key);
     return 1;

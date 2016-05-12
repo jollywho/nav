@@ -99,6 +99,12 @@
 #define K_DOWN          TERMCAP2KEY('k', 'd')
 #define K_LEFT          TERMCAP2KEY('k', 'l')
 #define K_RIGHT         TERMCAP2KEY('k', 'r')
+#define K_INS           TERMCAP2KEY('k', 'I')
+#define K_DEL           TERMCAP2KEY('k', 'D')
+#define K_HOME          TERMCAP2KEY('k', 'h')
+#define K_END           TERMCAP2KEY('@', '7')
+#define K_PAGEUP        TERMCAP2KEY('k', 'P')
+#define K_PAGEDOWN      TERMCAP2KEY('k', 'N')
 
 # define ASCII_ISLOWER(c) ((unsigned)(c) >= 'a' && (unsigned)(c) <= 'z')
 # define ASCII_ISUPPER(c) ((unsigned)(c) >= 'A' && (unsigned)(c) <= 'Z')

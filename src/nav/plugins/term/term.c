@@ -124,6 +124,29 @@ static void plugin_cancel(Plugin *plugin)
   vt_keypress(term->vt, Ctrl_C);
 }
 
+static struct term_key_entry {
+  int key;
+  char *code;
+} termkeytable[] = {
+  {K_UP     , "\e[A"},
+  {K_DOWN   , "\e[B"},
+  {K_RIGHT  , "\e[C"},
+  {K_LEFT   , "\e[D"},
+  {K_HOME   , "\e[7~"},
+  {K_END    , "\e[8~"},
+  {K_S_TAB  , "\e[Z"},
+  {Ctrl_Z   , "\x1A"},
+};
+
+static const char* convert_key(int key)
+{
+  for (int i = 0; i < LENGTH(termkeytable); i++) {
+    if (termkeytable[i].key == key)
+      return termkeytable[i].code;
+  }
+  return "";
+}
+
 void term_keypress(Plugin *plugin, Keyarg *ca)
 {
   Term *term = plugin->top;
@@ -137,8 +160,12 @@ void term_keypress(Plugin *plugin, Keyarg *ca)
     vt_scroll(term->vt, 1);
     readfd_ready(&term->readfd, 0, 0);
   }
-  else
-    vt_keypress(term->vt, 4294941589);
+  else {
+    if (IS_SPECIAL(ca->key))
+      vt_write(term->vt, convert_key(ca->key), 3);
+    else
+      vt_keypress(term->vt, ca->key);
+  }
 }
 
 static void term_draw(Term *term)
