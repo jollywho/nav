@@ -2,6 +2,7 @@
 #include <uv.h>
 #include <termkey.h>
 
+#include "nav/lib/map.h"
 #include "nav/ascii.h"
 #include "nav/event/input.h"
 #include "nav/tui/window.h"
@@ -14,6 +15,7 @@
 static uv_poll_t poll_handle;
 static TermKey *tk;
 static Keyarg ca;
+static Map *kmap;
 
 typedef unsigned char char_u;
 
@@ -82,15 +84,6 @@ static fn_oper key_operators[] = {
   {Ctrl_W,   NUL,    win_move},
 };
 
-typedef struct fn_map fn_map;
-struct fn_map {
-  char *lhs;
-  char *rhs;
-  int len;
-};
-
-static fn_map *key_maps[2][256];
-
 int get_special_key_code(char *name)
 {
   char_u *table_name;
@@ -128,19 +121,13 @@ void input_init(void)
 
   uv_poll_init(eventloop(), &poll_handle, 0);
   uv_poll_start(&poll_handle, UV_READABLE, input_check);
+  kmap = map_new();
 }
 
 void input_cleanup(void)
 {
-  for (int j = 0; j < 2; j++)
-  for (int i = 0; i < 256; i++) {
-    if (!key_maps[j][i])
-      continue;
-    free(key_maps[j][i]->lhs);
-    free(key_maps[j][i]->rhs);
-    free(key_maps[j][i]);
-  }
   termkey_destroy(tk);
+  map_free_full(kmap);
 }
 
 int extract_modifiers(int key, int *modp)
@@ -198,53 +185,46 @@ static int trans_special(char **bp)
   return keycode;
 }
 
-static int replace_termcodes(char **to, char *from)
+static char* replace_termcodes(char *from)
 {
-  int len = strlen(from);
-  char buf[len];
+  char buf[strlen(from)];
   int i = 0;
   while (*from) {
     buf[i] = trans_special(&from);
     i++;
     from++;
   }
-  *to = malloc((i)*sizeof(char*));
-  strncpy(*to, buf, i);
-  return i;
+  char *to = malloc((i)*sizeof(char*));
+  strncpy(to, buf, i);
+  to[i] = '\0';
+  return to;
 }
 
 void set_map(char *from, char *to)
 {
   log_msg("INPUT", "<<-- from: %s to: %s", from, to);
-  fn_map *mp = malloc(sizeof(fn_map));
-  replace_termcodes(&mp->lhs, from);
-  mp->len = replace_termcodes(&mp->rhs, to);
+  char *lhs = replace_termcodes(from);
+  char *rhs = replace_termcodes(to);
 
-  fn_map *get = key_maps[0][(int)mp->lhs[0]];
-  if (get) {
-    free(get->lhs);
-    free(get->rhs);
-    free(get);
-  }
-  key_maps[0][(int)mp->lhs[0]] = mp;
+  map_put(kmap, lhs, rhs);
+  free(lhs);
 }
 
-bool input_map_exists(int key)
+bool try_do_map(Keyarg *ca)
 {
-  //FIXME: key_maps handle negative termcap keys
-  if (key < 0)
+  char chstr[2] = {ca->key, '\0'};
+  char *get = map_get(kmap, chstr);
+  if (!get)
     return false;
-  return key_maps[0][key];
-}
-
-void do_map(Keyarg *ca, int key)
-{
   log_msg("INPUT", "<<<<<<<<<<<<<<<<<<");
-  for (int i = 0; i < key_maps[0][key]->len; i++) {
-    int ch = key_maps[0][key]->rhs[i];
+
+  char ch;
+  char *rhs = get;
+  while ((ch = *rhs++)) {
     Keyarg ca = {.key = ch, .utf8 = (char[7]){ch,0,0,0,0,0,0}};
     window_input(&ca);
   }
+  return true;
 }
 
 static int process_key(TermKeyKey *key)
@@ -454,10 +434,8 @@ int find_do_key(fn_keytbl *kt, Keyarg *ca, void *obj)
     }
   }
 
-  if (input_map_exists(ca->key)) {
-    do_map(ca, ca->key);
+  if (try_do_map(ca))
     return 1;
-  }
 
   if (ISDIGIT(ca->key)) {
     ca->opcount *= 10;

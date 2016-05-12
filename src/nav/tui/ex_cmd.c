@@ -446,6 +446,8 @@ void ex_input(Keyarg *ca)
   if (idx >= 0)
     key_defaults[idx].cmd_func(NULL, ca);
   else {
+    if (IS_SPECIAL(ca->key))
+        return;
     ex.inrstate |= EX_RIGHT;
     ex.inrstate &= ~(EX_FRESH|EX_NEW);
 
