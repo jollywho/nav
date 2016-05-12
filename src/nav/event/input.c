@@ -13,6 +13,7 @@
 
 static uv_poll_t poll_handle;
 static TermKey *tk;
+static Keyarg ca;
 
 typedef unsigned char char_u;
 
@@ -282,7 +283,8 @@ void input_check()
   termkey_advisereadable(tk);
 
   while ((termkey_getkey_force(tk, &key)) == TERMKEY_RES_KEY) {
-    Keyarg ca = {.key = process_key(&key), .utf8 = key.utf8};
+    ca.key = process_key(&key);
+    ca.utf8 = key.utf8;
     window_input(&ca);
   }
 }
