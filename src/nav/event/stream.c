@@ -90,11 +90,17 @@ void stream_close_handle(Stream *stream)
   }
 }
 
+static void stream_cleanup_cb(void **argv)
+{
+  Stream *stream = argv[0];
+  rbuffer_free(stream->buffer);
+}
+
 static void close_cb(uv_handle_t *handle)
 {
   Stream *stream = handle->data;
   if (stream->buffer) {
-    rbuffer_free(stream->buffer);
+    CREATE_EVENT(eventq(), stream_cleanup_cb, 1, stream);
   }
   if (stream->close_cb) {
     stream->close_cb(stream, stream->data);
