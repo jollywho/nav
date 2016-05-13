@@ -68,8 +68,10 @@ void input_init(void);
 void input_cleanup(void);
 void input_setup_tbl(fn_keytbl *kt);
 
+void unset_map(char *from);
 void set_map(char *lhs, char *rhs);
 
+bool try_do_map(Keyarg *ca);
 int find_command(fn_keytbl *kt, int cmdchar);
 int find_do_key(fn_keytbl *kt, Keyarg *ca, void *obj);
 void input_check();

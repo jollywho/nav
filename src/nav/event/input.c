@@ -16,6 +16,8 @@ static uv_poll_t poll_handle;
 static TermKey *tk;
 static Keyarg ca;
 static Map *kmap;
+static char keybuf[16];
+static unsigned keypos;
 
 typedef unsigned char char_u;
 
@@ -200,23 +202,47 @@ static char* replace_termcodes(char *from)
   return to;
 }
 
+void unset_map(char *from)
+{
+  char *lhs = replace_termcodes(from);
+  char *get = map_delete(kmap, lhs);
+  free(get);
+  free(lhs);
+}
+
 void set_map(char *from, char *to)
 {
   log_msg("INPUT", "<<-- from: %s to: %s", from, to);
   char *lhs = replace_termcodes(from);
   char *rhs = replace_termcodes(to);
 
+  char *get = map_delete(kmap, lhs);
+  free(get);
+
   map_put(kmap, lhs, rhs);
   free(lhs);
 }
 
+void input_flush(Keyarg *ca)
+{
+  memset(keybuf, 0, LENGTH(keybuf));
+  keypos = 0;
+}
+
 bool try_do_map(Keyarg *ca)
 {
-  char chstr[2] = {ca->key, '\0'};
-  char *get = map_get(kmap, chstr);
+  keybuf[keypos++] = ca->key;
+  keybuf[keypos] = '\0';
+
+  if (!map_contains(kmap, keybuf))
+    input_flush(ca);
+
+  char *get = map_get(kmap, keybuf);
   if (!get)
-    return false;
+   return false;
+
   log_msg("INPUT", "<<<<<<<<<<<<<<<<<<");
+  input_flush(ca);
 
   char ch;
   char *rhs = get;
@@ -433,9 +459,6 @@ int find_do_key(fn_keytbl *kt, Keyarg *ca, void *obj)
         return ret;
     }
   }
-
-  if (try_do_map(ca))
-    return 1;
 
   if (ISDIGIT(ca->key)) {
     ca->opcount *= 10;

@@ -378,15 +378,26 @@ cleanup:
 
 static Cmdret conf_mapping(List *args, Cmdarg *ca)
 {
-  if (strlen(ca->cmdline->line) < strlen("map ") + 3)
+  log_msg("CONFIG", "conf_map");
+  bool reverse = ca->cmdstr->rev;
+  int req_len = 4 + reverse;
+
+  if (strlen(ca->cmdline->line) < req_len)
     return NORET;
-  char *line = ca->cmdline->line + strlen("map ");
-  if (!line)
+  char *line = ca->cmdline->line + req_len;
+
+  if (reverse) {
+    unset_map(line);
     return NORET;
+  }
+
+  if (!line || !strchr(line, ' '))
+    return NORET;
+
   char *from = strdup(line);
   char *to = strchr(from, ' ');
   *to = '\0';
-  log_msg("CONFIG", "%s -> %s", from, to);
+
   set_map(from, to+1);
   free(from);
   return NORET;

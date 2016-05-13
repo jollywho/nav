@@ -195,8 +195,8 @@ void window_input(Keyarg *ca)
   if (win.ex)
     return ex_input(ca);
 
-  int ret = 0;
-  if (window_get_focus())
+  bool ret = try_do_map(ca);
+  if (!ret && window_get_focus())
     ret = buf_input(layout_buf(&win.layout), ca);
   if (!ret)
     ret = find_do_key(&key_tbl, ca, &win);
