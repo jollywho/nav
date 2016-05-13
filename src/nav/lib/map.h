@@ -37,5 +37,6 @@ void map_clear(Map*);
 void map_free(Map*);
 /* Call free(3) for every pointer stored in the map, then free the map itself */
 void map_free_full(Map*);
+bool map_multi_suffix(const Map *n, const char *key);
 
 #endif

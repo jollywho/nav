@@ -229,16 +229,18 @@ void input_flush(Keyarg *ca)
   keypos = 0;
 }
 
+//TODO: map timeout
 bool try_do_map(Keyarg *ca)
 {
   keybuf[keypos++] = ca->key;
   keybuf[keypos] = '\0';
 
-  if (!map_contains(kmap, keybuf))
+  const Map *pre = map_prefix(kmap, keybuf);
+  if (map_empty(pre))
     input_flush(ca);
 
   char *get = map_get(kmap, keybuf);
-  if (!get)
+  if (!get || map_multi_suffix(pre, keybuf))
    return false;
 
   log_msg("INPUT", "<<<<<<<<<<<<<<<<<<");

@@ -338,3 +338,14 @@ void map_free_full(Map *map)
 	map_iterate(map, free_elem, NULL);
 	map_free(map);
 }
+
+bool map_multi_suffix(const Map *n, const char *key)
+{
+	if (!n->u.n)
+		return false;
+
+	if (n->v)
+		return false;
+
+	return n->u.n->child[0].v || n->u.n->child[1].v;
+}
