@@ -339,11 +339,8 @@ void map_free_full(Map *map)
 	map_free(map);
 }
 
-bool map_multi_suffix(const Map *n, const char *key)
+bool map_multi_suffix(const Map *n)
 {
-	if (!n->u.n)
-		return false;
-
 	if (n->v)
 		return false;
 

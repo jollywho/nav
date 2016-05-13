@@ -13,6 +13,7 @@
 #include "nav/util.h"
 
 static uv_poll_t poll_handle;
+static uv_timer_t ttimer;
 static TermKey *tk;
 static Keyarg ca;
 static Map *kmap;
@@ -121,6 +122,7 @@ void input_init(void)
   tk = termkey_new(0,0);
   termkey_set_flags(tk, TERMKEY_FLAG_UTF8 | TERMKEY_CANON_DELBS);
 
+  uv_timer_init(eventloop(), &ttimer);
   uv_poll_init(eventloop(), &poll_handle, 0);
   uv_poll_start(&poll_handle, UV_READABLE, input_check);
   kmap = map_new();
@@ -225,22 +227,32 @@ void set_map(char *from, char *to)
 
 void input_flush(Keyarg *ca)
 {
+  uv_timer_stop(&ttimer);
   memset(keybuf, 0, LENGTH(keybuf));
   keypos = 0;
 }
 
-//TODO: map timeout
+static void ttimeout_cb(uv_timer_t *handle)
+{
+  input_flush(&ca);
+}
+
 bool try_do_map(Keyarg *ca)
 {
   keybuf[keypos++] = ca->key;
   keybuf[keypos] = '\0';
 
   const Map *pre = map_prefix(kmap, keybuf);
-  if (map_empty(pre))
+
+  if (map_empty(pre)) {
     input_flush(ca);
+    return false;
+  }
+
+  uv_timer_start(&ttimer, ttimeout_cb, 1000, 0);
 
   char *get = map_get(kmap, keybuf);
-  if (!get || map_multi_suffix(pre, keybuf))
+  if (!get || map_multi_suffix(pre))
    return false;
 
   log_msg("INPUT", "<<<<<<<<<<<<<<<<<<");
