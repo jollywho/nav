@@ -28,6 +28,7 @@ static compl_entry compl_defaults[] = {
   { "events",    event_list    },
   { "options",   options_list  },
   { "groups",    groups_list   },
+  { "augs",      augs_list     },
 };
 
 static compl_entry *compl_table;

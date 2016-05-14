@@ -474,6 +474,7 @@ int find_do_key(fn_keytbl *kt, Keyarg *ca, void *obj)
     }
   }
 
+  //TODO: dont erase opcount on map prefix
   if (ISDIGIT(ca->key)) {
     ca->opcount *= 10;
     ca->opcount += ca->key - '0';

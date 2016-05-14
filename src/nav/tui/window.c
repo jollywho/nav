@@ -65,8 +65,6 @@ static const Cmd_T cmdtable[] = {
 static char *compl_cmds[] = {
   "q;window:string:wins",
   "close;window:string:wins",
-  "au;event:string:events",
-  "autocmd;event:string:events",
   "bu;plugin:string:plugins",
   "buffer;plugin:string:plugins",
   "bd;window:string:wins",

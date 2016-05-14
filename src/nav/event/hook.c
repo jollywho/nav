@@ -16,6 +16,7 @@
 typedef struct {
   char type;       //type of hook: HK_{INTL,CMD,TMP}
   char *msg;       //hooked event msg. TODO: replace with handler ptr
+  char *grp;       //augroup name
   Plugin *caller;
   Plugin *host;
   Pattern *pat;
@@ -25,9 +26,13 @@ typedef struct {
   } data;
 } Hook;
 
-//TODO: group name for namespace
 typedef struct {
-  char *msg;         //group name for hooked event msg
+  char *key;
+  UT_hash_handle hh;
+} Augroup;
+
+typedef struct {
+  char *msg;
   UT_hash_handle hh;
   UT_array *hooks;   /* Hook */
 } EventHandler;
@@ -45,6 +50,7 @@ static const char *events_list[] = {
 
 static UT_icd hook_icd = { sizeof(Hook),NULL,NULL,NULL };
 static EventHandler *events_tbl;
+static Augroup *aug_tbl;
 
 void hook_init()
 {
@@ -77,6 +83,28 @@ void hook_cleanup_host(Plugin *host)
   free(host->event_hooks);
 }
 
+void hook_group_add(char *key)
+{
+  log_msg("HOOK", "GROUP ADD");
+  Augroup *aug = malloc(sizeof(Augroup));
+  aug->key = strdup(key);
+
+  hook_group_remove(key);
+  HASH_ADD_STR(aug_tbl, key, aug);
+}
+
+void hook_group_remove(char *key)
+{
+  log_msg("HOOK", "GROUP REMOVE");
+  Augroup *find;
+  HASH_FIND_STR(aug_tbl, key, find);
+  if (find) {
+    HASH_DEL(aug_tbl, find);
+    free(find->key);
+    free(find);
+  }
+}
+
 void hook_add(char *event, char *pattern, char *cmd)
 {
   log_msg("HOOK", "ADD");
@@ -93,7 +121,7 @@ void hook_add(char *event, char *pattern, char *cmd)
   if (pattern)
     pat = regex_pat_new(pattern);
 
-  Hook hook = { HK_CMD, evh->msg, NULL, NULL, pat, .data.cmd = cmd };
+  Hook hook = { HK_CMD, evh->msg, NULL, NULL, NULL, pat, .data.cmd = cmd };
   utarray_push_back(evh->hooks, &hook);
 }
 
@@ -120,7 +148,7 @@ void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg)
   if (!evh)
     return;
 
-  Hook hook = { HK_INTL, evh->msg, caller, host, NULL, .data.fn = fn };
+  Hook hook = { HK_INTL, evh->msg, NULL, caller, host, NULL, .data.fn = fn };
   utarray_push_back(evh->hooks, &hook);
 
   HookHandler *hkh = host->event_hooks;
@@ -252,5 +280,17 @@ void event_list(List *args)
   compl_new(LENGTH(events_list), COMPL_STATIC);
   for (int i = 0; i < LENGTH(events_list); i++) {
     compl_set_key(i, "%s", events_list[i]);
+  }
+}
+
+void augs_list(List *args)
+{
+  int i = 0;
+  Augroup *it;
+  compl_new(HASH_COUNT(aug_tbl), COMPL_STATIC);
+  for (it = aug_tbl; it != NULL; it = it->hh.next) {
+    compl_set_key(i, "%s", it->key);
+    //compl_set_col(i, "%s", #GROUP_COUNT#);
+    i++;
   }
 }

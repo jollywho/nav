@@ -12,6 +12,7 @@
 #include "nav/event/fs.h"
 #include "nav/event/hook.h"
 
+static Cmdret conf_augroup();
 static Cmdret conf_autocmd();
 static Cmdret conf_setting();
 static Cmdret conf_color();
@@ -22,6 +23,7 @@ static Cmdret conf_op();
 static Cmdret conf_source();
 
 static const Cmd_T cmdtable[] = {
+  {"augroup","aug",  conf_augroup,  0},
   {"autocmd","au",   conf_autocmd,  0},
   {"set",0,          conf_setting,  0},
   {"highlight","hi", conf_color,    0},
@@ -34,6 +36,10 @@ static const Cmd_T cmdtable[] = {
 };
 
 static char *compl_cmds[] = {
+  "au;event:string:events",
+  "autocmd;event:string:events",
+  "aug;group:string:augs",
+  "augroup;group:string:augs",
   "set;option:string:options",
   "hi;group:string:groups",
   "op;group:string:groups",
@@ -235,6 +241,21 @@ bool config_read(FILE *file)
   }
   cmd_flush();
   return 1;
+}
+
+Cmdret conf_augroup(List *args, Cmdarg *ca)
+{
+  log_msg("CONFIG", "augroup");
+  char *key = list_arg(args, 1, VAR_STRING);
+  if (!key)
+    return NORET;
+
+  if (ca->cmdstr->rev)
+    hook_group_remove(key);
+  else
+    hook_group_add(key);
+
+  return NORET;
 }
 
 Cmdret conf_autocmd(List *args, Cmdarg *ca)

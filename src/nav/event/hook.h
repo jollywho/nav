@@ -16,6 +16,8 @@ void hook_cleanup();
 void hook_init_host(Plugin *host);
 void hook_cleanup_host(Plugin *host);
 
+void hook_group_add(char *key);
+void hook_group_remove(char *key);
 void hook_add(char *event, char *pattern, char *cmd);
 void hook_remove(char *event, char *pattern);
 
@@ -26,5 +28,6 @@ void hook_clear_msg(Plugin *host, char *msg);
 void hook_clear_host(Plugin *host);
 
 void event_list(List *args);
+void augs_list(List *args);
 
 #endif
