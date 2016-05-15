@@ -199,7 +199,6 @@ void img_new(Plugin *plugin, Buffer *buf, char *arg)
   img->sh_clear = shell_new(plugin);
   shell_args(img->sh_clear, (char**)args, NULL);
 
-  hook_init_host(plugin);
   hook_add_intl(plugin, NULL,   pipe_attach_cb, "pipe_left");
   hook_add_intl(plugin, NULL,   pipe_remove_cb, "pipe_remove");
   hook_add_intl(plugin, plugin, try_refresh,    "window_resize");
@@ -219,9 +218,6 @@ void img_delete(Plugin *plugin)
   log_msg("IMG", "img_cleanup");
   Img *img = plugin->top;
   fn_handle *h = img->base->hndl;
-
-  hook_clear_host(img->base);
-  hook_cleanup_host(img->base);
 
   if (img->img_set) {
     shell_set_in_buffer(img->sh_clear, img->cl_msg);

@@ -365,7 +365,6 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   model_open(plugin->hndl);
   buf_set_plugin(buf, plugin);
   buf_set_status(buf, 0, fm->cur_dir, 0);
-  hook_init_host(plugin);
   hook_add_intl(plugin, plugin, fm_paste,   "paste" );
   hook_add_intl(plugin, plugin, fm_remove,  "remove");
   hook_add_intl(plugin, plugin, fm_left,    "left"  );
@@ -393,8 +392,6 @@ void fm_delete(Plugin *plugin)
   jump_cleanup(fm);
   model_close(h);
   model_cleanup(h);
-  hook_clear_host(plugin);
-  hook_cleanup_host(plugin);
   fs_cleanup(fm->fs);
   free(fm->cur_dir);
   free(h);

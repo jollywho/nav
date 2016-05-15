@@ -24,12 +24,8 @@ void out_new(Plugin *plugin, Buffer *buf, char *arg)
 
   buf_set_plugin(buf, plugin);
   buf_set_pass(buf);
-
-  hook_init_host(plugin);
 }
 
 void out_delete(Plugin *plugin)
 {
-  hook_clear_host(plugin);
-  hook_cleanup_host(plugin);
 }

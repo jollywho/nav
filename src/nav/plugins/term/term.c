@@ -63,7 +63,6 @@ void term_new(Plugin *plugin, Buffer *buf, char *arg)
   term->readfd.data = term;
   window_start_override(plugin);
 
-  hook_init_host(plugin);
   hook_add_intl(plugin, plugin, plugin_resize, "window_resize");
 }
 
@@ -90,8 +89,6 @@ void term_delete(Plugin *plugin)
   SLIST_REMOVE(&mainloop()->subterms, term, term, ent);
   uv_poll_stop(&term->readfd);
   window_stop_override();
-  hook_clear_host(term->base);
-  hook_cleanup_host(term->base);
 
   uv_handle_t *hp = (uv_handle_t*)&term->readfd;
   uv_cancel((uv_req_t*)&term->readfd);

@@ -10,6 +10,7 @@
 #include "nav/compl.h"
 #include "nav/log.h"
 #include "nav/option.h"
+#include "nav/event/hook.h"
 
 typedef struct plugin_ent plugin_ent;
 typedef struct {
@@ -146,6 +147,7 @@ void plugin_close(Plugin *plugin)
 
   unset_cid(plugin);
   plugin_table[i].close_cb(plugin);
+  hook_clear_host(plugin->id);
   free(plugin);
 }
 

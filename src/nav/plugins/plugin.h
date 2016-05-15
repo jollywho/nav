@@ -10,7 +10,6 @@ typedef struct fn_tbl fn_tbl;
 typedef struct Buffer Buffer;
 typedef struct fn_handle fn_handle;
 typedef struct Model Model;
-typedef struct HookHandler HookHandler;
 typedef struct Overlay Overlay;
 typedef struct fn_reg fn_reg;
 typedef struct Keyarg Keyarg;
@@ -38,7 +37,6 @@ struct Plugin {
   void *top;
   void (*_cancel)(Plugin *plugin);
   void (*_focus)(Plugin *plugin);
-  HookHandler *event_hooks;
 };
 
 typedef struct {

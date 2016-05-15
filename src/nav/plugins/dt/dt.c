@@ -43,7 +43,6 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   buf_set_plugin(buf, plugin);
   buf_set_status(buf, 0, arg, 0);
   buf_set_flat(buf);
-  hook_init_host(plugin);
 
   // open file
   // parse with given or default schema
@@ -57,8 +56,6 @@ void dt_delete(Plugin *plugin)
   log_msg("DT", "delete");
   DT *dt = plugin->top;
   fn_handle *h = plugin->hndl;
-  hook_clear_host(plugin);
-  hook_cleanup_host(plugin);
   model_close(h);
   model_cleanup(h);
   free(dt->filename);
