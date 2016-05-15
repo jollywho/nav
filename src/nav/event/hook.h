@@ -20,6 +20,8 @@ void hook_group_add(char *key);
 void hook_group_remove(char *key);
 void hook_add(char *event, char *pattern, char *cmd);
 void hook_remove(char *event, char *pattern);
+char* isgroup(char *key);
+char* isevent(char *key);
 
 void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg);
 void hook_rm_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg);

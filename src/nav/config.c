@@ -261,17 +261,38 @@ Cmdret conf_augroup(List *args, Cmdarg *ca)
 Cmdret conf_autocmd(List *args, Cmdarg *ca)
 {
   log_msg("CONFIG", "autocmd");
-  int len = utarray_len(args->items);
-  char *event = list_arg(args, 1, VAR_STRING);
-  int pos = len > 3 ? 2 : -1;
-  int rem = len > 3 ? 3 : 2;
-  char *pat = list_arg(args, pos, VAR_STRING);
-  char *cur = cmdline_line_after(ca->cmdline, rem-1);
+  int bufid = -1;
+  int argidx = 0;
 
-  if (event && ca->cmdstr->rev)
-    hook_remove(event, pat);
-  else if (event && cur)
-    hook_add(event, pat, cur+1);
+  char *bufno = list_arg(args, argidx+1, VAR_STRING);
+  if (!str_num(bufno, &bufid))
+    argidx--;
+
+  char *group = list_arg(args, argidx+2, VAR_STRING);
+  if (!(group = isgroup(group)))
+    argidx--;
+
+  char *event = list_arg(args, argidx+3, VAR_STRING);
+  event = isevent(event);
+
+  char *pat   = list_arg(args, argidx+4, VAR_STRING);
+
+  if (ca->cmdstr->rev)  {
+    //TODO: validate internally
+    hook_remove(event, pat /*, group*/);
+    return NORET;
+  }
+
+  char *expr = cmdline_line_from(ca->cmdline, argidx+5);
+  log_msg("CONFIG", "|%s|%s|%s|%s|%s", bufno, group, event, pat, expr);
+
+  if (!event || !pat || !expr)
+    return (Cmdret){RET_INT, .val.v_int = -1};
+
+  if (*pat == '*')
+    pat = NULL;
+
+  hook_add(event, pat, expr);
   return NORET;
 }
 

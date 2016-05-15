@@ -105,23 +105,22 @@ void hook_group_remove(char *key)
   }
 }
 
-void hook_add(char *event, char *pattern, char *cmd)
+void hook_add(char *event, char *pattern, char *expr)
 {
   log_msg("HOOK", "ADD");
-  log_msg("HOOK", "<%s> %s `%s`", event, pattern, cmd);
+  log_msg("HOOK", "<%s> %s `%s`", event, pattern, expr);
   EventHandler *evh;
   HASH_FIND_STR(events_tbl, event, evh);
   if (!evh)
     return;
 
-  cmd = strip_quotes(cmd);
-  log_msg("HOOK", "<%s> %s `%s`", event, pattern, cmd);
+  expr = strip_quotes(expr);
 
   Pattern *pat = NULL;
   if (pattern)
     pat = regex_pat_new(pattern);
 
-  Hook hook = { HK_CMD, evh->msg, NULL, NULL, NULL, pat, .data.cmd = cmd };
+  Hook hook = { HK_CMD, evh->msg, NULL, NULL, NULL, pat, .data.cmd = expr };
   utarray_push_back(evh->hooks, &hook);
 }
 
@@ -135,8 +134,10 @@ void hook_remove(char *event, char *pattern)
   Hook *it = NULL;
   for (int i = 0; i < utarray_len(evh->hooks); i++) {
     it = (Hook*)utarray_eltptr(evh->hooks, i);
-    if (it->type == HK_CMD)
+    if (it->type == HK_CMD) {
+      free(it->data.cmd);
       utarray_erase(evh->hooks, i, 1);
+    }
   }
 }
 
@@ -225,6 +226,30 @@ EventHandler* find_evh(char *msg)
   EventHandler *evh;
   HASH_FIND_STR(events_tbl, msg, evh);
   return evh;
+}
+
+char* isgroup(char *key)
+{
+  if (!key)
+    return NULL;
+
+  Augroup *find;
+  HASH_FIND_STR(aug_tbl, key, find);
+  if (find)
+    return key;
+
+  return NULL;
+}
+
+char* isevent(char *key)
+{
+  if (!key)
+    return NULL;
+
+  if (find_evh(key))
+    return key;
+
+  return NULL;
 }
 
 void call_intl_hook(Hook *hook, Plugin *host, Plugin *caller, void *data)
