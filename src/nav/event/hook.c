@@ -126,7 +126,6 @@ static void hook_delete(EventHandler *evh, Augroup *aug)
     Hook *it = (Hook*)utarray_eltptr(evh->hooks, i);
     if (it->type == HK_CMD && it->aug == aug) {
       free(it->data.cmd);
-      free(it);
       utarray_erase(evh->hooks, i, 1);
     }
   }
@@ -164,7 +163,6 @@ void hook_clear_host(int id)
       if (it->bufno == id) {
         if (it->type == HK_CMD)
           free(it->data.cmd);
-        free(it);
         utarray_erase(evh->hooks, i, 1);
       }
     }
@@ -276,7 +274,8 @@ void call_hooks(EventHandler *evh, Plugin *host, Plugin *caller, HookArg *hka)
   while ((it = (Hook*)utarray_next(evh->hooks, it))) {
 
     if (it->type == HK_CMD) {
-      if (it->bufno == -1 || (host && host->id == it->bufno))
+      int id = id_from_plugin(host);
+      if (it->bufno == -1 || (host && id == it->bufno))
         call_cmd_hook(it, hka);
       continue;
     }

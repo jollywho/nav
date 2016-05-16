@@ -29,7 +29,6 @@ struct fn_handle {
 };
 
 struct Plugin {
-  int id;
   char *name;
   char *fmt_name;
   char *compl_key;
@@ -53,11 +52,16 @@ void plugin_init();
 void plugin_cleanup();
 int plugin_isloaded(const char *);
 
+void obtain_id(Buffer *buf);
+void forefit_id(Buffer *buf);
+
 int plugin_open(const char *name, Buffer *buf, char *line);
 void plugin_close(Plugin *plugin);
 
 Plugin* focus_plugin();
+Buffer* buf_from_id(int id);
 Plugin* plugin_from_id(int id);
+int id_from_plugin(Plugin *plug);
 int plugin_requires_buf(const char *);
 char *focus_dir();
 

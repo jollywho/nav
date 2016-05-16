@@ -365,15 +365,15 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   model_open(plugin->hndl);
   buf_set_plugin(buf, plugin);
   buf_set_status(buf, 0, fm->cur_dir, 0);
-  hook_add_intl(plugin->id, plugin, plugin, fm_paste,   "paste" );
-  hook_add_intl(plugin->id, plugin, plugin, fm_remove,  "remove");
-  hook_add_intl(plugin->id, plugin, plugin, fm_left,    "left"  );
-  hook_add_intl(plugin->id, plugin, plugin, fm_right,   "right" );
-  hook_add_intl(plugin->id, plugin, plugin, fm_req_dir, "open"  );
-  hook_add_intl(plugin->id, plugin, plugin, fm_jump,    "jump"  );
+  hook_add_intl(buf->id, plugin, plugin, fm_paste,   "paste" );
+  hook_add_intl(buf->id, plugin, plugin, fm_remove,  "remove");
+  hook_add_intl(buf->id, plugin, plugin, fm_left,    "left"  );
+  hook_add_intl(buf->id, plugin, plugin, fm_right,   "right" );
+  hook_add_intl(buf->id, plugin, plugin, fm_req_dir, "open"  );
+  hook_add_intl(buf->id, plugin, plugin, fm_jump,    "jump"  );
 #ifdef PIPES_SUPPORTED
-  hook_add_intl(plugin->id, plugin, plugin, fm_pipe_left,  "pipe_left" );
-  hook_add_intl(plugin->id, plugin, plugin, fm_pipe_right, "pipe_right");
+  hook_add_intl(buf->id, plugin, plugin, fm_pipe_left,  "pipe_left" );
+  hook_add_intl(buf->id, plugin, plugin, fm_pipe_right, "pipe_right");
 #endif
 
   fm->fs = fs_init(plugin->hndl);

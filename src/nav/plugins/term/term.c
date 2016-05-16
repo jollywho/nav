@@ -63,7 +63,7 @@ void term_new(Plugin *plugin, Buffer *buf, char *arg)
   term->readfd.data = term;
   window_start_override(plugin);
 
-  hook_add_intl(plugin->id, plugin, plugin, plugin_resize, "window_resize");
+  hook_add_intl(buf->id, plugin, plugin, plugin_resize, "window_resize");
 }
 
 void term_set_editor(Plugin *plugin, Ed *ed)

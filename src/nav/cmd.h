@@ -8,8 +8,8 @@
 #define OUTPUT    0x01
 #define BUFFER    0x02
 #define RET_INT   0x04
-#define PLUGIN    0x40
-#define STRING    0x80
+#define PLUGIN    0x32
+#define STRING    0x64
 #define NORET (Cmdret){}
 
 typedef struct Cmd_T Cmd_T;

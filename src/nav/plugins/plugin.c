@@ -10,12 +10,11 @@
 #include "nav/compl.h"
 #include "nav/log.h"
 #include "nav/option.h"
-#include "nav/event/hook.h"
 
 typedef struct plugin_ent plugin_ent;
 typedef struct {
   int key;
-  Plugin *plugin;
+  Buffer *buf;
   UT_hash_handle hh;
 } Cid;
 
@@ -79,7 +78,7 @@ static int find_plugin(const char *name)
   return -1;
 }
 
-static void set_cid(Plugin *plugin)
+void obtain_id(Buffer *buf)
 {
   int key;
   Cid *cid = malloc(sizeof(Cid));
@@ -94,15 +93,15 @@ static void set_cid(Plugin *plugin)
     key = ++max_id;
 
   cid->key = key;
-  cid->plugin = plugin;
-  plugin->id = key;
+  cid->buf = buf;
+  buf->id = key;
   HASH_ADD_INT(id_table, key, cid);
 }
 
-static void unset_cid(Plugin *plugin)
+void forefit_id(Buffer *buf)
 {
   Cid *cid;
-  int key = plugin->id;
+  int key = buf->id;
 
   HASH_FIND_INT(id_table, &key, cid);
   HASH_DEL(id_table, cid);
@@ -130,10 +129,9 @@ int plugin_open(const char *name, Buffer *buf, char *line)
 
   log_msg("PLUG", "%s", plugin_table[i].name);
   Plugin *plugin = calloc(1, sizeof(Plugin));
-  if (buf)
-    set_cid(plugin);
   plugin_table[i].open_cb(plugin, buf, line);
-  return plugin->id;
+  int id = buf ? buf->id : -1;
+  return id;
 }
 
 void plugin_close(Plugin *plugin)
@@ -145,9 +143,7 @@ void plugin_close(Plugin *plugin)
   if (i == -1)
     return;
 
-  unset_cid(plugin);
   plugin_table[i].close_cb(plugin);
-  hook_clear_host(plugin->id);
   free(plugin);
   plugin = NULL;
 }
@@ -170,13 +166,26 @@ char* focus_dir()
   return window_cur_dir();
 }
 
-Plugin* plugin_from_id(int id)
+Buffer* buf_from_id(int id)
 {
   Cid *cid;
   HASH_FIND_INT(id_table, &id, cid);
   if (cid)
-    return cid->plugin;
+    return cid->buf;
   return NULL;
+}
+
+Plugin* plugin_from_id(int id)
+{
+  Buffer *buf = buf_from_id(id);
+  if (buf)
+    return buf->plugin;
+  return NULL;
+}
+
+int id_from_plugin(Plugin *plug)
+{
+  return plug->hndl->buf->id;
 }
 
 void plugin_list(List *args)
@@ -198,7 +207,7 @@ void win_list(List *args)
   compl_new(HASH_COUNT(id_table), COMPL_STATIC);
   for (it = id_table; it != NULL; it = it->hh.next) {
     compl_set_key(i, "%d", it->key);
-    compl_set_col(i, "%s", it->plugin->name);
+    compl_set_col(i, "%s", it->buf->plugin->name);
     i++;
   }
 }

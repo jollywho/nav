@@ -158,7 +158,8 @@ static void pipe_attach_cb(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("IMG", "pipe_attach_cb");
   if (strcmp(caller->name, "fm"))
     return;
-  hook_add_intl(host->id, caller, host, cursor_change_cb, "cursor_change");
+  int id = id_from_plugin(host);
+  hook_add_intl(id, caller, host, cursor_change_cb, "cursor_change");
   cursor_change_cb(caller, host, NULL);
 }
 
@@ -199,15 +200,16 @@ void img_new(Plugin *plugin, Buffer *buf, char *arg)
   img->sh_clear = shell_new(plugin);
   shell_args(img->sh_clear, (char**)args, NULL);
 
-  hook_add_intl(plugin->id, plugin, NULL,   pipe_attach_cb, "pipe_left");
-  hook_add_intl(plugin->id, plugin, NULL,   pipe_remove_cb, "pipe_remove");
-  hook_add_intl(plugin->id, plugin, plugin, try_refresh,    "window_resize");
+  int id = id_from_plugin(plugin);
+  hook_add_intl(id, plugin, NULL,   pipe_attach_cb, "pipe_left");
+  hook_add_intl(id, plugin, NULL,   pipe_remove_cb, "pipe_remove");
+  hook_add_intl(id, plugin, plugin, try_refresh,    "window_resize");
 
   if (arg) {
     int wnum;
     if (str_num(arg, &wnum)) {
       Plugin *rhs = plugin_from_id(wnum);
-      if (rhs && rhs->id != plugin->id)
+      if (rhs && wnum != id)
         send_hook_msg("pipe_left", plugin, rhs, NULL);
     }
   }

@@ -83,6 +83,7 @@ Buffer* buf_new()
   log_msg("BUFFER", "new");
   Buffer *buf = malloc(sizeof(Buffer));
   memset(buf, 0, sizeof(Buffer));
+  obtain_id(buf);
   buf->nc_win = newwin(1,1,0,0);
   buf->col_focus = opt_color(BUF_SEL_ACTIVE);
   buf->col_text  = opt_color(BUF_TEXT);
@@ -96,6 +97,8 @@ static int buf_expire(Buffer *buf)
   if (!buf->del)
     return 0;
 
+  buf_detach(buf);
+  forefit_id(buf);
   werase(buf->nc_win);
   wnoutrefresh(buf->nc_win);
   delwin(buf->nc_win);
@@ -117,6 +120,7 @@ void buf_detach(Buffer *buf)
   log_msg("BUFFER", "buf_detach");
   buf->attached = false;
   buf->plugin = NULL;
+  hook_clear_host(buf->id);
   overlay_erase(buf->ov);
 }
 
@@ -190,7 +194,7 @@ void buf_set_plugin(Buffer *buf, Plugin *plugin)
   buf->attached = true;
   buf->nodraw = false;
   buf->flat = false;
-  overlay_bufno(buf->ov, plugin->id);
+  overlay_bufno(buf->ov, buf->id);
   overlay_edit(buf->ov, plugin->fmt_name, 0, 0);
 }
 
@@ -590,7 +594,7 @@ int buf_line(Buffer *buf)
 int buf_top(Buffer *buf)
 {return buf->top;}
 int buf_id(Buffer *buf)
-{return buf->plugin ? buf->plugin->id : 0;}
+{return buf->id;}
 int buf_sel_count(Buffer *buf)
 {return select_count();}
 pos_T buf_size(Buffer *buf)

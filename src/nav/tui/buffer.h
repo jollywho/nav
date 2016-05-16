@@ -6,6 +6,7 @@
 #include "nav/filter.h"
 
 struct Buffer {
+  int id;
   WINDOW *nc_win;
   Plugin *plugin;
   Overlay *ov;

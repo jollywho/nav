@@ -42,7 +42,6 @@ static void window_reg_cmd();
 static void window_fltr_cmd();
 static void window_update(uv_timer_t *);
 
-
 static const Cmd_T cmdtable[] = {
   {"version","ver", win_version, 0},
   {"qa",0,          win_shut,    0},
@@ -329,8 +328,7 @@ Cmdret win_new(List *args, Cmdarg *ca)
   if (!plugin_requires_buf(name))
     return NORET;
 
-  if (!(ca->bflag & BUFFER))
-    window_add_buffer(ca->flags);
+  window_add_buffer(ca->flags);
 
   char *path_arg = cmdline_line_from(ca->cmdline, 2);
   int id = plugin_open(name, layout_buf(&win.layout), path_arg);
@@ -347,47 +345,79 @@ Cmdret win_close(List *args, Cmdarg *ca)
 
   Plugin *plug = buf_plugin(buf);
 
-  if (utarray_len(args->items) == 2) {
+  if (utarray_len(args->items) > 1) {
     char *arg = list_arg(args, 1, VAR_STRING);
     int wnum;
     if (!str_num(arg, &wnum))
       return NORET;
-    plug = plugin_from_id(wnum);
-    if (!plug) {
+    buf = buf_from_id(wnum);
+    if (!buf) {
       nv_err("invalid buffer %s", arg);
       return NORET;
     }
-    buf = plug->hndl->buf;
+    plug = buf_plugin(buf);
   }
 
   if (plug)
     plugin_close(plug);
-
-  if (!(ca->bflag & BUFFER))
-    window_remove_buffer(buf);
-  else
-    buf_detach(buf);
+  window_remove_buffer(buf);
   return NORET;
 }
 
 Cmdret win_buf(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_buf");
-  char *name = list_arg(args, 1, VAR_STRING);
-  if (!name || layout_is_root(&win.layout))
+  Buffer *buf = window_get_focus();
+  Plugin *plug = buf_plugin(buf);
+
+  int argidx = 1;
+  char *arg = list_arg(args, argidx, VAR_STRING);
+  int wnum;
+  if (str_num(arg, &wnum)) {
+    buf = buf_from_id(wnum);
+    if (!buf) {
+      nv_err("invalid buffer %s", arg);
+      return NORET;
+    }
+    argidx++;
+    plug = buf_plugin(buf);
+  }
+
+  char *name = list_arg(args, argidx, VAR_STRING);
+  if (!name || !buf)
     return NORET;
 
-  ca->bflag = BUFFER;
-  win_close(args, ca);
-  win_new(args, ca);
-  return NORET;
+  if (plug)
+    plugin_close(plug);
+  buf_detach(buf);
+
+  char *path_arg = cmdline_line_from(ca->cmdline, argidx+1);
+  int id = plugin_open(name, buf, path_arg);
+  return (Cmdret){RET_INT, .val.v_int = id};
 }
 
 Cmdret win_bdel(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_bdel");
-  ca->bflag = BUFFER;
-  win_close(args, ca);
+  Buffer *buf = window_get_focus();
+  Plugin *plug = buf_plugin(buf);
+  if (!plug)
+    return NORET;
+
+  int argidx = 1;
+  char *arg = list_arg(args, argidx, VAR_STRING);
+  int wnum;
+  if (str_num(arg, &wnum)) {
+    buf = buf_from_id(wnum);
+    if (!buf) {
+      nv_err("invalid buffer %s", arg);
+      return NORET;
+    }
+    argidx++;
+    plug = buf_plugin(buf);
+  }
+  plugin_close(plug);
+  buf_detach(buf);
   return NORET;
 }
 
