@@ -157,10 +157,21 @@ void hook_remove(char *group, char *event, char *pattern)
 void hook_clear_host(int id)
 {
   log_msg("HOOK", "CLEAR HOST");
-  //TODO: remove matching id from events_tbl
+  EventHandler *evh;
+  for (evh = events_tbl; evh != NULL; evh = evh->hh.next) {
+    for (int i = 0; i < utarray_len(evh->hooks); i++) {
+      Hook *it = (Hook*)utarray_eltptr(evh->hooks, i);
+      if (it->bufno == id) {
+        if (it->type == HK_CMD)
+          free(it->data.cmd);
+        free(it);
+        utarray_erase(evh->hooks, i, 1);
+      }
+    }
+  }
 }
 
-void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg)
+void hook_add_intl(int id, Plugin *host, Plugin *caller, hook_cb fn, char *msg)
 {
   log_msg("HOOK", "ADD_INTL");
   EventHandler *evh;
@@ -168,7 +179,7 @@ void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg)
   if (!evh)
     return;
 
-  Hook hook = { host->id, HK_INTL, NULL, caller, host, NULL, .data.fn = fn };
+  Hook hook = { id, HK_INTL, NULL, caller, host, NULL, .data.fn = fn };
   utarray_push_back(evh->hooks, &hook);
 }
 

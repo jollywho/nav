@@ -218,9 +218,9 @@ void op_new(Plugin *plugin, Buffer *buf, char *arg)
   op.base = plugin;
   plugin->top = &op;
   plugin->name = "op";
-  hook_add_intl(plugin, plugin, fileopen_cb,  "fileopen");
-  hook_add_intl(plugin, plugin, execopen_cb,  "execopen");
-  hook_add_intl(plugin, plugin, execclose_cb, "execclose");
+  hook_add_intl(plugin->id, plugin, plugin, fileopen_cb,  "fileopen");
+  hook_add_intl(plugin->id, plugin, plugin, execopen_cb,  "execopen");
+  hook_add_intl(plugin->id, plugin, plugin, execclose_cb, "execclose");
   hook_set_tmp("fileopen");
   hook_set_tmp("execopen");
   hook_set_tmp("execclose");

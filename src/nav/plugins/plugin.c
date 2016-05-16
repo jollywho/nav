@@ -149,6 +149,7 @@ void plugin_close(Plugin *plugin)
   plugin_table[i].close_cb(plugin);
   hook_clear_host(plugin->id);
   free(plugin);
+  plugin = NULL;
 }
 
 int plugin_isloaded(const char *name)

@@ -158,7 +158,7 @@ static void pipe_attach_cb(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("IMG", "pipe_attach_cb");
   if (strcmp(caller->name, "fm"))
     return;
-  hook_add_intl(caller, host, cursor_change_cb, "cursor_change");
+  hook_add_intl(host->id, caller, host, cursor_change_cb, "cursor_change");
   cursor_change_cb(caller, host, NULL);
 }
 
@@ -199,9 +199,9 @@ void img_new(Plugin *plugin, Buffer *buf, char *arg)
   img->sh_clear = shell_new(plugin);
   shell_args(img->sh_clear, (char**)args, NULL);
 
-  hook_add_intl(plugin, NULL,   pipe_attach_cb, "pipe_left");
-  hook_add_intl(plugin, NULL,   pipe_remove_cb, "pipe_remove");
-  hook_add_intl(plugin, plugin, try_refresh,    "window_resize");
+  hook_add_intl(plugin->id, plugin, NULL,   pipe_attach_cb, "pipe_left");
+  hook_add_intl(plugin->id, plugin, NULL,   pipe_remove_cb, "pipe_remove");
+  hook_add_intl(plugin->id, plugin, plugin, try_refresh,    "window_resize");
 
   if (arg) {
     int wnum;

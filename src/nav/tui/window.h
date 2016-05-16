@@ -12,7 +12,7 @@ void window_input(Keyarg *ca);
 
 void window_add_buffer(enum move_dir);
 void window_close_focus();
-void window_remove_buffer();
+void window_remove_buffer(Buffer *);
 void window_ex_cmd_end();
 void window_draw_all();
 Buffer* window_get_focus();

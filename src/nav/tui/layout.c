@@ -190,20 +190,43 @@ static void remove_overlay(Container *c, Container *hc, Container *n)
     overlay_delete(c->ov);
 }
 
-void layout_remove_buffer(Layout *layout)
+static Container* find_container(Container *c, Buffer *buf)
+{
+  Container *it = TAILQ_FIRST(&c->p);
+  while (it) {
+    if (!TAILQ_EMPTY(&it->p)) {
+      Container *inner = find_container(it, buf);
+      if (inner)
+        return inner;
+    }
+
+    if (it->buf == buf)
+      return it;
+
+    it = TAILQ_NEXT(it, ent);
+  }
+  return NULL;
+}
+
+void layout_remove_buffer(Layout *layout, Buffer *buf)
 {
   log_msg("LAYOUT", "layout_remove_buffer");
-  Container *c = layout->focus;
+  Container *c = find_container(layout->root, buf);
   Container *hc = c->parent;
   if (!hc)
     return;
 
   Container *next = next_or_prev(c);
+  Container **focus = &layout->focus;
+  if (*focus == c || *focus == next) {
+    focus = &next;
+    layout->focus = NULL;
+  }
+
   TAILQ_REMOVE(&hc->p, c, ent);
   hc->count--;
   remove_overlay(c, hc, next);
   free(c);
-  layout->focus = NULL;
 
   if (hc->count == 1 && !hc->root) {
     remove_overlay(hc, hc->parent, next);
@@ -222,7 +245,7 @@ void layout_remove_buffer(Layout *layout)
       next = TAILQ_FIRST(&next->p);
   }
 
-  swap_focus(layout, next);
+  swap_focus(layout, *focus);
   resize_container(layout->root);
 }
 

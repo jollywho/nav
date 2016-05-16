@@ -13,7 +13,7 @@ void layout_init(Layout *layout);
 void layout_cleanup(Layout *layout);
 
 void layout_add_buffer(Layout *layout, Buffer *next, enum move_dir dir);
-void layout_remove_buffer(Layout *layout);
+void layout_remove_buffer(Layout *layout, Buffer *);
 
 void layout_movement(Layout *layout, enum move_dir dir);
 void layout_swap(Layout *layout, enum move_dir dir);

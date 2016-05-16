@@ -340,15 +340,31 @@ Cmdret win_new(List *args, Cmdarg *ca)
 Cmdret win_close(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_close");
-  Buffer *buf = layout_buf(&win.layout);
-  if (buf)
-    plugin_close(buf_plugin(buf));
 
+  Buffer *buf = layout_buf(&win.layout);
   if (!buf)
     return win_shut();
 
+  Plugin *plug = buf_plugin(buf);
+
+  if (utarray_len(args->items) == 2) {
+    char *arg = list_arg(args, 1, VAR_STRING);
+    int wnum;
+    if (!str_num(arg, &wnum))
+      return NORET;
+    plug = plugin_from_id(wnum);
+    if (!plug) {
+      nv_err("invalid buffer %s", arg);
+      return NORET;
+    }
+    buf = plug->hndl->buf;
+  }
+
+  if (plug)
+    plugin_close(plug);
+
   if (!(ca->bflag & BUFFER))
-    window_remove_buffer();
+    window_remove_buffer(buf);
   else
     buf_detach(buf);
   return NORET;
@@ -500,14 +516,13 @@ void window_req_draw(void *obj, argv_callback cb)
   }
 }
 
-void window_remove_buffer()
+void window_remove_buffer(Buffer *buf)
 {
   log_msg("WINDOW", "BUFFER +CLOSE+");
-  Buffer *buf = window_get_focus();
   if (buf)
     buf_delete(buf);
 
-  layout_remove_buffer(&win.layout);
+  layout_remove_buffer(&win.layout, buf);
 
   if (layout_is_root(&win.layout)) {
     clear();

@@ -22,7 +22,7 @@ void hook_remove(char *group, char *event, char *pattern);
 char* hook_group_name(char *key);
 char* hook_event_name(char *key);
 
-void hook_add_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg);
+void hook_add_intl(int id, Plugin *host, Plugin *caller, hook_cb fn, char *msg);
 void hook_rm_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg);
 void hook_set_tmp(char *msg);
 void hook_clear_msg(Plugin *host, char *msg);
