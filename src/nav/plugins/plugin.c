@@ -207,7 +207,10 @@ void win_list(List *args)
   compl_new(HASH_COUNT(id_table), COMPL_STATIC);
   for (it = id_table; it != NULL; it = it->hh.next) {
     compl_set_key(i, "%d", it->key);
-    compl_set_col(i, "%s", it->buf->plugin->name);
+    char *name = "";
+    if (it->buf->plugin)
+      name = it->buf->plugin->name;
+    compl_set_col(i, "%s", name);
     i++;
   }
 }

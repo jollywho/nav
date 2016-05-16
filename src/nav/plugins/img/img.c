@@ -136,10 +136,6 @@ static void cursor_change_cb(Plugin *host, Plugin *caller, HookArg *hka)
     shell_set_in_buffer(img->sh_size, img->sz_msg);
     shell_start(img->sh_size);
   }
-  else if (img->img_set) { /* refresh */
-    shell_set_in_buffer(img->sh_clear, img->cl_msg);
-    shell_start(img->sh_clear);
-  }
 }
 
 //TODO: add to bottom of draw queue
