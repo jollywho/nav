@@ -593,11 +593,28 @@ void field_list(List *args)
     compl_list_add("%s", it->key);
     i++;
   }
+
   fn_vt_fld *vit;
   for (vit = t->vtfields; vit != NULL; vit = vit->hh.next) {
     if (vit->type == TYP_VOID)
       continue;
     compl_list_add("%s", vit->key);
+    i++;
+  }
+}
+
+void record_list(const char *tn, char *f1, char *f2)
+{
+  fn_tbl *t = get_tbl(tn);
+  if (!t)
+    return;
+
+  int i = 0;
+  fn_rec *it;
+  LIST_FOREACH(it, &t->recs, ent) {
+    compl_list_add("%s", rec_fld(it, f1));
+    if (f2)
+      compl_set_col(i, "%s", rec_fld(it, f2));
     i++;
   }
 }

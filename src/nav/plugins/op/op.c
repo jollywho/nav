@@ -45,10 +45,7 @@ static char* expand_field(void *owner, const char *name)
 
 void pid_list(List *args)
 {
-  ventry *it = fnd_val("op_procs", "group", NULL);
-  for (int i = 0; i < tbl_ent_count(it); i++) {
-    compl_list_add("%s", rec_fld(it->rec, "pid"));
-  }
+  record_list("op_procs", "pid", "group");
 }
 
 static void add_pid(char *name, int pid)

@@ -59,6 +59,7 @@ void* rec_fld(fn_rec *rec, const char *);
 char* ent_str(ventry *ent);
 ventry* ent_head(ventry *ent);
 ventry* ent_rec(fn_rec *rec, const char *);
+fn_rec* tbl_row(fn_tbl *t, int idx);
 int fld_type(const char *, const char *);
 
 void tbl_del_val(const char *, const char *, const char *);
@@ -81,5 +82,6 @@ void edit_trans(trans_rec *r, char *, char *, void *data);
 void clear_trans(trans_rec *r, int flush);
 
 void field_list(List *args);
+void record_list(const char *tn, char *f1, char *f2);
 
 #endif

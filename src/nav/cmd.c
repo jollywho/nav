@@ -788,8 +788,6 @@ void cmd_add(Cmd_T *src)
   cmd->name = src->name;
   HASH_ADD_STR(cmd_tbl, name, cmd);
 
-  log_err("CMD", "%s [%s]", src->name, src->msg);
-
   if (!src->alt || !strcmp(src->alt, src->name))
     return;
 
@@ -807,8 +805,10 @@ Cmd_T* cmd_find(const char *name)
 {
   if (!name)
     return NULL;
+
   Cmd_ptr *cmd;
   HASH_FIND_STR(cmd_tbl, name, cmd);
+
   if (cmd)
     return cmd->cmd;
   return NULL;
