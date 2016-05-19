@@ -38,6 +38,7 @@ struct Menu {
   int col_div;
   int col_box;
   int col_line;
+  int col_key;
   int col_sel;
 };
 
@@ -223,6 +224,7 @@ void menu_start(Menu *mnu)
   mnu->col_div    = opt_color(OVERLAY_SEP);
   mnu->col_box    = opt_color(OVERLAY_ACTIVE);
   mnu->col_line   = opt_color(OVERLAY_LINE);
+  mnu->col_key    = opt_color(BUF_DIR);
   ROW_MAX = get_opt_int("menu_rows");
   mnu->hintkeys = get_opt_str("hintkeys");
 
@@ -522,13 +524,13 @@ void menu_draw(Menu *mnu)
     for (int c = 0; c < row->colcount; c++) {
       char *col = row->columns;
       draw_wide(mnu->nc_win, i, ofs+3, col, colmax);
+      mvwchgat(mnu->nc_win,  i, ofs+3, strlen(col), A_NORMAL, mnu->col_key, NULL);
     }
   }
   //TODO: draw combined cmplist label with arg names
   //char *context = mnu->cx->key;
   //draw_wide(mnu->nc_win, ROW_MAX, 1, context, mnu->size.col);
-  mvwchgat(mnu->nc_win, ROW_MAX, 0, -1, A_NORMAL, mnu->col_line, NULL);
-
+  mvwchgat(mnu->nc_win, ROW_MAX,   0, -1, A_NORMAL, mnu->col_line, NULL);
   mvwchgat(mnu->nc_win, mnu->lnum, 0, -1, A_NORMAL, mnu->col_sel, NULL);
   wnoutrefresh(mnu->nc_win);
 }

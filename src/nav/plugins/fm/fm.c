@@ -20,7 +20,11 @@ static char* expand_field(void *owner, const char *name)
 {
   log_msg("FM", "expand_field %s", name);
 
-  varg_T args = buf_focus_sel(window_get_focus(), name);
+  Buffer *buf = window_get_focus();
+  if (!buf)
+    return strdup("");
+
+  varg_T args = buf_focus_sel(buf, name);
   char *src = lines2argv(args.argc, args.argv);
   log_msg("FM", "%s", src);
   del_param_list(args.argv, args.argc);

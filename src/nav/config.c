@@ -22,17 +22,18 @@ static Cmdret conf_mapping();
 static Cmdret conf_op();
 static Cmdret conf_source();
 
-static const Cmd_T cmdtable[] = {
-  {"augroup","aug",  "execute command on event", conf_augroup,    0},
-  {"autocmd","au",   "define autocmd group",     conf_autocmd,    0},
-  {"highlight","hi", "highlight group",          conf_color,      0},
-  {"let",0,          "",                         conf_variable,   0},
-  {"local",0,        "",                         conf_variable,   1},
-  {"map",0,          "",                         conf_mapping,    0},
-  {"op",0,           "set open association",     conf_op,         0},
-  {"set",0,          "",                         conf_setting,    0},
-  {"source","so",    "",                         conf_source,     0},
-  {"syntax","syn",   "",                         conf_syntax,     0},
+static Cmd_T cmdtable[] = {
+  {"augroup","aug",  "Execute command for event.",  conf_augroup,    0},
+  {"autocmd","au",   "Define autocmd group.",       conf_autocmd,    0},
+  {"highlight","hi", "Define a highlight group.",   conf_color,      0},
+  {"let",0,          "Set variable to expression.", conf_variable,   0},
+  {"kill",0,         "Kill a pid.",                 op_kill,         0},
+  {"local",0,        "Define a local variable.",    conf_variable,   1},
+  {"map",0,          "Map {lhs} to {rhs}.",         conf_mapping,    0},
+  {"opcmd","op",     "Set open command for group.", conf_op,         0},
+  {"set",0,          "Set option value.",           conf_setting,    0},
+  {"source","so",    "Read from file.",             conf_source,     0},
+  {"syntax","syn",   "Define syntax group.",        conf_syntax,     0},
 };
 
 static const char *config_paths[] = {

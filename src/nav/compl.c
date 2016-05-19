@@ -213,11 +213,14 @@ bool compl_forward(char *key, int pos)
     return false;
   }
 
-  compl_context *find;
-  HASH_FIND_STR(cmpl.cxtbl, key, find);
-  if (find) {
-    compl_push(find, 0, pos);
-    return true;
+  Cmd_T *cmd = cmd_find(key);
+  if (cmd) {
+    compl_context *find;
+    HASH_FIND_STR(cmpl.cxtbl, key, find);
+    if (find) {
+      compl_push(find, 0, pos);
+      return true;
+    }
   }
 
   //search name in matches to get group
@@ -230,7 +233,7 @@ bool compl_forward(char *key, int pos)
   //  compl_push(cx, argc+1);
 
   /* add non-blank context state */
-  if (key[1])
+  if (key[0] != ' ')
     compl_push(NULL, 0, pos);
 
   return false;

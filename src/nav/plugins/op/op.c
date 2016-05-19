@@ -186,7 +186,7 @@ static void execclose_cb(Plugin *host, Plugin *caller, HookArg *hka)
   remove_pid("", *(int*)hka->arg);
 }
 
-static Cmdret op_kill(List *args, Cmdarg *ca)
+Cmdret op_kill(List *args, Cmdarg *ca)
 {
   log_msg("OP", "kill");
   int pid;
@@ -238,9 +238,6 @@ void op_new(Plugin *plugin, Buffer *buf, char *arg)
     tbl_mk_fld("op_procs", "pid",   TYP_STR);
     //tbl_mk_fld("op_procs", "status", typSTRING);
   }
-
-  Cmd_T killcmd  = {"kill",0, "kill a pid", op_kill,  0};
-  cmd_add(&killcmd);
 }
 
 void op_delete(Plugin *plugin)

@@ -26,7 +26,7 @@ typedef struct {
   char *name;
   Cmd_T *cmd;
   UT_hash_handle hh;
-} Cmd_alt;
+} Cmd_ptr;
 
 typedef struct Cmdblock Cmdblock;
 struct Cmdblock {
@@ -60,22 +60,21 @@ static Cmdret cmd_endblock();
 static Cmdret cmd_funcblock();
 static Cmdret cmd_returnblock();
 
-static Cmd_T *cmd_table;
-static Cmd_alt *alt_tbl;
+static Cmd_ptr *cmd_tbl;
 static Script nvs;
 
 #define IS_READ  (nvs.opendef)
 #define IS_SEEK  (nvs.lvl > 0 && !IS_READ)
 #define IS_PARSE (IS_READ || IS_SEEK)
 
-static const Cmd_T builtins[] = {
-  {NULL,             NULL,   NULL,               0, 0},
-  {"if","if",        NULL,   cmd_ifblock,        0, 1},
-  {"else","el",      NULL,   cmd_elseblock,      0, 1},
-  {"elseif","elif",  NULL,   cmd_elseifblock,    0, 1},
-  {"end","en",       NULL,   cmd_endblock,       0, 1},
-  {"function","fu",  NULL,   cmd_funcblock,      0, 2},
-  {"return","ret",   NULL,   cmd_returnblock,    0, 0},
+static Cmd_T builtins[] = {
+  {NULL,             NULL, NULL,                 0, 0},
+  {"if","if",        "Conditional expression.",  cmd_ifblock,        0, 1},
+  {"else","el",      "Conditional expression.",  cmd_elseblock,      0, 1},
+  {"elseif","elif",  "Conditional expression.",  cmd_elseifblock,    0, 1},
+  {"end","en",       "End function definition.", cmd_endblock,       0, 1},
+  {"function","fu",  "Define a function.",       cmd_funcblock,      0, 2},
+  {"return","ret",   "Return from a function.",  cmd_returnblock,    0, 0},
 };
 
 static void stack_push(char *line)
@@ -134,14 +133,14 @@ void cmd_cleanup()
   cmd_clearall();
 }
 
-int name_sort(Cmd_T *a, Cmd_T *b)
+int name_sort(Cmd_ptr *a, Cmd_ptr *b)
 {
   return strcmp(a->name, b->name);
 }
 
 void cmd_sort_cmds()
 {
-  HASH_SORT(cmd_table, name_sort);
+  HASH_SORT(cmd_tbl, name_sort);
 }
 
 void cmd_flush()
@@ -775,31 +774,29 @@ static Cmdret cmd_returnblock(List *args, Cmdarg *ca)
 void cmd_clearall()
 {
   log_msg("CMD", "cmd_clearall");
-  Cmd_T *it, *tmp;
-  HASH_ITER(hh, cmd_table, it, tmp) {
-    HASH_DEL(cmd_table, it);
+  Cmd_ptr *it, *tmp;
+  HASH_ITER(hh, cmd_tbl, it, tmp) {
+    HASH_DEL(cmd_tbl, it);
     free(it);
-  }
-  Cmd_alt *ait, *atmp;
-  HASH_ITER(hh, alt_tbl, ait, atmp) {
-    HASH_DEL(alt_tbl, ait);
-    free(ait);
   }
 }
 
-//FIXME: cmd use two keys not two full hashes
-void cmd_add(const Cmd_T *cmd_src)
+void cmd_add(Cmd_T *src)
 {
-  Cmd_T *cmd = malloc(sizeof(Cmd_T));
-  memmove(cmd, cmd_src, sizeof(Cmd_T));
+  Cmd_ptr *cmd = malloc(sizeof(Cmd_ptr));
+  cmd->cmd = src;
+  cmd->name = src->name;
+  HASH_ADD_STR(cmd_tbl, name, cmd);
 
-  HASH_ADD_STR(cmd_table, name, cmd);
-  if (cmd->alt) {
-    Cmd_alt *alt = malloc(sizeof(Cmd_alt));
-    alt->name = cmd->alt;
-    alt->cmd = cmd;
-    HASH_ADD_STR(alt_tbl, name, alt);
-  }
+  log_err("CMD", "%s [%s]", src->name, src->msg);
+
+  if (!src->alt || !strcmp(src->alt, src->name))
+    return;
+
+  Cmd_ptr *alt = malloc(sizeof(Cmd_ptr));
+  alt->cmd = src;
+  alt->name = src->alt;
+  HASH_ADD_STR(cmd_tbl, name, alt);
 }
 
 void cmd_remove(const char *name)
@@ -810,16 +807,11 @@ Cmd_T* cmd_find(const char *name)
 {
   if (!name)
     return NULL;
-  Cmd_T *cmd;
-  HASH_FIND_STR(cmd_table, name, cmd);
+  Cmd_ptr *cmd;
+  HASH_FIND_STR(cmd_tbl, name, cmd);
   if (cmd)
-    return cmd;
-
-  Cmd_alt *alt;
-  HASH_FIND_STR(alt_tbl, name, alt);
-  if (alt)
-    cmd = alt->cmd;
-  return cmd;
+    return cmd->cmd;
+  return NULL;
 }
 
 void exec_line(Cmdstr *cmd, char *line)
@@ -877,9 +869,10 @@ void cmd_list(List *args)
 {
   log_msg("CMD", "compl cmd_list");
   int i = 0;
-  Cmd_T *it;
-  for (it = cmd_table; it != NULL; it = it->hh.next) {
+  Cmd_ptr *it;
+  for (it = cmd_tbl; it != NULL; it = it->hh.next) {
     compl_list_add("%s", it->name);
+    compl_set_col(i, "%s", it->cmd->msg);
     i++;
   }
 }

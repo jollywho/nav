@@ -42,23 +42,23 @@ static void window_reg_cmd();
 static void window_fltr_cmd();
 static void window_update(uv_timer_t *);
 
-static const Cmd_T cmdtable[] = {
-  {"bdelete","bd",   "close a buffer",         win_bdel,      0},
-  {"buffer","bu",    "change a buffer",        win_buf,       0},
-  {"cd",0,           "change directory",       win_cd,        0},
-  {"close","q",      "close a window",         win_close,     0},
-  {"delmark","delm", "delete a mark",          win_mark,      1},
-  {"direct","di",    "direct at window",       win_direct,    0},
-  {"echo","ec",      "",                       win_echo,      0},
-  {"edit","ed",      "",                       win_edit,      0},
-  {"filter","fil",   "",                       win_filter,    0},
-  {"mark","m",       "mark a directory",       win_mark,      0},
-  {"new",0,          "open horizontal window", win_new,       MOVE_UP},
-  {"qa",0,           "quit all",               win_shut,      0},
-  {"reload","rel",   "set option value",       win_reload,    0},
-  {"sort","sor",     "sort lines",             win_sort,      1},
-  {"version","ver",  "",                       win_version,   0},
-  {"vnew","vne",     "open vertical window",   win_new,       MOVE_LEFT},
+static Cmd_T cmdtable[] = {
+  {"bdelete","bd",   "Close a buffer.",         win_bdel,      0},
+  {"buffer","bu",    "Change a buffer.",        win_buf,       0},
+  {"cd",0,           "Change directory.",       win_cd,        0},
+  {"close","q",      "Close a window.",         win_close,     0},
+  {"delmark","delm", "Delete a mark.",          win_mark,      1},
+  {"direct","di",    "Direct at window.",       win_direct,    0},
+  {"echo","ec",      "Print expression.",       win_echo,      0},
+  {"edit","ed",      "Edit selection",          win_edit,      0},
+  {"filter","fil",   "Filter buffer.",          win_filter,    0},
+  {"mark","m",       "Mark a directory.",       win_mark,      0},
+  {"new",0,          "Open horizontal window.", win_new,       MOVE_UP},
+  {"qa",0,           "Quit all.",               win_shut,      0},
+  {"reload","rel",   "Set option value.",       win_reload,    0},
+  {"sort","sor",     "Sort lines.",             win_sort,      1},
+  {"version","ver",  "Print version number.",   win_version,   0},
+  {"vnew","vne",     "Open vertical window.",   win_new,       MOVE_LEFT},
 };
 
 static fn_key key_defaults[] = {

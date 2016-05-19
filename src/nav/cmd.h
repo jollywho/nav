@@ -23,7 +23,6 @@ struct Cmd_T {
   Cmd_Func_T cmd_func;
   int flags;              /* cmd     flags */
   int bflags;             /* builtin flags */
-  UT_hash_handle hh;
 };
 
 struct Cmdarg {
@@ -36,7 +35,7 @@ struct Cmdarg {
 void cmd_init();
 void cmd_sort_cmds();
 void cmd_cleanup();
-void cmd_add(const Cmd_T *);
+void cmd_add(Cmd_T *);
 void cmd_remove(const char *);
 void cmd_clearall();
 void cmd_flush();

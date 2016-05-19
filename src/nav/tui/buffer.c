@@ -463,6 +463,7 @@ void buf_g(void *_b, Keyarg *ca)
 varg_T buf_focus_sel(Buffer *buf, const char *fld)
 {
   log_msg("BUFFER", "buf_focus_sel");
+
   Model *m = buf->hndl->model;
   if (buf->flat)
     fld = "name";
