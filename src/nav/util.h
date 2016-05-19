@@ -13,6 +13,7 @@ void conspath_buf(char *buf, char *base, char *name);
 char* escape_shell(char *src);
 char* strip_shell(char *src);
 void trans_char(char *src, char from, char to);
+int count_strstr(const char *str, char *fnd);
 int rev_strchr_pos(char *src, int n, int ch);
 int count_lines(char *src);
 char* lines2argv(int, char **);

@@ -200,6 +200,17 @@ void trans_char(char *src, char from, char to)
   }
 }
 
+int count_strstr(const char *str, char *fnd)
+{
+  int count = 0;
+  const char *tmp = str;
+  while((tmp = strstr(tmp, fnd))) {
+    count++;
+    tmp++;
+  }
+  return count;
+}
+
 int rev_strchr_pos(char *src, int n, int ch)
 {
   int i;

@@ -19,7 +19,6 @@ struct Menu {
   fn_handle *hndl;
   fn_fs *fs;
 
-  fn_context *cx;
   bool docmpl;
   bool rebuild;
   bool active;
@@ -59,16 +58,16 @@ static void menu_fs_cb(void **args)
     return;
 
   int count = tbl_ent_count(ent);
-  compl_new(count, COMPL_DYNAMIC);
+  //compl_new(count, COMPL_DYNAMIC);
 
   for (int i = 0; i < count; i++) {
     fn_rec *rec = ent->rec;
-    compl_set_key(i, "%s", rec_fld(rec, "name"));
+    compl_list_add("%s", rec_fld(rec, "name"));
     ent = ent->next;
   }
 
   if (cur_menu->active) {
-    compl_update(cur_menu->cx, cur_menu->line_key);
+    compl_update(cur_menu->line_key);
     window_req_draw(cur_menu, menu_queue_draw);
   }
   fs_close(cur_menu->fs);
@@ -84,7 +83,7 @@ void menu_ch_dir(void **args)
   char *dir = args[1];
   uv_stat_t *stat = args[2];
   if (!dir || !stat || !S_ISDIR(stat->st_mode)) {
-    compl_invalidate(cur_menu->cx, ex_cmd_curpos());
+    compl_invalidate(ex_cmd_curpos());
     return;
   }
 
@@ -161,7 +160,7 @@ void path_list(List *args)
 
     if (path[0] == '@') {
       marklbl_list(args);
-      compl_update(cur_menu->cx, cur_menu->line_key);
+      compl_update(cur_menu->line_key);
       cur_menu->line_key = path;
       return;
     }
@@ -170,7 +169,7 @@ void path_list(List *args)
     if (exec)
       exec = last_dir_in_path(tok, args, pos, &path);
 
-    if (compl_validate(cur_menu->cx, ex_cmd_curpos())) {
+    if (compl_validate(ex_cmd_curpos())) {
       exec = true;
       path = fs_parent_dir(path);
     }
@@ -239,6 +238,7 @@ void menu_start(Menu *mnu)
 void menu_stop(Menu *mnu)
 {
   log_msg("MENU", "menu_stop");
+  compl_end();
   werase(mnu->nc_win);
   wnoutrefresh(mnu->nc_win);
 
@@ -256,22 +256,20 @@ void menu_stop(Menu *mnu)
 void menu_restart(Menu *mnu)
 {
   log_msg("MENU", "menu_restart");
-  mnu->cx = context_start();
-  mnu->docmpl = false;
+  compl_begin();
   mnu->moved = true;
   mnu->top = 0;
   free(mnu->hndl->key);
   mnu->hndl->key = NULL;
 
-  ex_cmd_push(mnu->cx, 0);
-  compl_build(mnu->cx, NULL);
-  compl_update(mnu->cx, "");
+  compl_build(NULL);
+  compl_update("");
 }
 
 void menu_killword(Menu *mnu)
 {
   if (mnu->active) {
-    mnu->cx = ex_cmd_pop(1)->cx;
+    compl_backward();
     mnu->docmpl = true;
   }
 }
@@ -283,17 +281,12 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
   int i = 0;
   while ((word = cmdline_tokindex(cmd, i))) {
     char *key = token_val(word, VAR_STRING);
-    fn_context *find = find_context(mnu->cx, key);
-    if (find)
-      mnu->cx = find->params[0];
-
-    ex_cmd_push(mnu->cx, &word->end);
+    compl_forward(key);
     i++;
   }
   if (i > 0) {
-    mnu->cx = ex_cmd_pop(1)->cx;
-    compl_build(mnu->cx, ex_cmd_curlist());
-    compl_update(mnu->cx, ex_cmd_curstr());
+    compl_build(ex_cmd_curlist());
+    compl_update(ex_cmd_curstr());
   }
   mnu->rebuild = false;
 }
@@ -323,13 +316,13 @@ static char* cycle_matches(Menu *mnu, int dir, int mov)
   if (mnu->moved)
     dir = 0;
 
-  fn_compl *cmpl = mnu->cx->cmpl;
+  compl_list *cmplist = compl_complist();
   mnu->lnum += dir;
 
   if (dir < 0 && mnu->lnum < ROW_MAX * 0.2)
-    mnu_scroll(mnu, dir, cmpl->matchcount);
+    mnu_scroll(mnu, dir, cmplist->matchcount);
   else if (dir > 0 && mnu->lnum > ROW_MAX * 0.8)
-    mnu_scroll(mnu, dir, cmpl->matchcount);
+    mnu_scroll(mnu, dir, cmplist->matchcount);
 
   if (mnu->lnum < 0)
     mnu->lnum = 0;
@@ -337,13 +330,13 @@ static char* cycle_matches(Menu *mnu, int dir, int mov)
     mnu->lnum = ROW_MAX;
 
   int idx = mnu->top + mnu->lnum;
-  if (idx > cmpl->matchcount - 1) {
-    int count = cmpl->matchcount - mnu->top;
+  if (idx > cmplist->matchcount - 1) {
+    int count = cmplist->matchcount - mnu->top;
     mnu->lnum = count - 1;
     idx = mnu->top + mnu->lnum;
   }
 
-  char *before = compl_idx_match(cmpl, idx)->key;
+  char *before = compl_idx_match(idx)->key;
   mnu->moved = mov;
 
   return before;
@@ -352,11 +345,8 @@ static char* cycle_matches(Menu *mnu, int dir, int mov)
 char* menu_next(Menu *mnu, int dir)
 {
   log_msg("MENU", "menu_next");
-  if (!mnu->cx || !mnu->cx->cmpl)
-    return NULL;
-
-  fn_compl *cmpl = mnu->cx->cmpl;
-  if (cmpl->matchcount < 1)
+  compl_list *cmplist = compl_complist();
+  if (compl_dead() || !cmplist || cmplist->matchcount < 1)
     return NULL;
 
   bool wasmoved = mnu->moved;
@@ -364,8 +354,8 @@ char* menu_next(Menu *mnu, int dir)
 
   if (!strcmp(ex_cmd_curstr(), line) && !wasmoved) {
     if (mnu->top + mnu->lnum == 0) {
-      mnu->lnum = cmpl->matchcount;
-      mnu->top = MAX(0, cmpl->matchcount - ROW_MAX);
+      mnu->lnum = cmplist->matchcount;
+      mnu->top = MAX(0, cmplist->matchcount - ROW_MAX);
     }
     else {
       mnu->lnum = 0;
@@ -385,7 +375,8 @@ char* menu_next(Menu *mnu, int dir)
 void menu_mv(Menu *mnu, int y)
 {
   log_msg("MENU", "menu_mv");
-  if (!mnu->cx || !mnu->cx->cmpl || mnu->cx->cmpl->matchcount < 1)
+  compl_list *cmplist = compl_complist();
+  if (compl_dead() || !cmplist || cmplist->matchcount < 1)
     return;
   mnu->moved = false;
   cycle_matches(mnu, y, true);
@@ -401,32 +392,33 @@ void menu_toggle_hints(Menu *mnu)
     log_err("MENU", "not enough hintkeys for menu rows!");
     return;
   }
-  if (mnu->cx->cmpl->matchcount < 1)
+
+  compl_list *cmplist = compl_complist();
+  if (cmplist->matchcount < 1)
     return;
 
   mnu->hints = !mnu->hints;
-  if (!mnu->cx || !mnu->cx->cmpl || ex_cmd_state() & EX_EXEC)
+  if (compl_dead() || !cmplist || ex_cmd_state() & EX_EXEC)
     mnu->hints = false;
 }
 
 int menu_input(Menu *mnu, int key)
 {
   log_msg("MENU", "menu_input");
-  if (!mnu->active || !mnu->cx)
+  if (!mnu->active || compl_dead())
     return 0;
-  log_err("MENU", "[%s]", mnu->cx->key);
 
   char *str = NULL;
-  fn_compl *cmpl = mnu->cx->cmpl;
+  compl_list *cmplist = compl_complist();
   for (int i = 0; i < ROW_MAX; i++) {
     if (mnu->hintkeys[i] == key)
-      str = compl_idx_match(cmpl, i+mnu->top)->key;
+      str = compl_idx_match(i+mnu->top)->key;
   }
 
   if (key == CAR) {
     int idx = mnu->top + mnu->lnum;
-    if (idx < cmpl->matchcount)
-      str = compl_idx_match(cmpl, idx)->key;
+    if (idx < cmplist->matchcount)
+      str = compl_idx_match(idx)->key;
   }
   if (!str)
     return 0;
@@ -459,31 +451,22 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   mnu->moved = true;
 
   if (BITMASK_CHECK(EX_POP, ex_cmd_state())) {
-    mnu->cx = ex_cmd_pop(1)->cx;
+    compl_backward();
     mnu->docmpl = true;
   }
   else if (BITMASK_CHECK(EX_PUSH, ex_cmd_state())) {
     char *key = ex_cmd_curstr();
-
-    fn_context *find = find_context(mnu->cx, key);
-    if (find) {
-      mnu->cx = find->params[0];
-      mnu->docmpl = true;
-    }
-    else
-      mnu->cx = NULL;
-
-    ex_cmd_push(mnu->cx, 0);
+    mnu->docmpl = compl_forward(key);
   }
 
-  if (mnu->docmpl || compl_isdynamic(mnu->cx))
-    compl_build(mnu->cx, ex_cmd_curlist());
+  if (mnu->docmpl || compl_isdynamic())
+    compl_build(ex_cmd_curlist());
 
   char *line = ex_cmd_curstr();
-  if (compl_isdynamic(mnu->cx))
+  if (compl_isdynamic())
     line = mnu->line_key;
 
-  compl_update(mnu->cx, line);
+  compl_update(line);
   mnu->docmpl = false;
 }
 
@@ -513,16 +496,16 @@ void menu_draw(Menu *mnu)
 
   werase(mnu->nc_win);
 
-  if (!mnu->cx || !mnu->cx->cmpl || ex_cmd_state() & EX_EXEC) {
+  compl_list *cmplist = compl_complist();
+  if (compl_dead() || !cmplist || ex_cmd_state() & EX_EXEC) {
     wnoutrefresh(mnu->nc_win);
     return;
   }
-  fn_compl *cmpl = mnu->cx->cmpl;
 
   int colmax = mnu->size.col - 3;
 
-  for (int i = 0; i < MIN(ROW_MAX, cmpl->matchcount); i++) {
-    compl_item *row = compl_idx_match(cmpl, mnu->top + i);
+  for (int i = 0; i < MIN(ROW_MAX, cmplist->matchcount); i++) {
+    compl_item *row = compl_idx_match(mnu->top + i);
 
     /* draw hints */
     if (mnu->hints)
@@ -540,8 +523,9 @@ void menu_draw(Menu *mnu)
       draw_wide(mnu->nc_win, i, ofs+3, col, colmax);
     }
   }
-  char *context = mnu->cx->key;
-  draw_wide(mnu->nc_win, ROW_MAX, 1, context, mnu->size.col);
+  //TODO: draw combined cmplist label with arg names
+  //char *context = mnu->cx->key;
+  //draw_wide(mnu->nc_win, ROW_MAX, 1, context, mnu->size.col);
   mvwchgat(mnu->nc_win, ROW_MAX, 0, -1, A_NORMAL, mnu->col_line, NULL);
 
   mvwchgat(mnu->nc_win, mnu->lnum, 0, -1, A_NORMAL, mnu->col_sel, NULL);

@@ -13,6 +13,7 @@
 #include "nav/cmdline.h"
 #include "nav/cmd.h"
 #include "nav/util.h"
+#include "nav/compl.h"
 
 static void create_proc(fn_group *, char *);
 
@@ -40,6 +41,14 @@ static char* expand_field(void *owner, const char *name)
   }
 
   return strdup("");
+}
+
+void pid_list(List *args)
+{
+  ventry *it = fnd_val("op_procs", "group", NULL);
+  for (int i = 0; i < tbl_ent_count(it); i++) {
+    compl_list_add("%s", rec_fld(it->rec, "pid"));
+  }
 }
 
 static void add_pid(char *name, int pid)
@@ -230,7 +239,7 @@ void op_new(Plugin *plugin, Buffer *buf, char *arg)
     //tbl_mk_fld("op_procs", "status", typSTRING);
   }
 
-  Cmd_T killcmd  = {"kill",  0, op_kill,  0};
+  Cmd_T killcmd  = {"kill",0, "kill a pid", op_kill,  0};
   cmd_add(&killcmd);
 }
 

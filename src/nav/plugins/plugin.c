@@ -190,12 +190,11 @@ int id_from_plugin(Plugin *plug)
 
 void plugin_list(List *args)
 {
-  compl_new(max_callable, COMPL_STATIC);
   int k = 0;
   for (int i = 0; i < LENGTH(plugin_table); i++) {
     if (plugin_table[i].type_bg)
       continue;
-    compl_set_key(k, "%s", plugin_table[i].name);
+    compl_list_add("%s", plugin_table[i].name);
     k++;
   }
 }
@@ -204,9 +203,8 @@ void win_list(List *args)
 {
   int i = 0;
   Cid *it;
-  compl_new(HASH_COUNT(id_table), COMPL_STATIC);
   for (it = id_table; it != NULL; it = it->hh.next) {
-    compl_set_key(i, "%d", it->key);
+    compl_list_add("%d", it->key);
     char *name = "";
     if (it->buf->plugin)
       name = it->buf->plugin->name;

@@ -340,12 +340,10 @@ int get_opt_int(const char *name)
 void options_list(List *args)
 {
   log_msg("INFO", "setting_list");
-  unsigned int count = HASH_COUNT(options);
-  compl_new(count, COMPL_STATIC);
   fn_option *it;
   int i = 0;
   for (it = options; it != NULL; it = it->hh.next) {
-    compl_set_key(i, "%s", it->key);
+    compl_list_add("%s", it->key);
     if (it->type == OPTION_STRING)
       compl_set_col(i, "%s", (char*)it->value);
     else if (it->type == OPTION_INT || it->type == OPTION_UINT)
@@ -357,12 +355,10 @@ void options_list(List *args)
 void groups_list(List *args)
 {
   log_msg("INFO", "setting_list");
-  unsigned int count = HASH_COUNT(groups);
-  compl_new(count, COMPL_STATIC);
   fn_group *it;
   int i = 0;
   for (it = groups; it != NULL; it = it->hh.next) {
-    compl_set_key(i, "%s", it->key);
+    compl_list_add("%s", it->key);
     i++;
   }
 }

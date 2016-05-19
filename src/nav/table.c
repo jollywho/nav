@@ -584,22 +584,20 @@ void field_list(List *args)
     return;
 
   fn_tbl *t = get_tbl("fm_files");
-  unsigned int count = t->vis_fld_count;
 
-  compl_new(count, COMPL_STATIC);
   fn_fld *it;
   int i = 0;
   for (it = t->fields; it != NULL; it = it->hh.next) {
     if (it->type == TYP_VOID)
       continue;
-    compl_set_key(i, "%s", it->key);
+    compl_list_add("%s", it->key);
     i++;
   }
   fn_vt_fld *vit;
   for (vit = t->vtfields; vit != NULL; vit = vit->hh.next) {
     if (vit->type == TYP_VOID)
       continue;
-    compl_set_key(i, "%s", vit->key);
+    compl_list_add("%s", vit->key);
     i++;
   }
 }

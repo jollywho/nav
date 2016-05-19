@@ -10,225 +10,248 @@
 #include "nav/option.h"
 #include "nav/util.h"
 
-typedef struct {
-  char *key;
-  fn_context *cx;
-  UT_hash_handle hh;
-} fn_context_arg;
-static const UT_icd icd = {sizeof(compl_item),NULL,NULL,NULL};
-
-static compl_entry compl_defaults[] = {
-  { "cmds",      cmd_list      },
-  { "plugins",   plugin_list   },
-  { "fields",    field_list    },
-  { "wins",      win_list      },
-  { "paths",     path_list     },
-  { "marks",     mark_list     },
-  { "marklbls",  marklbl_list  },
-  { "events",    event_list    },
-  { "options",   options_list  },
-  { "groups",    groups_list   },
-  { "augs",      augs_list     },
+typedef struct compl_state compl_state;
+struct compl_state {
+  int argc;
+  int st;
+  compl_context *cx;   //context state
+  compl_state   *prev; //previous state TODO: DLL when editable ex_mode
 };
 
-static compl_entry *compl_table;
-static fn_context *cxroot;
-static fn_context *cxtbl;
-static fn_context_arg *cxargs;
-static fn_context *cur_cx;
-static int compl_param(fn_context **, char *);
-static int count_subgrps(char *, char *);
+typedef struct {
+  compl_state   *cs;
+} Compl;
+
+static Compl      cmpl;
+static compl_list cmplist;
+
+static compl_context *cxtbl;
+static compl_context *cxroot;
+
+static const UT_icd icd = {sizeof(compl_item),NULL,NULL,NULL};
+static void mk_cmd_params(compl_context*cx, const char *, const char *);
+compl_genfn find_gen(const char *);
+
+static struct compl_entry {
+  char *key;
+  compl_genfn gen;
+} compl_defaults[] = {
+  { "_cmd",      cmd_list     },
+  { "_plug",     plugin_list  },
+  { "_field",    field_list   },
+  { "_win",      win_list     },
+  { "_path",     path_list    },
+  { "_mark",     mark_list    },
+  { "_mrklbl",   marklbl_list },
+  { "_event",    event_list   },
+  { "_option",   options_list },
+  { "_group",    groups_list  },
+  { "_aug",      augs_list    },
+  { "_pid",      pid_list     },
+};
+
+static char *cmd_defs[][3] = {
+  {"autocmd",   "-window:-group:event:pat:cmd", "_win:_aug:_event::"},
+  {"augroup",   "group",                        "_aug"},
+  {"bdelete",   "window",                       "_win"},
+  {"buffer",    "-window:plugin",               "_win:_plug"},
+  {"cd",        "path",                         "_path"},
+  {"close",     "window",                       "_win"},
+  {"delmark",   "label",                        "_mrklbl"},
+  {"direct",    "window",                       "_win"},
+  {"highlight", "group",                        "_group"},
+  {"kill",      "pid",                          "_pid"},
+  {"mark",      "label",                        "_mrklbl"},
+  {"new",       "plugin",                       "_plug"},
+  {"op",        "group",                        "_group"},
+  {"set",       "option",                       "_option"},
+  {"sort",      "type",                         "_field"},
+  {"vnew",      "plugin",                       "_plug"},
+};
+
+static char *cmd_args[][3] = {
+  {"plugin", "fm",  "path:paths"},
+  {"plugin", "img", "window:wins"},
+  {"plugin", "dt",  "path:paths"},
+};
 
 void compl_init()
 {
-  cur_cx = NULL;
-  char *param;
-  param = strdup("cmd:string:cmds");
-  compl_param(&cxroot, param);
-  free(param);
+  cmpl.cs = NULL;
+  cxroot = malloc(sizeof(compl_context));
+  cxroot->key = "cmd";
+  mk_cmd_params(cxroot, "cmd", "_cmd");
+  utarray_new(cmplist.rows,    &icd);
+  utarray_new(cmplist.matches, &icd);
 
-  for (int i = 0; i < LENGTH(compl_defaults); i++) {
-    compl_entry *it = malloc(sizeof(compl_entry));
-    it = memmove(it, &compl_defaults[i], sizeof(compl_entry));
-    HASH_ADD_STR(compl_table, key, it);
+  for (int i = 0; i < LENGTH(cmd_defs); i++) {
+    compl_context*cx = malloc(sizeof(compl_context));
+    cx->key = strdup(cmd_defs[i][0]);
+
+    mk_cmd_params(cx, cmd_defs[i][1], cmd_defs[i][2]);
+    HASH_ADD_STR(cxtbl, key, cx);
   }
 }
 
 void compl_cleanup()
 {
-  // each context in cxroot should be also linked to a flat array
-  // iterate array
-  // free it strings
-  // compl_destroy(it->cmpl)
-  // clear it->sub
-  // free it->params
-  // free it
-  //
-  // clear entries in compl_table
 }
 
-static int compl_param(fn_context **arg, char *param)
+static void mk_cmd_params(compl_context *cx, const char *tmpl, const char *str)
 {
-  log_msg("COMPL", "compl_param %s", param);
+  cx->argc = 1 + count_strstr(str, ":");
+  cx->params = malloc(cx->argc*sizeof(compl_param));
 
-  int grpc = count_subgrps(param, ":");
-  if (grpc > 2) {
-    log_msg("COMPL", "invalid format.");
-    return -1;
+  char *t = strdup(tmpl);
+  char *s = strdup(str);
+
+  char *p = strtok(t, ":");
+  for (int i = 0; i < cx->argc; i++) {
+    cx->params[i] = malloc(sizeof(compl_param));
+    cx->params[i]->flag = *p == '-' ? *p++ : 0;
+    cx->params[i]->label = strdup(p);
+    p = strtok(NULL, ":");
   }
 
-  char *name = strtok(param, ":");
-  char *type = strtok(NULL, ":");
-  char *comp = NULL;
-
-  if (!name || !type) {
-    log_msg("COMPL", "invalid format.");
-    return -1;
+  char *g = strtok(s, ":");
+  for (int i = 0; i < cx->argc; i++) {
+    cx->params[i]->gen = find_gen(g);
+    g = strtok(NULL, ":");
   }
-  if (grpc == 2)
-    comp = strtok(NULL, ":");
 
-  (*arg) = calloc(1, sizeof(fn_context));
-  (*arg)->key = strdup(name);
-  (*arg)->type = strdup(type);
-  (*arg)->comp = strdup(comp);
-  (*arg)->cmpl = NULL;
-  return 1;
+  free(t);
+  free(s);
 }
 
-static void compl_add(char *fmt_compl, fn_context **parent)
+compl_genfn find_gen(const char *key)
 {
-  log_msg("COMPL", "compl_add");
-  log_msg("COMPL", "%s", fmt_compl);
-  int pidx = 0;
-  int grpc = count_subgrps(fmt_compl, ";");
-  if (grpc < 1) {
-    log_msg("COMPL", "invalid format");
+  if (!key)
+    return NULL;
+  for (int i = 0; i < LENGTH(compl_defaults); i++) {
+    if (!strcmp(key, compl_defaults[i].key))
+      return compl_defaults[i].gen;
+  }
+  return NULL;
+}
+
+void compl_clear()
+{
+  log_msg("COMPL", "compl_clear");
+  for (int i = 0; i < utarray_len(cmplist.rows); i++) {
+    compl_item *ci = (compl_item*)utarray_eltptr(cmplist.rows, i);
+    if (ci->colcount > 0)
+      free(ci->columns);
+    free(ci->key);
+  }
+  utarray_clear(cmplist.rows);
+  utarray_clear(cmplist.matches);
+  cmplist.comp_type = 0;
+  cmplist.invalid_pos = 0;
+}
+
+void compl_list_add(char *fmt, ...)
+{
+  compl_item ci;
+  va_list args;
+  va_start(args, fmt);
+  vasprintf(&ci.key, fmt, args);
+  va_end(args);
+  ci.colcount = 0;
+  utarray_push_back(cmplist.rows, &ci);
+}
+
+void compl_set_col(int idx, char *fmt, ...)
+{
+  compl_item *ci = (compl_item*)utarray_eltptr(cmplist.rows, idx);
+  va_list args;
+  va_start(args, fmt);
+  vasprintf(&ci->columns, fmt, args);
+  va_end(args);
+  ci->colcount = 1;
+}
+
+bool compl_isdynamic()
+{
+  if (compl_dead())
+    return false;
+  return cmplist.comp_type == COMPL_DYNAMIC;
+}
+
+
+static void compl_push(compl_context *cx, int argc)
+{
+  log_msg("COMPL", "compl_push");
+  compl_state *cs = calloc(1, sizeof(compl_state));
+  cs->cx = cx;
+  cs->argc = argc;
+  if (cmpl.cs) {
+    cs->prev = cmpl.cs;
+  }
+  compl_clear();
+  cmpl.cs = cs;
+}
+
+static void compl_pop()
+{
+  log_msg("COMPL", "compl_pop");
+  if (!cmpl.cs)
+    return;
+  if (cmpl.cs->prev) {
+    compl_state *cs = cmpl.cs;
+    cmpl.cs = cmpl.cs->prev;
+    free(cs);
     return;
   }
-
-  char *line = strdup(fmt_compl);
-  fn_context *cx = malloc(sizeof(fn_context));
-  fn_context **args = malloc(grpc*sizeof(fn_context*));
-
-  char *keyptr;
-  char *saveptr;
-  char *lhs = strtok_r(line, ";", &saveptr);
-  fn_context *find;
-
-  keyptr = strdup(lhs);
-
-  char *param = strtok_r(NULL, ";", &saveptr);
-  for (pidx = 0; pidx < grpc; pidx++) {
-    if (compl_param(&args[pidx], param) == -1)
-      goto breakout;
-    param = strtok_r(NULL, ";", &saveptr);
-  }
-
-  find = NULL;
-  cx->key = keyptr;
-  cx->argc = grpc;
-  cx->params = args;
-  cx->cmpl = NULL;
-
-  HASH_FIND_STR(*parent, keyptr, find);
-  if (find) {
-    log_msg("COMPL", "ERROR: context already defined");
-    goto breakout;
-  }
-  else {
-    log_msg("*|*", "%s %s %s", cx->key, args[0]->key, keyptr);
-    HASH_ADD_STR(*parent, key, cx);
-  }
-  free(line);
-
-  return;
-breakout:
-  log_msg("**", "CLEANUP");
-  for (pidx = pidx - 1; pidx > 0; pidx--) {
-    free(args[pidx]);
-  }
-  free(cx);
-  free(args);
-  free(line);
-  return;
+  free(cmpl.cs);
+  cmpl.cs = NULL;
 }
 
-void compl_add_context(char *fmt_compl)
+void compl_backward()
 {
-  log_msg("COMPL", "compl_add_context");
-  compl_add(fmt_compl, &cxtbl);
+  log_msg("COMPL", "compl_drop");
+  compl_pop();
 }
 
-void compl_add_arg(const char *name, char *fmt_compl)
+bool compl_forward(char *key)
 {
-  log_msg("COMPL", "compl_add_arg");
-  fn_context_arg *find;
-  HASH_FIND_STR(cxargs, name, find);
-  if (!find) {
-    fn_context_arg *cxa = calloc(1, sizeof(fn_context_arg));
-    cxa->key = strdup(name);
-    HASH_ADD_STR(cxargs, key, cxa);
-    find = cxa;
-  }
-
-  compl_add(fmt_compl, &find->cx);
-}
-
-fn_context* find_context(fn_context *cx, char *name)
-{
-  log_msg("COMPL", "find_context");
-  if (!cx || !name) {
+  log_msg("COMPL", "compl_search");
+  if (!cmpl.cs->cx || !key) {
     log_msg("COMPL", "not available.");
-    return NULL;
-  }
-  if (cx == cxroot)
-    cx = cxtbl;
-
-  if (cx->argc > 0) {
-    fn_context *find;
-    HASH_FIND_STR(cx, name, find);
-    if (find) {
-      log_msg("COMPL", "::found %s %s", name, find->key);
-      return find;
-    }
+    return false;
   }
 
-  fn_context_arg *find_arg;
-  HASH_FIND_STR(cxargs, cx->key, find_arg);
-  if (!find_arg)
-    return NULL;
-
-  fn_context *find;
-  HASH_FIND_STR(find_arg->cx, name, find);
+  compl_context *find;
+  HASH_FIND_STR(cxtbl, key, find);
   if (!find)
-    return NULL;
-  return find;
+    return false;
 
-  //TODO: else find next param
+  //search name in matches to get group
+
+  //push new context or arg#
+
+  int argc = cmpl.cs->argc;
+  compl_context *cx = cmpl.cs->cx;
+  if (argc < cx->argc)
+    compl_push(NULL, argc+1);
+
+  return true;
 }
 
-void compl_build(fn_context *cx, List *args)
+//call cs param and generate list
+void compl_build(List *args)
 {
   log_msg("COMPL", "compl_build");
-  if (!cx)
+  if (compl_dead())
     return;
-  char *key = cx->comp;
-  log_msg("COMPL", "%s", key);
-  compl_entry *find;
-  HASH_FIND_STR(compl_table, key, find);
-  if (!find) {
-    cx->cmpl = NULL;
-    return;
+
+  compl_state *cs = cmpl.cs;
+  compl_context *cx = cs->cx;
+  for (int i = cs->argc; i < cx->argc; i++) {
+    log_err("COMPL", "--");
+    cx->params[i]->gen(args);
+    if (cx->params[i]->flag != '-')
+      break;
   }
-
-  cur_cx = cx;
-  find->gen(args);
-}
-
-fn_context* context_start()
-{
-  return cxroot;
 }
 
 int cmp_match(const void *a, const void *b, void *arg)
@@ -241,126 +264,76 @@ int cmp_match(const void *a, const void *b, void *arg)
   return n2 - n1;
 }
 
-void compl_update(fn_context *cx, char *line)
+void compl_update(char *line)
 {
   log_msg("COMPL", "compl_update");
-  if (!cx || !line || !cx->cmpl || cx->cmpl->invalid_pos)
+
+  if (!line || compl_dead() || cmplist.invalid_pos)
     return;
 
   line = strip_shell(line);
 
-  fn_compl *cmpl = cx->cmpl;
-  utarray_clear(cmpl->matches);
-  cmpl->matchcount = 0;
+  utarray_clear(cmplist.matches);
+  cmplist.matchcount = 0;
 
-  for (int i = 0; i < cmpl->rowcount; i++) {
-    char *key = cmpl->rows[i]->key;
-    if (fuzzy_match(key, line)) {
-      utarray_push_back(cmpl->matches, cmpl->rows[i]);
-      cmpl->matchcount++;
+  for (int i = 0; i < utarray_len(cmplist.rows); i++) {
+    compl_item *ci = (compl_item*)utarray_eltptr(cmplist.rows, i);
+    if (fuzzy_match(ci->key, line)) {
+      utarray_push_back(cmplist.matches, ci);
+      cmplist.matchcount++;
     }
   }
 
-  utarray_sort(cmpl->matches, cmp_match, line);
+  utarray_sort(cmplist.matches, cmp_match, line);
   free(line);
 }
 
-void compl_new(int size, int dynamic)
+compl_item* compl_idx_match(int idx)
 {
-  log_msg("COMPL", "compl_new");
-  compl_destroy(cur_cx);
-  cur_cx->cmpl = malloc(sizeof(fn_compl));
-  cur_cx->cmpl->rows    = malloc(size*sizeof(compl_item));
-  utarray_new(cur_cx->cmpl->matches, &icd);
-  cur_cx->cmpl->rowcount = size;
-  cur_cx->cmpl->matchcount = 0;
-  cur_cx->cmpl->comp_type = dynamic;
-  cur_cx->cmpl->invalid_pos = 0;
+  return (compl_item*)utarray_eltptr(cmplist.matches, idx);
 }
 
-void compl_delete(fn_compl *cmpl)
+compl_list* compl_complist()
 {
-  log_msg("COMPL", "compl_delete");
-  if (!cmpl)
-    return;
-  for (int i = 0; i < cmpl->rowcount; i++) {
-    free(cmpl->rows[i]->key);
-    if (cmpl->rows[i]->colcount)
-      free(cmpl->rows[i]->columns);
-    free(cmpl->rows[i]);
-  }
-
-  free(cmpl->rows);
-  utarray_free(cmpl->matches);
-  free(cmpl);
+  return &cmplist;
 }
 
-void compl_destroy(fn_context *cx)
+void compl_invalidate(int pos)
 {
-  log_msg("COMPL", "compl_destroy");
-  if (!cx)
-    return;
-  compl_delete(cx->cmpl);
-  cx->cmpl = NULL;
+  utarray_clear(cmplist.matches);
+  cmplist.matchcount = 0;
+  cmplist.invalid_pos = pos;
 }
 
-void compl_set_key(int idx, char *fmt, ...)
+bool compl_validate(int pos)
 {
-  fn_compl *cmpl = cur_cx->cmpl;
-  cmpl->rows[idx] = malloc(sizeof(compl_item));
-
-  va_list args;
-  va_start(args, fmt);
-  vasprintf(&cmpl->rows[idx]->key, fmt, args);
-  va_end(args);
-  cmpl->rows[idx]->colcount = 0;
+  return cmplist.invalid_pos > pos;
 }
 
-void compl_set_col(int idx, char *fmt, ...)
+int compl_last_pos()
 {
-  fn_compl *cmpl = cur_cx->cmpl;
-
-  va_list args;
-  va_start(args, fmt);
-  vasprintf(&cmpl->rows[idx]->columns, fmt, args);
-  va_end(args);
-  cmpl->rows[idx]->colcount = 1;
+  if (!cmpl.cs->cx || !cmpl.cs->prev)
+    return -1;
+  return cmpl.cs->prev->st;
 }
 
-static int count_subgrps(char *str, char *fnd)
+int compl_cur_pos()
 {
-  int count = 0;
-  const char *tmp = str;
-  while((tmp = strstr(tmp, fnd))) {
-    count++;
-    tmp++;
-  }
-
-  return count;
+  return cmpl.cs->st;
 }
 
-bool compl_isdynamic(fn_context *cx)
+bool compl_dead()
 {
-  if (!cx || !cx->cmpl)
-    return false;
-  return cx->cmpl->comp_type == COMPL_DYNAMIC;
+  return !cmpl.cs->cx;
 }
 
-compl_item* compl_idx_match(fn_compl *cmpl, int idx)
+void compl_begin()
 {
-  return (compl_item*)utarray_eltptr(cmpl->matches, idx);
+  compl_push(cxroot, 0);
 }
 
-void compl_invalidate(fn_context *cx, int pos)
+void compl_end()
 {
-  fn_compl *cmpl = cur_cx->cmpl;
-  utarray_clear(cmpl->matches);
-  cmpl->matchcount = 0;
-  cmpl->invalid_pos = pos;
-}
-
-bool compl_validate(fn_context *cx, int pos)
-{
-  fn_compl *cmpl = cur_cx->cmpl;
-  return cmpl->invalid_pos > pos;
+  while (cmpl.cs)
+    compl_pop();
 }

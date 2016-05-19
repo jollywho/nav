@@ -43,41 +43,22 @@ static void window_fltr_cmd();
 static void window_update(uv_timer_t *);
 
 static const Cmd_T cmdtable[] = {
-  {"version","ver", win_version, 0},
-  {"qa",0,          win_shut,    0},
-  {"close","q",     win_close,   0},
-  {"buffer","bu",   win_buf,     0},
-  {"bdelete","bd",  win_bdel,    0},
-  {"new",0,         win_new,     MOVE_UP},
-  {"vnew","vne",    win_new,     MOVE_LEFT},
-  {"sort","sor",    win_sort,    1},
-  {"cd",0,          win_cd,      0},
-  {"mark",0,        win_mark,    0},
-  {"delm",0,        win_mark,    1},
-  {"echo","ec",     win_echo,    0},
-  {"reload","rel",  win_reload,  0},
-  {"direct",0,      win_direct,  0},
-  {"edit","ed",     win_edit,    0},
-  {"filter","fil",  win_filter,  0},
-};
-
-static char *compl_cmds[] = {
-  "q;window:string:wins",
-  "close;window:string:wins",
-  "bu;plugin:string:plugins",
-  "buffer;plugin:string:plugins",
-  "bd;window:string:wins",
-  "bdelete;window:string:wins",
-  "vnew;plugin:string:plugins",
-  "new;plugin:string:plugins",
-  "sort;field:string:fields",
-  "cd;path:string:paths",
-  "mark;label:string:marklbls",
-};
-static char *compl_args[][2] = {
-  {"plugin", "fm;path:string:paths"},
-  {"plugin", "img;window:number:wins"},
-  {"plugin", "dt;path:string:paths"},
+  {"bdelete","bd",   "close a buffer",         win_bdel,      0},
+  {"buffer","bu",    "change a buffer",        win_buf,       0},
+  {"cd",0,           "change directory",       win_cd,        0},
+  {"close","q",      "close a window",         win_close,     0},
+  {"delmark","delm", "delete a mark",          win_mark,      1},
+  {"direct","di",    "direct at window",       win_direct,    0},
+  {"echo","ec",      "",                       win_echo,      0},
+  {"edit","ed",      "",                       win_edit,      0},
+  {"filter","fil",   "",                       win_filter,    0},
+  {"mark","m",       "mark a directory",       win_mark,      0},
+  {"new",0,          "open horizontal window", win_new,       MOVE_UP},
+  {"qa",0,           "quit all",               win_shut,      0},
+  {"reload","rel",   "set option value",       win_reload,    0},
+  {"sort","sor",     "sort lines",             win_sort,      1},
+  {"version","ver",  "",                       win_version,   0},
+  {"vnew","vne",     "open vertical window",   win_new,       MOVE_LEFT},
 };
 
 static fn_key key_defaults[] = {
@@ -90,7 +71,6 @@ static fn_key key_defaults[] = {
   {'L',     win_layout,      0,           MOVE_RIGHT},
   {Ctrl_W,  oper,            NCH_A,       OP_WIN},
   {'f',     window_fltr_cmd, 0,           FORWARD},
-  {KEY_LEFT, win_layout, 0,           MOVE_LEFT},
 };
 
 static fn_keytbl key_tbl;
@@ -141,10 +121,6 @@ void window_init(void)
 
   for (int i = 0; i < LENGTH(cmdtable); i++)
     cmd_add(&cmdtable[i]);
-  for (int i = 0; i < LENGTH(compl_cmds); i++)
-    compl_add_context(compl_cmds[i]);
-  for (int i = 0; i < LENGTH(compl_args); i++)
-    compl_add_arg(compl_args[i][0], compl_args[i][1]);
 
   sigwinch_handler(~SIGWINCH); //flush window without endwin
   plugin_init();

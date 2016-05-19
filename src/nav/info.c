@@ -86,12 +86,10 @@ void mark_list(List *args)
 void marklbl_list(List *args)
 {
   log_msg("INFO", "marklbl_list");
-  unsigned int count = HASH_COUNT(lbl_marks);
-  compl_new(count, COMPL_STATIC);
   fn_mark *it;
   int i = 0;
   for (it = lbl_marks; it != NULL; it = it->hh.next) {
-    compl_set_key(i, "%s", it->key);
+    compl_list_add("%s", it->key);
     compl_set_col(i, "%s", it->path);
     i++;
   }

@@ -69,13 +69,13 @@ static Script nvs;
 #define IS_PARSE (IS_READ || IS_SEEK)
 
 static const Cmd_T builtins[] = {
-  {NULL,             NULL,               0, 0},
-  {"if","if",        cmd_ifblock,        0, 1},
-  {"else","el",      cmd_elseblock,      0, 1},
-  {"elseif","elif",  cmd_elseifblock,    0, 1},
-  {"end","en",       cmd_endblock,       0, 1},
-  {"function","fu",  cmd_funcblock,      0, 2},
-  {"return","ret",   cmd_returnblock,    0, 0},
+  {NULL,             NULL,   NULL,               0, 0},
+  {"if","if",        NULL,   cmd_ifblock,        0, 1},
+  {"else","el",      NULL,   cmd_elseblock,      0, 1},
+  {"elseif","elif",  NULL,   cmd_elseifblock,    0, 1},
+  {"end","en",       NULL,   cmd_endblock,       0, 1},
+  {"function","fu",  NULL,   cmd_funcblock,      0, 2},
+  {"return","ret",   NULL,   cmd_returnblock,    0, 0},
 };
 
 static void stack_push(char *line)
@@ -787,6 +787,7 @@ void cmd_clearall()
   }
 }
 
+//FIXME: cmd use two keys not two full hashes
 void cmd_add(const Cmd_T *cmd_src)
 {
   Cmd_T *cmd = malloc(sizeof(Cmd_T));
@@ -877,9 +878,8 @@ void cmd_list(List *args)
   log_msg("CMD", "compl cmd_list");
   int i = 0;
   Cmd_T *it;
-  compl_new(HASH_COUNT(cmd_table), COMPL_STATIC);
   for (it = cmd_table; it != NULL; it = it->hh.next) {
-    compl_set_key(i, "%s", it->name);
+    compl_list_add("%s", it->name);
     i++;
   }
 }

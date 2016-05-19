@@ -23,11 +23,6 @@
 #define EX_PUSH   (EX_RIGHT|EX_NEW)
 #define EX_CLEAR  (EX_LEFT|EX_RIGHT|EX_EMPTY|EX_CYCLE|EX_HIST)
 
-typedef struct {
-  fn_context *cx;
-  int st;
-} cmd_part;
-
 void ex_cmd_init();
 void ex_cmd_cleanup();
 void start_ex_cmd(char, int);
@@ -49,9 +44,6 @@ List* ex_cmd_curlist();
 int ex_cmd_state();
 int ex_cmd_curidx(List *list);
 char* ex_cmd_line();
-
-void ex_cmd_push(fn_context *cx, int *);
-cmd_part* ex_cmd_pop(int count);
 
 int ex_cmd_height();
 

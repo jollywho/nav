@@ -297,19 +297,16 @@ void send_hook_msg(char *msg, Plugin *host, Plugin *caller, HookArg *hka)
 
 void event_list(List *args)
 {
-  compl_new(LENGTH(events_list), COMPL_STATIC);
-  for (int i = 0; i < LENGTH(events_list); i++) {
-    compl_set_key(i, "%s", events_list[i]);
-  }
+  for (int i = 0; i < LENGTH(events_list); i++)
+    compl_list_add("%s", events_list[i]);
 }
 
 void augs_list(List *args)
 {
   int i = 0;
   Augroup *it;
-  compl_new(HASH_COUNT(aug_tbl), COMPL_STATIC);
   for (it = aug_tbl; it != NULL; it = it->hh.next) {
-    compl_set_key(i, "%s", it->key);
+    compl_list_add("%s", it->key);
     //compl_set_col(i, "%s", #GROUP_COUNT#);
     i++;
   }

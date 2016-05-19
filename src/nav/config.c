@@ -23,26 +23,16 @@ static Cmdret conf_op();
 static Cmdret conf_source();
 
 static const Cmd_T cmdtable[] = {
-  {"augroup","aug",  conf_augroup,  0},
-  {"autocmd","au",   conf_autocmd,  0},
-  {"set",0,          conf_setting,  0},
-  {"highlight","hi", conf_color,    0},
-  {"syntax","syn",   conf_syntax,   0},
-  {"let",0,          conf_variable, 0},
-  {"local",0,        conf_variable, 1},
-  {"map",0,          conf_mapping,  0},
-  {"op",0,           conf_op,       0},
-  {"source","so",    conf_source,   0},
-};
-
-static char *compl_cmds[] = {
-  "au;event:string:events",
-  "autocmd;event:string:events",
-  "aug;group:string:augs",
-  "augroup;group:string:augs",
-  "set;option:string:options",
-  "hi;group:string:groups",
-  "op;group:string:groups",
+  {"augroup","aug",  "execute command on event", conf_augroup,    0},
+  {"autocmd","au",   "define autocmd group",     conf_autocmd,    0},
+  {"highlight","hi", "highlight group",          conf_color,      0},
+  {"let",0,          "",                         conf_variable,   0},
+  {"local",0,        "",                         conf_variable,   1},
+  {"map",0,          "",                         conf_mapping,    0},
+  {"op",0,           "set open association",     conf_op,         0},
+  {"set",0,          "",                         conf_setting,    0},
+  {"source","so",    "",                         conf_source,     0},
+  {"syntax","syn",   "",                         conf_syntax,     0},
 };
 
 static const char *config_paths[] = {
@@ -60,8 +50,6 @@ void config_init()
 {
   for (int i = 0; i < LENGTH(cmdtable); i++)
     cmd_add(&cmdtable[i]);
-  for (int i = 0; i < LENGTH(compl_cmds); i++)
-    compl_add_context(compl_cmds[i]);
 }
 
 static bool file_exists(const char *path)
