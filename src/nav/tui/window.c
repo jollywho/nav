@@ -454,7 +454,10 @@ void win_move(void *_w, Keyarg *ca)
 
 void window_close_focus()
 {
-  win_close(NULL, &(Cmdarg){});
+  Buffer *buf = layout_buf(&win.layout);
+  Plugin *plug = buf_plugin(buf);
+  plugin_close(plug);
+  window_remove_buffer(buf);
 }
 
 static void window_ex_cmd(Window *_w, Keyarg *arg)
