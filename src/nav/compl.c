@@ -10,6 +10,10 @@
 #include "nav/option.h"
 #include "nav/util.h"
 
+static const UT_icd icd = {sizeof(compl_item),NULL,NULL,NULL};
+static void mk_cmd_params(compl_context*cx, const char *, const char *);
+compl_genfn find_gen(const char *);
+
 typedef struct compl_state compl_state;
 struct compl_state {
   int argc;
@@ -19,18 +23,13 @@ struct compl_state {
 };
 
 typedef struct {
-  compl_state   *cs;
+  compl_state   *cs;     //current state
+  compl_context *cxtbl;  //context table
+  compl_context *cxroot; //context root entry
 } Compl;
 
-static Compl      cmpl;
+static Compl cmpl;
 static compl_list cmplist;
-
-static compl_context *cxtbl;
-static compl_context *cxroot;
-
-static const UT_icd icd = {sizeof(compl_item),NULL,NULL,NULL};
-static void mk_cmd_params(compl_context*cx, const char *, const char *);
-compl_genfn find_gen(const char *);
 
 static struct compl_entry {
   char *key;
@@ -78,9 +77,9 @@ static char *cmd_args[][3] = {
 void compl_init()
 {
   cmpl.cs = NULL;
-  cxroot = malloc(sizeof(compl_context));
-  cxroot->key = "cmd";
-  mk_cmd_params(cxroot, "cmd", "_cmd");
+  cmpl.cxroot = malloc(sizeof(compl_context));
+  cmpl.cxroot->key = "cmd";
+  mk_cmd_params(cmpl.cxroot, "cmd", "_cmd");
   utarray_new(cmplist.rows,    &icd);
   utarray_new(cmplist.matches, &icd);
 
@@ -89,7 +88,7 @@ void compl_init()
     cx->key = strdup(cmd_defs[i][0]);
 
     mk_cmd_params(cx, cmd_defs[i][1], cmd_defs[i][2]);
-    HASH_ADD_STR(cxtbl, key, cx);
+    HASH_ADD_STR(cmpl.cxtbl, key, cx);
   }
 }
 
@@ -177,77 +176,78 @@ bool compl_isdynamic()
   return cmplist.comp_type == COMPL_DYNAMIC;
 }
 
-
-static void compl_push(compl_context *cx, int argc)
+static void compl_push(compl_context *cx, int argc, int pos)
 {
   log_msg("COMPL", "compl_push");
   compl_state *cs = calloc(1, sizeof(compl_state));
   cs->cx = cx;
   cs->argc = argc;
-  if (cmpl.cs) {
+  cs->st = pos;
+  if (cmpl.cs)
     cs->prev = cmpl.cs;
-  }
-  compl_clear();
   cmpl.cs = cs;
 }
 
 static void compl_pop()
 {
   log_msg("COMPL", "compl_pop");
-  if (!cmpl.cs)
+  if (!cmpl.cs->prev)
     return;
-  if (cmpl.cs->prev) {
-    compl_state *cs = cmpl.cs;
-    cmpl.cs = cmpl.cs->prev;
-    free(cs);
-    return;
-  }
-  free(cmpl.cs);
-  cmpl.cs = NULL;
+  compl_state *cs = cmpl.cs;
+  cmpl.cs = cmpl.cs->prev;
+  free(cs);
 }
 
 void compl_backward()
 {
-  log_msg("COMPL", "compl_drop");
+  log_msg("COMPL", "compl_backward");
   compl_pop();
 }
 
-bool compl_forward(char *key)
+bool compl_forward(char *key, int pos)
 {
-  log_msg("COMPL", "compl_search");
+  log_msg("COMPL", "compl_forward");
+  log_msg("COMPL", "[%s]", key);
   if (!cmpl.cs->cx || !key) {
     log_msg("COMPL", "not available.");
     return false;
   }
 
   compl_context *find;
-  HASH_FIND_STR(cxtbl, key, find);
-  if (!find)
-    return false;
+  HASH_FIND_STR(cmpl.cxtbl, key, find);
+  if (find) {
+    compl_push(find, 0, pos);
+    return true;
+  }
 
   //search name in matches to get group
+  //if match, increment argc
+  //push cur context + argc
+  //
+  //int argc = cmpl.cs->argc;
+  //compl_context *cx = cmpl.cs->cx;
+  //if (argc < cx->argc)
+  //  compl_push(cx, argc+1);
 
-  //push new context or arg#
+  /* add non-blank context state */
+  if (key[1])
+    compl_push(NULL, 0, pos);
 
-  int argc = cmpl.cs->argc;
-  compl_context *cx = cmpl.cs->cx;
-  if (argc < cx->argc)
-    compl_push(NULL, argc+1);
-
-  return true;
+  return false;
 }
 
-//call cs param and generate list
 void compl_build(List *args)
 {
   log_msg("COMPL", "compl_build");
   if (compl_dead())
     return;
 
+  compl_clear();
   compl_state *cs = cmpl.cs;
   compl_context *cx = cs->cx;
+
+  /* generate list from context params */
   for (int i = cs->argc; i < cx->argc; i++) {
-    log_err("COMPL", "--");
     cx->params[i]->gen(args);
     if (cx->params[i]->flag != '-')
       break;
@@ -275,6 +275,7 @@ void compl_update(char *line)
 
   utarray_clear(cmplist.matches);
   cmplist.matchcount = 0;
+  log_msg("COMPL", "[%s]", line);
 
   for (int i = 0; i < utarray_len(cmplist.rows); i++) {
     compl_item *ci = (compl_item*)utarray_eltptr(cmplist.rows, i);
@@ -312,13 +313,15 @@ bool compl_validate(int pos)
 
 int compl_last_pos()
 {
-  if (!cmpl.cs->cx || !cmpl.cs->prev)
+  if (!cmpl.cs || !cmpl.cs->prev)
     return -1;
   return cmpl.cs->prev->st;
 }
 
 int compl_cur_pos()
 {
+  if (!cmpl.cs)
+    return -1;
   return cmpl.cs->st;
 }
 
@@ -329,11 +332,13 @@ bool compl_dead()
 
 void compl_begin()
 {
-  compl_push(cxroot, 0);
+  compl_push(cmpl.cxroot, 0, 0);
 }
 
 void compl_end()
 {
-  while (cmpl.cs)
+  while (cmpl.cs->prev)
     compl_pop();
+  free(cmpl.cs);
+  cmpl.cs = NULL;
 }

@@ -44,10 +44,10 @@ bool compl_dead();
 
 compl_list* compl_complist();
 
-bool compl_forward(char *);
+bool compl_forward(char *, int);
 void compl_backward();
 void compl_build(List *args);
-void compl_update(char *line);
+void compl_update(char *);
 
 void compl_list_add(char *fmt, ...);
 void compl_set_col(int idx, char *fmt, ...);

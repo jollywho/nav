@@ -281,7 +281,7 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
   int i = 0;
   while ((word = cmdline_tokindex(cmd, i))) {
     char *key = token_val(word, VAR_STRING);
-    compl_forward(key);
+    compl_forward(key, ex_cmd_curpos());
     i++;
   }
   if (i > 0) {
@@ -456,7 +456,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   }
   else if (BITMASK_CHECK(EX_PUSH, ex_cmd_state())) {
     char *key = ex_cmd_curstr();
-    mnu->docmpl = compl_forward(key);
+    mnu->docmpl = compl_forward(key, ex_cmd_curpos());
   }
 
   if (mnu->docmpl || compl_isdynamic())
@@ -507,6 +507,7 @@ void menu_draw(Menu *mnu)
   for (int i = 0; i < MIN(ROW_MAX, cmplist->matchcount); i++) {
     compl_item *row = compl_idx_match(mnu->top + i);
 
+    log_msg("MENU", "menu_draw");
     /* draw hints */
     if (mnu->hints)
       DRAW_CH(mnu, nc_win, i, 0, mnu->hintkeys[i], col_div);

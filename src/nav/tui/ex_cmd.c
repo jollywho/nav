@@ -198,7 +198,7 @@ static void ex_tab(void *none, Keyarg *arg)
   if (!line)
     return;
 
-  int st = compl_last_pos();
+  int st = compl_cur_pos();
   char *newline = escape_shell(line);
 
   int len = cell_len(newline);
@@ -473,9 +473,10 @@ Token* ex_cmd_curtok()
   if (!ex.cmd.cmds)
     return NULL;
   int st = compl_cur_pos();
+  log_err("COMPL", "curpos %d %d", ex.curpos, st);
   if (st > -1) {
     int ed = ex.curpos + 1;
-    return cmdline_tokbtwn(&ex.cmd, st, ed);
+    return cmdline_tokbtwn(&ex.cmd, compl_cur_pos(), ed);
   }
   st = rev_strchr_pos(ex.line, ex.curpos-1, ' ');
   int ed = ex.curpos+1;
