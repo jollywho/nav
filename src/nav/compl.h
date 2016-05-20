@@ -21,17 +21,15 @@ typedef struct {
 typedef struct {
   char *label;
   char *key;
-  int colcount;     //count of columns; (supports 0 or 1)
-  char *columns;    //column string
+  int colcount;       //count of columns; (supports 0 or 1)
+  char *columns;      //column string
 } compl_item;
 
 typedef struct {
   int matchcount;
-  char comp_type;
-#define COMPL_STATIC  0   //list remains the same
-#define COMPL_DYNAMIC 1   //list is regenerated
-  UT_array *rows;    //compl_item
-  UT_array *matches;
+  bool dynamic;
+  UT_array *rows;     //compl_item
+  UT_array *matches;  //compl_item
   int invalid_pos;
 } compl_list;
 
@@ -44,13 +42,14 @@ bool compl_dead();
 
 compl_list* compl_complist();
 
-bool compl_forward(char *, int);
+void compl_forward(char *, int);
 void compl_backward();
 void compl_build(List *args);
 void compl_update(char *);
 
 void compl_list_add(char *fmt, ...);
 void compl_set_col(int idx, char *fmt, ...);
+void compl_enable_dynamic();
 
 bool compl_isdynamic();
 compl_item* compl_idx_match(int idx);
@@ -58,5 +57,6 @@ void compl_invalidate(int pos);
 bool compl_validate(int pos);
 int compl_last_pos();
 int compl_cur_pos();
+int compl_arg_pos();
 
 #endif

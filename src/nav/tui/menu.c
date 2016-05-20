@@ -19,12 +19,10 @@ struct Menu {
   fn_handle *hndl;
   fn_fs *fs;
 
-  bool docmpl;
   bool rebuild;
   bool active;
   bool hints;
   bool moved;
-  char *line_key;
   char *line_path;
   char *hintkeys;
 
@@ -58,17 +56,15 @@ static void menu_fs_cb(void **args)
   if (!ent)
     return;
 
-  int count = tbl_ent_count(ent);
-  //compl_new(count, COMPL_DYNAMIC);
-
-  for (int i = 0; i < count; i++) {
+  compl_enable_dynamic();
+  for (int i = 0; i < tbl_ent_count(ent); i++) {
     fn_rec *rec = ent->rec;
     compl_list_add("%s", rec_fld(rec, "name"));
     ent = ent->next;
   }
 
   if (cur_menu->active) {
-    compl_update(cur_menu->line_key);
+    compl_update(ex_cmd_curstr());
     window_req_draw(cur_menu, menu_queue_draw);
   }
   fs_close(cur_menu->fs);
@@ -92,34 +88,7 @@ void menu_ch_dir(void **args)
   fs_open(cur_menu->fs, dir);
 }
 
-static int last_dir_in_path(Token *tok, List *args, int pos, char **path)
-{
-  char *val = NULL;
-  int prev = tok->block;
-  bool exec = false;
-  while ((tok = tok_arg(args, ++pos))) {
-    if (prev != tok->block)
-      break;
-
-    val = token_val(tok, VAR_STRING);
-
-    if (val[0] == '/') {
-      exec = true;
-      cur_menu->line_key = "";
-      continue;
-    }
-    else {
-      exec = false;
-      cur_menu->line_key = val;
-      char *tmp = conspath(*path, val);
-      free(*path);
-      *path = tmp;
-    }
-  }
-  return exec;
-}
-
-static int expand_path(char *line, char **path)
+static int expand_path(char **path)
 {
   char *dir = valid_full_path(window_cur_dir(), *path);
   if (!dir)
@@ -127,7 +96,6 @@ static int expand_path(char *line, char **path)
 
   if (strcmp(dir, *path)) {
     free(*path);
-    cur_menu->line_key = line;
     *path = dir;
   }
   else
@@ -141,42 +109,37 @@ void path_list(List *args)
   log_msg("MENU", "path_list");
   if (!cur_menu)
     return;
+
   if (!args) {
     log_msg("ERR", "unhandled execution path");
-    abort();
-    return;
+    return abort();
   }
-  int pos = ex_cmd_curidx(args);
-  Token *tok = tok_arg(args, pos);
-  free(cur_menu->line_key);
 
-  if (!tok) {
+  int pos = compl_arg_pos();
+  int len = ex_cmd_curpos() - pos;
+
+  if (pos >= ex_cmd_curpos()) {
     char *path = window_cur_dir();
-    cur_menu->line_key = strdup("");
     fs_read(cur_menu->fs, path);
   }
   else {
-    cur_menu->line_key = token_val(tok, VAR_STRING);
-    char *path = strdup(cur_menu->line_key);
+    char *path = malloc(len*sizeof(char*));
+    *path = '\0';
+    strncat(path, &ex_cmd_line()[pos], len);
+    log_msg("MENU", "path %s", path);
 
     if (path[0] == '@') {
       marklbl_list(args);
-      compl_update(cur_menu->line_key);
-      cur_menu->line_key = path;
+      compl_update(ex_cmd_curstr());
       return;
     }
 
-    int exec = expand_path(cur_menu->line_key, &path);
-    if (exec)
-      exec = last_dir_in_path(tok, args, pos, &path);
+    int exec = expand_path(&path);
 
     if (compl_validate(ex_cmd_curpos())) {
       exec = true;
       path = fs_parent_dir(path);
     }
-
-    cur_menu->line_key = strdup(cur_menu->line_key);
-
     if (exec)
       fs_read(cur_menu->fs, path);
 
@@ -231,7 +194,6 @@ void menu_start(Menu *mnu)
   mnu->lnum = 0;
   mnu->rebuild = false;
   mnu->active = true;
-  mnu->line_key = strdup("");
 
   menu_resize(mnu);
   menu_restart(mnu);
@@ -247,7 +209,6 @@ void menu_stop(Menu *mnu)
   delwin(mnu->nc_win);
   mnu->nc_win = NULL;
 
-  free(mnu->line_key);
   free(mnu->hndl->key);
   mnu->hndl->key = NULL;
   mnu->active = false;
@@ -270,10 +231,8 @@ void menu_restart(Menu *mnu)
 
 void menu_killword(Menu *mnu)
 {
-  if (mnu->active) {
+  if (mnu->active)
     compl_backward();
-    mnu->docmpl = true;
-  }
 }
 
 static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
@@ -366,7 +325,7 @@ char* menu_next(Menu *mnu, int dir)
     line = cycle_matches(mnu, 0, false);
   }
 
-  if (cur_menu->hndl->key && !mark_path(line))
+  if (compl_isdynamic() && !mark_path(line))
     line = conspath(cur_menu->hndl->key, line);
   else
     line = strdup(line);
@@ -452,24 +411,13 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   mnu->lnum = 0;
   mnu->moved = true;
 
-  if (BITMASK_CHECK(EX_POP, ex_cmd_state())) {
+  if (BITMASK_CHECK(EX_POP, ex_cmd_state()))
     compl_backward();
-    mnu->docmpl = true;
-  }
-  else if (BITMASK_CHECK(EX_PUSH, ex_cmd_state())) {
-    char *key = ex_cmd_curstr();
-    mnu->docmpl = compl_forward(key, ex_cmd_curpos());
-  }
+  else if (BITMASK_CHECK(EX_PUSH, ex_cmd_state()))
+    compl_forward(ex_cmd_curstr(), ex_cmd_curpos());
 
-  if (mnu->docmpl || compl_isdynamic())
-    compl_build(ex_cmd_curlist());
-
-  char *line = ex_cmd_curstr();
-  if (compl_isdynamic())
-    line = mnu->line_key;
-
-  compl_update(line);
-  mnu->docmpl = false;
+  compl_build(ex_cmd_curlist());
+  compl_update(ex_cmd_curstr());
 }
 
 void menu_resize(Menu *mnu)
@@ -509,7 +457,6 @@ void menu_draw(Menu *mnu)
   for (int i = 0; i < MIN(ROW_MAX, cmplist->matchcount); i++) {
     compl_item *row = compl_idx_match(mnu->top + i);
 
-    log_msg("MENU", "menu_draw");
     /* draw hints */
     if (mnu->hints)
       DRAW_CH(mnu, nc_win, i, 0, mnu->hintkeys[i], col_div);

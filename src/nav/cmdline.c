@@ -279,7 +279,7 @@ static Token list_new(Cmdline *cmdline)
   return token;
 }
 
-static void create_token(UT_array *ar, char *str, int st, int ed, int b)
+static void create_token(UT_array *ar, char *str, int st, int ed)
 {
   int len = ed - st;
   if (len < 1)
@@ -290,7 +290,6 @@ static void create_token(UT_array *ar, char *str, int st, int ed, int b)
   Token token = {
     .start = st,
     .end = ed,
-    .block = b,
     .var = {
       .v_type = VAR_STRING,
       .vval.v_string = vstr
@@ -304,14 +303,13 @@ static void cmdline_tokenize(Cmdline *cmdline)
   char ch[] = {0,'\0'};
   int st, ed, pos;
   char *str = cmdline->line;
-  int block = 0;
   bool esc = false;
 
   st = ed = pos = 0;
   for (;;) {
     ch[0] = str[pos++];
     if (ch[0] == '\0') {
-      create_token(cmdline->tokens, str, st, ed, block);
+      create_token(cmdline->tokens, str, st, ed);
       break;
     }
     else if (ch[0] == '\\' && !esc) {
@@ -322,18 +320,16 @@ static void cmdline_tokenize(Cmdline *cmdline)
       char *closech = strchr(&str[pos], ch[0]);
       if (closech && closech[-1] != '\\') {
         int end = (closech - &str[pos]) + pos;
-        create_token(cmdline->tokens, str, pos-1, end+1, block);
+        create_token(cmdline->tokens, str, pos-1, end+1);
         end++;
         pos = end;
         st = end;
       }
     }
     else if (strpbrk(ch, "~!/:|<>,[]{}() ") && !esc) {
-      create_token(cmdline->tokens, str, st, ed, block);
-      if (*ch == ' ')
-        block++;
-      else {
-        create_token(cmdline->tokens, str, pos-1, pos, block);
+      create_token(cmdline->tokens, str, st, ed);
+      if (*ch != ' ') {
+        create_token(cmdline->tokens, str, pos-1, pos);
         ed = pos;
       }
       st = pos;

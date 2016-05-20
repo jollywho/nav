@@ -17,15 +17,13 @@ static void cmdline_draw();
 static void ex_esc();
 static void ex_car();
 static void ex_tab();
-static void ex_spc();
 static void ex_bckspc();
 static void ex_killword();
 static void ex_killline();
 static void ex_hist();
 static void ex_menuhints();
 static void ex_menu_mv();
-
-#define STACK_MIN 10
+static void ex_getchar();
 
 typedef struct Ex_cmd Ex_cmd;
 struct Ex_cmd {
@@ -49,7 +47,6 @@ static fn_key key_defaults[] = {
   {ESC,      ex_esc,           0,       0},
   {TAB,      ex_tab,           0,       FORWARD},
   {K_S_TAB,  ex_tab,           0,       BACKWARD},
-  {' ',      ex_spc,           0,       0},
   {CAR,      ex_car,           0,       0},
   {BS,       ex_bckspc,        0,       0},
   {Ctrl_P,   ex_hist,          0,       BACKWARD},
@@ -230,9 +227,8 @@ static void ex_hist(void *none, Keyarg *arg)
 
 void ex_cmd_populate(const char *newline)
 {
-  if (ex.ex_state == EX_CMD_STATE) {
+  if (ex.ex_state == EX_CMD_STATE)
     menu_rebuild(ex.menu);
-  }
 
   int len = strlen(newline);
   if (strlen(newline) >= ex.maxpos)
@@ -245,25 +241,11 @@ void ex_cmd_populate(const char *newline)
 static void ex_car()
 {
   log_msg("EXCMD", "excar %s", ex.line);
-  if (ex.ex_state == EX_CMD_STATE) {
+  if (ex.ex_state == EX_CMD_STATE)
     cmd_eval(NULL, ex.line);
-  }
 
   hist_save();
   ex.inrstate = EX_QUIT;
-}
-
-static void ex_spc()
-{
-  log_msg("EXCMD", "ex_spc");
-  ex.inrstate |= EX_RIGHT;
-  ex.inrstate &= ~(EX_FRESH|EX_NEW);
-
-  if (ex.curpos + 1 >= ex.maxpos) {
-    ex.line = realloc(ex.line, ex.maxpos *= 2);
-    ex.line[ex.curpos+2] = '\0';
-  }
-  strcat(&ex.line[ex.curpos++], " ");
 }
 
 static void ex_bckspc()
@@ -324,9 +306,9 @@ static void ex_killline()
   ex.line = calloc(ex.maxpos, sizeof(char*));
   ex.curpos = 0;
 
-  if (ex.ex_state == EX_CMD_STATE) {
+  if (ex.ex_state == EX_CMD_STATE)
     menu_restart(ex.menu);
-  }
+
   ex.inrstate = 0;
 }
 
@@ -389,6 +371,8 @@ static void check_new_state()
     return;
   if (ex.curpos > tok->end && ex.curpos > 0 && !ex.cmd.cont)
     ex.inrstate |= EX_NEW;
+  if (compl_isdynamic() && ex_cmd_curch() == '/')
+    ex.inrstate |= EX_NEW;
 }
 
 static void ex_onkey()
@@ -419,6 +403,29 @@ static void ex_onkey()
   window_req_draw(NULL, NULL);
 }
 
+static void ex_getchar(Keyarg *ca)
+{
+  if (IS_SPECIAL(ca->key))
+    return;
+
+  ex.inrstate |= EX_RIGHT;
+  ex.inrstate &= ~(EX_FRESH|EX_NEW);
+
+  char instr[7] = {0,0};
+  if (!ca->utf8)
+    instr[0] = ca->key;
+  else
+    strcpy(instr, ca->utf8);
+
+  int len = cell_len(instr);
+
+  if ((1 + ex.curpos + len) >= ex.maxpos)
+    ex.line = realloc(ex.line, ex.maxpos = (2*ex.maxpos)+len+1);
+
+  strcat(&ex.line[ex.curpos], instr);
+  ex.curpos += len;
+}
+
 void ex_input(Keyarg *ca)
 {
   log_msg("EXCMD", "input");
@@ -429,28 +436,11 @@ void ex_input(Keyarg *ca)
 
   int idx = find_command(&key_tbl, ca->key);
   ca->arg = key_defaults[idx].cmd_arg;
+
   if (idx >= 0)
     key_defaults[idx].cmd_func(NULL, ca);
-  else {
-    if (IS_SPECIAL(ca->key))
-      return;
-    ex.inrstate |= EX_RIGHT;
-    ex.inrstate &= ~(EX_FRESH|EX_NEW);
-
-    char instr[7] = {0,0};
-    if (!ca->utf8)
-      instr[0] = ca->key;
-    else
-      strcpy(instr, ca->utf8);
-
-    int len = cell_len(instr);
-
-    if ((1 + ex.curpos + len) >= ex.maxpos)
-      ex.line = realloc(ex.line, ex.maxpos = (2*ex.maxpos)+len+1);
-
-    strcat(&ex.line[ex.curpos], instr);
-    ex.curpos += len;
-  }
+  else
+    ex_getchar(ca);
 
   if (ex.inrstate & EX_QUIT)
     stop_ex_cmd();
@@ -460,7 +450,9 @@ void ex_input(Keyarg *ca)
 
 char ex_cmd_curch()
 {
-  return ex.line[ex.curpos];
+  if (ex.curpos < 1)
+    return ex.line[0];
+  return ex.line[ex.curpos-1];
 }
 
 int ex_cmd_curpos()
@@ -473,7 +465,6 @@ Token* ex_cmd_curtok()
   if (!ex.cmd.cmds)
     return NULL;
   int st = compl_cur_pos();
-  log_err("COMPL", "curpos %d %d", ex.curpos, st);
   if (st > -1) {
     int ed = ex.curpos + 1;
     return cmdline_tokbtwn(&ex.cmd, compl_cur_pos(), ed);
@@ -529,13 +520,6 @@ List* ex_cmd_curlist()
     cmdstr = (Cmdstr*)utarray_front(ex.cmd.cmds);
   List *list = token_val(&cmdstr->args, VAR_LIST);
   return list;
-}
-
-int ex_cmd_curidx(List *list)
-{
-  int st = compl_cur_pos() + 1;
-  int ed = ex.curpos + 1;
-  return utarray_eltidx(list->items, list_tokbtwn(list, st, ed));
 }
 
 int ex_cmd_height()

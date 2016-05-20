@@ -42,7 +42,6 @@ Token* ex_cmd_curtok();
 char* ex_cmd_curstr();
 List* ex_cmd_curlist();
 int ex_cmd_state();
-int ex_cmd_curidx(List *list);
 char* ex_cmd_line();
 
 int ex_cmd_height();

@@ -26,6 +26,7 @@ typedef struct {
   compl_state   *cs;     //current state
   compl_context *cxtbl;  //context table
   compl_context *cxroot; //context root entry
+  bool rebuild;
 } Compl;
 
 static Compl cmpl;
@@ -144,7 +145,7 @@ void compl_clear()
   }
   utarray_clear(cmplist.rows);
   utarray_clear(cmplist.matches);
-  cmplist.comp_type = 0;
+  cmplist.dynamic = false;
   cmplist.invalid_pos = 0;
 }
 
@@ -169,11 +170,16 @@ void compl_set_col(int idx, char *fmt, ...)
   ci->colcount = 1;
 }
 
+void compl_enable_dynamic()
+{
+  cmplist.dynamic = true;
+}
+
 bool compl_isdynamic()
 {
   if (compl_dead())
     return false;
-  return cmplist.comp_type == COMPL_DYNAMIC;
+  return cmplist.dynamic;
 }
 
 static void compl_push(compl_context *cx, int argc, int pos)
@@ -186,6 +192,7 @@ static void compl_push(compl_context *cx, int argc, int pos)
   if (cmpl.cs)
     cs->prev = cmpl.cs;
   cmpl.cs = cs;
+  cmpl.rebuild = true;
 }
 
 static void compl_pop()
@@ -196,6 +203,7 @@ static void compl_pop()
   compl_state *cs = cmpl.cs;
   cmpl.cs = cmpl.cs->prev;
   free(cs);
+  cmpl.rebuild = true;
 }
 
 void compl_backward()
@@ -204,13 +212,13 @@ void compl_backward()
   compl_pop();
 }
 
-bool compl_forward(char *key, int pos)
+void compl_forward(char *key, int pos)
 {
   log_msg("COMPL", "compl_forward");
   log_msg("COMPL", "[%s]", key);
   if (!cmpl.cs->cx || !key) {
     log_msg("COMPL", "not available.");
-    return false;
+    return;
   }
 
   //  int argc = cmpl.cs->argc;
@@ -227,22 +235,23 @@ bool compl_forward(char *key, int pos)
     if (!find && cmd->alt)
       HASH_FIND_STR(cmpl.cxtbl, cmd->alt, find);
     if (find) {
+      log_msg("COMPL", "push %s %d", find->key, pos);
       compl_push(find, 0, pos);
-      return true;
+      return;
     }
   }
 
   /* add non-blank context state */
   if (key[0] != ' ')
-    compl_push(NULL, 0, pos);
+    compl_push(cmpl.cs->cx, cmpl.cs->argc, pos);
 
-  return false;
+  return;
 }
 
 void compl_build(List *args)
 {
   log_msg("COMPL", "compl_build");
-  if (compl_dead())
+  if (compl_dead() || !cmpl.rebuild)
     return;
 
   compl_clear();
@@ -255,6 +264,7 @@ void compl_build(List *args)
     if (cx->params[i]->flag != '-')
       break;
   }
+  cmpl.rebuild = false;
 }
 
 int cmp_match(const void *a, const void *b, void *arg)
@@ -326,6 +336,20 @@ int compl_cur_pos()
   if (!cmpl.cs)
     return -1;
   return cmpl.cs->st;
+}
+
+int compl_arg_pos()
+{
+  compl_state *cs = cmpl.cs;
+  compl_context *cx = cs->cx;
+  int argc = cs->argc;
+
+  while (cs->prev &&
+         cs->prev->cx == cx &&
+         cs->prev->argc == argc)
+    cs = cs->prev;
+
+  return cs->st;
 }
 
 bool compl_dead()

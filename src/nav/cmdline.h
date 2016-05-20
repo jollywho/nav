@@ -22,7 +22,6 @@ typedef struct {
 #define VAR_LIST    4       /* "v_list" is used            */
 
 struct Token {
-  int block;                /* block level flag           */
   int start;                /* start pos of token in line */
   int end;                  /* start pos of token in line */
   typ_T var;
