@@ -27,7 +27,7 @@ typedef struct {
 
 typedef struct {
   int matchcount;
-  bool dynamic;
+  char transch;
   UT_array *rows;     //compl_item
   UT_array *matches;  //compl_item
   int invalid_pos;
@@ -49,9 +49,9 @@ void compl_update(char *);
 
 void compl_list_add(char *fmt, ...);
 void compl_set_col(int idx, char *fmt, ...);
-void compl_enable_dynamic();
+void compl_set_transch(char ch);
+char compl_transch();
 
-bool compl_isdynamic();
 compl_item* compl_idx_match(int idx);
 void compl_invalidate(int pos);
 bool compl_validate(int pos);

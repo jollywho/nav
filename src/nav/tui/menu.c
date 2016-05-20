@@ -56,7 +56,7 @@ static void menu_fs_cb(void **args)
   if (!ent)
     return;
 
-  compl_enable_dynamic();
+  compl_set_transch('/');
   for (int i = 0; i < tbl_ent_count(ent); i++) {
     fn_rec *rec = ent->rec;
     compl_list_add("%s", rec_fld(rec, "name"));
@@ -118,7 +118,7 @@ void path_list(List *args)
   int pos = compl_arg_pos();
   int len = ex_cmd_curpos() - pos;
 
-  if (pos >= ex_cmd_curpos()) {
+  if (pos >= ex_cmd_curpos() || len < 1) {
     char *path = window_cur_dir();
     fs_read(cur_menu->fs, path);
   }
@@ -136,7 +136,7 @@ void path_list(List *args)
 
     int exec = expand_path(&path);
 
-    if (compl_validate(ex_cmd_curpos())) {
+    if (compl_validate(ex_cmd_curpos()) || ex_cmd_curch() != '/') {
       exec = true;
       path = fs_parent_dir(path);
     }
@@ -191,18 +191,17 @@ void menu_start(Menu *mnu)
   ROW_MAX = get_opt_int("menu_rows");
   mnu->hintkeys = get_opt_str("hintkeys");
 
+  menu_restart(mnu);
+
   mnu->lnum = 0;
-  mnu->rebuild = false;
   mnu->active = true;
 
   menu_resize(mnu);
-  menu_restart(mnu);
 }
 
 void menu_stop(Menu *mnu)
 {
   log_msg("MENU", "menu_stop");
-  compl_end();
   werase(mnu->nc_win);
   wnoutrefresh(mnu->nc_win);
 
@@ -219,6 +218,9 @@ void menu_stop(Menu *mnu)
 void menu_restart(Menu *mnu)
 {
   log_msg("MENU", "menu_restart");
+  if (mnu->active)
+    compl_end();
+
   compl_begin();
   mnu->moved = true;
   mnu->top = 0;
@@ -234,22 +236,53 @@ void menu_killword(Menu *mnu)
   if (mnu->active)
     compl_backward();
 }
-
 static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
 {
   log_msg("MENU", "rebuild_contexts");
-  Token *word;
-  int i = 0;
-  while ((word = cmdline_tokindex(cmd, i))) {
+  int len = utarray_len(cmd->tokens);
+
+  for (int i = 0; i < len - 1; i++) {
+    Token *word = (Token*)utarray_eltptr(cmd->tokens, i);
     char *key = token_val(word, VAR_STRING);
-    compl_forward(key, ex_cmd_curpos());
-    i++;
+
+    log_err("MENU", ">>>[%s] %d %d", key, word->start, word->end);
+    if (!strcmp(key, "/"))
+      continue;
+
+    compl_forward(key, word->end+1);
   }
-  if (i > 0) {
-    compl_build(ex_cmd_curlist());
-    compl_update(ex_cmd_curstr());
-  }
+
+  compl_build(ex_cmd_curlist());
+  compl_update(ex_cmd_curstr());
   mnu->rebuild = false;
+}
+
+void menu_update(Menu *mnu, Cmdline *cmd)
+{
+  log_msg("MENU", "menu_update");
+
+  int exstate = ex_cmd_state();
+  log_msg("MENU", "##%d", exstate);
+
+  if (mnu->rebuild)
+    return rebuild_contexts(mnu, cmd);
+  if (exstate & (EX_CYCLE|EX_QUIT|EX_EXEC))
+    return;
+
+  mnu->top = 0;
+  mnu->lnum = 0;
+  mnu->moved = true;
+
+  if (compl_transch() == ex_cmd_curch())
+    exstate |= EX_NEW;
+  else
+    exstate &= EX_NEW;
+
+  if (BITMASK_CHECK(EX_PUSH, exstate))
+    compl_forward(ex_cmd_curstr(), ex_cmd_curpos());
+
+  compl_build(ex_cmd_curlist());
+  compl_update(ex_cmd_curstr());
 }
 
 void menu_rebuild(Menu *mnu)
@@ -325,10 +358,7 @@ char* menu_next(Menu *mnu, int dir)
     line = cycle_matches(mnu, 0, false);
   }
 
-  if (compl_isdynamic() && !mark_path(line))
-    line = conspath(cur_menu->hndl->key, line);
-  else
-    line = strdup(line);
+  line = strdup(line);
 
   return line;
 }
@@ -395,29 +425,6 @@ int menu_input(Menu *mnu, int key)
   ex_cmd_populate(newline);
   menu_toggle_hints(mnu);
   return 1;
-}
-
-void menu_update(Menu *mnu, Cmdline *cmd)
-{
-  log_msg("MENU", "menu_update");
-  log_msg("MENU", "##%d", ex_cmd_state());
-
-  if (mnu->rebuild)
-    return rebuild_contexts(mnu, cmd);
-  if (ex_cmd_state() & (EX_CYCLE|EX_QUIT|EX_EXEC))
-    return;
-
-  mnu->top = 0;
-  mnu->lnum = 0;
-  mnu->moved = true;
-
-  if (BITMASK_CHECK(EX_POP, ex_cmd_state()))
-    compl_backward();
-  else if (BITMASK_CHECK(EX_PUSH, ex_cmd_state()))
-    compl_forward(ex_cmd_curstr(), ex_cmd_curpos());
-
-  compl_build(ex_cmd_curlist());
-  compl_update(ex_cmd_curstr());
 }
 
 void menu_resize(Menu *mnu)

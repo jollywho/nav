@@ -267,15 +267,16 @@ static void ex_bckspc()
     free(nline);
   }
 
-  ex.inrstate |= EX_LEFT;
   if (ex.curpos < 0)
     ex.curpos = 0;
 
   if (ex.ex_state == EX_CMD_STATE) {
     if (ex.curpos < compl_cur_pos())
-      ex.inrstate |= EX_EMPTY;
+      menu_killword(ex.menu);
   }
   ex.inrstate &= ~EX_FRESH;
+
+  log_err("MENU", "##%d %d", ex.curpos, compl_cur_pos());
 }
 
 static void ex_killword()
@@ -370,8 +371,6 @@ static void check_new_state()
   if (!tok)
     return;
   if (ex.curpos > tok->end && ex.curpos > 0 && !ex.cmd.cont)
-    ex.inrstate |= EX_NEW;
-  if (compl_isdynamic() && ex_cmd_curch() == '/')
     ex.inrstate |= EX_NEW;
 }
 

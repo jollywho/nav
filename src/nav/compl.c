@@ -145,7 +145,7 @@ void compl_clear()
   }
   utarray_clear(cmplist.rows);
   utarray_clear(cmplist.matches);
-  cmplist.dynamic = false;
+  cmplist.transch = ' ';
   cmplist.invalid_pos = 0;
 }
 
@@ -170,22 +170,26 @@ void compl_set_col(int idx, char *fmt, ...)
   ci->colcount = 1;
 }
 
-void compl_enable_dynamic()
+void compl_set_transch(char ch)
 {
-  cmplist.dynamic = true;
+  cmplist.transch = ch;
 }
 
-bool compl_isdynamic()
+char compl_transch()
 {
   if (compl_dead())
     return false;
-  return cmplist.dynamic;
+  return cmplist.transch;
 }
 
 static void compl_push(compl_context *cx, int argc, int pos)
 {
   log_msg("COMPL", "compl_push");
   compl_state *cs = calloc(1, sizeof(compl_state));
+  if (cx)
+    log_msg("COMPL", "%s", cx->key);
+  else
+    log_msg("COMPL", "null");
   cs->cx = cx;
   cs->argc = argc;
   cs->st = pos;
@@ -222,7 +226,7 @@ void compl_forward(char *key, int pos)
   }
 
   //  int argc = cmpl.cs->argc;
-  //  compl_context *cx = cmpl.cs->cx;
+  compl_context *cx = cmpl.cs->cx;
   //  if (argc < cx->argc)
   //    compl_push(cx, argc+1);
 
@@ -239,11 +243,12 @@ void compl_forward(char *key, int pos)
       compl_push(find, 0, pos);
       return;
     }
+    cx = find;
   }
 
   /* add non-blank context state */
   if (key[0] != ' ')
-    compl_push(cmpl.cs->cx, cmpl.cs->argc, pos);
+    compl_push(cx, cmpl.cs->argc, pos);
 
   return;
 }
@@ -364,6 +369,7 @@ void compl_begin()
 
 void compl_end()
 {
+  log_msg("MENU", "end");
   while (cmpl.cs->prev)
     compl_pop();
   free(cmpl.cs);

@@ -11,7 +11,6 @@
 #define EX_FIL_STATE 2
 
 #define EX_EMPTY  1
-#define EX_LEFT   2
 #define EX_RIGHT  4
 #define EX_NEW    8
 #define EX_FRESH  16
@@ -19,9 +18,8 @@
 #define EX_CYCLE  64
 #define EX_HIST   128
 #define EX_EXEC   256
-#define EX_POP    (EX_LEFT|EX_EMPTY)
 #define EX_PUSH   (EX_RIGHT|EX_NEW)
-#define EX_CLEAR  (EX_LEFT|EX_RIGHT|EX_EMPTY|EX_CYCLE|EX_HIST)
+#define EX_CLEAR  (EX_RIGHT|EX_EMPTY|EX_CYCLE|EX_HIST)
 
 void ex_cmd_init();
 void ex_cmd_cleanup();
