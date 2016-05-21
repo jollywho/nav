@@ -56,7 +56,7 @@ static void menu_fs_cb(void **args)
   if (!ent)
     return;
 
-  compl_set_transch('/');
+  compl_set_repeat('/');
   for (int i = 0; i < tbl_ent_count(ent); i++) {
     fn_rec *rec = ent->rec;
     compl_list_add("%s", rec_fld(rec, "name"));
@@ -64,7 +64,7 @@ static void menu_fs_cb(void **args)
   }
 
   if (cur_menu->active) {
-    compl_update(ex_cmd_curstr());
+    compl_filter(ex_cmd_curstr());
     window_req_draw(cur_menu, menu_queue_draw);
   }
   fs_close(cur_menu->fs);
@@ -130,7 +130,7 @@ void path_list(List *args)
 
     if (path[0] == '@') {
       marklbl_list(args);
-      compl_update(ex_cmd_curstr());
+      compl_filter(ex_cmd_curstr());
       return;
     }
 
@@ -226,9 +226,6 @@ void menu_restart(Menu *mnu)
   mnu->top = 0;
   free(mnu->hndl->key);
   mnu->hndl->key = NULL;
-
-  compl_build(NULL);
-  compl_update("");
 }
 
 void menu_killword(Menu *mnu)
@@ -236,6 +233,7 @@ void menu_killword(Menu *mnu)
   if (mnu->active)
     compl_backward();
 }
+
 static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
 {
   log_msg("MENU", "rebuild_contexts");
@@ -249,11 +247,11 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
     if (!strcmp(key, "/"))
       continue;
 
-    compl_forward(key, word->end+1);
+    compl_update(key, word->end+1, ' ');
   }
 
   compl_build(ex_cmd_curlist());
-  compl_update(ex_cmd_curstr());
+  compl_filter(ex_cmd_curstr());
   mnu->rebuild = false;
 }
 
@@ -273,16 +271,9 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   mnu->lnum = 0;
   mnu->moved = true;
 
-  if (compl_transch() == ex_cmd_curch())
-    exstate |= EX_NEW;
-  else
-    exstate &= EX_NEW;
-
-  if (BITMASK_CHECK(EX_PUSH, exstate))
-    compl_forward(ex_cmd_curstr(), ex_cmd_curpos());
-
+  compl_update(ex_cmd_curstr(), ex_cmd_curpos(), ex_cmd_curch());
   compl_build(ex_cmd_curlist());
-  compl_update(ex_cmd_curstr());
+  compl_filter(ex_cmd_curstr());
 }
 
 void menu_rebuild(Menu *mnu)

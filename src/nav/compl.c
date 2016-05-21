@@ -27,10 +27,16 @@ typedef struct {
   compl_context *cxtbl;  //context table
   compl_context *cxroot; //context root entry
   bool rebuild;
+  int build_arg;
+  char rep;
+  int block;
 } Compl;
 
 static Compl cmpl;
 static compl_list cmplist;
+
+//TODO:
+//block: block level (quotes, arrays). ignore pushes if > 0
 
 static struct compl_entry {
   char *key;
@@ -145,7 +151,7 @@ void compl_clear()
   }
   utarray_clear(cmplist.rows);
   utarray_clear(cmplist.matches);
-  cmplist.transch = ' ';
+  cmpl.rep = 0;
   cmplist.invalid_pos = 0;
 }
 
@@ -157,6 +163,7 @@ void compl_list_add(char *fmt, ...)
   vasprintf(&ci.key, fmt, args);
   va_end(args);
   ci.colcount = 0;
+  ci.argc = cmpl.build_arg;
   utarray_push_back(cmplist.rows, &ci);
 }
 
@@ -170,26 +177,15 @@ void compl_set_col(int idx, char *fmt, ...)
   ci->colcount = 1;
 }
 
-void compl_set_transch(char ch)
+void compl_set_repeat(char ch)
 {
-  cmplist.transch = ch;
-}
-
-char compl_transch()
-{
-  if (compl_dead())
-    return false;
-  return cmplist.transch;
+  cmpl.rep = ch;
 }
 
 static void compl_push(compl_context *cx, int argc, int pos)
 {
   log_msg("COMPL", "compl_push");
   compl_state *cs = calloc(1, sizeof(compl_state));
-  if (cx)
-    log_msg("COMPL", "%s", cx->key);
-  else
-    log_msg("COMPL", "null");
   cs->cx = cx;
   cs->argc = argc;
   cs->st = pos;
@@ -216,22 +212,59 @@ void compl_backward()
   compl_pop();
 }
 
-void compl_forward(char *key, int pos)
+int cmp_match(const void *a, const void *b, void *arg)
 {
-  log_msg("COMPL", "compl_forward");
-  log_msg("COMPL", "[%s]", key);
-  if (!cmpl.cs->cx || !key) {
-    log_msg("COMPL", "not available.");
+  compl_item c1 = *(compl_item*)a;
+  compl_item c2 = *(compl_item*)b;
+
+  int n1 = fuzzystrspn(c1.key, arg);
+  int n2 = fuzzystrspn(c2.key, arg);
+  return n2 - n1;
+}
+
+void compl_filter(char *key)
+{
+  log_msg("COMPL", "compl_filter");
+
+  if (cmplist.invalid_pos)
     return;
+
+  key = strip_shell(key);
+
+  utarray_clear(cmplist.matches);
+  cmplist.matchcount = 0;
+  log_msg("COMPL", "[%s]", key);
+
+  for (int i = 0; i < utarray_len(cmplist.rows); i++) {
+    compl_item *ci = (compl_item*)utarray_eltptr(cmplist.rows, i);
+    if (fuzzy_match(ci->key, key)) {
+      utarray_push_back(cmplist.matches, ci);
+      cmplist.matchcount++;
+    }
   }
 
-  //  int argc = cmpl.cs->argc;
-  compl_context *cx = cmpl.cs->cx;
-  //  if (argc < cx->argc)
-  //    compl_push(cx, argc+1);
+  utarray_sort(cmplist.matches, cmp_match, key);
+  free(key);
+}
 
+static void compl_search(compl_context *cx, char *key, int pos)
+{
+  /* get next param */
+  int argc = cmpl.cs->argc;
+  for (int i = 0; i < utarray_len(cmplist.matches); i++) {
+    compl_item *it = (compl_item*)utarray_eltptr(cmplist.matches, i);
+    if (!strcmp(it->key, key)) {
+      argc = it->argc;
+      break;
+    }
+  }
 
-  //if no more args
+  if (++argc < cx->argc)
+    return compl_push(cx, argc, pos);
+  else
+    cx = NULL;
+
+  /* get next context */
   Cmd_T *cmd = cmd_find(key);
   if (cmd) {
     compl_context *find;
@@ -240,17 +273,30 @@ void compl_forward(char *key, int pos)
       HASH_FIND_STR(cmpl.cxtbl, cmd->alt, find);
     if (find) {
       log_msg("COMPL", "push %s %d", find->key, pos);
-      compl_push(find, 0, pos);
-      return;
+      return compl_push(find, 0, pos);
     }
     cx = find;
   }
 
-  /* add non-blank context state */
+  /* push non-blank state */
   if (key[0] != ' ')
     compl_push(cx, cmpl.cs->argc, pos);
+}
 
-  return;
+void compl_update(char *key, int pos, char ch)
+{
+  log_msg("COMPL", "compl_update");
+  log_msg("COMPL", "[%s]", key);
+  compl_context *cx = cmpl.cs->cx;
+  if (!cx || !key || !key[0]) {
+    log_msg("COMPL", "not available.");
+    return;
+  }
+
+  if (ch == ' ')
+    compl_search(cx, key, pos);
+  if (ch == cmpl.rep)
+    compl_push(cx, cmpl.cs->argc, pos);
 }
 
 void compl_build(List *args)
@@ -265,46 +311,13 @@ void compl_build(List *args)
 
   /* generate list from context params */
   for (int i = cs->argc; i < cx->argc; i++) {
-    cx->params[i]->gen(args);
+    cmpl.build_arg = i;
+    if (cx->params[i]->gen)
+      cx->params[i]->gen(args);
     if (cx->params[i]->flag != '-')
       break;
   }
   cmpl.rebuild = false;
-}
-
-int cmp_match(const void *a, const void *b, void *arg)
-{
-  compl_item c1 = *(compl_item*)a;
-  compl_item c2 = *(compl_item*)b;
-
-  int n1 = fuzzystrspn(c1.key, arg);
-  int n2 = fuzzystrspn(c2.key, arg);
-  return n2 - n1;
-}
-
-void compl_update(char *line)
-{
-  log_msg("COMPL", "compl_update");
-
-  if (!line || compl_dead() || cmplist.invalid_pos)
-    return;
-
-  line = strip_shell(line);
-
-  utarray_clear(cmplist.matches);
-  cmplist.matchcount = 0;
-  log_msg("COMPL", "[%s]", line);
-
-  for (int i = 0; i < utarray_len(cmplist.rows); i++) {
-    compl_item *ci = (compl_item*)utarray_eltptr(cmplist.rows, i);
-    if (fuzzy_match(ci->key, line)) {
-      utarray_push_back(cmplist.matches, ci);
-      cmplist.matchcount++;
-    }
-  }
-
-  utarray_sort(cmplist.matches, cmp_match, line);
-  free(line);
 }
 
 compl_item* compl_idx_match(int idx)
@@ -365,6 +378,8 @@ bool compl_dead()
 void compl_begin()
 {
   compl_push(cmpl.cxroot, 0, 0);
+  compl_build(NULL);
+  compl_filter("");
 }
 
 void compl_end()

@@ -19,7 +19,7 @@ typedef struct {
 } compl_context;
 
 typedef struct {
-  char *label;
+  int argc;           //arg position
   char *key;
   int colcount;       //count of columns; (supports 0 or 1)
   char *columns;      //column string
@@ -27,7 +27,6 @@ typedef struct {
 
 typedef struct {
   int matchcount;
-  char transch;
   UT_array *rows;     //compl_item
   UT_array *matches;  //compl_item
   int invalid_pos;
@@ -42,15 +41,14 @@ bool compl_dead();
 
 compl_list* compl_complist();
 
-void compl_forward(char *, int);
 void compl_backward();
+void compl_update(char *, int, char);
 void compl_build(List *args);
-void compl_update(char *);
+void compl_filter(char *);
 
 void compl_list_add(char *fmt, ...);
 void compl_set_col(int idx, char *fmt, ...);
-void compl_set_transch(char ch);
-char compl_transch();
+void compl_set_repeat(char ch);
 
 compl_item* compl_idx_match(int idx);
 void compl_invalidate(int pos);

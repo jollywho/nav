@@ -345,6 +345,9 @@ static void ex_menu_mv(void *none, Keyarg *arg)
 
 static void ex_check_pipe()
 {
+  if ((ex.inrstate & (EX_FRESH|EX_HIST)))
+    return;
+
   Cmdstr *cur = ex_cmd_curcmd();
   if (cur && cur->exec) {
     ex.inrstate = EX_EXEC;
@@ -361,19 +364,6 @@ static void ex_check_pipe()
   }
 }
 
-static void check_new_state()
-{
-  if ((ex.inrstate & (EX_FRESH|EX_HIST)))
-    return;
-  ex_check_pipe();
-
-  Token *tok = cmdline_last(&ex.cmd);
-  if (!tok)
-    return;
-  if (ex.curpos > tok->end && ex.curpos > 0 && !ex.cmd.cont)
-    ex.inrstate |= EX_NEW;
-}
-
 static void ex_onkey()
 {
   log_msg("EXCMD", "##%d", ex_cmd_state());
@@ -382,7 +372,7 @@ static void ex_onkey()
 
   switch (ex.ex_state) {
     case EX_CMD_STATE:
-      check_new_state();
+      ex_check_pipe();
       menu_update(ex.menu, &ex.cmd);
       break;
     case EX_REG_STATE:
@@ -407,8 +397,7 @@ static void ex_getchar(Keyarg *ca)
   if (IS_SPECIAL(ca->key))
     return;
 
-  ex.inrstate |= EX_RIGHT;
-  ex.inrstate &= ~(EX_FRESH|EX_NEW);
+  ex.inrstate &= ~(EX_FRESH);
 
   char instr[7] = {0,0};
   if (!ca->utf8)
