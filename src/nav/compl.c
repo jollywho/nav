@@ -57,36 +57,36 @@ static struct compl_entry {
 };
 
 static char *cmd_defs[][3] = {
-  {"autocmd",   "-window:-group:event:pat:cmd", "_win:_aug:_event::"},
-  {"augroup",   "group",                        "_aug"},
-  {"bdelete",   "window",                       "_win"},
-  {"buffer",    "-window:plugin",               "_win:_plug"},
-  {"cd",        "path",                         "_path"},
-  {"close",     "window",                       "_win"},
-  {"delmark",   "label",                        "_mrklbl"},
-  {"direct",    "window",                       "_win"},
-  {"highlight", "group",                        "_group"},
-  {"kill",      "pid",                          "_pid"},
-  {"mark",      "label",                        "_mrklbl"},
-  {"new",       "plugin",                       "_plug"},
-  {"op",        "group",                        "_group"},
-  {"set",       "option",                       "_option"},
-  {"sort",      "type",                         "_field"},
-  {"vnew",      "plugin",                       "_plug"},
+  {"autocmd",   "-WINDOW:-GROUP:EVENT:PAT:CMD", "_win:_aug:_event::"},
+  {"augroup",   "GROUP",                        "_aug"},
+  {"bdelete",   "WINDOW",                       "_win"},
+  {"buffer",    "-WINDOW:PLUGIN",               "_win:_plug"},
+  {"cd",        "PATH",                         "_path"},
+  {"close",     "WINDOW",                       "_win"},
+  {"delmark",   "LABEL",                        "_mrklbl"},
+  {"direct",    "WINDOW",                       "_win"},
+  {"highlight", "GROUP",                        "_group"},
+  {"kill",      "PID",                          "_pid"},
+  {"mark",      "LABEL",                        "_mrklbl"},
+  {"new",       "PLUGIN",                       "_plug"},
+  {"op",        "GROUP",                        "_group"},
+  {"set",       "OPTION",                       "_option"},
+  {"sort",      "TYPE",                         "_field"},
+  {"vnew",      "PLUGIN",                       "_plug"},
 };
 
 static char *cmd_args[][3] = {
-  {"plugin", "fm",  "path:paths"},
-  {"plugin", "img", "window:wins"},
-  {"plugin", "dt",  "path:paths"},
+  {"plugin", "fm",  "PATH:paths"},
+  {"plugin", "img", "WINDow:wins"},
+  {"plugin", "dt",  "PATH:paths"},
 };
 
 void compl_init()
 {
   cmpl.cs = NULL;
   cmpl.cxroot = malloc(sizeof(compl_context));
-  cmpl.cxroot->key = "cmd";
-  mk_cmd_params(cmpl.cxroot, "cmd", "_cmd");
+  cmpl.cxroot->key = "CMD";
+  mk_cmd_params(cmpl.cxroot, "CMD", "_cmd");
   utarray_new(cmplist.rows,    &icd);
   utarray_new(cmplist.matches, &icd);
 
@@ -323,6 +323,19 @@ void compl_build(List *args)
 compl_item* compl_idx_match(int idx)
 {
   return (compl_item*)utarray_eltptr(cmplist.matches, idx);
+}
+
+void compl_walk_params(int (*param_cb)(char *,char,int,bool))
+{
+  compl_state *cs = cmpl.cs;
+  compl_context *cx = cs->cx;
+
+  int prev = 0;
+  for (int i = 0; i < cx->argc; i++) {
+    compl_param *param = cx->params[i];
+    int sign = i == cs->argc;
+    prev = param_cb(param->label, param->flag, prev, sign);
+  }
 }
 
 compl_list* compl_complist()

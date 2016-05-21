@@ -28,6 +28,7 @@ static const char *default_groups[] = {
   [OVERLAY_PROGRESS]     = "OverlayProgress",
   [OVERLAY_FILTER]       = "OverlayFilter",
   [COMPL_TEXT]           = "ComplText",
+  [COMPL_PARAM]          = "ComplParam",
   [MSG_ERROR]            = "MsgError",
   [MSG_MESSAGE]          = "MsgMessage",
   [MSG_ASK]              = "MsgAsk",

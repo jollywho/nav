@@ -38,6 +38,7 @@ struct Menu {
   int col_line;
   int col_key;
   int col_sel;
+  int col_param;
 };
 
 static void menu_queue_draw(void **argv)
@@ -184,6 +185,7 @@ void menu_start(Menu *mnu)
 
   mnu->col_sel    = opt_color(COMPL_SELECTED);
   mnu->col_text   = opt_color(COMPL_TEXT);
+  mnu->col_param  = opt_color(COMPL_PARAM);
   mnu->col_div    = opt_color(OVERLAY_SEP);
   mnu->col_box    = opt_color(OVERLAY_ACTIVE);
   mnu->col_line   = opt_color(OVERLAY_LINE);
@@ -436,22 +438,9 @@ void menu_resize(Menu *mnu)
       mnu->ofs.col);
 }
 
-void menu_draw(Menu *mnu)
+static void draw_matches(Menu *mnu, compl_list *cmplist)
 {
-  log_msg("MENU", "menu_draw");
-  if (!mnu || !mnu->active)
-    return;
-
-  werase(mnu->nc_win);
-
-  compl_list *cmplist = compl_complist();
-  if (compl_dead() || !cmplist || ex_cmd_state() & EX_EXEC) {
-    wnoutrefresh(mnu->nc_win);
-    return;
-  }
-
   int colmax = mnu->size.col - 3;
-
   for (int i = 0; i < MIN(ROW_MAX, cmplist->matchcount); i++) {
     compl_item *row = compl_idx_match(mnu->top + i);
 
@@ -472,10 +461,44 @@ void menu_draw(Menu *mnu)
       mvwchgat(mnu->nc_win,  i, ofs+3, strlen(col), A_NORMAL, mnu->col_key, NULL);
     }
   }
-  //TODO: draw combined cmplist label with arg names
-  //char *context = mnu->cx->key;
-  //draw_wide(mnu->nc_win, ROW_MAX, 1, context, mnu->size.col);
+}
+
+static int draw_param(char *label, char flag, int prev, bool active)
+{
+  Menu *mnu = cur_menu;
+  if (flag == '-')
+    DRAW_CH(mnu, nc_win, ROW_MAX, prev++, '[', col_line);
+
+  int len = strlen(label);
+  draw_wide(mnu->nc_win, ROW_MAX, prev, label, mnu->size.col);
+
+  attr_t attr = active ? A_REVERSE : A_NORMAL;
+  mvwchgat(mnu->nc_win, ROW_MAX, prev, len, attr, mnu->col_param, NULL);
+
+  if (flag == '-')
+    DRAW_CH(mnu, nc_win, ROW_MAX, (prev++)+len, ']', col_line);
+
+  return prev + len + 1;
+}
+
+void menu_draw(Menu *mnu)
+{
+  log_msg("MENU", "menu_draw");
+  if (!mnu || !mnu->active)
+    return;
+
+  werase(mnu->nc_win);
+
+  compl_list *cmplist = compl_complist();
+  if (compl_dead() || !cmplist || ex_cmd_state() & EX_EXEC) {
+    wnoutrefresh(mnu->nc_win);
+    return;
+  }
+
+  draw_matches(mnu, cmplist);
   mvwchgat(mnu->nc_win, ROW_MAX,   0, -1, A_NORMAL, mnu->col_line, NULL);
   mvwchgat(mnu->nc_win, mnu->lnum, 0, -1, A_NORMAL, mnu->col_sel, NULL);
+
+  compl_walk_params(draw_param);
   wnoutrefresh(mnu->nc_win);
 }
