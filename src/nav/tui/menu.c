@@ -241,16 +241,23 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
   log_msg("MENU", "rebuild_contexts");
   int len = utarray_len(cmd->tokens);
 
-  for (int i = 0; i < len - 1; i++) {
-    Token *word = (Token*)utarray_eltptr(cmd->tokens, i);
+  for (int i = 0; i < len; i++) {
+    Token *word  = (Token*)utarray_eltptr(cmd->tokens, i);
+    Token *after = (Token*)utarray_eltptr(cmd->tokens, i+1);
     char *key = token_val(word, VAR_STRING);
+    char *next = token_val(after, VAR_STRING);
 
-    if (!strcmp(key, "/"))
+    if (next && *next == '/') {
+      compl_set_repeat('/');
+      compl_update(key, word->end+1, '/');
+      i++;
       continue;
-
+    }
     compl_update(key, word->end+1, ' ');
   }
 
+  if (compl_cur_pos() > ex_cmd_curpos())
+    compl_backward();
   compl_build(ex_cmd_curlist());
   compl_filter(ex_cmd_curstr());
   mnu->rebuild = false;
