@@ -224,19 +224,16 @@ char* opt_var(Token *word, fn_func *blk)
     key = token_val(&p->key, VAR_STRING);
     alt = token_val(&p->value, VAR_STRING);
   }
+
   if (!key || !key[0])
     return strdup("");
-
-  if (*key == '%') {
-    char *n = expand_symbol(key+1, alt);
-    log_err("EXPAND", "n? %s", n);
-    return n;
-  }
-
+  if (*key == '%')
+    return expand_symbol(key+1, alt);
   if (*key == '$')
     key++;
 
   fn_var *var = NULL;
+
   if (blk)
     HASH_FIND_STR(blk->locals, key, var);
   if (!var)
@@ -248,6 +245,7 @@ char* opt_var(Token *word, fn_func *blk)
     else
       return strdup("");
   }
+
   return strdup(var->var);
 }
 

@@ -386,11 +386,12 @@ static Cmdret conf_variable(List *args, Cmdarg *ca)
 
   /* when delm isn't 3 the key should be expanded */
   if (delm != 3) {
-    char *pvar = opt_var(key, cmd_callstack());
+    char *pvar = opt_var(lhs, cmd_callstack());
     if (!pvar)
       goto cleanup;
 
     char *newexpr = repl_elem(pvar, expr, args, 2, delm - 1);
+    free(pvar);
     if (!newexpr)
       goto cleanup;
     SWAP_ALLOC_PTR(var.var, newexpr);

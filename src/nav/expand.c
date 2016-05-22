@@ -25,7 +25,7 @@ static char* bu_type(char ch)
     Plugin *plug = window_get_plugin();
     return strdup(plug->name);
   }
-  return strdup("");
+  return NULL;
 }
 
 static char* fm_type(const char *name, enum fm_fmt fmt)
@@ -33,7 +33,7 @@ static char* fm_type(const char *name, enum fm_fmt fmt)
   log_msg("EXPAND", "fm_type");
   Buffer *buf = window_get_focus();
   if (!buf)
-    return strdup("");
+    return NULL;
 
   varg_T args = buf_focus_sel(buf, name);
 
@@ -58,7 +58,7 @@ static char* fm_type(const char *name, enum fm_fmt fmt)
   if (src)
     return src;
 
-  return strdup("");
+  return NULL;
 }
 
 static char* op_type(const char *name)
@@ -66,7 +66,7 @@ static char* op_type(const char *name)
   log_msg("EXPAND", "op_type");
   fn_group *grp = op_active_group();
   if (!name || !grp)
-    return strdup("");
+    return NULL;
 
   int isfld = !strcmp(name, "prev") || !strcmp(name, "next");
   ventry *vent = fnd_val("op_procs", "group", grp->key);
@@ -77,13 +77,11 @@ static char* op_type(const char *name)
     return strdup(ret);
   }
 
-  return strdup("");
+  return NULL;
 }
 
-char* expand_symbol(const char *key, const char *alt)
+static char* get_type(const char *key, const char *alt)
 {
-  log_msg("EXPAND", "expand symb {%s:%s}", key, alt);
-
   switch (*key) {
     case 'b':
     case 'B':
@@ -102,7 +100,17 @@ char* expand_symbol(const char *key, const char *alt)
       return fm_type("name",     FM_GROUP);
     case 'o':
       return op_type(alt);
+    default:
+      return NULL;
   }
+}
 
-  return "";
+char* expand_symbol(const char *key, const char *alt)
+{
+  log_msg("EXPAND", "expand symb {%s:%s}", key, alt);
+
+  char *var = get_type(key, alt);
+  if (!var)
+    var = strdup("");
+  return var;
 }
