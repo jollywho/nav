@@ -35,7 +35,7 @@ typedef struct {
 void compl_init();
 void compl_cleanup();
 
-void compl_begin();
+void compl_begin(int);
 void compl_end();
 bool compl_dead();
 

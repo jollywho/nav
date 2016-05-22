@@ -308,7 +308,7 @@ static void ex_killline()
   ex.curpos = 0;
 
   if (ex.ex_state == EX_CMD_STATE)
-    menu_restart(ex.menu);
+    menu_clear(ex.menu);
 
   ex.inrstate = 0;
 }
@@ -345,7 +345,7 @@ static void ex_menu_mv(void *none, Keyarg *arg)
 
 static void ex_check_pipe()
 {
-  if ((ex.inrstate & (EX_FRESH|EX_HIST)))
+  if ((ex.inrstate & EX_HIST))
     return;
 
   Cmdstr *cur = ex_cmd_curcmd();
@@ -483,8 +483,6 @@ int ex_cmd_state()
 Cmdstr* ex_cmd_prevcmd()
 {
   int st = compl_last_pos();
-  if (st < 0)
-    return NULL;
   int ed = ex.curpos + 1;
   return cmdline_cmdbtwn(&ex.cmd, st, ed);
 }

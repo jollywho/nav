@@ -193,11 +193,11 @@ void menu_start(Menu *mnu)
   ROW_MAX = get_opt_int("menu_rows");
   mnu->hintkeys = get_opt_str("hintkeys");
 
-  menu_restart(mnu);
 
   mnu->lnum = 0;
   mnu->active = true;
 
+  menu_restart(mnu);
   menu_resize(mnu);
 }
 
@@ -206,6 +206,7 @@ void menu_stop(Menu *mnu)
   log_msg("MENU", "menu_stop");
   werase(mnu->nc_win);
   wnoutrefresh(mnu->nc_win);
+  compl_end();
 
   delwin(mnu->nc_win);
   mnu->nc_win = NULL;
@@ -217,13 +218,17 @@ void menu_stop(Menu *mnu)
   mnu->moved = true;
 }
 
+void menu_clear(Menu *mnu)
+{
+  log_msg("MENU", "menu_clear");
+  compl_end();
+  menu_restart(mnu);
+}
+
 void menu_restart(Menu *mnu)
 {
   log_msg("MENU", "menu_restart");
-  if (mnu->active)
-    compl_end();
-
-  compl_begin();
+  compl_begin(ex_cmd_curpos());
   mnu->moved = true;
   mnu->top = 0;
   free(mnu->hndl->key);
@@ -251,13 +256,17 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
       compl_set_repeat('/');
       compl_update(key, word->end+1, '/');
       i++;
-      continue;
     }
-    compl_update(key, word->end+1, ' ');
+    else if (*key == '|')
+      compl_begin(word->end);
+    else
+      compl_update(key, word->end+1, ' ');
   }
 
+  /* back out of last compl if incomplete */
   if (compl_cur_pos() > ex_cmd_curpos())
     compl_backward();
+
   compl_build(ex_cmd_curlist());
   compl_filter(ex_cmd_curstr());
   mnu->rebuild = false;

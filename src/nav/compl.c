@@ -389,9 +389,9 @@ bool compl_dead()
   return !cmpl.cs->cx;
 }
 
-void compl_begin()
+void compl_begin(int pos)
 {
-  compl_push(cmpl.cxroot, 0, 0);
+  compl_push(cmpl.cxroot, 0, pos);
   compl_build(NULL);
   compl_filter("");
 }
@@ -401,6 +401,7 @@ void compl_end()
   log_msg("MENU", "end");
   while (cmpl.cs->prev)
     compl_pop();
+  compl_clear();
   free(cmpl.cs);
   cmpl.cs = NULL;
 }
