@@ -231,6 +231,14 @@ const char* file_ext(const char *filename)
   return (d != NULL) ? d + 1 : "";
 }
 
+const char* file_base(char *filename)
+{
+  char *d = strrchr(filename, '.');
+  if (d)
+    *d = '\0';
+  return filename;
+}
+
 bool isrecdir(fn_rec *rec)
 {
   struct stat *st = (struct stat*)rec_fld(rec, "stat");

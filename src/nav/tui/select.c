@@ -124,6 +124,5 @@ bool select_has_line(Buffer *buf, int idx)
 {
   if (!select_owner(buf) || !select_active())
     return false;
-  log_msg("SELECT", "has? %d %d", idx, sel.lines[idx]);
   return (sel.lines[idx]);
 }

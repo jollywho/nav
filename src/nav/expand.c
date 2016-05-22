@@ -5,6 +5,7 @@
 #include "nav/util.h"
 #include "nav/option.h"
 #include "nav/table.h"
+#include "nav/event/fs.h"
 
 enum fm_fmt {
   FM_NORM,
@@ -36,10 +37,22 @@ static char* fm_type(const char *name, enum fm_fmt fmt)
 
   varg_T args = buf_focus_sel(buf, name);
 
-  //TODO: format args by type
+  for (int i = 0; i < args.argc; i++) {
+    if (fmt == FM_EXT || fmt == FM_GROUP)  {
+      const char *it = file_ext(args.argv[i]);
+      if (fmt == FM_GROUP) {
+        fn_syn *syn = get_syn(it);
+        if (syn)
+          it = syn->group->key;
+      }
+      SWAP_ALLOC_PTR(args.argv[i], strdup(it));
+    }
+    if (fmt == FM_NAME) {
+      file_base(args.argv[i]);
+    }
+  }
 
   char *src = lines2argv(args.argc, args.argv);
-  log_msg("FM", "%s", src);
   del_param_list(args.argv, args.argc);
 
   if (src)
@@ -61,7 +74,6 @@ static char* op_type(const char *name)
   if (isfld && vent) {
     ventry *head = ent_head(vent);
     char *ret = rec_fld(head->rec, "pid");
-    log_msg("OP", "%s", ret);
     return strdup(ret);
   }
 
