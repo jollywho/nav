@@ -155,7 +155,7 @@ void compl_clear()
   cmplist.invalid_pos = 0;
 }
 
-void compl_list_add(char *fmt, ...)
+void compl_list_add(const char *fmt, ...)
 {
   compl_item ci;
   va_list args;
@@ -222,14 +222,14 @@ int cmp_match(const void *a, const void *b, void *arg)
   return n2 - n1;
 }
 
-void compl_filter(char *key)
+void compl_filter(const char *src)
 {
   log_msg("COMPL", "compl_filter");
 
   if (cmplist.invalid_pos)
     return;
 
-  key = strip_shell(key);
+  char *key = strip_shell(src);
 
   utarray_clear(cmplist.matches);
   cmplist.matchcount = 0;
@@ -247,7 +247,7 @@ void compl_filter(char *key)
   free(key);
 }
 
-static void compl_search(compl_context *cx, char *key, int pos)
+static void compl_search(compl_context *cx, const char *key, int pos)
 {
   /* get next param */
   int argc = cmpl.cs->argc;
@@ -283,7 +283,7 @@ static void compl_search(compl_context *cx, char *key, int pos)
     compl_push(cx, cmpl.cs->argc, pos);
 }
 
-void compl_update(char *key, int pos, char ch)
+void compl_update(const char *key, int pos, char ch)
 {
   log_msg("COMPL", "compl_update");
   log_msg("COMPL", "[%s]", key);

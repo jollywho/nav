@@ -245,7 +245,6 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
     Token *word = (Token*)utarray_eltptr(cmd->tokens, i);
     char *key = token_val(word, VAR_STRING);
 
-    log_err("MENU", ">>>[%s] %d %d", key, word->start, word->end);
     if (!strcmp(key, "/"))
       continue;
 
@@ -262,7 +261,6 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   log_msg("MENU", "menu_update");
 
   int exstate = ex_cmd_state();
-  log_msg("MENU", "##%d", exstate);
 
   if (mnu->rebuild)
     return rebuild_contexts(mnu, cmd);

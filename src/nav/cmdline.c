@@ -460,24 +460,48 @@ char* cmdline_line_tok(Cmdline *cmdline, Token *word)
   return &cmdline->line[word->end];
 }
 
-static void pop(QUEUE *stack)
+bool cmdline_push_var(Token *token, Cmdline *cmdline)
+{
+  Token *word = token;
+
+  if (word->var.v_type == VAR_PAIR) {
+    Pair *p = token_val(word, VAR_PAIR);
+    if (p)
+      word = &p->key;
+  }
+  if (word->var.v_type == VAR_STRING) {
+    char *str = token_val(word, VAR_STRING);
+    if (str[0] == '$' || str[0] == '%') {
+      utarray_push_back(cmdline->vars, token);
+      return true;
+    }
+  }
+  return false;
+}
+
+static void pop(QUEUE *stack, Cmdline *cmdline)
 {
   Token token = stack_pop(stack);
   Token *parent = stack_head(stack);
 
   if (parent->var.v_type == VAR_LIST) {
-    utarray_push_back(parent->var.vval.v_list->items, &token);
+    if (!cmdline_push_var(&token, cmdline))
+      utarray_push_back(parent->var.vval.v_list->items, &token);
     parent->end = token.end;
   }
   else if (stack_prevprev(stack)->var.v_type == VAR_PAIR) {
     Token key = stack_pop(stack);
     Token *p = stack_prevprev(stack);
-    p->var.vval.v_pair->key = &key;
-    p->var.vval.v_pair->value = &token;
+    p->var.vval.v_pair->key = key;
+    p->var.vval.v_pair->value = token;
+    p->end = token.end;
+
+    bool var = cmdline_push_var(p, cmdline);
 
     stack_pop(stack);
     Token *pt = stack_head(stack);
-    utarray_push_back(pt->var.vval.v_list->items, &p);
+    if (!var)
+      utarray_push_back(pt->var.vval.v_list->items, &p);
   }
 }
 
@@ -578,24 +602,18 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
           break;
         stack_head(stack)->end = word->end;
         push_arry_cont(cmdline, idx, headref);
-        pop(stack);
+        pop(stack, cmdline);
         break;
       case '[':
         push(list_new(cmdline), stack, word->start);
         stack_head(stack)->start = word->start;
         break;
-      case '%':
-      case '$':
-        if (str[1]) {
-          utarray_push_back(cmdline->vars, word);
-          break;
-        }
       default:
         /*FALLTHROUGH*/
         seek = seek_ahead(cmdline, stack, word);
         push(*word, stack, word->start);
         if (!seek)
-          pop(stack);
+          pop(stack, cmdline);
     }
   }
 breakout:

@@ -343,8 +343,7 @@ static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
 
   for (int i = 0; i < count; i++) {
     Token *word = (Token*)utarray_eltptr(cmdline->vars, i);
-    char *name = token_val(word, VAR_STRING);
-    char *var = opt_var(name, cmd_callstack());
+    char *var = opt_var(word, cmd_callstack());
     len_lst[i] = strlen(var);
     var_lst[i] = var;
     tok_lst[i] = word;
@@ -359,6 +358,7 @@ static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
     prevst = tok_lst[i]->end;
     strcpy(base+pos, var_lst[i]);
     pos += len_lst[i];
+    free(var_lst[i]);
   }
   strcpy(base+pos, &cmdline->line[prevst]);
   cmd_do(caller->caller, base);

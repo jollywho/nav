@@ -16,13 +16,17 @@ struct Op_group {
 struct Op {
   Plugin *base;
   fn_handle *hndl;
+  void *curgrp; /* fn_group* */
 };
 
 void op_new(Plugin *plugin, Buffer *buf, char *arg);
 void op_delete(Plugin *plugin);
+
 Op_group* op_newgrp(const char *before, const char *after);
-Cmdret    op_kill();
 void      op_delgrp(Op_group *);
-void      pid_list(List *args);
+
+Cmdret op_kill();
+void pid_list(List *args);
+void* op_active_group();
 
 #endif

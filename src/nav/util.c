@@ -151,7 +151,7 @@ char* escape_shell(char *src)
   return dest;
 }
 
-char* strip_shell(char *src)
+char* strip_shell(const char *src)
 {
   int len = strlen(src);
   if (len < 1)

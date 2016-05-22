@@ -16,25 +16,6 @@
 #include "nav/event/file.h"
 #include "nav/util.h"
 
-static char* expand_field(void *owner, const char *name)
-{
-  log_msg("FM", "expand_field %s", name);
-
-  Buffer *buf = window_get_focus();
-  if (!buf)
-    return strdup("");
-
-  varg_T args = buf_focus_sel(buf, name);
-  char *src = lines2argv(args.argc, args.argv);
-  log_msg("FM", "%s", src);
-  del_param_list(args.argv, args.argc);
-
-  if (src)
-    return src;
-
-  return strdup("");
-}
-
 void fm_init()
 {
   if (tbl_mk("fm_files")) {
@@ -45,9 +26,6 @@ void fm_init()
     tbl_mk_vt_fld("fm_files", "ctime", SRT_TIME);
     tbl_mk_vt_fld("fm_files", "size",  SRT_NUM|SRT_STR);
     tbl_mk_vt_fld("fm_files", "type",  SRT_TYPE|SRT_STR);
-    set_fldvar(NULL, "name",     expand_field);
-    set_fldvar(NULL, "dir",      expand_field);
-    set_fldvar(NULL, "fullpath", expand_field);
   }
 }
 

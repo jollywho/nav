@@ -28,8 +28,8 @@ struct Token {
 };
 
 struct Pair {
-  Token *key;
-  Token *value;
+  Token key;
+  Token value;
 };
 
 struct List {

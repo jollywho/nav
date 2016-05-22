@@ -25,24 +25,6 @@ typedef struct {
   fn_group *grp;
 } Op_proc;
 
-static char* expand_field(void *owner, const char *name)
-{
-  log_msg("OP", "expand_field");
-  fn_group *grp = owner;
-
-  int isfld = !strcmp(name, "prev") || !strcmp(name, "next");
-  ventry *vent = fnd_val("op_procs", "group", grp->key);
-
-  if (isfld && vent) {
-    ventry *head = ent_head(vent);
-    char *ret = rec_fld(head->rec, "pid");
-    log_msg("OP", "%s", ret);
-    return strdup(ret);
-  }
-
-  return strdup("");
-}
-
 void pid_list(List *args)
 {
   record_list("op_procs", "pid", "group");
@@ -77,8 +59,7 @@ static void del_proc(uv_handle_t *hndl)
 static void run_group(fn_group *grp, char *line, bool proc)
 {
   Cmdstr cmd;
-  set_fldvar(grp, "prev", expand_field);
-  set_fldvar(grp, "next", expand_field);
+  op.curgrp = grp;
 
   Cmdstr *cmdptr = proc ? &cmd : NULL;
   cmd_eval(cmdptr, line);
@@ -87,6 +68,8 @@ static void run_group(fn_group *grp, char *line, bool proc)
     create_proc(grp, cmd.ret.val.v_str);
     free(cmd.ret.val.v_str);
   }
+
+  op.curgrp = NULL;
 }
 
 static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal)
@@ -218,10 +201,16 @@ void op_delgrp(Op_group *opgrp)
   free(opgrp);
 }
 
+void* op_active_group()
+{
+  return op.curgrp;
+}
+
 void op_new(Plugin *plugin, Buffer *buf, char *arg)
 {
   log_msg("OP", "INIT");
   op.base = plugin;
+  op.curgrp = NULL;
   plugin->top = &op;
   plugin->name = "op";
   hook_add_intl(-1, plugin, plugin, fileopen_cb,  "fileopen");

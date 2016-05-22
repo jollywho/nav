@@ -42,11 +42,11 @@ bool compl_dead();
 compl_list* compl_complist();
 
 void compl_backward();
-void compl_update(char *, int, char);
+void compl_update(const char *, int, char);
 void compl_build(List *args);
-void compl_filter(char *);
+void compl_filter(const char *);
 
-void compl_list_add(char *fmt, ...);
+void compl_list_add(const char *fmt, ...);
 void compl_set_col(int idx, char *fmt, ...);
 void compl_set_repeat(char ch);
 

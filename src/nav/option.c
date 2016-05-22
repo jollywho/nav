@@ -8,6 +8,7 @@
 #include "nav/event/input.h"
 #include "nav/compl.h"
 #include "nav/util.h"
+#include "nav/expand.h"
 
 enum opt_type { OPTION_STRING, OPTION_INT, OPTION_UINT };
 
@@ -91,7 +92,6 @@ static struct fn_option {
 static fn_group  *groups;
 static fn_syn    *syntaxes;
 static fn_var    *gbl_vars;
-static fn_fldvar *fld_vars;
 static fn_func   *gbl_funcs;
 static fn_option *options;
 
@@ -201,20 +201,6 @@ int get_syn_colpair(const char *name)
   return sy->group->colorpair;
 }
 
-void set_fldvar(void *owner, const char *key, fld_cb cb)
-{
-  fn_fldvar *var = malloc(sizeof(fn_fldvar));
-  var->key = strdup(key);
-  var->var = NULL;
-  var->owner = owner;
-  var->cb = cb;
-
-  log_msg("CONFIG", "%s := %s", var->key, var->var);
-  fn_fldvar **container = &fld_vars;
-  FLUSH_OLD_OPT(fn_fldvar, *container, var->key, free(find->var));
-  HASH_ADD_STR(*container, key, var);
-}
-
 void set_var(fn_var *variable, fn_func *blk)
 {
   fn_var *var = malloc(sizeof(fn_var));
@@ -228,46 +214,41 @@ void set_var(fn_var *variable, fn_func *blk)
   HASH_ADD_STR(*container, key, var);
 }
 
-// expand field variable by callback.
-// lifetime of variable managed by owner.
-// resets each callback if no owner set.
-char* fld_var(const char *name)
+char* opt_var(Token *word, fn_func *blk)
 {
-  fn_fldvar *fvar = NULL;
-  HASH_FIND_STR(fld_vars, name, fvar);
-  if (!fvar)
-    return "";
+  log_msg("OPT", "opt_var");
+  char *key = token_val(word, VAR_STRING);
+  char *alt = NULL;
+  if (!key) {
+    Pair *p = token_val(word, VAR_PAIR);
+    key = token_val(&p->key, VAR_STRING);
+    alt = token_val(&p->value, VAR_STRING);
+  }
+  if (!key || !key[0])
+    return strdup("");
 
-  else if (fvar->var && fvar->owner)
-    return fvar->var;
+  if (*key == '%') {
+    char *n = expand_symbol(key+1, alt);
+    log_err("EXPAND", "n? %s", n);
+    return n;
+  }
 
-  char *ret = fvar->cb(fvar->owner, name);
-  SWAP_ALLOC_PTR(fvar->var, ret);
-  return fvar->var;
-}
-
-char* opt_var(const char *name, fn_func *blk)
-{
-  if (!name)
-    return "";
-  if (name[0] == '%')
-    return fld_var(name+1);
-  if (name[0] == '$')
-    name++;
+  if (*key == '$')
+    key++;
 
   fn_var *var = NULL;
   if (blk)
-    HASH_FIND_STR(blk->locals, name, var);
+    HASH_FIND_STR(blk->locals, key, var);
   if (!var)
-    HASH_FIND_STR(gbl_vars, name, var);
+    HASH_FIND_STR(gbl_vars, key, var);
   if (!var) {
-    char *env = getenv(name);
+    char *env = getenv(key);
     if (env)
       return env;
     else
-      return " ";
+      return strdup("");
   }
-  return var->var;
+  return strdup(var->var);
 }
 
 void set_func(fn_func *func)
