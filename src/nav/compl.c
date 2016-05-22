@@ -65,6 +65,7 @@ static char *cmd_defs[][3] = {
   {"close",     "WINDOW",                       "_win"},
   {"delmark",   "LABEL",                        "_mrklbl"},
   {"direct",    "WINDOW",                       "_win"},
+  {"echo",      "EXPR",                         ""},
   {"highlight", "GROUP",                        "_group"},
   {"kill",      "PID",                          "_pid"},
   {"mark",      "LABEL",                        "_mrklbl"},

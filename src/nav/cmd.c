@@ -600,6 +600,9 @@ static void cmd_start()
 
 static int ctl_cmd(const char *line)
 {
+  while (*line == ' ')
+    line++;
+
   for (int i = 1; i < LENGTH(builtins) - 1; i++) {
     char *str = builtins[i].name;
     if (!strncmp(str, line, strlen(str)))
@@ -615,7 +618,7 @@ void cmd_eval(Cmdstr *caller, char *line)
 {
   if (nvs.error)
     return;
-  log_msg("CMD", ": %s", line);
+  log_msg("CMD", "eval: [%s]", line);
 
   if (!IS_PARSE || ctl_cmd(line) != -1)
     return cmd_do(caller, line);
