@@ -370,8 +370,9 @@ static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)
 }
 #endif
 
-void check_if_exec(Cmdline *cmdline, Cmdstr *cmd, Token *word)
+static void check_flags(Cmdline *cmdline, Cmdstr *cmd, Token *word)
 {
+  /* first token or first token in cmdstr */
   if (word)
     word = (Token*)utarray_next(cmdline->tokens, word);
   else
@@ -380,7 +381,7 @@ void check_if_exec(Cmdline *cmdline, Cmdstr *cmd, Token *word)
     return;
 
   char *str = token_val(word, VAR_STRING);
-  if (str[0] == '!')
+  if (str[0] == '!' && !cmd_conditional())
     cmd->exec = 1;
 }
 
@@ -564,7 +565,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
   Token *headref = stack_head(stack);
   utarray_new(cmd.chlds, &chld_icd);
 
-  check_if_exec(cmdline, &cmd, word);
+  check_flags(cmdline, &cmd, word);
 
   int idx = -1;
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
@@ -579,6 +580,8 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
           goto breakout;
         }
       case '!':
+        if (idx != 1)
+          goto push;
         cmd.rev = 1;
         break;
       case ')':
@@ -612,6 +615,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         break;
       default:
         /*FALLTHROUGH*/
+push:
         seek = seek_ahead(cmdline, stack, word);
         push(*word, stack, word->start);
         if (!seek)
@@ -650,7 +654,7 @@ void cmdline_build(Cmdline *cmdline, char *line)
 
 int cmdline_can_exec(Cmdstr *cmd, char *line)
 {
-  return !(!cmd->exec || !line || strlen(line) < 2);
+  return (cmd->exec && line);
 }
 
 void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)

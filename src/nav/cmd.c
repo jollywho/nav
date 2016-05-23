@@ -50,6 +50,7 @@ struct Script {
   bool lncont;
   bool lvlcont;
   bool opendef;
+  bool condition;
   bool error;
 };
 
@@ -277,6 +278,9 @@ cleanup:
 
 static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
 {
+  log_msg("CMD", "sub");
+  nvs.condition = false;
+
   Cmdstr *cmd = NULL;
   int maxlen = strlen(cmdline->line) + 2;
   char *base = malloc(maxlen);
@@ -429,12 +433,12 @@ static char* op_arg(List *args, int argc, int st, char *line)
   char *str = list_arg(args, argc, VAR_STRING);
   if (!str)
     return NULL;
-  return strpbrk(str, "~=<>");
+  return strpbrk(str, "!=<>");
 }
 
 static char* cmd_int_comp(int lhs, int rhs, char ch, char nch, int *ret)
 {
-  if (ch == '~' && nch == '=')
+  if (ch == '!' && nch == '=')
     *ret = lhs != rhs;
   else if (ch == '=' && nch == '=')
     *ret = lhs == rhs;
@@ -454,7 +458,7 @@ static char* cmd_str_comp(char *lhs, char *rhs, char ch, char nch, int *ret)
 {
   log_msg("CMD", "strcomp");
   int diff = strcmp(lhs, rhs);
-  if (ch == '~' && nch == '=')
+  if (ch == '!' && nch == '=')
     *ret = diff != 0;
   else if (ch == '=' && nch == '=')
     *ret = diff == 0;
@@ -471,7 +475,7 @@ static char* cmd_str_comp(char *lhs, char *rhs, char ch, char nch, int *ret)
 
 static int cond_do(char *line)
 {
-  log_msg("CMD", "cond %s", line);
+  nvs.condition = true;
   Cmdstr nstr;
   cmd_eval(&nstr, line);
   if (nstr.ret.type == 0)
@@ -489,7 +493,6 @@ static int cond_do(char *line)
 
   for (int i = 0; i < utarray_len(args->items); i++) {
     char *opstr = op_arg(args, i, cmdstr->st, condline);
-    log_err("CMD", "%s", opstr);
 
     if (!opstr) {
       char *lhs = list_arg(args, i, VAR_STRING);
@@ -513,7 +516,7 @@ static int cond_do(char *line)
     int tlhs = str_num(lhs, &dlhs);
     int trhs = str_num(rhs, &drhs);
 
-    if (ch == '~' && !nch) {
+    if (ch == '!' && !nch) {
       if (!rhs) {
         err = "syntax error, rhs";
         goto error;
@@ -553,6 +556,7 @@ error:
 cleanup:
   cmdline_cleanup(&cmd);
   free(condline);
+  nvs.condition = false;
   return cond;
 }
 
@@ -874,6 +878,11 @@ fn_func* cmd_callstack()
   if (nvs.callstack)
     return nvs.callstack->func;
   return NULL;
+}
+
+bool cmd_conditional()
+{
+  return nvs.condition;
 }
 
 void cmd_list(List *args)
