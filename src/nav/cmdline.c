@@ -573,9 +573,11 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
 
     switch(ch = str[0]) {
       case '|':
-        cmd.flag = PIPE;
-        cmd.ed = word->start;
-        goto breakout;
+        if (cmdline->lvl < 1) {
+          cmd.flag = PIPE;
+          cmd.ed = word->start;
+          goto breakout;
+        }
       case '!':
         cmd.rev = 1;
         break;
