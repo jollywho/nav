@@ -215,9 +215,16 @@ void img_new(Plugin *plugin, Buffer *buf, char *arg)
   }
 }
 
+static bool img_clean(Img *img)
+{
+  return !(img->sh_clear->blocking ||
+           img->sh_size->blocking  ||
+           img->sh_draw->blocking);
+}
+
 void img_delete(Plugin *plugin)
 {
-  log_msg("IMG", "img_cleanup");
+  log_msg("IMG", "delete");
   Img *img = plugin->top;
   fn_handle *h = img->base->hndl;
 
@@ -227,15 +234,13 @@ void img_delete(Plugin *plugin)
   }
   img->disabled = true;
 
-  DO_EVENTS_UNTIL(!img->sh_size->blocking);
-  DO_EVENTS_UNTIL(!img->sh_draw->blocking);
-  DO_EVENTS_UNTIL(!img->sh_clear->blocking);
-  shell_delete(img->sh_draw);
-  shell_delete(img->sh_size);
+  DO_EVENTS_UNTIL(img_clean(img));
   shell_delete(img->sh_clear);
+  shell_delete(img->sh_size);
+  shell_delete(img->sh_draw);
   free(h);
-  free(img->sz_msg);
   free(img->cl_msg);
+  free(img->sz_msg);
   free(img->img_msg);
   free(img);
 }
