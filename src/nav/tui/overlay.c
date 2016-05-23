@@ -73,13 +73,13 @@ Overlay* overlay_new()
 
 static int overlay_expire(Overlay *ov)
 {
-  if (ov->del) {
-    delwin(ov->nc_sep);
-    delwin(ov->nc_st);
-    free(ov);
-    return 1;
-  }
-  return 0;
+  if (!ov->del)
+    return 0;
+
+  delwin(ov->nc_sep);
+  delwin(ov->nc_st);
+  free(ov);
+  return 1;
 }
 
 void overlay_delete(Overlay *ov)
@@ -127,6 +127,8 @@ void overlay_clear(Overlay *ov)
 
 void overlay_erase(Overlay *ov)
 {
+  if (ov->del)
+    return;
   set_string(&ov->arg, "");
   set_string(&ov->pipe_in, "");
   memset(ov->name,   ' ', SZ_LBL);

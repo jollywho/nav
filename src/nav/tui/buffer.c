@@ -97,7 +97,7 @@ static int buf_expire(Buffer *buf)
   if (!buf->del)
     return 0;
 
-  buf_detach(buf);
+  hook_clear_host(buf->id);
   forefit_id(buf);
   werase(buf->nc_win);
   wnoutrefresh(buf->nc_win);
