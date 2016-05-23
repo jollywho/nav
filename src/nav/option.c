@@ -243,7 +243,7 @@ char* opt_var(Token *word, fn_func *blk)
     if (env)
       return env;
     else
-      return strdup("");
+      return strdup("''");
   }
 
   return strdup(var->var);

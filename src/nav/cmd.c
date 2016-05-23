@@ -311,7 +311,7 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
         free(cmd->ret.val.v_str);
         cmd->ret = rstr.ret;
         if (cmd->ret.type != STRING)
-          continue;
+          cmd->ret.val.v_str = "''";
       }
       //TODO: error here unless symb is '$'
     }
@@ -770,14 +770,16 @@ static Cmdret cmd_returnblock(List *args, Cmdarg *ca)
     nvs.error = 1;
     return NORET;
   }
+
   nvs.callstack->brk = 1;
   char *line = cmdline_line_after(ca->cmdline, 0);
-  if (!line)
-    return NORET;
-  Cmdstr nstr;
-  cmd_eval(&nstr, line);
-  nvs.callstack->ret = nstr.ret;
-  return nvs.callstack->ret;
+
+  if (line) {
+    Cmdstr nstr;
+    cmd_eval(&nstr, line);
+    nvs.callstack->ret = nstr.ret;
+  }
+  return NORET;
 }
 
 void cmd_clearall()

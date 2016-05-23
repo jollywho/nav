@@ -32,7 +32,7 @@ static char* fm_type(const char *name, enum fm_fmt fmt)
 {
   log_msg("EXPAND", "fm_type");
   Buffer *buf = window_get_focus();
-  if (!buf)
+  if (!buf || strcmp(buf->plugin->name, "fm"))
     return NULL;
 
   varg_T args = buf_focus_sel(buf, name);
@@ -111,6 +111,6 @@ char* expand_symbol(const char *key, const char *alt)
 
   char *var = get_type(key, alt);
   if (!var)
-    var = strdup("");
+    var = strdup("''");
   return var;
 }
