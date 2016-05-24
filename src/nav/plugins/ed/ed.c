@@ -14,6 +14,7 @@
 #include "nav/log.h"
 #include "nav/table.h"
 #include "nav/util.h"
+#include "nav/tui/message.h"
 
 #define ED_PASSVE 1
 #define ED_RENAME 2
@@ -65,6 +66,8 @@ static void ed_dump_contents(Ed *ed, varg_T *args)
 
   for (int i = 0; i < args->argc; i++) {
     log_err("ED", "write: [%s]", args->argv[i]);
+    if (!args->argv[i])
+      continue;
     write(ed->fd, args->argv[i], strlen(args->argv[i]));
     write(ed->fd, "\n", 1);
   }
@@ -77,6 +80,37 @@ static void resize_src(varg_T *a, varg_T *b)
     free(a->argv[i]);
   a->argc = b->argc;
   a->argv = realloc(a->argv, a->argc*sizeof(char*));
+}
+
+static bool validate_lines(Ed *ed)
+{
+  int src_count = ed->src.argc;
+  int dst_count = ed->dest.argc;
+  if (dst_count > src_count || dst_count < 1) {
+    goto err;
+  }
+
+  int count = 0;
+  for (int i = 0; i < ed->dest.argc; i++) {
+    char **src  = &ed->src.argv[i];
+    char **dest = &ed->dest.argv[i];
+    if (!strcmp(*src, *dest)) {
+      count++;
+    }
+  }
+
+  if (count == ed->dest.argc) {
+    nv_msg("no renaming to be done");
+    goto err;
+  }
+
+  if (ed->state == ED_RENAME && dst_count < src_count)
+    resize_src(&ed->src, &ed->dest);
+
+  return true;
+err:
+  del_param_list(ed->dest.argv, ed->dest.argc);
+  return false;
 }
 
 static bool ed_read_temp(Ed *ed)
@@ -123,15 +157,8 @@ static bool ed_read_temp(Ed *ed)
   }
   free(dest);
 
-  int src_count = ed->src.argc;
-  int dst_count = ed->dest.argc;
-  if (dst_count > src_count || dst_count < 1) {
-    //err
+  if (!validate_lines(ed))
     return false;
-  }
-
-  if (ed->state == ED_RENAME && dst_count < src_count)
-    resize_src(&ed->src, &ed->dest);
 
   return true;
 }
@@ -167,6 +194,11 @@ static void ed_stage_confirm(Ed *ed)
   for (int i = 0; i < ed->dest.argc; i++) {
     char **src  = &ed->src.argv[i];
     char **dest = &ed->dest.argv[i];
+    if (!strcmp(*src, *dest)) {
+      free(*dest);
+      *dest = NULL;
+      continue;
+    }
     sprintf(buf, "%-*s  %s", max, *src, *dest);
     SWAP_ALLOC_PTR(*dest, strdup(buf));
   }
