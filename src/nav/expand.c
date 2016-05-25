@@ -44,6 +44,8 @@ static char* fm_type(const char *name, enum fm_fmt fmt)
         fn_syn *syn = get_syn(it);
         if (syn)
           it = syn->group->key;
+        else
+          it = "";
       }
       SWAP_ALLOC_PTR(args.argv[i], strdup(it));
     }

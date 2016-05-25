@@ -69,21 +69,21 @@ static void layout_update(Container *c)
   Container *it = TAILQ_FIRST(&c->p);
   while (++i, it) {
 
-    int yfactor = it->dir == L_HORIZ;
-    int xfactor = it->dir == L_VERT;
+    int horz = it->dir == L_HORIZ;
+    int vert = it->dir == L_VERT;
 
     /* apply divisions to corresponding dimension */
-    it->size.lnum = yfactor ? new_lnum : c->size.lnum;
-    it->size.col  = xfactor ? new_col  : c->size.col;
+    it->size.lnum = horz ? new_lnum : c->size.lnum;
+    it->size.col  = vert ? new_col  : c->size.col;
 
     /* apply remainder to last item in container */
-    if (i == c->count && yfactor)
+    if (i == c->count && horz)
       it->size.lnum += rem_lnum;
-    if (i == c->count && xfactor)
+    if (i == c->count && vert)
       it->size.col  += rem_col;
 
-    it->ofs.lnum = c->ofs.lnum + (new_lnum * (i-1) * yfactor);
-    it->ofs.col  = c->ofs.col  + (new_col  * (i-1) * xfactor);
+    it->ofs.lnum = c->ofs.lnum + (new_lnum * (i-1) * horz);
+    it->ofs.col  = c->ofs.col  + (new_col  * (i-1) * vert);
 
     if (TAILQ_EMPTY(&it->p))
       buf_set_size_ofs(it->buf, it->size, it->ofs);
