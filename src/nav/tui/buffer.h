@@ -48,7 +48,6 @@ void buf_detach(Buffer *buf);
 Plugin* buf_plugin(Buffer *buf);
 WINDOW* buf_ncwin(Buffer *buf);
 
-void buf_set_overlay(Buffer *buf, Overlay *ov);
 void buf_set_plugin(Buffer *buf, Plugin *plugin);
 void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs);
 

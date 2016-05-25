@@ -89,6 +89,7 @@ Buffer* buf_new()
   buf->col_text  = opt_color(BUF_TEXT);
   buf->col_dir   = opt_color(BUF_DIR);
   buf->col_sz    = opt_color(BUF_SZ);
+  buf->ov = overlay_new();
   return buf;
 }
 
@@ -97,6 +98,7 @@ static int buf_expire(Buffer *buf)
   if (!buf->del)
     return 0;
 
+  overlay_delete(buf->ov);
   hook_clear_host(buf->id);
   forefit_id(buf);
   werase(buf->nc_win);
@@ -205,10 +207,14 @@ void buf_set_status(Buffer *buf, char *name, char *usr, char *in)
 
 static void set_focus_col(Buffer *buf, int focus)
 {
-  if (focus)
+  if (focus) {
     buf->col_focus = opt_color(BUF_SEL_ACTIVE);
-  else
+    overlay_focus(buf->ov);
+  }
+  else {
     buf->col_focus = opt_color(BUF_SEL_INACTIVE);
+    overlay_unfocus(buf->ov);
+  }
 }
 
 void buf_toggle_focus(Buffer *buf, int focus)
@@ -608,7 +614,5 @@ pos_T buf_pos(Buffer *buf)
 {return (pos_T){buf->lnum+1,0};}
 int buf_attached(Buffer *buf)
 {return buf->attached;}
-void buf_set_overlay(Buffer *buf, Overlay *ov)
-{buf->ov = ov;}
 WINDOW* buf_ncwin(Buffer *buf)
 {return buf->nc_win;}
