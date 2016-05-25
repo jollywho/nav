@@ -33,10 +33,9 @@ static Container* create_container(enum move_dir dir, Buffer *buf)
     c->dir = L_HORIZ;
   if (dir == MOVE_LEFT || dir == MOVE_RIGHT)
     c->dir = L_VERT;
+
   TAILQ_INIT(&c->p);
-
   c->buf = buf;
-
   return c;
 }
 
@@ -56,49 +55,40 @@ void layout_cleanup(Layout *layout)
 {
 }
 
-static void resize_container(Container *c)
+static void layout_update(Container *c)
 {
-  log_msg("LAYOUT", "_*_***resize_container***_*_");
-  int s_y = 1; int s_x = 1; int os_y = 0; int os_x = 0;
+  log_msg("LAYOUT", "update");
+
+  /* allocate divisions by number of items in container */
+  int new_lnum = c->size.lnum / MAX(c->count, 1);
+  int new_col  = c->size.col  / MAX(c->count, 1);
+  int rem_lnum = c->size.lnum % new_lnum;
+  int rem_col  = c->size.col  % new_col;
 
   int i = 0;
   Container *it = TAILQ_FIRST(&c->p);
   while (++i, it) {
-    if (it->dir == L_HORIZ) {
-      s_y = c->count;
-      os_y = 1;
-    }
-    if (it->dir == L_VERT ) {
-      s_x = c->count;
-      os_x = 1;
-    }
 
-    int new_lnum = c->size.lnum / s_y;
-    int new_col  = c->size.col  / s_x;
-    int rem_lnum = c->size.lnum % s_y;
-    int rem_col  = c->size.col  % s_x;
-    if (i == c->count && (rem_lnum || rem_col)) {
-      new_lnum += rem_lnum;
-      new_col  += rem_col;
-    }
-    // use prev item in entry to set sizes. otherwise use the parent
-    int c_w = 1;
-    Container *prev = TAILQ_PREV(it, cont, ent);
-    if (!prev) {
-      prev = c;
-      c_w = 0;
-    }
-    it->size = (pos_T) { new_lnum, new_col };
+    int yfactor = it->dir == L_HORIZ;
+    int xfactor = it->dir == L_VERT;
 
-    it->ofs  = (pos_T) {
-      prev->ofs.lnum + (prev->size.lnum * os_y * c_w),
-      prev->ofs.col  + (prev->size.col  * os_x * c_w)
-    };
+    /* apply divisions to corresponding dimension */
+    it->size.lnum = yfactor ? new_lnum : c->size.lnum;
+    it->size.col  = xfactor ? new_col  : c->size.col;
+
+    /* apply remainder to last item in container */
+    if (i == c->count && yfactor)
+      it->size.lnum += rem_lnum;
+    if (i == c->count && xfactor)
+      it->size.col  += rem_col;
+
+    it->ofs.lnum = c->ofs.lnum + (new_lnum * (i-1) * yfactor);
+    it->ofs.col  = c->ofs.col  + (new_col  * (i-1) * xfactor);
 
     if (TAILQ_EMPTY(&it->p))
       buf_set_size_ofs(it->buf, it->size, it->ofs);
     else
-      resize_container(it);
+      layout_update(it);
 
     it = TAILQ_NEXT(it, ent);
   }
@@ -143,7 +133,7 @@ void layout_add_buffer(Layout *layout, Buffer *nbuf, enum move_dir dir)
   Container *c = create_container(dir, nbuf);
 
   /* copy container and leave the old inplace as the parent of subitems */
-  if (c->dir != focus->dir) {
+  if (c->dir != focus->dir ) {
     Container *sub = create_container(dir, focus->buf);
     sub->parent = focus;
     focus->count++;
@@ -161,7 +151,7 @@ void layout_add_buffer(Layout *layout, Buffer *nbuf, enum move_dir dir)
     TAILQ_INSERT_TAIL(&hc->p, c, ent);
 
   swap_focus(layout, c);
-  resize_container(layout->root);
+  layout_update(layout->root);
 }
 
 static Container* next_or_prev(Container *it)
@@ -225,7 +215,7 @@ void layout_remove_buffer(Layout *layout, Buffer *buf)
   }
 
   swap_focus(layout, *focus);
-  resize_container(layout->root);
+  layout_update(layout->root);
 }
 
 static pos_T cur_line(Container *c)
@@ -291,6 +281,11 @@ void layout_movement(Layout *layout, enum move_dir dir)
     swap_focus(layout, pp);
 }
 
+void layout_rotate(Layout *layout, enum move_dir dir)
+{
+  log_msg("LAYOUT", "layout_rotate");
+}
+
 void layout_swap(Layout *layout, enum move_dir dir)
 {
   log_msg("LAYOUT", "layout_swap");
@@ -301,7 +296,7 @@ void layout_swap(Layout *layout, enum move_dir dir)
   Container *pp = NULL;
   pp = find_intersect(c, layout->root, pos);
   if (!pp)
-    return;
+    return layout_rotate(layout, dir);
 
   Buffer *swap_buf = pp->buf;
   pp->buf = c->buf;
@@ -311,7 +306,7 @@ void layout_swap(Layout *layout, enum move_dir dir)
   if (pp->dir != pp->parent->dir)
     pp->parent->buf = pp->buf;
 
-  resize_container(layout->root);
+  layout_update(layout->root);
   swap_focus(layout, pp);
 }
 
@@ -327,11 +322,10 @@ int layout_is_root(Layout *layout)
 
 void layout_refresh(Layout *layout, int offset)
 {
-  Container *c = layout->root;
-  c->size = layout_size();
-  c->size.lnum -= offset;
-  c->ofs = (pos_T){0,0};
-  resize_container(c);
+  Container *root = layout->root;
+  root->size = layout_size();
+  root->size.lnum -= offset;
+  layout_update(layout->root);
 }
 
 int key2move_type(int key)
