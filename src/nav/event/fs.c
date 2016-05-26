@@ -239,6 +239,21 @@ const char* file_base(char *filename)
   return filename;
 }
 
+const char* stat_type(struct stat *sb)
+{
+  switch (sb->st_mode & S_IFMT) {
+    case S_IFDIR:  return "directory";
+    case S_IFLNK:  return "symbolic";
+    case S_IFREG:  return "regular";
+    case S_IFBLK:  return "block";
+    case S_IFIFO:  return "fifo";
+    case S_IFSOCK: return "block";
+    case S_IFCHR:  return "character";
+    default:
+      return "";
+  }
+}
+
 bool isrecdir(fn_rec *rec)
 {
   struct stat *st = (struct stat*)rec_fld(rec, "stat");

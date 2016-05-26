@@ -5,13 +5,19 @@
 #include "nav/util.h"
 #include "nav/option.h"
 #include "nav/table.h"
+#include "nav/model.h"
 #include "nav/event/fs.h"
+#include "nav/tui/select.h"
 
 enum fm_fmt {
   FM_NORM,
   FM_EXT,
   FM_NAME,
   FM_GROUP,
+};
+
+enum fs_fmt {
+  FS_KIND,
 };
 
 static char* bu_type(char ch)
@@ -28,9 +34,39 @@ static char* bu_type(char ch)
   return NULL;
 }
 
+static char* fs_type(const char *name, enum fs_fmt fmt)
+{
+  Buffer *buf = window_get_focus();
+  Model *m = buf->hndl->model;
+  if (!buf || strcmp(buf->plugin->name, "fm"))
+    return NULL;
+
+  if (buf_sel_count(buf) < 2) {
+    struct stat *sb = model_curs_value(m, "stat");
+    return strdup(stat_type(sb));
+  }
+
+  int count = 0;
+  for (int i = 0; i < model_count(m); ++i) {
+    if (select_has_line(buf, i))
+      count++;
+  }
+
+  int j = 0;
+  char **str = malloc((1+count)*sizeof(char*));
+  for (int i = 0; i < model_count(m); ++i) {
+    if (select_has_line(buf, i)) {
+      struct stat *sb = model_fld_line(m, "stat", i);
+      str[j++] = strdup(stat_type(sb));
+    }
+  }
+  char *src = lines2argv(count, str);
+  del_param_list(str, count);
+  return src;
+}
+
 static char* fm_type(const char *name, enum fm_fmt fmt)
 {
-  log_msg("EXPAND", "fm_type");
   Buffer *buf = window_get_focus();
   if (!buf || strcmp(buf->plugin->name, "fm"))
     return NULL;
@@ -49,23 +85,17 @@ static char* fm_type(const char *name, enum fm_fmt fmt)
       }
       SWAP_ALLOC_PTR(args.argv[i], strdup(it));
     }
-    if (fmt == FM_NAME) {
+    else if (fmt == FM_NAME)
       file_base(args.argv[i]);
-    }
   }
 
   char *src = lines2argv(args.argc, args.argv);
   del_param_list(args.argv, args.argc);
-
-  if (src)
-    return src;
-
-  return NULL;
+  return src;
 }
 
 static char* op_type(const char *name)
 {
-  log_msg("EXPAND", "op_type");
   fn_group *grp = op_active_group();
   if (!name || !grp)
     return NULL;
@@ -100,6 +130,8 @@ static char* get_type(const char *key, const char *alt)
       return fm_type("dir",      FM_NORM);
     case 't':
       return fm_type("name",     FM_GROUP);
+    case 'k':
+      return fs_type("stat",     FS_KIND);
     case 'o':
       return op_type(alt);
     default:
