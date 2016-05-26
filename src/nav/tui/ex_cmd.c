@@ -108,7 +108,6 @@ void start_ex_cmd(char symbol, int state)
   ex.cmd.cmds = NULL;
   ex.cmd.line = NULL;
   hist_push(state, &ex.cmd);
-  window_req_draw(NULL, NULL);
 }
 
 void stop_ex_cmd()
@@ -160,7 +159,6 @@ static void cmdline_draw()
   mvwchgat(ex.nc_win, 0, 1, -1, A_NORMAL, ex.col_text, NULL);
 
   wmove(ex.nc_win, 0, (ex.curpos + 1) - offset);
-  doupdate();
   curs_set(1);
   wnoutrefresh(ex.nc_win);
   free(wline);

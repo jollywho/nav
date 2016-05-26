@@ -167,10 +167,9 @@ void term_keypress(Plugin *plugin, Keyarg *ca)
 
 static void term_draw(Term *term)
 {
-  log_msg("TERM", "term_draw");
   vt_draw(term->vt, buf_ncwin(term->buf), 0, 0);
   wnoutrefresh(buf_ncwin(term->buf));
-  doupdate();
+  window_update();
 }
 
 static void plugin_resize(Plugin *host, Plugin *none, HookArg *hka)

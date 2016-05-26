@@ -18,7 +18,6 @@ struct Window {
   bool ex;
   bool dirty;
   int refs;
-  bool input_override;
   Plugin *term;
 };
 
@@ -40,7 +39,6 @@ static void win_layout();
 static void window_ex_cmd();
 static void window_reg_cmd();
 static void window_fltr_cmd();
-static void window_update(uv_timer_t *);
 
 static Cmd_T cmdtable[] = {
   {"bdelete","bd",   "Close a buffer.",         win_bdel,      0},
@@ -163,7 +161,7 @@ void window_input(Keyarg *ca)
 
   if (dialog_pending)
     return dialog_input(ca->key);
-  if (win.input_override)
+  if (win.term)
     return term_keypress(win.term, ca);
   if (win.ex)
     return ex_input(ca);
@@ -177,7 +175,6 @@ void window_input(Keyarg *ca)
 
 void window_start_override(Plugin *term)
 {
-  win.input_override = true;
   win.term = term;
 }
 
@@ -185,8 +182,12 @@ void window_stop_override()
 {
   log_msg("WINDOW", "window_stop_term");
   curs_set(0);
-  win.input_override = false;
   win.term = NULL;
+}
+
+int window_curs(Plugin *plug)
+{
+  return plug == window_get_plugin();
 }
 
 void window_ch_dir(char *dir)
@@ -496,20 +497,25 @@ void window_draw(void **argv)
   cb(&obj);
 }
 
-static void window_update(uv_timer_t *handle)
+static void update_cb(uv_timer_t *handle)
 {
-  log_msg("WINDOW", "win update");
-  if (win.ex)
-    cmdline_refresh();
-  if (win.input_override)
-    term_cursor(win.term);
-
-  doupdate();
-
+  window_update();
   if (win.refs < 1) {
     uv_timer_stop(handle);
     win.dirty = false;
   }
+}
+
+void window_update()
+{
+  if (win.term && window_get_plugin() == win.term)
+    term_cursor(win.term);
+  else if (win.ex)
+    cmdline_refresh();
+  else
+    curs_set(0);
+
+  doupdate();
 }
 
 void window_req_draw(void *obj, argv_callback cb)
@@ -517,7 +523,7 @@ void window_req_draw(void *obj, argv_callback cb)
   log_msg("WINDOW", "req draw");
   if (!win.dirty) {
     win.dirty = true;
-    uv_timer_start(&win.draw_timer, window_update, RFSH_RATE, RFSH_RATE);
+    uv_timer_start(&win.draw_timer, update_cb, RFSH_RATE, RFSH_RATE);
   }
   if (obj && cb) {
     win.refs++;

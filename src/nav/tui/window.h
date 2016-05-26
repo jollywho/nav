@@ -15,6 +15,7 @@ void window_close_focus();
 void window_remove_buffer(Buffer *);
 void window_ex_cmd_end();
 void window_draw_all();
+void window_update();
 Buffer* window_get_focus();
 Plugin* window_get_plugin();
 int window_focus_attached();
