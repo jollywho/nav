@@ -279,7 +279,7 @@ static bool ed_prepare(Ed *ed)
     return false;
 
   Buffer *buf = lis->hndl->buf;
-  ed->src = buf_focus_sel(buf, "name");
+  ed->src = buf_select(buf, "name", NULL);
   sprintf(ed->curdir, "%s", window_cur_dir());
 
   sprintf(ed->tmp_name, "/tmp/navedit-XXXXXX");

@@ -14,10 +14,7 @@ enum fm_fmt {
   FM_EXT,
   FM_NAME,
   FM_GROUP,
-};
-
-enum fs_fmt {
-  FS_KIND,
+  FM_KIND,
 };
 
 static char* bu_type(char ch)
@@ -34,35 +31,29 @@ static char* bu_type(char ch)
   return NULL;
 }
 
-static char* fs_type(const char *name, enum fs_fmt fmt)
+static char* fm_ext(void *arg)
 {
-  Buffer *buf = window_get_focus();
-  Model *m = buf->hndl->model;
-  if (!buf || strcmp(buf->plugin->name, "fm"))
-    return NULL;
+  return strdup(file_ext(arg));
+}
 
-  if (buf_sel_count(buf) < 2) {
-    struct stat *sb = model_curs_value(m, "stat");
-    return strdup(stat_type(sb));
-  }
+static char* fm_name(void *arg)
+{
+  return (char*)file_base(strdup(arg));
+}
 
-  int count = 0;
-  for (int i = 0; i < model_count(m); ++i) {
-    if (select_has_line(buf, i))
-      count++;
-  }
+static char* fm_group(void *arg)
+{
+  fn_syn *syn = get_syn(file_ext(arg));
+  if (syn)
+    return strdup(syn->group->key);
+  else
+    return strdup("");
+}
 
-  int j = 0;
-  char **str = malloc((1+count)*sizeof(char*));
-  for (int i = 0; i < model_count(m); ++i) {
-    if (select_has_line(buf, i)) {
-      struct stat *sb = model_fld_line(m, "stat", i);
-      str[j++] = strdup(stat_type(sb));
-    }
-  }
-  char *src = lines2argv(count, str);
-  del_param_list(str, count);
-  return src;
+static char* fm_kind(void *arg)
+{
+  struct stat *sb = arg;
+  return strdup(stat_type(sb));
 }
 
 static char* fm_type(const char *name, enum fm_fmt fmt)
@@ -71,23 +62,16 @@ static char* fm_type(const char *name, enum fm_fmt fmt)
   if (!buf || strcmp(buf->plugin->name, "fm"))
     return NULL;
 
-  varg_T args = buf_focus_sel(buf, name);
-
-  for (int i = 0; i < args.argc; i++) {
-    if (fmt == FM_EXT || fmt == FM_GROUP)  {
-      const char *it = file_ext(args.argv[i]);
-      if (fmt == FM_GROUP) {
-        fn_syn *syn = get_syn(it);
-        if (syn)
-          it = syn->group->key;
-        else
-          it = "";
-      }
-      SWAP_ALLOC_PTR(args.argv[i], strdup(it));
-    }
-    else if (fmt == FM_NAME)
-      file_base(args.argv[i]);
+  select_cb cb = NULL;
+  switch (fmt) {
+    case FM_EXT:   cb = fm_ext;   break;
+    case FM_NAME:  cb = fm_name;  break;
+    case FM_GROUP: cb = fm_group; break;
+    case FM_KIND:  cb = fm_kind;  break;
+    default:
+      break;
   }
+  varg_T args = buf_select(buf, name, cb);
 
   char *src = lines2argv(args.argc, args.argv);
   del_param_list(args.argv, args.argc);
@@ -131,7 +115,7 @@ static char* get_type(const char *key, const char *alt)
     case 't':
       return fm_type("name",     FM_GROUP);
     case 'k':
-      return fs_type("stat",     FS_KIND);
+      return fm_type("stat",     FM_KIND);
     case 'o':
       return op_type(alt);
     default:

@@ -240,7 +240,7 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
     return;
 
   int count = buf_sel_count(host->hndl->buf);
-  varg_T args = buf_focus_sel(host->hndl->buf, "fullpath");
+  varg_T args = buf_select(host->hndl->buf, "fullpath", NULL);
   char *src = lines2argv(args.argc, args.argv);
   log_msg("FM", "src |%s|", src);
 
