@@ -31,7 +31,7 @@ void shell_args(Shell *sh, char **args, shell_stdout_cb readout);
 void shell_start(Shell *sh);
 void shell_stop(Shell *sh);
 void shell_set_in_buffer(Shell *sh, char *msg);
-int shell_exec(char *line, shell_status_cb cb, char *cwd, Plugin *caller);
+int shell_exec(char *line, shell_status_cb cb, char *cwd);
 void shell_write(Shell *sh, char *msg);
 
 #endif

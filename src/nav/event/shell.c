@@ -4,10 +4,10 @@
 #include "nav/event/hook.h"
 #include "nav/log.h"
 #include "nav/option.h"
+#include "nav/plugins/out/out.h"
 
 static void out_data_cb(Stream *, RBuffer *, size_t, void *,  bool);
 static void shell_write_cb(Stream *, void *, int);
-static void shell_default_stdout_cb(Plugin *, char *);
 
 static char *args[4];
 
@@ -93,10 +93,8 @@ void shell_start(Shell *sh)
   }
   sh->blocking = true;
   wstream_init(proc->in, 0);
-  if (sh->readout) {
-    rstream_init(proc->out, 0);
-    rstream_start(proc->out, sh->data_cb);
-  }
+  rstream_init(proc->out, 0);
+  rstream_start(proc->out, sh->data_cb);
   rstream_init(proc->err, 0);
   rstream_start(proc->err, sh->data_cb);
   if (sh->msg)
@@ -146,7 +144,13 @@ static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
 
   ptr[count] = '\0';
   Shell *sh = (Shell*)data;
-  sh->readout(sh->caller, ptr);
+  int pid = sh->uvproc.process.pid;
+  int fd = &sh->out == stream ? 1 : 2;
+
+  if (sh->readout)
+    sh->readout(sh->caller, ptr);
+  else
+    out_recv(pid, fd, ptr);
 
   size_t written = count;
   // No output written, force emptying the Rbuffer if it is full.
@@ -161,12 +165,7 @@ static void shell_write_cb(Stream *stream, void *data, int status)
   stream_close(stream, NULL);
 }
 
-static void shell_default_stdout_cb(Plugin *plugin, char *out)
-{
-  log_msg("SHELL", "stdout: %s", out);
-}
-
-int shell_exec(char *line, shell_status_cb cb, char *cwd, Plugin *caller)
+int shell_exec(char *line, shell_status_cb cb, char *cwd)
 {
   log_msg("SHELL", "shell_exec");
   log_msg("SHELL", "%s", line);
@@ -179,8 +178,8 @@ int shell_exec(char *line, shell_status_cb cb, char *cwd, Plugin *caller)
   sh->reg = true;
   sh->data_cb = out_data_cb;
   sh->retcb = cb;
+  sh->caller = NULL;
 
-  sh->caller = caller;
   sh->uvproc = uv_process_init(mainloop(), sh);
   Process *proc = &sh->uvproc.process;
   proc->events = eventq();
@@ -199,7 +198,7 @@ int shell_exec(char *line, shell_status_cb cb, char *cwd, Plugin *caller)
   args[1] = "-c";
   args[2] = rv;
   args[3] = NULL;
-  shell_args(sh, args, shell_default_stdout_cb);
+  shell_args(sh, args, NULL);
   shell_start(sh);
   free(rv);
 

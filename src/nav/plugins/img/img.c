@@ -59,7 +59,7 @@ static void img_draw(Plugin *plugin)
   shell_start(img->sh_draw);
 }
 
-static void shell_stdout_size_cb(Plugin *plugin, char  *out)
+static void shell_stdout_size_cb(Plugin *plugin, char *out)
 {
   log_msg("IMG", "shell_stdout_size_cb");
   log_msg("IMG", "%s", out);

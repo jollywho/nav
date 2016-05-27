@@ -533,7 +533,7 @@ void reg_yank(char *str)
 {
   char *cpy;
   asprintf(&cpy, "echo -n \"%s\" | %s", str, get_opt_str("copy-pipe"));
-  shell_exec(cpy, NULL, focus_dir(), NULL);
+  shell_exec(cpy, NULL, focus_dir());
   free(str);
   free(cpy);
 }
