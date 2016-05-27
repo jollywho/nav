@@ -4,11 +4,8 @@
 #include "nav/tui/message.h"
 #include "nav/tui/select.h"
 #include "nav/event/hook.h"
-#include "nav/ascii.h"
 #include "nav/log.h"
-#include "nav/table.h"
 #include "nav/model.h"
-#include "nav/regex.h"
 #include "nav/option.h"
 #include "nav/info.h"
 #include "nav/event/input.h"
@@ -515,11 +512,6 @@ void buf_end_sel(Buffer *buf)
   buf_refresh(buf);
 }
 
-static char* yank_type(void *arg)
-{
-  return "";
-}
-
 void buf_yank(void *_b, Keyarg *ca)
 {
   Buffer *buf = (Buffer*)_b;
@@ -534,7 +526,7 @@ void buf_yank(void *_b, Keyarg *ca)
     key[0] = 'f';
 
   reg_set(NUL, buf_select(buf, "fullpath", NULL));
-  reg_yank(expand_symbol(key, NULL));
+  reg_yank(yank_symbol(key, NULL));
   buf_end_sel(buf);
 }
 

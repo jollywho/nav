@@ -1,6 +1,7 @@
 #ifndef FN_EXPAND_H
 #define FN_EXPAND_H
 
-char* expand_symbol(const char *key, const char *alt);
+char* yank_symbol(const char *, const char *);
+char* expand_symbol(const char *, const char *);
 
 #endif

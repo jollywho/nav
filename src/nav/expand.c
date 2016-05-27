@@ -17,18 +17,21 @@ enum fm_fmt {
   FM_KIND,
 };
 
-static char* bu_type(char ch)
+static varg_T bu_type(char ch)
 {
+  varg_T arg = {};
   if (ch == 'b') {
-    char *pidstr;
-    asprintf(&pidstr, "%d", buf_id(window_get_focus()));
-    return pidstr;
+    arg.argc = 1;
+    arg.argv = malloc(sizeof(char*));
+    asprintf(&arg.argv[0], "%d", buf_id(window_get_focus()));
   }
-  if (ch == 'B') {
+  else if (ch == 'B') {
     Plugin *plug = window_get_plugin();
-    return strdup(plug->name);
+    arg.argc = 1;
+    arg.argv = malloc(sizeof(char*));
+    arg.argv[0] = strdup(plug->name);
   }
-  return NULL;
+  return arg;
 }
 
 static char* fm_ext(void *arg)
@@ -56,11 +59,11 @@ static char* fm_kind(void *arg)
   return strdup(stat_type(sb));
 }
 
-static char* fm_type(const char *name, enum fm_fmt fmt)
+static varg_T fm_type(const char *name, enum fm_fmt fmt)
 {
   Buffer *buf = window_get_focus();
   if (!buf || strcmp(buf->plugin->name, "fm"))
-    return NULL;
+    return (varg_T){};
 
   select_cb cb = NULL;
   switch (fmt) {
@@ -71,18 +74,15 @@ static char* fm_type(const char *name, enum fm_fmt fmt)
     default:
       break;
   }
-  varg_T args = buf_select(buf, name, cb);
-
-  char *src = lines2argv(args.argc, args.argv);
-  del_param_list(args.argv, args.argc);
-  return src;
+  return buf_select(buf, name, cb);
 }
 
-static char* op_type(const char *name)
+static varg_T op_type(const char *name)
 {
+  varg_T arg = {};
   fn_group *grp = op_active_group();
   if (!name || !grp)
-    return NULL;
+    return arg;
 
   int isfld = !strcmp(name, "prev") || !strcmp(name, "next");
   ventry *vent = fnd_val("op_procs", "group", grp->key);
@@ -90,13 +90,15 @@ static char* op_type(const char *name)
   if (isfld && vent) {
     ventry *head = ent_head(vent);
     char *ret = rec_fld(head->rec, "pid");
-    return strdup(ret);
+    arg.argc = 1;
+    arg.argv = malloc(sizeof(char*));
+    arg.argv[0] = strdup(ret);
   }
 
-  return NULL;
+  return arg;
 }
 
-static char* get_type(const char *key, const char *alt)
+static varg_T get_type(const char *key, const char *alt)
 {
   switch (*key) {
     case 'b':
@@ -119,16 +121,28 @@ static char* get_type(const char *key, const char *alt)
     case 'o':
       return op_type(alt);
     default:
-      return NULL;
+      return (varg_T){};
   }
+}
+
+char* yank_symbol(const char *key, const char *alt)
+{
+  varg_T ret = get_type(key, alt);
+  if (!ret.argc)
+    return strdup("''");
+  char *str = lines2yank(ret.argc, ret.argv);
+  del_param_list(ret.argv, ret.argc);
+  return str;
 }
 
 char* expand_symbol(const char *key, const char *alt)
 {
   log_msg("EXPAND", "expand symb {%s:%s}", key, alt);
 
-  char *var = get_type(key, alt);
-  if (!var)
-    var = strdup("''");
-  return var;
+  varg_T ret = get_type(key, alt);
+  if (!ret.argc)
+    return strdup("''");
+  char *str = lines2argv(ret.argc, ret.argv);
+  del_param_list(ret.argv, ret.argc);
+  return str;
 }
