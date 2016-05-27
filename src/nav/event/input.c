@@ -527,13 +527,13 @@ void reg_set(int ch, varg_T args)
     free(find->value.argv);
   }
   find->value = args;
+}
 
-  if (ch == '0') {
-    char *cpy;
-    char *src = lines2yank(args.argc, args.argv);
-    asprintf(&cpy, "echo -n \"%s\" | %s", src, get_opt_str("copy-pipe"));
-    shell_exec(cpy, NULL, focus_dir(), NULL);
-    free(src);
-    free(cpy);
-  }
+void reg_yank(char *str)
+{
+  char *cpy;
+  asprintf(&cpy, "echo -n \"%s\" | %s", str, get_opt_str("copy-pipe"));
+  shell_exec(cpy, NULL, focus_dir(), NULL);
+  free(str);
+  free(cpy);
 }

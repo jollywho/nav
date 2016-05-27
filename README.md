@@ -45,7 +45,7 @@ With w3mimgdisplay installed
 ```viml
 :new fm
 :vnew img
-:direct #BUFFER_ID
+:di #BUFFER_ID
 ```
 ```viml
 :vnew img #BUFFER_ID

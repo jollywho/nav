@@ -83,5 +83,6 @@ fn_reg* reg_get(int ch);
 fn_reg* reg_dcur();
 void reg_clear_dcur();
 void reg_set(int ch, varg_T);
+void reg_yank(char *);
 
 #endif

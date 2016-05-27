@@ -14,6 +14,7 @@
 #include "nav/event/input.h"
 #include "nav/event/fs.h"
 #include "nav/util.h"
+#include "nav/expand.h"
 
 static void buf_mv_page();
 static void buf_mv();
@@ -514,23 +515,26 @@ void buf_end_sel(Buffer *buf)
   buf_refresh(buf);
 }
 
+static char* yank_type(void *arg)
+{
+  return "";
+}
+
 void buf_yank(void *_b, Keyarg *ca)
 {
   Buffer *buf = (Buffer*)_b;
-  fn_handle *h = buf->hndl;
 
-  char *field = h->fname;
-  if (ca->key == 'f')
-    field = "fullpath";
-  else if (ca->key == 'd')
-    field = "dir";
-  else if (ca->key != 'y') {
+  if (!strchr("fnNedtky", ca->key)) {
     ca->oap.is_unused = true;
     return;
   }
 
+  char key[] = {ca->key, '\0'};
+  if (ca->key == 'y')
+    key[0] = 'f';
+
   reg_set(NUL, buf_select(buf, "fullpath", NULL));
-  reg_set('0', buf_select(buf, field, NULL));
+  reg_yank(expand_symbol(key, NULL));
   buf_end_sel(buf);
 }
 

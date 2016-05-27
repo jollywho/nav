@@ -95,6 +95,15 @@ forward search
 backward search
 
 .RE
+.SS "\s-1Term\s0"
+.IP "\fBMeta-[\fR"
+escape terminal focus
+.IP "\fBMeta-k\fR"
+scroll buffer up
+.IP "\fBMeta-j\fR"
+scroll buffer down
+
+.RE
 .SS "\s-1Command-line\s0"
 .IP "\fBESC\fR"
 cancel/close ex_mode
@@ -137,10 +146,43 @@ swap buffer in direction
 yank visible field
 .IP "\fByf\fR
 yank fullpath
+.IP "\fByn\fR
+yank name
+.IP "\fByN\fR
+yank name (no extension)
+.IP "\fBye\fR"
+yank extension
 .IP "\fByd\fR"
 yank directory
+.IP "\fByt\fR"
+yank type (opgroup)
+.IP "\fByk\fR"
+yank kind (file type)
 .IP "\fBdd\fR"
 yank to delete register
+
+.RE
+.SS "\s-1Symbol Expansion\s0"
+.IP "\fB%b\fR"
+buffer number
+.IP "\fB%B\fR"
+buffer name
+.IP "\fB%f\fR"
+fullpath
+.IP "\fB%n\fR"
+name
+.IP "\fB%N\fR"
+name (no extension)
+.IP "\fB%e\fR"
+extension
+.IP "\fB%d\fR"
+directory
+.IP "\fB%t\fR"
+type (opgroup)
+.IP "\fB%k\fR"
+kind (file type)
+.IP "\fB%o:<var>\fR"
+opgroup variable
 
 .SH FILES
 User-local info file: \fI~/.navinfo\fR.
@@ -151,4 +193,4 @@ If you find a bug, please report it at
 .br
 <\fBhttp://github.com/jollywho/nav\fP>.
 .SH AUTHORS
-Kevin Vollmer <works.kvollmer@gmail.com>
+Kevin Vollmer <kvollmer@metaphorize.net>
