@@ -211,14 +211,18 @@ fn_lis* fnd_lis(const char *tn, const char *fld, const char *key)
   if (!l)
     return f->lis;
 
+  if (!l->rec && !key[0])
+    l->rec = LIST_FIRST(&t->recs);
+
   return l;
 }
 
 ventry* lis_get_val(fn_lis *lis, const char *fld)
 {
   log_msg("TABLE", "lis_get_val");
-  for(int i = 0; i < lis->rec->fld_count; i++) {
-    ventry *it = lis->rec->vlist[i];
+  fn_rec *rec = lis->rec;
+  for(int i = 0; i < rec->fld_count; i++) {
+    ventry *it = rec->vlist[i];
     if (!it)
       continue;
 

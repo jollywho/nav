@@ -20,7 +20,7 @@ void out_init()
   fn_handle *hndl = malloc(sizeof(fn_handle));
   hndl->tn = "out";
   hndl->key_fld = "fd";
-  hndl->key = "1";
+  hndl->key = "";
   hndl->fname = "line";
   hndl->kname = "fd";
   out.hndl = hndl;
@@ -69,6 +69,9 @@ static void out_signal_model(void **data)
 
 void out_recv(int pid, int fd, char *out)
 {
+  if (!out)
+    return;
+
   if (fd == 1)
     log_msg("OUT", "[%d|%d]: %s", pid, fd, out);
   else
