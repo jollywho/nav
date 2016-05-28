@@ -59,7 +59,7 @@ void* rec_fld(fn_rec *rec, const char *);
 char* ent_str(ventry *ent);
 ventry* ent_head(ventry *ent);
 ventry* ent_rec(fn_rec *rec, const char *);
-fn_rec* tbl_row(fn_tbl *t, int idx);
+fn_rec* tbl_iter(fn_rec *next);
 int fld_type(const char *, const char *);
 
 void tbl_del_val(const char *, const char *, const char *);

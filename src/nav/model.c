@@ -365,22 +365,12 @@ void model_recv(Model *m)
 
   if (!l->rec)
     return model_null_entry(m, l);
+  if (l && !h->key[0])
+    return model_full_entry(m, l);
 
   ventry *head = lis_get_val(l, h->key_fld);
 
   model_read_entry(h->model, l, head);
-}
-
-void model_null_entry(Model *m, fn_lis *lis)
-{
-  log_msg("MODEL", "model_null_entry");
-  fn_handle *h = m->hndl;
-  m->head = NULL;
-  m->cur = NULL;
-  lis->index = 0;
-  lis->lnum = 0;
-  buf_full_invalidate(h->buf, lis->index, lis->lnum);
-  m->blocking = false;
 }
 
 static void generate_lines(Model *m)
@@ -395,10 +385,37 @@ static void generate_lines(Model *m)
   }
 }
 
+void model_null_entry(Model *m, fn_lis *lis)
+{
+  log_msg("MODEL", "model_null_entry");
+  fn_handle *h = m->hndl;
+  m->head = NULL;
+  m->cur = NULL;
+  lis->index = 0;
+  lis->lnum = 0;
+  buf_full_invalidate(h->buf, lis->index, lis->lnum);
+  m->blocking = false;
+}
+
+void model_full_entry(Model *m, fn_lis *lis)
+{
+  log_msg("MODEL", "model_full_entry");
+  fn_rec *it = lis->rec;
+  int f = 0; /* make compiler stop complaining */
+  while (it) {
+    fn_line ln;
+    ln.rec = it;
+    utarray_insert(m->lines, &ln, f);
+    it = tbl_iter(it);
+  }
+  filter_apply(m->hndl);
+  m->lis = lis;
+  m->blocking = false;
+}
+
 void model_read_entry(Model *m, fn_lis *lis, ventry *head)
 {
   log_msg("MODEL", "model_read_entry");
-  fn_handle *h = m->hndl;
   if (!m->pfval) {
     m->pfval = strdup(lis->fval);
     m->ptop = lis->index;
@@ -407,7 +424,7 @@ void model_read_entry(Model *m, fn_lis *lis, ventry *head)
 
   m->head = ent_head(head);
   m->cur = head->rec;
-  h->model->lis = lis;
+  m->lis = lis;
   generate_lines(m);
   filter_apply(m->hndl);
   model_sort(m, (sort_t){-1,0});

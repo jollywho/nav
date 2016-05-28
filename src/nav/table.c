@@ -211,7 +211,7 @@ fn_lis* fnd_lis(const char *tn, const char *fld, const char *key)
   if (!l)
     return f->lis;
 
-  if (!l->rec && !key[0])
+  if (!key[0])
     l->rec = LIST_FIRST(&t->recs);
 
   return l;
@@ -269,6 +269,11 @@ ventry* ent_rec(fn_rec *rec, const char *fld)
     return rec->vlist[i];
   }
   return NULL;
+}
+
+fn_rec* tbl_iter(fn_rec *next)
+{
+  return LIST_NEXT(next, ent);
 }
 
 int fld_type(const char *tn, const char *fld)

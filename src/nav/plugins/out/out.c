@@ -19,7 +19,7 @@ void out_init()
   }
   fn_handle *hndl = malloc(sizeof(fn_handle));
   hndl->tn = "out";
-  hndl->key_fld = "fd";
+  hndl->key_fld = "line";
   hndl->key = "";
   hndl->fname = "line";
   hndl->kname = "fd";
@@ -54,7 +54,6 @@ void out_delete(Plugin *plugin)
   fn_handle *h = plugin->hndl;
   model_close(h);
   model_cleanup(h);
-  free(h);
 }
 
 static void out_signal_model(void **data)
