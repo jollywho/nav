@@ -189,6 +189,12 @@ static void ex_esc()
 static void ex_tab(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "TAB");
+  if (ex.cmd.cmds) {
+    Cmdstr *cur = ex_cmd_curcmd();
+    if (cur && cur->exec)
+      return;
+  }
+
   char *line = menu_next(ex.menu, arg->arg);
   if (!line)
     return;

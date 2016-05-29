@@ -28,12 +28,11 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   hndl->buf = buf;
   hndl->key_fld = "line";
   hndl->key = "";
-  hndl->fname = "name";
+  hndl->fname = "line";
   hndl->kname = "line";
   dt->filename = strdup(arg);
 
   if (tbl_mk("filename")) {
-    tbl_mk_fld("filename", "name", TYP_STR);
     tbl_mk_fld("filename", "line", TYP_STR);
   }
 
@@ -82,8 +81,7 @@ static void dt_readfile(DT *dt)
 
   while ((size = getline(&line, &len, dt->f)) != -1) {
     trans_rec *r = mk_trans_rec(tbl_fld_count("filename"));
-    edit_trans(r, "name", (char*)line, NULL);
-    edit_trans(r, "line", (char*)"0",  NULL);
+    edit_trans(r, "line", (char*)line, NULL);
     CREATE_EVENT(eventq(), commit, 2, "filename", r);
   }
   free(line);
