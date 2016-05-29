@@ -76,7 +76,10 @@ void out_recv(int pid, int fd, char *out)
   else
     log_err("OUT", "[%d|%d]: %s", pid, fd, out);
 
-  char *fdstr = fd == 1 ? "1" : "2";
+  char *pidstr;
+  asprintf(&pidstr, "%d", pid);
+  char *fdstr;
+  asprintf(&fdstr, "%d", fd);
 
   char c;
   int pos = 0;
@@ -91,11 +94,13 @@ void out_recv(int pid, int fd, char *out)
     prev = pos;
 
     trans_rec *r = mk_trans_rec(tbl_fld_count("out"));
-    edit_trans(r, "pid",   fdstr, NULL);
+    edit_trans(r, "pid",   pidstr, NULL);
     edit_trans(r, "fd",    fdstr, NULL);
     edit_trans(r, "line",  buf,   NULL);
     CREATE_EVENT(eventq(), commit, 2, "out", r);
   }
+  free(pidstr);
+  free(fdstr);
 
   CREATE_EVENT(eventq(), out_signal_model, 0, NULL);
 }

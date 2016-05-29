@@ -68,22 +68,37 @@ static void draw_file(Buffer *buf, Model *m)
 
 static void draw_out(Buffer *buf, Model *m)
 {
+  char *prev = NULL;
   for (int i = 0; i < buf->b_size.lnum; ++i) {
     char *it = model_str_line(m, buf->top + i);
     if (!it)
       break;
+    bool alt = false;
 
     fn_rec *rec = model_rec_line(m, buf->top + i);
     char *fd = rec_fld(rec, "fd");
-    short col = *fd == '1' ? 7 : 13; //FIXME: use color group
+    short col = *fd == '1' ? 3 : 5; //FIXME: use color group
+    char *pidstr = rec_fld(rec, "pid");
+    sprintf(szbuf, "%s:", pidstr);
+
+    if (prev != pidstr) {
+      alt = true;
+      prev = pidstr;
+    }
 
     attr_t attr = A_NORMAL;
     if (select_has_line(buf, buf->top + i))
       attr = A_REVERSE;
 
-    int max = buf->b_size.col;
-    draw_wide(buf->nc_win, i, 0, it, max - 1);
-    mvwchgat(buf->nc_win, i, 0, -1, attr, col, NULL);
+    int st = alt ? SZ_LEN : 0;
+    int max = buf->b_size.col - st;
+
+    if (alt)
+      draw_wide(buf->nc_win, i, 0, szbuf, SZ_LEN);
+    draw_wide(buf->nc_win, i, st+1, it, max - 2);
+
+    mvwchgat(buf->nc_win, i, 0, -1, A_UNDERLINE, SZ_LEN, NULL);
+    mvwchgat(buf->nc_win, i, st, -1, attr, col, NULL);
   }
 }
 
