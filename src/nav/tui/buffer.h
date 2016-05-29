@@ -5,11 +5,19 @@
 #include "nav/regex.h"
 #include "nav/filter.h"
 
+enum scr_type {
+  SCR_NULL,
+  SCR_SIMPLE,
+  SCR_FILE,
+  SCR_OUT,
+} type;
+
 struct Buffer {
   int id;
   WINDOW *nc_win;
   Plugin *plugin;
   Overlay *ov;
+  enum scr_type scr;
 
   LineMatch *matches;
   Filter *filter;
@@ -27,9 +35,8 @@ struct Buffer {
   bool queued;
   bool del;
   bool attached;
-  bool nodraw;
-  bool flat;
 
+  //TODO: store colors in screen
   short col_focus;
   short col_text;
   short col_dir;
@@ -48,11 +55,9 @@ void buf_detach(Buffer *buf);
 Plugin* buf_plugin(Buffer *buf);
 WINDOW* buf_ncwin(Buffer *buf);
 
-void buf_set_plugin(Buffer *buf, Plugin *plugin);
-void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs);
+void buf_set_plugin(Buffer *buf, Plugin *plugin, enum scr_type);
 
-void buf_set_pass(Buffer *buf);
-void buf_set_flat(Buffer *buf);
+void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs);
 void buf_set_linematch(Buffer *buf, LineMatch *match);
 void buf_set_status(Buffer *buf, char *, char *, char *);
 

@@ -35,8 +35,7 @@ void term_new(Plugin *plugin, Buffer *buf, char *arg)
   plugin->_cancel = plugin_cancel;
 
   term->buf = buf;
-  buf_set_plugin(buf, plugin);
-  buf_set_pass(buf);
+  buf_set_plugin(buf, plugin, SCR_NULL);
 
   term->vt = vt_create(1, 1, SCROLL_HISTORY);
   const char *shell = getenv("SHELL");

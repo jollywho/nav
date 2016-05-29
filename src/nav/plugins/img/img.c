@@ -187,8 +187,7 @@ void img_new(Plugin *plugin, Buffer *buf, char *arg)
   img->sz_msg = malloc(1);
   img->cl_msg = malloc(1);
   img->img_msg = malloc(1);
-  buf_set_plugin(buf, plugin);
-  buf_set_pass(buf);
+  buf_set_plugin(buf, plugin, SCR_NULL);
 
   img->sh_size = shell_new(plugin);
   shell_args(img->sh_size, (char**)t_args, shell_stdout_font_cb);

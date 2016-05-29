@@ -29,7 +29,7 @@ static void ed_chown_plugin(Ed *ed)
 {
   ed->base->top = ed;
   ed->base->name = "ed";
-  buf_set_plugin(ed->buf, ed->base);
+  buf_set_plugin(ed->buf, ed->base, SCR_NULL);
 }
 
 static void ed_cleanup(Ed *ed)

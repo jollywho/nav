@@ -345,7 +345,7 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   model_init(plugin->hndl);
   model_inherit(plugin->hndl);
   model_open(plugin->hndl);
-  buf_set_plugin(buf, plugin);
+  buf_set_plugin(buf, plugin, SCR_FILE);
   buf_set_status(buf, 0, fm->cur_dir, 0);
   hook_add_intl(buf->id, plugin, plugin, fm_paste,   "paste" );
   hook_add_intl(buf->id, plugin, plugin, fm_remove,  "remove");

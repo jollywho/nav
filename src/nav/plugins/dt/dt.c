@@ -40,9 +40,8 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   model_init(hndl);
   model_open(hndl);
   dt->m = hndl->model;
-  buf_set_plugin(buf, plugin);
+  buf_set_plugin(buf, plugin, SCR_SIMPLE);
   buf_set_status(buf, 0, arg, 0);
-  buf_set_flat(buf);
 
   // open file
   // parse with given or default schema

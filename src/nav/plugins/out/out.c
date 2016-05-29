@@ -14,6 +14,7 @@ void out_init()
 {
   log_msg("OUT", "init");
   if (tbl_mk("out")) {
+    tbl_mk_fld("out", "pid",  TYP_STR);
     tbl_mk_fld("out", "fd",   TYP_STR);
     tbl_mk_fld("out", "line", TYP_STR);
   }
@@ -41,9 +42,8 @@ void out_new(Plugin *plugin, Buffer *buf, char *arg)
   model_init(hndl);
   model_open(hndl);
 
-  buf_set_plugin(buf, plugin);
+  buf_set_plugin(buf, plugin, SCR_OUT);
   buf_set_status(buf, 0, arg, 0);
-  buf_set_flat(buf);
   out.opened = true;
   out_signal_model(NULL);
 }
@@ -91,6 +91,7 @@ void out_recv(int pid, int fd, char *out)
     prev = pos;
 
     trans_rec *r = mk_trans_rec(tbl_fld_count("out"));
+    edit_trans(r, "pid",   fdstr, NULL);
     edit_trans(r, "fd",    fdstr, NULL);
     edit_trans(r, "line",  buf,   NULL);
     CREATE_EVENT(eventq(), commit, 2, "out", r);
