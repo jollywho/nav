@@ -242,7 +242,7 @@ char* opt_var(Token *word, fn_func *blk)
   if (!var) {
     char *env = getenv(key);
     if (env)
-      return env;
+      return strdup(env);
     else
       return strdup("''");
   }

@@ -27,7 +27,7 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   hndl->tn = "filename";
   hndl->buf = buf;
   hndl->key_fld = "line";
-  hndl->key = "0";
+  hndl->key = "";
   hndl->fname = "name";
   hndl->kname = "line";
   dt->filename = strdup(arg);
@@ -65,7 +65,10 @@ void dt_delete(Plugin *plugin)
 static void dt_signal_model(void **data)
 {
   DT *dt = data[0];
+  fn_handle *h = dt->base->hndl;
+  model_flush(h, true);
   model_recv(dt->m);
+  buf_move(h->buf, 0, 0);
 }
 
 static void dt_readfile(DT *dt)
@@ -73,7 +76,7 @@ static void dt_readfile(DT *dt)
   dt->f = fopen(dt->filename, "rw");
   if (!dt->f)
     return;
-  char * line = NULL;
+  char *line = NULL;
   size_t len = 0;
   ssize_t size;
 
