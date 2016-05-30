@@ -62,10 +62,8 @@ static char* fm_kind(void *arg)
 static varg_T fm_type(const char *name, enum fm_fmt fmt)
 {
   Buffer *buf = window_get_focus();
-  if (!buf || strcmp(buf->plugin->name, "fm"))
-    return (varg_T){};
-
   select_cb cb = NULL;
+
   switch (fmt) {
     case FM_EXT:   cb = fm_ext;   break;
     case FM_NAME:  cb = fm_name;  break;

@@ -387,10 +387,9 @@ static char* default_select_cb(void *data)
 varg_T buf_select(Buffer *buf, const char *fld, select_cb cb)
 {
   log_msg("BUFFER", "buf_select");
-
   Model *m = buf->hndl->model;
-  //if (buf->flat)
-  //  fld = buf->hndl->fname;
+  if (strcmp(buf->plugin->name, "fm"))
+    fld = buf->hndl->fname;
   if (!cb)
     cb = default_select_cb;
 
@@ -440,7 +439,6 @@ void buf_yank(void *_b, Keyarg *ca)
   if (ca->key == 'y')
     key[0] = 'f';
 
-  //FIXME: yank for DT|OUT buffers
   reg_set(NUL, buf_select(buf, "fullpath", NULL));
   reg_yank(yank_symbol(key, NULL));
   buf_end_sel(buf);
