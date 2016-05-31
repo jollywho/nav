@@ -1,7 +1,7 @@
 # ========================================
 # nav syntax groups
 # ========================================
-syn Video      [mkv,avi,ogm,mp4,webm,div,flv,wmv,part]
+syn Video      [mkv,avi,ogm,mp4,webm,div,flv,wmv,part,m4v]
 syn Music      [flac,mp3,aac,m4a,ogg,wav,wma,m3u,opus]
 syn Image      [jpg,jpeg,png,gif,bmp,tif]
 syn Archive    [rar,zip,gz,7z,deb,dmg,xar,msi,pkg,bz,bz2,cab]
@@ -18,16 +18,18 @@ hi BufSz 14 -1
 hi MsgError 0 9
 hi MsgAsk 3 -1
 
-hi ComplSelected 7 0
+hi ComplSelected 16 3
 hi ComplText 7 -1
+hi ComplParam 9 0
 hi OverlaySep 8 -1
 hi OverlayLine 7 0
-hi OverlayBufNo 52 217
-hi OverlayInactiveBufNo 232 8
+hi OverlayBufNo 232 8
 hi OverlayActive 16 4
 hi OverlayArgs 195 235
 hi OverlayInactive 247 235
 hi OverlayTextInactive 247 0
+hi OverlayProgress 235 5
+hi OverlayFilter 7 13
 
 hi Video 8 -1
 hi Image 23 -1
@@ -35,18 +37,30 @@ hi Archive 2 -1
 hi Music 3 -1
 hi Document 139 -1
 
+set sepchar = ╬
+
 # ========================================
-# nav open
+# file associations
 # ========================================
-op Video "mpv --fs %:fullpath"
-op Music "mpv --fs %:fullpath"
-op Image "sxiv -m %:fullpath"
-op Document "mupdf %:fullpath"
+fu! op_before_vid()
+  ret mpv %f
+en
+
+fu! op_before_mu()
+  ret mpv %f
+en
+
+op Video    "op_before_vid()"
+op Music    "op_before_mu()"
+op Image    "sxiv -m %f"
+op Document "mupdf %f"
 
 # ========================================
 # nav keymaps
 # ========================================
 map s :sort <C-g>
+map S :sort <C-g><C-l>
+map R :reload<CR>
 
 # ========================================
 # auto
