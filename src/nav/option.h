@@ -46,6 +46,8 @@ enum nv_color_group {
   BUF_TEXT,
   BUF_DIR,
   BUF_SZ,
+  BUF_STDOUT,
+  BUF_STDERR,
   OVERLAY_SEP,
   OVERLAY_LINE,
   OVERLAY_BUFNO,

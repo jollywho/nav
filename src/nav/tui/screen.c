@@ -77,7 +77,7 @@ static void draw_out(Buffer *buf, Model *m)
 
     fn_rec *rec = model_rec_line(m, buf->top + i);
     char *fd = rec_fld(rec, "fd");
-    short col = *fd == '1' ? 3 : 5; //FIXME: use color group
+    short col = *fd == '1' ? opt_color(BUF_STDOUT) : opt_color(BUF_STDERR);
     char *pidstr = rec_fld(rec, "pid");
     sprintf(szbuf, "%s:", pidstr);
 
