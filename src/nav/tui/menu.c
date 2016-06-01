@@ -406,19 +406,19 @@ int menu_input(Menu *mnu, int key)
   if (!mnu->active || compl_dead())
     return 0;
 
-  char *str = NULL;
+  compl_item *item = NULL;
   compl_list *cmplist = compl_complist();
-  for (int i = 0; i < ROW_MAX; i++) {
+  for (int i = 0; i < MIN(ROW_MAX, cmplist->matchcount); i++) {
     if (mnu->hintkeys[i] == key)
-      str = compl_idx_match(i+mnu->top)->key;
+      item = compl_idx_match(i+mnu->top);
   }
 
   if (key == CAR) {
     int idx = mnu->top + mnu->lnum;
     if (idx < cmplist->matchcount)
-      str = compl_idx_match(idx)->key;
+      item = compl_idx_match(idx);
   }
-  if (!str)
+  if (!item)
     return 0;
 
   int pos = ex_cmd_curpos();
@@ -426,6 +426,7 @@ int menu_input(Menu *mnu, int key)
   if (cur)
     pos = cur->start;
 
+  char *str = item->key;
   char newline[pos + strlen(str)];
   strcpy(newline, ex_cmd_line());
   strcpy(&newline[pos], str);
