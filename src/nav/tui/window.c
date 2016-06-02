@@ -466,6 +466,7 @@ static void window_ex_cmd(Window *_w, Keyarg *arg)
   if (!window_focus_attached() && arg->arg != EX_CMD_STATE)
     return;
   win.ex = true;
+  curs_set(1);
   start_ex_cmd(arg->key, arg->arg);
 }
 
@@ -485,6 +486,7 @@ static void window_fltr_cmd(Window *_w, Keyarg *arg)
 
 void window_ex_cmd_end()
 {
+  curs_set(0);
   win.ex = false;
 }
 

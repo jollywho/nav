@@ -26,6 +26,7 @@ struct Overlay {
   bool queued;
   bool del;
   bool progfin;
+  bool redraw;
 
   char *arg;
   char *pipe_in;
@@ -51,6 +52,8 @@ Overlay* overlay_new()
   memset(ov, 0, sizeof(Overlay));
   ov->nc_st  = newwin(1,1,0,0);
   ov->nc_sep = newwin(1,1,0,0);
+  leaveok(ov->nc_st,  true);
+  leaveok(ov->nc_sep, true);
 
   ov->col_lbl   = opt_color(OVERLAY_ACTIVE);
   ov->col_text  = opt_color(OVERLAY_LINE);
@@ -117,10 +120,8 @@ static void set_string(char **from, char *to)
 
 void overlay_clear(Overlay *ov)
 {
-  if (ov->separator) {
-    werase(ov->nc_sep);
-    wnoutrefresh(ov->nc_sep);
-  }
+  werase(ov->nc_sep);
+  wnoutrefresh(ov->nc_sep);
   werase(ov->nc_st);
   wnoutrefresh(ov->nc_st);
 }
@@ -154,6 +155,7 @@ void overlay_set(Overlay *ov, pos_T size, pos_T ofs, int sep)
 {
   log_msg("OVERLAY", "overlay_set");
   ov->separator = sep;
+  ov->redraw = true;
 
   overlay_clear(ov);
   ov->ov_size = (pos_T){size.lnum, size.col};
@@ -219,19 +221,35 @@ void overlay_progress(Overlay *ov, long percent)
   overlay_refresh(ov);
 }
 
-void overlay_draw(void **argv)
+static void overlay_draw_separator(Overlay *ov)
 {
-  log_msg("OVERLAY", "draw");
-  Overlay *ov = argv[0];
-  if (!ov)
-    return;
-  if (overlay_expire(ov))
-    return;
-  ov->queued = false;
-
-  int x = ov->ov_size.col;
+  ov->redraw = false;
   int y = ov->ov_size.lnum;
+  wattron(ov->nc_sep, COLOR_PAIR(ov->col_sep));
 
+  int i;
+  for (i = 0; i < y; i++)
+    mvwaddstr(ov->nc_sep, i, 0, sep_char);
+
+  wattroff(ov->nc_sep, COLOR_PAIR(ov->col_sep));
+  DRAW_CH(ov, nc_sep, i, 0, ' ', col_ln);
+  wnoutrefresh(ov->nc_sep);
+}
+
+static void overlay_draw_progress(Overlay *ov)
+{
+  int x = ov->ov_size.col;
+  if (ov->progfin) {
+    ov->progfin = false;
+    mvwchgat(ov->nc_st, 0, ST_PRG(), SZ_PRG(x), A_REVERSE, ov->col_lbl, NULL);
+  }
+  else
+    mvwchgat(ov->nc_st, 0, ST_PRG(), ov->prog, A_NORMAL, ov->col_prog, NULL);
+}
+
+static void overlay_draw_labels(Overlay *ov)
+{
+  int x = ov->ov_size.col;
   draw_wide(ov->nc_st, 0, 0, ov->bufno, SZ_BUF+1);
   mvwchgat (ov->nc_st, 0, 0, SZ_BUF+1, A_NORMAL, ov->col_bufno, NULL);
 
@@ -241,15 +259,6 @@ void overlay_draw(void **argv)
   mvwhline(ov->nc_st, 0, SZ_LBL-1, ' ', x);
   mvwchgat(ov->nc_st, 0, SZ_LBL-1, -1, A_NORMAL, ov->col_ln, NULL);
 
-  if (ov->separator) {
-    wattron(ov->nc_sep, COLOR_PAIR(ov->col_sep));
-    int i;
-    for (i = 0; i < y; i++)
-      mvwaddstr(ov->nc_sep, i, 0, sep_char);
-    wattroff(ov->nc_sep, COLOR_PAIR(ov->col_sep));
-    DRAW_CH(ov, nc_sep, i, 0, ' ', col_ln);
-  }
-
   //TODO: if arg exceeds SZ_USR() then compress /*/*/ to fit
   int pos = ST_LN(x) - 2;
   draw_wide(ov->nc_st, 0, ST_ARG(), ov->arg, SZ_USR(x));
@@ -258,15 +267,25 @@ void overlay_draw(void **argv)
   draw_wide(ov->nc_st, 0, pos, ov->lineno, SZ_ARGS+1);
   mvwchgat (ov->nc_st, 0, pos,  -1, A_NORMAL, ov->col_lbl, NULL);
   mvwchgat (ov->nc_st, 0, pos+5, ov->filter, A_NORMAL, ov->col_fil, NULL);
+}
 
-  if (ov->progfin) {
-    ov->progfin = false;
-    mvwchgat (ov->nc_st, 0, ST_PRG(), SZ_PRG(x), A_REVERSE, ov->col_lbl, NULL);
-  }
-  else
-    mvwchgat (ov->nc_st, 0, ST_PRG(), ov->prog, A_NORMAL, ov->col_prog, NULL);
+void overlay_draw(void **argv)
+{
+  log_msg("OVERLAY", "draw");
+  Overlay *ov = argv[0];
+
+  if (!ov)
+    return;
+  if (overlay_expire(ov))
+    return;
+
+  ov->queued = false;
+
+  if (ov->redraw && ov->separator)
+    overlay_draw_separator(ov);
+
+  overlay_draw_labels(ov);
+  overlay_draw_progress(ov);
 
   wnoutrefresh(ov->nc_st);
-  if (ov->separator)
-    wnoutrefresh(ov->nc_sep);
 }

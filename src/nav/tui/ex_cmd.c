@@ -123,8 +123,6 @@ void stop_ex_cmd()
     werase(ex.nc_win);
     wnoutrefresh(ex.nc_win);
   }
-  curs_set(0);
-  doupdate();
   ex.ex_state = EX_OFF_STATE;
   window_ex_cmd_end();
   cmd_flush();
