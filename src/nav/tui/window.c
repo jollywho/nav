@@ -87,7 +87,7 @@ void sigwinch_handler(int sig)
   window_refresh();
   refresh();
   event_wakeup();
-  window_update(&win.draw_timer);
+  window_update();
 }
 
 void sigint_handler(int sig)
@@ -181,8 +181,8 @@ void window_start_override(Plugin *term)
 void window_stop_override()
 {
   log_msg("WINDOW", "window_stop_term");
-  curs_set(0);
   win.term = NULL;
+  window_refresh();
 }
 
 int window_curs(Plugin *plug)
@@ -466,7 +466,6 @@ static void window_ex_cmd(Window *_w, Keyarg *arg)
   if (!window_focus_attached() && arg->arg != EX_CMD_STATE)
     return;
   win.ex = true;
-  curs_set(1);
   start_ex_cmd(arg->key, arg->arg);
 }
 
@@ -486,7 +485,6 @@ static void window_fltr_cmd(Window *_w, Keyarg *arg)
 
 void window_ex_cmd_end()
 {
-  curs_set(0);
   win.ex = false;
 }
 
@@ -501,23 +499,21 @@ void window_draw(void **argv)
 
 static void update_cb(uv_timer_t *handle)
 {
-  window_update();
+  curs_set(0);
   if (win.refs < 1) {
+    window_update();
     uv_timer_stop(handle);
     win.dirty = false;
   }
+  doupdate();
 }
 
 void window_update()
 {
-  if (win.term && window_get_plugin() == win.term)
-    term_cursor(win.term);
-  else if (win.ex)
+  if (win.ex)
     cmdline_refresh();
-  else
-    curs_set(0);
-
-  doupdate();
+  else if (win.term && window_get_plugin() == win.term)
+    term_cursor(win.term);
 }
 
 void window_req_draw(void *obj, argv_callback cb)

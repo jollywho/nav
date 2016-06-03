@@ -156,8 +156,9 @@ static void cmdline_draw()
   mvwchgat(ex.nc_win, 0, 0, 1, A_NORMAL, ex.col_symb, NULL);
   mvwchgat(ex.nc_win, 0, 1, -1, A_NORMAL, ex.col_text, NULL);
 
-  wmove(ex.nc_win, 0, (ex.curpos + 1) - offset);
+  doupdate();
   curs_set(1);
+  wmove(ex.nc_win, 0, (ex.curpos + 1) - offset);
   wnoutrefresh(ex.nc_win);
   free(wline);
 }

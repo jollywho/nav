@@ -169,6 +169,7 @@ static void term_draw(Term *term)
   vt_draw(term->vt, buf_ncwin(term->buf), 0, 0);
   wnoutrefresh(buf_ncwin(term->buf));
   window_update();
+  doupdate();
 }
 
 static void plugin_resize(Plugin *host, Plugin *none, HookArg *hka)

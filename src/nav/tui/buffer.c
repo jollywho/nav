@@ -81,7 +81,6 @@ Buffer* buf_new()
   memset(buf, 0, sizeof(Buffer));
   obtain_id(buf);
   buf->nc_win = newwin(1,1,0,0);
-  leaveok(buf->nc_win,  true);
   buf->col_focus = opt_color(BUF_SEL_ACTIVE);
   buf->col_text  = opt_color(BUF_TEXT);
   buf->col_dir   = opt_color(BUF_DIR);
@@ -153,7 +152,6 @@ void buf_set_size_ofs(Buffer *buf, pos_T size, pos_T ofs)
 
   delwin(buf->nc_win);
   buf->nc_win = newwin(size.lnum, size.col, ofs.lnum, ofs.col);
-  leaveok(buf->nc_win,  true);
 
   overlay_set(buf->ov, buf->b_size, buf->b_ofs, sep);
 

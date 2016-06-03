@@ -62,7 +62,6 @@ static void draw_file(Buffer *buf, Model *m)
       draw_wide(buf->nc_win, i, buf->b_size.col - 1, symb, SZ_LEN);
       mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, attr, buf->col_sz, NULL);
     }
-
   }
 }
 
