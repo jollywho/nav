@@ -68,7 +68,6 @@ static inline Event event_create(argv_callback cb, int argc, ...)
     uv_run(eventloop(), UV_RUN_NOWAIT);       \
   }                                           \
 
-void event_wakeup(void);
 bool mainloop_busy();
 void event_cycle_once();
 

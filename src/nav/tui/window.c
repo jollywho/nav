@@ -85,9 +85,7 @@ void sigwinch_handler(int sig)
   refresh();
   clear();
   window_refresh();
-  refresh();
-  event_wakeup();
-  window_update();
+  DO_EVENTS_UNTIL(!win.dirty);
 }
 
 void sigint_handler(int sig)
@@ -131,12 +129,6 @@ void window_cleanup(void)
   layout_cleanup(&win.layout);
   buf_cleanup();
   plugin_cleanup();
-}
-
-void window_refresh()
-{
-  cmdline_resize();
-  layout_refresh(&win.layout, ex_cmd_height());
 }
 
 static Cmdret win_shut()
@@ -465,8 +457,8 @@ static void window_ex_cmd(Window *_w, Keyarg *arg)
 {
   if (!window_focus_attached() && arg->arg != EX_CMD_STATE)
     return;
-  win.ex = true;
   start_ex_cmd(arg->key, arg->arg);
+  win.ex = true;
 }
 
 static void window_reg_cmd(Window *_w, Keyarg *arg)
@@ -527,6 +519,13 @@ void window_req_draw(void *obj, argv_callback cb)
     win.refs++;
     CREATE_EVENT(drawq(), window_draw, 2, obj, cb);
   }
+}
+
+void window_refresh()
+{
+  cmdline_resize();
+  layout_refresh(&win.layout, ex_cmd_height());
+  window_req_draw(NULL, NULL);
 }
 
 void window_remove_buffer(Buffer *buf)

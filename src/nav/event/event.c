@@ -149,11 +149,6 @@ static void prepare_events(uv_prepare_t *handle)
   mainloop()->running = false;
 }
 
-void event_wakeup(void)
-{
-  prepare_events(&mainloop()->event_prepare);
-}
-
 void queue_put_event(Queue *queue, Event event)
 {
   queue_push(queue, event);
