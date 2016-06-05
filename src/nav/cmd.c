@@ -463,13 +463,13 @@ static char* cmd_str_comp(char *lhs, char *rhs, char ch, char nch, int *ret)
   else if (ch == '=' && nch == '=')
     *ret = diff == 0;
   else if (ch == '>' && nch == '=')
-    *ret = diff <= 0;
-  else if (ch == '<' && nch == '=')
     *ret = diff >= 0;
+  else if (ch == '<' && nch == '=')
+    *ret = diff <= 0;
   else if (ch == '<')
-    *ret = diff > 0;
-  else if (ch == '>')
     *ret = diff < 0;
+  else if (ch == '>')
+    *ret = diff > 0;
   return NULL;
 }
 

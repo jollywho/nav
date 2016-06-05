@@ -84,7 +84,6 @@ void term_delete(Plugin *plugin)
 {
   log_msg("TERM", "term_delete");
   Term *term = plugin->top;
-  //TODO: close if running
   SLIST_REMOVE(&mainloop()->subterms, term, term, ent);
   uv_poll_stop(&term->readfd);
   window_stop_override();
