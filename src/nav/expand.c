@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "nav/tui/window.h"
 #include "nav/plugins/op/op.h"
 #include "nav/expand.h"
@@ -96,6 +97,28 @@ static varg_T op_type(const char *name)
   return arg;
 }
 
+static varg_T proc_type(const char *name)
+{
+  log_err("OP", "nav %s", name);
+  varg_T arg = {};
+  if (!name || !strchr("%!?", *name))
+    return arg;
+
+  arg.argc = 1;
+  arg.argv = malloc(sizeof(char*));
+  switch (*name) {
+    case '%':
+      asprintf(&arg.argv[0], "%d", getpid());
+      break;
+    case '!': //last proc pid
+    case '?': //last proc status
+      //TODO: get last pid from opgroup
+      arg.argv[0] = strdup("0");
+      break;
+  }
+  return arg;
+}
+
 static varg_T get_type(const char *key, const char *alt)
 {
   switch (*key) {
@@ -118,6 +141,8 @@ static varg_T get_type(const char *key, const char *alt)
       return fm_type("stat",     FM_KIND);
     case 'o':
       return op_type(alt);
+    case '\0':
+      return proc_type(alt);
     default:
       return (varg_T){};
   }
