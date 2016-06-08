@@ -398,8 +398,6 @@ static Cmdret conf_variable(List *args, Cmdarg *ca)
   }
 
   fn_func *blk = cmd_callstack();
-  if (!ca->flags)
-    blk = NULL;
   set_var(&var, blk);
 
   return NORET;
