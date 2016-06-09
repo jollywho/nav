@@ -110,10 +110,11 @@ static varg_T proc_type(const char *name)
     case '%':
       asprintf(&arg.argv[0], "%d", getpid());
       break;
-    case '!': //last proc pid
-    case '?': //last proc status
-      //TODO: get last pid from opgroup
-      arg.argv[0] = strdup("0");
+    case '!':
+      arg.argv[0] = op_pid_last();
+      break;
+    case '?':
+      arg.argv[0] = op_status_last();
       break;
   }
   return arg;

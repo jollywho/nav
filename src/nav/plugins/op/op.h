@@ -17,6 +17,8 @@ struct Op {
   Plugin *base;
   fn_handle *hndl;
   void *curgrp; /* fn_group* */
+  int last_pid;
+  int last_status;
 };
 
 void op_new(Plugin *plugin, Buffer *buf, char *arg);
@@ -27,6 +29,8 @@ void      op_delgrp(Op_group *);
 
 Cmdret op_kill();
 void pid_list(List *args);
+char* op_pid_last();
+char* op_status_last();
 void* op_active_group();
 
 #endif

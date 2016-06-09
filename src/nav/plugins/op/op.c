@@ -33,6 +33,7 @@ void pid_list(List *args)
 static void add_pid(char *name, int pid)
 {
   log_msg("OP", "add pid %d", pid);
+  op.last_pid = pid;
   char *pidstr;
   asprintf(&pidstr, "%d", pid);
   trans_rec *r = mk_trans_rec(tbl_fld_count("op_procs"));
@@ -79,6 +80,7 @@ static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal)
   fn_group *grp = proc->grp;
   remove_pid(grp->key, proc->proc.pid);
   uv_close((uv_handle_t*) req, del_proc);
+  op.last_status = exit_status;
 
   if (!proc->proc.status)
     run_group(grp, grp->opgrp->after, false);
@@ -206,11 +208,26 @@ void* op_active_group()
   return op.curgrp;
 }
 
+char* op_pid_last()
+{
+  char *str;
+  asprintf(&str, "%d", op.last_pid);
+  return str;
+}
+
+char* op_status_last()
+{
+  char *str;
+  asprintf(&str, "%d", op.last_status);
+  return str;
+}
+
 void op_new(Plugin *plugin, Buffer *buf, char *arg)
 {
   log_msg("OP", "INIT");
   op.base = plugin;
   op.curgrp = NULL;
+  op.last_pid = 0;
   plugin->top = &op;
   plugin->name = "op";
   hook_add_intl(-1, plugin, plugin, fileopen_cb,  "fileopen");
