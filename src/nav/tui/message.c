@@ -8,6 +8,7 @@
 #include "nav/event/input.h"
 #include "nav/event/event.h"
 #include "nav/option.h"
+#include "nav/util.h"
 
 int dialog_pending;
 int message_pending;
@@ -16,8 +17,7 @@ static WINDOW *win;
 
 static void message_draw(char *line, int color)
 {
-  mvwprintw(win, 0, 0, line);
-  mvwchgat(win, 0, 0, strlen(line), A_NORMAL, color, NULL);
+  draw_wide(win, 0, 0, line, layout_size().col);
   wnoutrefresh(win);
   doupdate();
 }
