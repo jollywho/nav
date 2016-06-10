@@ -835,7 +835,7 @@ void exec_line(Cmdstr *cmd, char *line)
   char *str = strstr(line, "!");
   ++str;
   char *pidstr;
-  int pid = shell_exec(str, NULL, focus_dir());
+  int pid = shell_exec(str, focus_dir());
 
   asprintf(&pidstr, "%d", pid);
   ret2caller(cmd, (Cmdret){STRING, .val.v_str = pidstr});

@@ -11,13 +11,6 @@ static void shell_write_cb(Stream *, void *, int);
 
 static char *args[4];
 
-static void process_early_exit(Process *proc, int status, void *data)
-{
-  log_msg("SHELL", "retcb fin");
-  Shell *sh = data;
-  sh->retcb(sh->caller, status);
-}
-
 static void process_exit(Process *proc, int status, void *data)
 {
   log_msg("SHELL", "fin");
@@ -25,6 +18,8 @@ static void process_exit(Process *proc, int status, void *data)
   int pid = sh->uvproc.process.pid;
   if (!sh)
     return;
+
+  op_set_exit_status(status);
 
   sh->blocking = false;
   if (sh->again) {
@@ -165,7 +160,7 @@ static void shell_write_cb(Stream *stream, void *data, int status)
   stream_close(stream, NULL);
 }
 
-int shell_exec(char *line, shell_status_cb cb, char *cwd)
+int shell_exec(char *line, char *cwd)
 {
   log_msg("SHELL", "shell_exec");
   log_msg("SHELL", "%s", line);
@@ -177,7 +172,6 @@ int shell_exec(char *line, shell_status_cb cb, char *cwd)
   sh->again = false;
   sh->reg = true;
   sh->data_cb = out_data_cb;
-  sh->retcb = cb;
   sh->caller = NULL;
 
   sh->uvproc = uv_process_init(mainloop(), sh);
@@ -189,9 +183,6 @@ int shell_exec(char *line, shell_status_cb cb, char *cwd)
   proc->err = &sh->err;
   proc->cb = process_exit;
   proc->cwd = cwd;
-
-  if (cb)
-    proc->fast_output = process_early_exit;
 
   char *rv = strdup(line);
   args[0] = get_opt_str("shell");

@@ -29,6 +29,7 @@ void      op_delgrp(Op_group *);
 
 Cmdret op_kill();
 void pid_list(List *args);
+void op_set_exit_status(int);
 char* op_pid_last();
 char* op_status_last();
 void* op_active_group();

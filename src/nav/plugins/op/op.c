@@ -208,6 +208,11 @@ void* op_active_group()
   return op.curgrp;
 }
 
+void op_set_exit_status(int status)
+{
+  op.last_status = status;
+}
+
 char* op_pid_last()
 {
   char *str;
