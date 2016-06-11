@@ -259,7 +259,7 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
   char *cmdstr;
   asprintf(&cmdstr, "%s %s", p_rm, src);
   fs_fastreq(self->fs);
-  system(cmdstr);
+  shell_exec(cmdstr, focus_dir());
   free(cmdstr);
 cleanup:
   del_param_list(args.argv, args.argc);
