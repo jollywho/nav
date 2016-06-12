@@ -33,7 +33,7 @@ static void draw_file(Buffer *buf, Model *m)
     if (!it)
       break;
 
-    fn_rec *rec = model_rec_line(m, buf->top + i);
+    TblRec *rec = model_rec_line(m, buf->top + i);
 
     readable_fs(rec_stsize(rec), szbuf);
 
@@ -74,7 +74,7 @@ static void draw_out(Buffer *buf, Model *m)
       break;
     bool alt = false;
 
-    fn_rec *rec = model_rec_line(m, buf->top + i);
+    TblRec *rec = model_rec_line(m, buf->top + i);
     char *fd = rec_fld(rec, "fd");
     short col = *fd == '1' ? opt_color(BUF_STDOUT) : opt_color(BUF_STDERR);
     char *pidstr = rec_fld(rec, "pid");

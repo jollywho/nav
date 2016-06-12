@@ -43,7 +43,7 @@ struct Ex_cmd {
   int inrstate;
 };
 
-static fn_key key_defaults[] = {
+static nv_key key_defaults[] = {
   {ESC,      ex_esc,           0,       0},
   {TAB,      ex_tab,           0,       FORWARD},
   {K_S_TAB,  ex_tab,           0,       BACKWARD},
@@ -58,7 +58,7 @@ static fn_key key_defaults[] = {
   {Ctrl_J,   ex_menu_mv,       0,       FORWARD},
   {Ctrl_K,   ex_menu_mv,       0,       BACKWARD},
 };
-static fn_keytbl key_tbl;
+static nv_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
 static Ex_cmd ex;
 

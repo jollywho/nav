@@ -18,7 +18,7 @@ void out_init()
     tbl_mk_fld("out", "fd",   TYP_STR);
     tbl_mk_fld("out", "line", TYP_STR);
   }
-  fn_handle *hndl = malloc(sizeof(fn_handle));
+  Handle *hndl = malloc(sizeof(Handle));
   hndl->tn = "out";
   hndl->key_fld = "line";
   hndl->key = "";
@@ -36,7 +36,7 @@ void out_new(Plugin *plugin, Buffer *buf, char *arg)
   plugin->name = "out";
   plugin->fmt_name = "OUT";
 
-  fn_handle *hndl = out.hndl;
+  Handle *hndl = out.hndl;
   hndl->buf = buf;
   plugin->hndl = hndl;
   model_init(hndl);
@@ -51,7 +51,7 @@ void out_new(Plugin *plugin, Buffer *buf, char *arg)
 void out_delete(Plugin *plugin)
 {
   out.opened = false;
-  fn_handle *h = plugin->hndl;
+  Handle *h = plugin->hndl;
   model_close(h);
   model_cleanup(h);
 }
@@ -59,7 +59,7 @@ void out_delete(Plugin *plugin)
 static void out_signal_model(void **data)
 {
   if (out.opened) {
-    fn_handle *h = out.hndl;
+    Handle *h = out.hndl;
     model_flush(h, true);
     model_recv(h->model);
     buf_move(h->buf, model_count(h->model), 0);

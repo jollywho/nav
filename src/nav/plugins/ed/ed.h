@@ -1,5 +1,5 @@
-#ifndef FN_PLUGINS_ED_H
-#define FN_PLUGINS_ED_H
+#ifndef NV_PLUGINS_ED_H
+#define NV_PLUGINS_ED_H
 
 #include <uv.h>
 #include "nav/plugins/plugin.h"

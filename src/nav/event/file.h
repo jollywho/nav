@@ -1,5 +1,5 @@
-#ifndef FN_FILE_H
-#define FN_FILE_H
+#ifndef NV_FILE_H
+#define NV_FILE_H
 
 #include <uv.h>
 #include "nav/lib/sys_queue.h"

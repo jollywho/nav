@@ -1,5 +1,5 @@
-#ifndef FN_TUI_EX_CMD_H
-#define FN_TUI_EX_CMD_H
+#ifndef NV_TUI_EX_CMD_H
+#define NV_TUI_EX_CMD_H
 
 #include "nav/tui/buffer.h"
 #include "nav/compl.h"

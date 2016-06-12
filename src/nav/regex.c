@@ -15,7 +15,7 @@ struct Pattern {
 
 struct LineMatch {
   UT_array *lines;
-  fn_handle *hndl;
+  Handle *hndl;
   int pivot_top;
   int pivot_lnum;
   char *gcomp;
@@ -24,7 +24,7 @@ struct LineMatch {
 static char* gcomp; /* shared regex for all buffers */
 static int gregsign;
 
-LineMatch* regex_new(fn_handle *hndl)
+LineMatch* regex_new(Handle *hndl)
 {
   LineMatch *lm = malloc(sizeof(LineMatch));
   memset(lm, 0, sizeof(LineMatch));
@@ -33,7 +33,7 @@ LineMatch* regex_new(fn_handle *hndl)
   return lm;
 }
 
-void regex_destroy(fn_handle *hndl)
+void regex_destroy(Handle *hndl)
 {
   LineMatch *lm = hndl->buf->matches;
   if (lm->lines)

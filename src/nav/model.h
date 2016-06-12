@@ -1,35 +1,35 @@
-#ifndef FN_MODEL_H
-#define FN_MODEL_H
+#ifndef NV_MODEL_H
+#define NV_MODEL_H
 
 #include "nav/table.h"
 
-typedef struct fn_line fn_line;
+typedef struct nv_line nv_line;
 typedef struct {
   int sort_type; //sort type flag
   int sort_rev;  //reversed sort flag
 } sort_t;
 
-void model_init(fn_handle *hndl);
-void model_cleanup(fn_handle *hndl);
-void model_open(fn_handle *hndl);
-void model_close(fn_handle *hndl);
-bool model_blocking(fn_handle *hndl);
-void model_inherit(fn_handle *hndl);
+void model_init(Handle *hndl);
+void model_cleanup(Handle *hndl);
+void model_open(Handle *hndl);
+void model_close(Handle *hndl);
+bool model_blocking(Handle *hndl);
+void model_inherit(Handle *hndl);
 
-void model_ch_focus(fn_handle *);
+void model_ch_focus(Handle *);
 void model_sort(Model *m, sort_t);
-void model_flush(fn_handle *, bool);
+void model_flush(Handle *, bool);
 void model_recv(Model *m);
 void refind_line(Model *m);
 
-void model_read_entry(Model *m, fn_lis *lis, ventry *head);
-void model_null_entry(Model *m, fn_lis *lis);
-void model_full_entry(Model *m, fn_lis *lis);
+void model_read_entry(Model *m, TblLis *lis, Ventry *head);
+void model_null_entry(Model *m, TblLis *lis);
+void model_full_entry(Model *m, TblLis *lis);
 
 char* model_str_line(Model *m, int index);
 void* model_fld_line(Model *m, const char *fld, int index);
 void* model_curs_value(Model *m, const char *fld);
-fn_rec* model_rec_line(Model *m, int index);
+TblRec* model_rec_line(Model *m, int index);
 
 void model_clear_filter(Model *m);
 void model_filter_line(Model *m, int);

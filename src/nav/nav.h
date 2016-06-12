@@ -1,5 +1,5 @@
-#ifndef FN_NAV_H
-#define FN_NAV_H
+#ifndef NV_NAV_H
+#define NV_NAV_H
 
 #define STR_(x) #x
 #define STR(x) STR_(x)

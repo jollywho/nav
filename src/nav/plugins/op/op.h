@@ -1,5 +1,5 @@
-#ifndef FN_PLUGINS_OP_H
-#define FN_PLUGINS_OP_H
+#ifndef NV_PLUGINS_OP_H
+#define NV_PLUGINS_OP_H
 
 #include "nav/lib/utarray.h"
 #include "nav/plugins/plugin.h"
@@ -8,15 +8,15 @@ typedef struct Op Op;
 typedef struct Op_group Op_group;
 
 struct Op_group {
-  UT_array *locals; /* fn_var  */
+  UT_array *locals; /* nv_var  */
   char *before;
   char *after;
 };
 
 struct Op {
   Plugin *base;
-  fn_handle *hndl;
-  void *curgrp; /* fn_group* */
+  Handle *hndl;
+  void *curgrp; /* nv_group* */
   int last_pid;
   int last_status;
 };

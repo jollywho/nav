@@ -1,5 +1,5 @@
-#ifndef FN_EVENT_STREAM_H
-#define FN_EVENT_STREAM_H
+#ifndef NV_EVENT_STREAM_H
+#define NV_EVENT_STREAM_H
 
 #include "nav/event/event.h"
 #include "nav/rbuffer.h"

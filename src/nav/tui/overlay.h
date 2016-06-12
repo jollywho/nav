@@ -1,5 +1,5 @@
-#ifndef FN_TUI_OVERLAY_H
-#define FN_TUI_OVERLAY_H
+#ifndef NV_TUI_OVERLAY_H
+#define NV_TUI_OVERLAY_H
 
 #include <ncurses.h>
 #include "nav/plugins/plugin.h"

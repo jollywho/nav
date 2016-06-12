@@ -1,5 +1,5 @@
-#ifndef FN_EVENT_SHELL_H
-#define FN_EVENT_SHELL_H
+#ifndef NV_EVENT_SHELL_H
+#define NV_EVENT_SHELL_H
 
 #include "nav/event/uv_process.h"
 #include "nav/event/rstream.h"

@@ -31,14 +31,14 @@ typedef struct {
 typedef struct Cmdblock Cmdblock;
 struct Cmdblock {
   Cmdblock *parent;
-  fn_func *func;
+  nv_func *func;
   int brk;
   Cmdret ret;
 };
 
 typedef struct Script Script;
 struct Script {
-  fn_func *fndef;
+  nv_func *fndef;
   Cmdblock *callstack;
   Symb *tape;
   Symb *cur;
@@ -167,7 +167,7 @@ void cmd_flush()
   cmd_reset();
 }
 
-static void push_callstack(Cmdblock *blk, fn_func *fn)
+static void push_callstack(Cmdblock *blk, nv_func *fn)
 {
   if (!nvs.callstack)
     nvs.callstack = blk;
@@ -232,7 +232,7 @@ static void cmd_do(Cmdstr *caller, char *line)
   cmdline_cleanup(&cmd);
 }
 
-static Cmdret cmd_call(Cmdstr *caller, fn_func *fn, char *line)
+static Cmdret cmd_call(Cmdstr *caller, nv_func *fn, char *line)
 {
   log_msg("CMD", "cmd_call");
   if (!line)
@@ -257,7 +257,7 @@ static Cmdret cmd_call(Cmdstr *caller, fn_func *fn, char *line)
     char *param = list_arg(args, i, VAR_STRING);
     if (!param)
       continue;
-    fn_var var = {
+    nv_var var = {
       .key = strdup(fn->argv[i]),
       .var = strdup(param),
     };
@@ -307,7 +307,7 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
     List *args = cmdline_lst(cmdline);
     char *symb = list_arg(args, cmd->idx, VAR_STRING);
     if (symb) {
-      fn_func *fn = opt_func(symb);
+      nv_func *fn = opt_func(symb);
       if (fn) {
         Cmdstr rstr;
         cmd_call(&rstr, fn, cmd->ret.val.v_str);
@@ -753,14 +753,14 @@ static Cmdret cmd_funcblock(List *args, Cmdarg *ca)
 
   if (ca->cmdstr->rev) {
     ++nvs.lvl;
-    nvs.fndef = malloc(sizeof(fn_func));
+    nvs.fndef = malloc(sizeof(nv_func));
     nvs.fndef->argc = mk_param_list(ca, &nvs.fndef->argv);
     utarray_new(nvs.fndef->lines, &ut_str_icd);
     nvs.fndef->key = strdup(name);
     nvs.opendef = 1;
   }
   else { /* print */
-    fn_func *fn = opt_func(name);
+    nv_func *fn = opt_func(name);
     for (int i = 0; i < utarray_len(fn->lines); i++)
       log_msg("CMD", "%s", *(char**)utarray_eltptr(fn->lines, i));
   }
@@ -871,7 +871,7 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
   return ret2caller(cmdstr, fun->cmd_func(args, &flags));
 }
 
-fn_func* cmd_callstack()
+nv_func* cmd_callstack()
 {
   if (nvs.callstack)
     return nvs.callstack->func;

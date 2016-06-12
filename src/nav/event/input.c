@@ -70,14 +70,14 @@ static struct key_name_entry {
   {0,                 NULL}
 };
 
-static fn_reg reg_tbl[] = {
+static nv_reg reg_tbl[] = {
   {NUL,  {0}},
   {'0',  {0}},
   {'1',  {0}},
   {'_',  {0}},
 };
 
-static fn_oper key_operators[] = {
+static nv_oper key_operators[] = {
   {NUL,      NUL,    NULL},
   {'y',      NUL,    buf_yank},
   {'m',      NUL,    buf_mark},
@@ -316,7 +316,7 @@ void input_check()
 static int nv_compare(const void *s1, const void *s2, void *arg)
 {
   int c1, c2;
-  fn_keytbl *kt = (fn_keytbl*)arg;
+  nv_keytbl *kt = (nv_keytbl*)arg;
 
   /* The commands are sorted on absolute value. */
   c1 = kt->tbl[*(const short *)s1].cmd_char;
@@ -331,7 +331,7 @@ static int nv_compare(const void *s1, const void *s2, void *arg)
 /*
  * Initialize the nv_cmd_idx[] table.
  */
-void input_setup_tbl(fn_keytbl *kt)
+void input_setup_tbl(nv_keytbl *kt)
 {
   /* Fill the index table with a one to one relation. */
   for (short int i = 0; i < (short int)kt->maxsize; ++i) {
@@ -355,7 +355,7 @@ void input_setup_tbl(fn_keytbl *kt)
  * Search for a command in the commands table.
  * Returns -1 for invalid command.
  */
-int find_command(fn_keytbl *kt, int cmdchar)
+int find_command(nv_keytbl *kt, int cmdchar)
 {
   int i;
   int idx;
@@ -458,7 +458,7 @@ bool op_pending(Keyarg *arg)
   return (arg->oap.key != OP_NOP);
 }
 
-int find_do_key(fn_keytbl *kt, Keyarg *ca, void *obj)
+int find_do_key(nv_keytbl *kt, Keyarg *ca, void *obj)
 {
   log_msg("INPUT", "dokey");
   if (op_pending(ca)) {
@@ -494,7 +494,7 @@ int find_do_key(fn_keytbl *kt, Keyarg *ca, void *obj)
   return 0;
 }
 
-fn_reg* reg_get(int ch)
+nv_reg* reg_get(int ch)
 {
   for (int i = 0; i < LENGTH(reg_tbl); i++)
     if (reg_tbl[i].key == ch)
@@ -502,9 +502,9 @@ fn_reg* reg_get(int ch)
   return NULL;
 }
 
-fn_reg* reg_dcur()
+nv_reg* reg_dcur()
 {
-  fn_reg *reg1 = reg_get('1');
+  nv_reg *reg1 = reg_get('1');
   if (reg1->value.argc > 0)
     return reg1;
   return reg_get(NUL);
@@ -518,7 +518,7 @@ void reg_clear_dcur()
 void reg_set(int ch, varg_T args)
 {
   log_msg("INPUT", "reg_set");
-  fn_reg *find = reg_get(ch);
+  nv_reg *find = reg_get(ch);
   if (!find)
     return;
   if (find->value.argc > 0) {

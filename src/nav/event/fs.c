@@ -31,7 +31,7 @@ struct fentry {
   bool reopen;
   uint64_t before;
   int refs;
-  fn_fs *listeners;
+  nv_fs *listeners;
   UT_hash_handle hh;
 };
 
@@ -44,7 +44,7 @@ typedef struct {
 static fentry   *ent_tbl;
 static cachedir *cache_tbl;
 
-static fentry* fs_mux(fn_fs *fs)
+static fentry* fs_mux(nv_fs *fs)
 {
   fentry *ent = NULL;
   HASH_FIND_STR(ent_tbl, fs->path, ent);
@@ -65,7 +65,7 @@ static fentry* fs_mux(fn_fs *fs)
     HASH_ADD_STR(ent_tbl, key, ent);
   }
 
-  fn_fs *find = NULL;
+  nv_fs *find = NULL;
   HASH_FIND_PTR(ent->listeners, fs->path, find);
   if (!find)
     HASH_ADD_STR(ent->listeners, path, fs);
@@ -84,7 +84,7 @@ static void del_ent(uv_handle_t *hndl)
   }
 }
 
-static void fs_demux(fn_fs *fs)
+static void fs_demux(nv_fs *fs)
 {
   log_msg("FS", "fs_demux");
   if (!fs->ent)
@@ -108,16 +108,16 @@ static void fs_demux(fn_fs *fs)
   fs->ent = NULL;
 }
 
-fn_fs* fs_init(fn_handle *hndl)
+nv_fs* fs_init(Handle *hndl)
 {
   log_msg("FS", "init");
-  fn_fs *fs = malloc(sizeof(fn_fs));
-  memset(fs, 0, sizeof(fn_fs));
+  nv_fs *fs = malloc(sizeof(nv_fs));
+  memset(fs, 0, sizeof(nv_fs));
   fs->hndl = hndl;
   return fs;
 }
 
-void fs_cleanup(fn_fs *fs)
+void fs_cleanup(nv_fs *fs)
 {
   log_msg("FS", "cleanup");
   fs_close(fs);
@@ -200,7 +200,7 @@ char* valid_full_path(char *base, char *path)
 
 static void stat_cleanup(void **args)
 {
-  fn_fs *fs = args[0];
+  nv_fs *fs = args[0];
   free(args[1]);
   free(fs->readkey);
   uv_fs_req_cleanup(&fs->uv_fs);
@@ -210,7 +210,7 @@ static void stat_cleanup(void **args)
 static void stat_read_cb(uv_fs_t *req)
 {
   log_msg("FS", "stat_read_cb");
-  fn_fs *fs = req->data;
+  nv_fs *fs = req->data;
   if (req->result < 0) {
     log_err("FILE", "stat_read_cb: |%s|", uv_strerror(req->result));
     CREATE_EVENT(eventq(), fs->stat_cb, 3, fs->data, fs->readkey, 0);
@@ -254,43 +254,43 @@ const char* stat_type(struct stat *sb)
   }
 }
 
-bool isrecdir(fn_rec *rec)
+bool isrecdir(TblRec *rec)
 {
   struct stat *st = (struct stat*)rec_fld(rec, "stat");
   return (S_ISDIR(st->st_mode));
 }
 
-bool isreclnk(fn_rec *rec)
+bool isreclnk(TblRec *rec)
 {
   struct stat *st = (struct stat*)rec_fld(rec, "stat");
   return (S_ISLNK(st->st_mode));
 }
 
-bool isrecreg(fn_rec *rec)
+bool isrecreg(TblRec *rec)
 {
   struct stat *st = (struct stat*)rec_fld(rec, "stat");
   return (S_ISREG(st->st_mode));
 }
 
-time_t rec_ctime(fn_rec *rec)
+time_t rec_ctime(TblRec *rec)
 {
   struct stat *stat = (struct stat*)rec_fld(rec, "stat");
   return stat->st_ctim.tv_sec;
 }
 
-off_t rec_stsize(fn_rec *rec)
+off_t rec_stsize(TblRec *rec)
 {
   struct stat *stat = (struct stat*)rec_fld(rec, "stat");
   return stat->st_size;
 }
 
-mode_t rec_stmode(fn_rec *rec)
+mode_t rec_stmode(TblRec *rec)
 {
   struct stat *stat = (struct stat*)rec_fld(rec, "stat");
   return stat->st_mode;
 }
 
-bool fs_vt_isdir_resolv(fn_rec *rec)
+bool fs_vt_isdir_resolv(TblRec *rec)
 {
   struct stat *st = (struct stat*)rec_fld(rec, "stat");
   return (S_ISDIR(st->st_mode));
@@ -306,9 +306,9 @@ void fs_signal_handle(void **data)
     fs_clr_cache(ent->key);
   }
 
-  fn_fs *it = NULL;
+  nv_fs *it = NULL;
   for (it = ent->listeners; it != NULL; it = it->hh.next) {
-    fn_handle *h = it->hndl;
+    Handle *h = it->hndl;
 
     if (it->open_cb)
       it->open_cb(NULL);
@@ -320,14 +320,14 @@ void fs_signal_handle(void **data)
   ent->reopen = false;
 }
 
-bool fs_blocking(fn_fs *fs)
+bool fs_blocking(nv_fs *fs)
 {
   if (!fs->ent)
     return false;
   return fs->ent->running;
 }
 
-void fs_read(fn_fs *fs, const char *dir)
+void fs_read(nv_fs *fs, const char *dir)
 {
   log_msg("FS", "fs read %s", dir);
   if (fs->running)
@@ -338,7 +338,7 @@ void fs_read(fn_fs *fs, const char *dir)
   uv_fs_stat(eventloop(), &fs->uv_fs, fs->readkey, stat_read_cb);
 }
 
-void fs_open(fn_fs *fs, const char *dir)
+void fs_open(nv_fs *fs, const char *dir)
 {
   log_msg("FS", "fs open %s", dir);
   fs->path = strdup(dir);
@@ -352,7 +352,7 @@ void fs_open(fn_fs *fs, const char *dir)
   }
 }
 
-void fs_close(fn_fs *fs)
+void fs_close(nv_fs *fs)
 {
   fs_demux(fs);
 }
@@ -381,7 +381,7 @@ static void add_dir(const char *path, uv_stat_t stat)
   cache->ctimesec = stat.st_ctim.tv_sec;
 }
 
-void fs_cancel(fn_fs *fs)
+void fs_cancel(nv_fs *fs)
 {
   fs->ent->cancel = true;
   uv_cancel((uv_req_t*)&fs->ent->uv_fs);
@@ -389,7 +389,7 @@ void fs_cancel(fn_fs *fs)
 
 static void fs_flush_stream(fentry *ent)
 {
-  fn_fs *it = NULL;
+  nv_fs *it = NULL;
   for (it = ent->listeners; it != NULL; it = it->hh.next) {
     if (it->hndl->model)
       model_flush(it->hndl, ent->reopen);
@@ -477,7 +477,7 @@ static void fs_reopen(fentry *ent)
   uv_fs_event_start(&ent->watcher, watch_cb, ent->key, 1);
 }
 
-void fs_fastreq(fn_fs *fs)
+void fs_fastreq(nv_fs *fs)
 {
   log_msg("FS", "fs_fastreq %d", fs->ent->running);
   fs->ent->before = MAX_WAIT;

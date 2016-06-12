@@ -1,13 +1,13 @@
-#ifndef FN_REGEX_H
-#define FN_REGEX_H
+#ifndef NV_REGEX_H
+#define NV_REGEX_H
 
 #include "nav/plugins/plugin.h"
 
 typedef struct LineMatch LineMatch;
 typedef struct Pattern Pattern;
 
-LineMatch* regex_new(fn_handle *hndl);
-void regex_destroy(fn_handle *hndl);
+LineMatch* regex_new(Handle *hndl);
+void regex_destroy(Handle *hndl);
 void regex_build(LineMatch *lm, const char *);
 void regex_del_matches(LineMatch *lm);
 void regex_setsign(int sign);

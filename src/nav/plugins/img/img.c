@@ -105,7 +105,7 @@ static int valid_ext(const char *path)
 static int create_msg(Plugin *host, Plugin *caller, HookArg *hka)
 {
   Img *img = (Img*)caller->top;
-  fn_handle *h = caller->hndl;
+  Handle *h = caller->hndl;
 
   char *path = model_curs_value(host->hndl->model, "fullpath");
   char *name = model_curs_value(host->hndl->model, "name");
@@ -173,7 +173,7 @@ void img_new(Plugin *plugin, Buffer *buf, char *arg)
   log_msg("IMG", "INIT");
   Img *img = malloc(sizeof(Img));
   img->base = plugin;
-  fn_handle *hndl = malloc(sizeof(fn_handle));
+  Handle *hndl = malloc(sizeof(Handle));
   hndl->buf = buf;
   hndl->key = " ";
   plugin->hndl = hndl;
@@ -225,7 +225,7 @@ void img_delete(Plugin *plugin)
 {
   log_msg("IMG", "delete");
   Img *img = plugin->top;
-  fn_handle *h = img->base->hndl;
+  Handle *h = img->base->hndl;
 
   if (img->img_set) {
     shell_set_in_buffer(img->sh_clear, img->cl_msg);

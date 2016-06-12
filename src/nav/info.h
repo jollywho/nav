@@ -1,5 +1,5 @@
-#ifndef FN_INFO_H
-#define FN_INFO_H
+#ifndef NV_INFO_H
+#define NV_INFO_H
 
 #include <stdio.h>
 #include "nav/nav.h"

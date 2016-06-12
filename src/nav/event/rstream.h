@@ -1,5 +1,5 @@
-#ifndef FN_EVENT_RSTREAM_H
-#define FN_EVENT_RSTREAM_H
+#ifndef NV_EVENT_RSTREAM_H
+#define NV_EVENT_RSTREAM_H
 
 #include <stdbool.h>
 #include <stddef.h>

@@ -1,5 +1,5 @@
-#ifndef FN_PLUGINS_IMG_H
-#define FN_PLUGINS_IMG_H
+#ifndef NV_PLUGINS_IMG_H
+#define NV_PLUGINS_IMG_H
 
 #include "nav/event/shell.h"
 

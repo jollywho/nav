@@ -1,5 +1,5 @@
-#ifndef FN_CMD_H
-#define FN_CMD_H
+#ifndef NV_CMD_H
+#define NV_CMD_H
 
 #include "nav/lib/uthash.h"
 #include "nav/cmdline.h"
@@ -43,7 +43,7 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline);
 Cmd_T* cmd_find(const char *);
 void cmd_list(List *args);
 void cmd_eval(Cmdstr *caller, char *line);
-fn_func* cmd_callstack();
+nv_func* cmd_callstack();
 bool cmd_conditional();
 
 #endif

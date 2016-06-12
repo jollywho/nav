@@ -21,7 +21,7 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   plugin->top = dt;
   plugin->name = "dt";
   plugin->fmt_name = "DT";
-  fn_handle *hndl = malloc(sizeof(fn_handle));
+  Handle *hndl = malloc(sizeof(Handle));
   hndl->buf = buf;
   plugin->hndl = hndl;
   hndl->tn = "filename";
@@ -53,7 +53,7 @@ void dt_delete(Plugin *plugin)
 {
   log_msg("DT", "delete");
   DT *dt = plugin->top;
-  fn_handle *h = plugin->hndl;
+  Handle *h = plugin->hndl;
   model_close(h);
   model_cleanup(h);
   free(dt->filename);
@@ -64,7 +64,7 @@ void dt_delete(Plugin *plugin)
 static void dt_signal_model(void **data)
 {
   DT *dt = data[0];
-  fn_handle *h = dt->base->hndl;
+  Handle *h = dt->base->hndl;
   model_flush(h, true);
   model_recv(dt->m);
   buf_move(h->buf, 0, 0);

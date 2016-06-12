@@ -1,5 +1,5 @@
-#ifndef FN_TUI_WINDOW_H
-#define FN_TUI_WINDOW_H
+#ifndef NV_TUI_WINDOW_H
+#define NV_TUI_WINDOW_H
 
 #include "nav/event/event.h"
 #include "nav/tui/buffer.h"

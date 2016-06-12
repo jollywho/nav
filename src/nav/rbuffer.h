@@ -11,8 +11,8 @@
 //   stopped(automatic backpressure handling)
 //
 // Reference: http://en.wikipedia.org/wiki/Circular_buffer
-#ifndef FN_RBUFFER_H
-#define FN_RBUFFER_H
+#ifndef NV_RBUFFER_H
+#define NV_RBUFFER_H
 
 #include <stddef.h>
 #include <stdint.h>

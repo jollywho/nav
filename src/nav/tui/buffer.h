@@ -1,5 +1,5 @@
-#ifndef FN_TUI_BUFFER_H
-#define FN_TUI_BUFFER_H
+#ifndef NV_TUI_BUFFER_H
+#define NV_TUI_BUFFER_H
 
 #include <ncurses.h>
 #include "nav/regex.h"
@@ -30,7 +30,7 @@ struct Buffer {
 
   int ldif;
 
-  fn_handle *hndl;
+  Handle *hndl;
   bool dirty;
   bool queued;
   bool del;

@@ -1,5 +1,5 @@
-#ifndef FN_PLUGINS_OUT_H
-#define FN_PLUGINS_OUT_H
+#ifndef NV_PLUGINS_OUT_H
+#define NV_PLUGINS_OUT_H
 
 #include "nav/plugins/plugin.h"
 
@@ -7,7 +7,7 @@ typedef struct Out Out;
 
 struct Out {
   Plugin *base;
-  fn_handle *hndl;
+  Handle *hndl;
   bool opened;
 };
 

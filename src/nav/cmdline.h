@@ -1,5 +1,5 @@
-#ifndef FN_CMDLINE_H
-#define FN_CMDLINE_H
+#ifndef NV_CMDLINE_H
+#define NV_CMDLINE_H
 
 #include "nav.h"
 #include "nav/plugins/plugin.h"

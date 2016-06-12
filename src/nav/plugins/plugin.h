@@ -1,24 +1,24 @@
-#ifndef FN_PLUGINS_PLUGIN_H
-#define FN_PLUGINS_PLUGIN_H
+#ifndef NV_PLUGINS_PLUGIN_H
+#define NV_PLUGINS_PLUGIN_H
 
 #include "nav/nav.h"
 #include "nav/config.h"
 
 typedef struct Window Window;
 typedef struct Plugin Plugin;
-typedef struct fn_tbl fn_tbl;
+typedef struct Table Table;
 typedef struct Buffer Buffer;
-typedef struct fn_handle fn_handle;
+typedef struct Handle Handle;
 typedef struct Model Model;
 typedef struct Overlay Overlay;
-typedef struct fn_reg fn_reg;
+typedef struct nv_reg nv_reg;
 typedef struct Keyarg Keyarg;
 
 typedef void (*plugin_init_cb)(void);
 typedef void (*plugin_open_cb)(Plugin *base, Buffer *b, char *arg);
 typedef void (*plugin_close_cb)(Plugin *plugin);
 
-struct fn_handle {
+struct Handle {
   Buffer *buf;
   Model *model;
   char *tn;      // listening table name
@@ -32,7 +32,7 @@ struct Plugin {
   char *name;
   char *fmt_name;
   char *compl_key;
-  fn_handle *hndl;
+  Handle *hndl;
   void *top;
   void (*_cancel)(Plugin *plugin);
   void (*_focus)(Plugin *plugin);

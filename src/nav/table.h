@@ -1,16 +1,16 @@
-#ifndef FN_TABLE_H
-#define FN_TABLE_H
+#ifndef NV_TABLE_H
+#define NV_TABLE_H
 
 #include "nav/lib/uthash.h"
 #include "nav/plugins/plugin.h"
 
-typedef struct fn_rec fn_rec;
-typedef struct fn_val fn_val;
-typedef struct fn_fld fn_fld;
-typedef struct fn_vt_fld fn_vt_fld;
-typedef struct fn_lis fn_lis;
-typedef struct tentry tentry;
-typedef struct ventry ventry;
+typedef struct TblRec TblRec;
+typedef struct TblVal TblVal;
+typedef struct TblFld TblFld;
+typedef struct TblLis TblLis;
+typedef struct Tentry Tentry;
+typedef struct Ventry Ventry;
+typedef struct nv_vt_fld nv_vt_fld;
 
 #define TYP_VOID     0
 #define TYP_STR      1
@@ -22,19 +22,19 @@ typedef struct ventry ventry;
 #define SRT_TYPE   128
 #define SRT_DIR    256
 
-struct ventry {
-  ventry *prev;
-  ventry *next;
-  fn_rec *rec;
-  fn_val *val;
+struct Ventry {
+  Ventry *prev;
+  Ventry *next;
+  TblRec *rec;
+  TblVal *val;
 };
 
-struct fn_lis {
+struct TblLis {
   char *key;       // listening value
-  fn_fld *key_fld;  // listening field
+  TblFld *key_fld;  // listening field
   char *fname;     // filter field
   char *fval;      // filter val
-  fn_rec *rec;      // record for both listening & filter
+  TblRec *rec;      // record for both listening & filter
   int lnum;
   int index;
   UT_hash_handle hh;
@@ -46,26 +46,26 @@ bool tbl_mk(const char *);
 void tbl_del(const char *);
 void tbl_mk_fld(const char *, const char *, int);
 
-fn_tbl* get_tbl(const char *tn);
+Table* get_tbl(const char *tn);
 void tbl_add_lis(const char *, const char *, const char *);
-void tbl_del_fld_lis(fn_fld *);
+void tbl_del_fld_lis(TblFld *);
 void commit(void **data);
 
-ventry* fnd_val(const char *, const char *, const char *);
-fn_lis* fnd_lis(const char *, const char *, const char *);
-ventry* lis_get_val(fn_lis *lis, const char *);
-void lis_save(fn_lis *lis, int index, int lnum, const char *);
-void* rec_fld(fn_rec *rec, const char *);
-char* ent_str(ventry *ent);
-ventry* ent_head(ventry *ent);
-ventry* ent_rec(fn_rec *rec, const char *);
-fn_rec* tbl_iter(fn_rec *next);
+Ventry* fnd_val(const char *, const char *, const char *);
+TblLis* fnd_lis(const char *, const char *, const char *);
+Ventry* lis_get_val(TblLis *lis, const char *);
+void lis_save(TblLis *lis, int index, int lnum, const char *);
+void* rec_fld(TblRec *rec, const char *);
+char* ent_str(Ventry *ent);
+Ventry* ent_head(Ventry *ent);
+Ventry* ent_rec(TblRec *rec, const char *);
+TblRec* tbl_iter(TblRec *next);
 int fld_type(const char *, const char *);
 
 void tbl_del_val(const char *, const char *, const char *);
 
 int tbl_fld_count(const char *);
-int tbl_ent_count(ventry *e);
+int tbl_ent_count(Ventry *e);
 
 typedef struct {
   int count;

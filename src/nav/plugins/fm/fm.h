@@ -1,5 +1,5 @@
-#ifndef FN_PLUGINS_FM_H
-#define FN_PLUGINS_FM_H
+#ifndef NV_PLUGINS_FM_H
+#define NV_PLUGINS_FM_H
 
 #include "nav/plugins/plugin.h"
 #include "nav/event/fs.h"
@@ -14,7 +14,7 @@ typedef struct FM FM;
 struct FM {
   Plugin *base;
   char *cur_dir;
-  fn_fs *fs;
+  nv_fs *fs;
   int jump_count;
   int jump_max;
   jump_item *jump_cur;

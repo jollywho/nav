@@ -1,5 +1,5 @@
-#ifndef FN_ASCII_H
-#define FN_ASCII_H
+#ifndef NV_ASCII_H
+#define NV_ASCII_H
 
 #include <stdbool.h>
 

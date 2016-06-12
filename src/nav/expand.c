@@ -47,7 +47,7 @@ static char* fm_name(void *arg)
 
 static char* fm_group(void *arg)
 {
-  fn_syn *syn = get_syn(file_ext(arg));
+  nv_syn *syn = get_syn(file_ext(arg));
   if (syn)
     return strdup(syn->group->key);
   else
@@ -79,15 +79,15 @@ static varg_T fm_type(const char *name, enum fm_fmt fmt)
 static varg_T op_type(const char *name)
 {
   varg_T arg = {};
-  fn_group *grp = op_active_group();
+  nv_group *grp = op_active_group();
   if (!name || !grp)
     return arg;
 
   int isfld = !strcmp(name, "prev") || !strcmp(name, "next");
-  ventry *vent = fnd_val("op_procs", "group", grp->key);
+  Ventry *vent = fnd_val("op_procs", "group", grp->key);
 
   if (isfld && vent) {
-    ventry *head = ent_head(vent);
+    Ventry *head = ent_head(vent);
     char *ret = rec_fld(head->rec, "pid");
     arg.argc = 1;
     arg.argv = malloc(sizeof(char*));

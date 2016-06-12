@@ -388,11 +388,11 @@ do {                                                                            
 /* FNV-1a variation */
 #define HASH_FNV(key,keylen,num_bkts,hashv,bkt)                                  \
 do {                                                                             \
-  unsigned _fn_i;                                                                \
+  unsigned _nv_i;                                                                \
   const unsigned char *_hf_key=(const unsigned char*)(key);                      \
   hashv = 2166136261U;                                                           \
-  for(_fn_i=0; _fn_i < keylen; _fn_i++) {                                        \
-      hashv = hashv ^ _hf_key[_fn_i];                                            \
+  for(_nv_i=0; _nv_i < keylen; _nv_i++) {                                        \
+      hashv = hashv ^ _hf_key[_nv_i];                                            \
       hashv = hashv * 16777619U;                                                 \
   }                                                                              \
   bkt = hashv & (num_bkts-1U);                                                   \

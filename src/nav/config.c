@@ -313,7 +313,7 @@ static Cmdret conf_color(List *args, Cmdarg *ca)
   if (!ret || !group)
     return NORET;
 
-  fn_group *grp = get_group(group);
+  nv_group *grp = get_group(group);
   if (!grp)
     return NORET;
   //TODO: error msg
@@ -331,12 +331,12 @@ static Cmdret conf_syntax(List *args)
   if (!group && (!words || !single))
     return NORET;
 
-  fn_group *grp = get_group(group);
+  nv_group *grp = get_group(group);
   if (!grp)
     grp = set_group(group);
 
   if (single) {
-    fn_syn syn = {
+    nv_syn syn = {
       .key = strdup(single),
       .group = grp,
     };
@@ -346,7 +346,7 @@ static Cmdret conf_syntax(List *args)
 
   log_msg("CONFIG", "# %d", utarray_len(words->items));
   for (int i = 0; i < utarray_len(words->items); i++) {
-    fn_syn syn = {
+    nv_syn syn = {
       .key = strdup(list_arg(words, i, VAR_STRING)),
       .group = grp,
     };
@@ -379,7 +379,7 @@ static Cmdret conf_variable(List *args, Cmdarg *ca)
     return NORET;
 
   char *expr = cmdline_line_from(ca->cmdline, delm);
-  fn_var var = {
+  nv_var var = {
     .key = strdup(key),
     .var = strdup(expr),
   };
@@ -397,7 +397,7 @@ static Cmdret conf_variable(List *args, Cmdarg *ca)
     SWAP_ALLOC_PTR(var.var, newexpr);
   }
 
-  fn_func *blk = cmd_callstack();
+  nv_func *blk = cmd_callstack();
   set_var(&var, blk);
 
   return NORET;
@@ -445,7 +445,7 @@ static Cmdret conf_op(List *args, Cmdarg *ca)
   if (!after)
     after = "";
 
-  fn_group *grp = get_group(group);
+  nv_group *grp = get_group(group);
   if (!grp)
     return NORET;
 

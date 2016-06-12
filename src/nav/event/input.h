@@ -1,5 +1,5 @@
-#ifndef FN_EVENT_INPUT_H
-#define FN_EVENT_INPUT_H
+#ifndef NV_EVENT_INPUT_H
+#define NV_EVENT_INPUT_H
 
 #include "nav/plugins/plugin.h"
 #include "nav/ascii.h"
@@ -19,22 +19,22 @@ typedef struct {
   key_func cmd_func;            /* function for this command */
   int cmd_flags;                /* NCH* and EVENT */
   short cmd_arg;                /* value for ca.arg */
-} fn_key;
+} nv_key;
 
 typedef struct {
   int op_char;
   int nchar;
   key_func cmd_func;
-} fn_oper;
+} nv_oper;
 
 typedef struct {
-  fn_key *tbl;
+  nv_key *tbl;
   short *cmd_idx;
   int maxsize;
   int maxlinear;
-} fn_keytbl;
+} nv_keytbl;
 
-struct fn_reg {
+struct nv_reg {
   int key;
   varg_T value;
 };
@@ -53,7 +53,7 @@ typedef struct {
 } Oparg;
 
 struct Keyarg {
-  fn_keytbl *optbl;             /* table that set operator */
+  nv_keytbl *optbl;             /* table that set operator */
   Oparg oap;                    /* Operator arguments */
   long opcount;                 /* count before an operator */
   int type;
@@ -66,21 +66,21 @@ struct Keyarg {
 
 void input_init(void);
 void input_cleanup(void);
-void input_setup_tbl(fn_keytbl *kt);
+void input_setup_tbl(nv_keytbl *kt);
 
 void unset_map(char *from);
 void set_map(char *lhs, char *rhs);
 
 bool try_do_map(Keyarg *ca);
-int find_command(fn_keytbl *kt, int cmdchar);
-int find_do_key(fn_keytbl *kt, Keyarg *ca, void *obj);
+int find_command(nv_keytbl *kt, int cmdchar);
+int find_do_key(nv_keytbl *kt, Keyarg *ca, void *obj);
 void input_check();
 void oper(void *, Keyarg *ca);
 void clearop(Keyarg *ca);
 bool op_pending(Keyarg *arg);
 
-fn_reg* reg_get(int ch);
-fn_reg* reg_dcur();
+nv_reg* reg_get(int ch);
+nv_reg* reg_dcur();
 void reg_clear_dcur();
 void reg_set(int ch, varg_T);
 void reg_yank(char *);

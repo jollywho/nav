@@ -59,7 +59,7 @@ static Cmd_T cmdtable[] = {
   {"vnew","vne",     "Open vertical window.",   win_new,       MOVE_LEFT},
 };
 
-static fn_key key_defaults[] = {
+static nv_key key_defaults[] = {
   {':',     window_ex_cmd,   0,           EX_CMD_STATE},
   {'?',     window_reg_cmd,  0,           BACKWARD},
   {'/',     window_reg_cmd,  0,           FORWARD},
@@ -71,7 +71,7 @@ static fn_key key_defaults[] = {
   {'f',     window_fltr_cmd, 0,           FORWARD},
 };
 
-static fn_keytbl key_tbl;
+static nv_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
 static const uint64_t RFSH_RATE = 10;
 static Window win;

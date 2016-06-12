@@ -34,7 +34,7 @@ static char *buf_events[] = {
   "paste","remove","left","right","jump",
 };
 
-static fn_key key_defaults[] = {
+static nv_key key_defaults[] = {
   {ESC,     buf_esc,         0,           0},
   {Ctrl_J,  buf_mv_page,     0,           FORWARD},
   {Ctrl_K,  buf_mv_page,     0,           BACKWARD},
@@ -58,7 +58,7 @@ static fn_key key_defaults[] = {
   {Ctrl_I,  buf_gen_event,   EV_JUMP,     FORWARD},
 };
 
-static fn_keytbl key_tbl;
+static nv_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
 
 void buf_init()
@@ -447,7 +447,7 @@ void buf_yank(void *_b, Keyarg *ca)
 void buf_del(void *_b, Keyarg *ca)
 {
   Buffer *buf = (Buffer*)_b;
-  fn_handle *h = buf->hndl;
+  Handle *h = buf->hndl;
   reg_set(NUL, buf_select(buf, h->fname, NULL));
   reg_set('1', buf_select(buf, "fullpath", NULL));
   buf_end_sel(buf);

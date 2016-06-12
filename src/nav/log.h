@@ -1,5 +1,5 @@
-#ifndef FN_LOG_H
-#define FN_LOG_H
+#ifndef NV_LOG_H
+#define NV_LOG_H
 
 void log_init();
 void log_cleanup();

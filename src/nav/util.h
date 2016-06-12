@@ -1,5 +1,5 @@
-#ifndef FN_UTIL_H
-#define FN_UTIL_H
+#ifndef NV_UTIL_H
+#define NV_UTIL_H
 
 #include <ncurses.h>
 

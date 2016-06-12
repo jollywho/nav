@@ -1,5 +1,5 @@
-#ifndef FN_EVENT_UV_PROCESS_H
-#define FN_EVENT_UV_PROCESS_H
+#ifndef NV_EVENT_UV_PROCESS_H
+#define NV_EVENT_UV_PROCESS_H
 
 #include <uv.h>
 #include "nav/event/process.h"

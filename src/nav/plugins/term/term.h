@@ -1,5 +1,5 @@
-#ifndef FN_PLUGINS_TERM_H
-#define FN_PLUGINS_TERM_H
+#ifndef NV_PLUGINS_TERM_H
+#define NV_PLUGINS_TERM_H
 
 #include <uv.h>
 #include "nav/lib/sys_queue.h"

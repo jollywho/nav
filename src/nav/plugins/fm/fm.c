@@ -100,7 +100,7 @@ static int fm_opendir(Plugin *plugin, char *path, short arg)
 {
   log_msg("FM", "fm_opendir %s", path);
   FM *self = (FM*)plugin->top;
-  fn_handle *h = plugin->hndl;
+  Handle *h = plugin->hndl;
   char *cur_dir = self->cur_dir;
 
   model_close(h);
@@ -182,7 +182,7 @@ static void fm_left(Plugin *host, Plugin *caller, HookArg *hka)
 static void fm_right(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "right");
-  fn_handle *h = host->hndl;
+  Handle *h = host->hndl;
   char *path = model_curs_value(h->model, "fullpath");
   log_msg("FM", "PATH %s", path);
   if (!path)
@@ -215,7 +215,7 @@ static void fm_paste(Plugin *host, Plugin *caller, HookArg *hka)
   log_msg("FM", "fm_paste");
   FM *self = (FM*)host->top;
 
-  fn_reg *reg = reg_dcur();
+  nv_reg *reg = reg_dcur();
   if (!reg || reg->value.argc < 1)
     return;
 
@@ -271,7 +271,7 @@ static void fm_cursor_change_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("FM", "fm_cursor_change_cb");
   FM *self = (FM*)caller->top;
-  fn_handle *h = host->hndl;
+  Handle *h = host->hndl;
 
   char *path = model_curs_value(h->model, "fullpath");
   if (!path)
@@ -309,7 +309,7 @@ static void fm_pipe_right(Plugin *host, Plugin *caller, HookArg *hka)
 
 static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, char *val)
 {
-  fn_handle *hndl = malloc(sizeof(fn_handle));
+  Handle *hndl = malloc(sizeof(Handle));
   hndl->tn = "fm_files";
   hndl->buf = b;
   hndl->key_fld = "dir";
@@ -368,7 +368,7 @@ void fm_delete(Plugin *plugin)
 {
   log_msg("FM", "delete");
   FM *fm = plugin->top;
-  fn_handle *h = plugin->hndl;
+  Handle *h = plugin->hndl;
   DO_EVENTS_UNTIL(!fs_blocking(fm->fs));
   jump_cleanup(fm);
   model_close(h);

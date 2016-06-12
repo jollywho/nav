@@ -15,14 +15,14 @@
 #include "nav/util.h"
 #include "nav/compl.h"
 
-static void create_proc(fn_group *, char *);
+static void create_proc(nv_group *, char *);
 
 static Op op;
 
 typedef struct {
   uv_process_t proc;
   uv_process_options_t opts;
-  fn_group *grp;
+  nv_group *grp;
 } Op_proc;
 
 void pid_list(List *args)
@@ -57,7 +57,7 @@ static void del_proc(uv_handle_t *hndl)
   free(hndl->data);
 }
 
-static void run_group(fn_group *grp, char *line, bool proc)
+static void run_group(nv_group *grp, char *line, bool proc)
 {
   Cmdstr cmd;
   op.curgrp = grp;
@@ -77,7 +77,7 @@ static void exit_cb(uv_process_t *req, int64_t exit_status, int term_signal)
 {
   log_msg("OP", "exit_cb");
   Op_proc *proc = req->data;
-  fn_group *grp = proc->grp;
+  nv_group *grp = proc->grp;
   remove_pid(grp->key, proc->proc.pid);
   uv_close((uv_handle_t*) req, del_proc);
   op.last_status = exit_status;
@@ -100,7 +100,7 @@ static void chld_handler(uv_signal_t *handle, int signum)
     return;
 }
 
-static void create_proc(fn_group *grp, char *line)
+static void create_proc(nv_group *grp, char *line)
 {
   log_msg("OP", "create_proc %s", line);
 
@@ -140,11 +140,11 @@ static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
   char *name = model_curs_value(host->hndl->model, "name");
   log_msg("OP", "path %s %s", path, name);
   log_msg("OP", "ext %s ", file_ext(name));
-  fn_syn *syn = get_syn(file_ext(path));
+  nv_syn *syn = get_syn(file_ext(path));
   if (!syn)
     return;
 
-  fn_group *grp = syn->group;
+  nv_group *grp = syn->group;
   log_msg("OP", "%s", grp->key);
   if (!grp->opgrp)
     return;
@@ -176,7 +176,7 @@ Cmdret op_kill(List *args, Cmdarg *ca)
   if (!pidstr || !str_num(pidstr, &pid))
     return NORET;
 
-  ventry *vent = fnd_val("op_procs", "pid", pidstr);
+  Ventry *vent = fnd_val("op_procs", "pid", pidstr);
   if (!vent) {
     log_msg("OP", "pid %s not found", pidstr);
     return NORET;

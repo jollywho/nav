@@ -1,5 +1,5 @@
-#ifndef FN_EVENT_PROCESS_H
-#define FN_EVENT_PROCESS_H
+#ifndef NV_EVENT_PROCESS_H
+#define NV_EVENT_PROCESS_H
 
 #include "nav/event/event.h"
 #include "nav/event/stream.h"

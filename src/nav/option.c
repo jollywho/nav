@@ -49,8 +49,8 @@ char *p_rm = "rm -r";
 char *p_xc = "xclip -i";
 char *sep_chr = "│";
 
-typedef struct fn_option fn_option;
-static struct fn_option {
+typedef struct nv_option nv_option;
+static struct nv_option {
   char *key;
   enum opt_type type;
   void *value;
@@ -91,11 +91,11 @@ static struct fn_option {
     }                                          \
   } while(0)                                   \
 
-static fn_group  *groups;
-static fn_syn    *syntaxes;
-static fn_var    *gbl_vars;
-static fn_func   *gbl_funcs;
-static fn_option *options;
+static nv_group  *groups;
+static nv_syn    *syntaxes;
+static nv_var    *gbl_vars;
+static nv_func   *gbl_funcs;
+static nv_option *options;
 
 const char *builtin_color(enum nv_color_group col) {
   return col < LENGTH(default_groups) ? default_groups[col] : NULL;
@@ -105,7 +105,7 @@ void option_init()
 {
   init_pair(0, 0, 0);
   for (int i = 0; i < LENGTH(default_options); i++) {
-    fn_option *opt = &default_options[i];
+    nv_option *opt = &default_options[i];
     if (default_options[i].type == OPTION_STRING)
       opt->value = strdup(*(char**)default_options[i].value);
     HASH_ADD_STR(options, key, opt);
@@ -118,16 +118,16 @@ void option_init()
 
 void option_cleanup()
 {
-  CLEAR_OPT(fn_syn,   syntaxes,  {});
-  CLEAR_OPT(fn_var,   gbl_vars,  free(it->var));
-  CLEAR_OPT(fn_group, groups,    op_delgrp(it->opgrp));
-  CLEAR_OPT(fn_func,  gbl_funcs, {
+  CLEAR_OPT(nv_syn,   syntaxes,  {});
+  CLEAR_OPT(nv_var,   gbl_vars,  free(it->var));
+  CLEAR_OPT(nv_group, groups,    op_delgrp(it->opgrp));
+  CLEAR_OPT(nv_func,  gbl_funcs, {
     del_param_list(it->argv, it->argc);
     utarray_free(it->lines);
     clear_locals(it);
   });
 
-  fn_option *it, *tmp;
+  nv_option *it, *tmp;
   HASH_ITER(hh, options, it, tmp) {
     HASH_DEL(options, it);
     if (it->type == OPTION_STRING)
@@ -135,13 +135,13 @@ void option_cleanup()
   }
 }
 
-void clear_locals(fn_func *func)
+void clear_locals(nv_func *func)
 {
-  CLEAR_OPT(fn_var, func->locals, free(it->var));
+  CLEAR_OPT(nv_var, func->locals, free(it->var));
   func->locals = NULL;
 }
 
-void set_color(fn_group *grp, int fg, int bg)
+void set_color(nv_group *grp, int fg, int bg)
 {
   log_msg("OPTION", "set_color");
   grp->colorpair = vt_color_get(NULL, fg, bg);
@@ -150,45 +150,45 @@ void set_color(fn_group *grp, int fg, int bg)
 short opt_color(enum nv_color_group color)
 {
   const char *key = builtin_color(color);
-  fn_group *grp;
+  nv_group *grp;
   HASH_FIND_STR(groups, key, grp);
   if (!grp)
     return 0;
   return grp->colorpair;
 }
 
-fn_group* set_group(const char *name)
+nv_group* set_group(const char *name)
 {
-  fn_group *syg = malloc(sizeof(fn_group));
-  memset(syg, 0, sizeof(fn_group));
+  nv_group *syg = malloc(sizeof(nv_group));
+  memset(syg, 0, sizeof(nv_group));
   syg->key = strdup(name);
   syg->colorpair = 0;
 
-  FLUSH_OLD_OPT(fn_group, groups, syg->key, {});
+  FLUSH_OLD_OPT(nv_group, groups, syg->key, {});
   HASH_ADD_STR(groups, key, syg);
   return syg;
 }
 
-fn_group* get_group(const char *name)
+nv_group* get_group(const char *name)
 {
-  fn_group *grp;
+  nv_group *grp;
   HASH_FIND_STR(groups, name, grp);
   if (!grp)
     return 0;
   return grp;
 }
 
-void set_syn(fn_syn *syn)
+void set_syn(nv_syn *syn)
 {
-  fn_syn *sy = malloc(sizeof(fn_syn));
-  memmove(sy, syn, sizeof(fn_syn));
-  FLUSH_OLD_OPT(fn_syn, syntaxes, sy->key, {});
+  nv_syn *sy = malloc(sizeof(nv_syn));
+  memmove(sy, syn, sizeof(nv_syn));
+  FLUSH_OLD_OPT(nv_syn, syntaxes, sy->key, {});
   HASH_ADD_STR(syntaxes, key, sy);
 }
 
-fn_syn* get_syn(const char *name)
+nv_syn* get_syn(const char *name)
 {
-  fn_syn *sy;
+  nv_syn *sy;
   HASH_FIND_STR(syntaxes, name, sy);
   if (!sy)
     return 0;
@@ -197,26 +197,26 @@ fn_syn* get_syn(const char *name)
 
 int get_syn_colpair(const char *name)
 {
-  fn_syn *sy = get_syn(name);
+  nv_syn *sy = get_syn(name);
   if (!sy)
     return default_syn_color;
   return sy->group->colorpair;
 }
 
-void set_var(fn_var *variable, fn_func *blk)
+void set_var(nv_var *variable, nv_func *blk)
 {
-  fn_var *var = malloc(sizeof(fn_var));
-  memmove(var, variable, sizeof(fn_var));
+  nv_var *var = malloc(sizeof(nv_var));
+  memmove(var, variable, sizeof(nv_var));
 
   log_msg("CONFIG", "%s := %s", var->key, var->var);
-  fn_var **container = &gbl_vars;
+  nv_var **container = &gbl_vars;
   if (blk)
     container = &blk->locals;
-  FLUSH_OLD_OPT(fn_var, *container, var->key, free(find->var));
+  FLUSH_OLD_OPT(nv_var, *container, var->key, free(find->var));
   HASH_ADD_STR(*container, key, var);
 }
 
-char* opt_var(Token *word, fn_func *blk)
+char* opt_var(Token *word, nv_func *blk)
 {
   log_msg("OPT", "opt_var");
   char *key = token_val(word, VAR_STRING);
@@ -234,7 +234,7 @@ char* opt_var(Token *word, fn_func *blk)
   if (*key == '$')
     key++;
 
-  fn_var *var = NULL;
+  nv_var *var = NULL;
 
   if (blk)
     HASH_FIND_STR(blk->locals, key, var);
@@ -252,23 +252,23 @@ char* opt_var(Token *word, fn_func *blk)
   return strdup(var->var);
 }
 
-void set_func(fn_func *func)
+void set_func(nv_func *func)
 {
-  fn_func *fn = func;
+  nv_func *fn = func;
   fn->locals = NULL;
   HASH_ADD_STR(gbl_funcs, key, fn);
 }
 
-fn_func* opt_func(const char *name)
+nv_func* opt_func(const char *name)
 {
-  fn_func *fn;
+  nv_func *fn;
   HASH_FIND_STR(gbl_funcs, name, fn);
   return fn;
 }
 
 void set_opt(const char *name, const char *val)
 {
-  fn_option *opt;
+  nv_option *opt;
   HASH_FIND_STR(options, name, opt);
   if (!opt)
     return;
@@ -292,7 +292,7 @@ void set_opt(const char *name, const char *val)
 
 char* get_opt_str(const char *name)
 {
-  fn_option *opt;
+  nv_option *opt;
   HASH_FIND_STR(options, name, opt);
   if (opt->type == OPTION_STRING)
     return opt->value;
@@ -302,7 +302,7 @@ char* get_opt_str(const char *name)
 
 uint get_opt_uint(const char *name)
 {
-  fn_option *opt;
+  nv_option *opt;
   HASH_FIND_STR(options, name, opt);
   if (opt->type == OPTION_UINT)
     return *(uint*)opt->value;
@@ -312,7 +312,7 @@ uint get_opt_uint(const char *name)
 
 int get_opt_int(const char *name)
 {
-  fn_option *opt;
+  nv_option *opt;
   HASH_FIND_STR(options, name, opt);
   if (opt->type == OPTION_INT)
     return *(int*)opt->value;
@@ -323,7 +323,7 @@ int get_opt_int(const char *name)
 void options_list(List *args)
 {
   log_msg("INFO", "setting_list");
-  fn_option *it;
+  nv_option *it;
   int i = 0;
   for (it = options; it != NULL; it = it->hh.next) {
     compl_list_add("%s", it->key);
@@ -338,7 +338,7 @@ void options_list(List *args)
 void groups_list(List *args)
 {
   log_msg("INFO", "setting_list");
-  fn_group *it;
+  nv_group *it;
   int i = 0;
   for (it = groups; it != NULL; it = it->hh.next) {
     compl_list_add("%s", it->key);

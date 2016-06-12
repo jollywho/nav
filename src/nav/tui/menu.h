@@ -1,5 +1,5 @@
-#ifndef FN_TUI_MENU_H
-#define FN_TUI_MENU_H
+#ifndef NV_TUI_MENU_H
+#define NV_TUI_MENU_H
 
 #include "nav/cmd.h"
 

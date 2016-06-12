@@ -1,5 +1,5 @@
-#ifndef FN_TUI_LAYOUT_H
-#define FN_TUI_LAYOUT_H
+#ifndef NV_TUI_LAYOUT_H
+#define NV_TUI_LAYOUT_H
 
 #include "nav/tui/buffer.h"
 

@@ -1,16 +1,16 @@
-#ifndef FN_EVENT_FS_H
-#define FN_EVENT_FS_H
+#ifndef NV_EVENT_FS_H
+#define NV_EVENT_FS_H
 
 #include "nav/event/event.h"
 #include "nav/table.h"
 
 typedef struct fentry fentry;
-typedef struct fn_fs fn_fs;
+typedef struct nv_fs nv_fs;
 
-struct fn_fs {
+struct nv_fs {
   char *path;
 
-  fn_handle *hndl;
+  Handle *hndl;
   uv_fs_t uv_fs;  /* readonly stat */
   char *readkey;
   fentry *ent;
@@ -22,26 +22,26 @@ struct fn_fs {
   UT_hash_handle hh;
 };
 
-fn_fs* fs_init(fn_handle *hndl);
-void fs_cleanup(fn_fs *fs);
-void fs_open(fn_fs *fs, const char *);
-void fs_close(fn_fs *fs);
-void fs_read(fn_fs *fs, const char *);
+nv_fs* fs_init(Handle *hndl);
+void fs_cleanup(nv_fs *fs);
+void fs_open(nv_fs *fs, const char *);
+void fs_close(nv_fs *fs);
+void fs_read(nv_fs *fs, const char *);
 void fs_clr_cache(char *);
 void fs_clr_all_cache();
 void fs_reload(char *);
 
-void fs_cancel(fn_fs *fs);
-void fs_fastreq(fn_fs *fs);
-bool fs_blocking(fn_fs *fs);
+void fs_cancel(nv_fs *fs);
+void fs_fastreq(nv_fs *fs);
+bool fs_blocking(nv_fs *fs);
 
 const char* stat_type(struct stat *);
-bool isrecdir(fn_rec *);
-bool isreclnk(fn_rec *rec);
-bool isrecreg(fn_rec *rec);
-time_t rec_ctime(fn_rec *rec);
-off_t rec_stsize(fn_rec *rec);
-mode_t rec_stmode(fn_rec *rec);
+bool isrecdir(TblRec *);
+bool isreclnk(TblRec *rec);
+bool isrecreg(TblRec *rec);
+time_t rec_ctime(TblRec *rec);
+off_t rec_stsize(TblRec *rec);
+mode_t rec_stmode(TblRec *rec);
 char* fs_expand_path(const char *);
 char* valid_full_path(char *, char *);
 char* fs_parent_dir(char *);

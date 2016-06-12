@@ -16,8 +16,8 @@ static Menu *cur_menu;
 
 struct Menu {
   WINDOW *nc_win;
-  fn_handle *hndl;
-  fn_fs *fs;
+  Handle *hndl;
+  nv_fs *fs;
 
   bool rebuild;
   bool active;
@@ -53,13 +53,13 @@ static void menu_fs_cb(void **args)
   if (!cur_menu->active)
     return;
 
-  ventry *ent = fnd_val("fm_files", "dir", cur_menu->hndl->key);
+  Ventry *ent = fnd_val("fm_files", "dir", cur_menu->hndl->key);
   if (!ent)
     return;
 
   compl_set_repeat('/');
   for (int i = 0; i < tbl_ent_count(ent); i++) {
-    fn_rec *rec = ent->rec;
+    TblRec *rec = ent->rec;
     compl_list_add("%s", rec_fld(rec, "name"));
     ent = ent->next;
   }
@@ -153,10 +153,10 @@ Menu* menu_new()
   log_msg("MENU", "menu_new");
   Menu *mnu = malloc(sizeof(Menu));
   memset(mnu, 0, sizeof(Menu));
-  fn_handle *hndl = malloc(sizeof(fn_handle));
+  Handle *hndl = malloc(sizeof(Handle));
   mnu->hndl = hndl;
 
-  memset(mnu->hndl, 0, sizeof(fn_handle));
+  memset(mnu->hndl, 0, sizeof(Handle));
   mnu->hndl->tn = "fm_files";
   mnu->hndl->key_fld = "dir";
   mnu->hndl->fname = "name";

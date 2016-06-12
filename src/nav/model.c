@@ -16,16 +16,16 @@
 #include "nav/event/fs.h"
 #include "nav/option.h"
 
-struct fn_line {
-  fn_rec *rec;
+struct nv_line {
+  TblRec *rec;
 };
-static const UT_icd icd = {sizeof(fn_line),NULL,NULL,NULL};
+static const UT_icd icd = {sizeof(nv_line),NULL,NULL,NULL};
 
 struct Model {
-  fn_handle *hndl;  //opened handle
-  fn_lis *lis;      //listener
-  fn_rec *cur;      //current rec
-  ventry *head;     //head entry of listener
+  Handle *hndl;  //opened handle
+  TblLis *lis;      //listener
+  TblRec *cur;      //current rec
+  Ventry *head;     //head entry of listener
   bool blocking;
   char *pfval;      //prev field value
   int plnum;        //prev lnum
@@ -61,8 +61,8 @@ static struct Sort_T {
 
 static int cmp_time(const void *a, const void *b, void *arg)
 {
-  fn_line l1 = *(fn_line*)a;
-  fn_line l2 = *(fn_line*)b;
+  nv_line l1 = *(nv_line*)a;
+  nv_line l2 = *(nv_line*)b;
   time_t t1 = rec_ctime(l1.rec);
   time_t t2 = rec_ctime(l2.rec);
   return difftime(t1, t2);
@@ -70,8 +70,8 @@ static int cmp_time(const void *a, const void *b, void *arg)
 
 static int cmp_str(const void *a, const void *b, void *arg)
 {
-  fn_line l1 = *(fn_line*)a;
-  fn_line l2 = *(fn_line*)b;
+  nv_line l1 = *(nv_line*)a;
+  nv_line l2 = *(nv_line*)b;
   char *s1 = rec_fld(l1.rec, "name");
   char *s2 = rec_fld(l2.rec, "name");
   return strcmp(s2, s1);
@@ -79,8 +79,8 @@ static int cmp_str(const void *a, const void *b, void *arg)
 
 static int cmp_dir(const void *a, const void *b, void *arg)
 {
-  fn_line l1 = *(fn_line*)a;
-  fn_line l2 = *(fn_line*)b;
+  nv_line l1 = *(nv_line*)a;
+  nv_line l2 = *(nv_line*)b;
   int b1 = rec_stmode(l1.rec);
   int b2 = rec_stmode(l2.rec);
   if (b1 < b2)
@@ -92,8 +92,8 @@ static int cmp_dir(const void *a, const void *b, void *arg)
 
 static int cmp_num(const void *a, const void *b, void *arg)
 {
-  fn_line l1 = *(fn_line*)a;
-  fn_line l2 = *(fn_line*)b;
+  nv_line l1 = *(nv_line*)a;
+  nv_line l2 = *(nv_line*)b;
   off_t t1 = rec_stsize(l1.rec);
   off_t t2 = rec_stsize(l2.rec);
   if (t1 < t2)
@@ -105,13 +105,13 @@ static int cmp_num(const void *a, const void *b, void *arg)
 
 static int cmp_type(const void *a, const void *b, void *arg)
 {
-  fn_line l1 = *(fn_line*)a;
-  fn_line l2 = *(fn_line*)b;
+  nv_line l1 = *(nv_line*)a;
+  nv_line l2 = *(nv_line*)b;
   char *s1 = rec_fld(l1.rec, "name");
   char *s2 = rec_fld(l2.rec, "name");
 
-  fn_syn *sy1 = get_syn(file_ext(s1));
-  fn_syn *sy2 = get_syn(file_ext(s2));
+  nv_syn *sy1 = get_syn(file_ext(s1));
+  nv_syn *sy2 = get_syn(file_ext(s2));
   if (isrecdir(l1.rec))
     s1 = "";
   else if (sy1)
@@ -145,7 +145,7 @@ static void do_sort(Model *m)
   }
 }
 
-static fn_line* find_by_type(Model *m, fn_line *ln)
+static nv_line* find_by_type(Model *m, nv_line *ln)
 {
   sort_ent srt = {0, m->sort.sort_rev};
 
@@ -159,17 +159,17 @@ static fn_line* find_by_type(Model *m, fn_line *ln)
   return utarray_find(m->lines, ln, sort_by_type, &srt);
 }
 
-static fn_line* find_linear(Model *m, const char *val)
+static nv_line* find_linear(Model *m, const char *val)
 {
   for (int i = 0; i < utarray_len(m->lines); i++) {
-    fn_line *ln = (fn_line*)utarray_eltptr(m->lines, i);
+    nv_line *ln = (nv_line*)utarray_eltptr(m->lines, i);
     if (!strcmp(val, rec_fld(ln->rec, m->hndl->kname)))
       return ln;
   }
   return NULL;
 }
 
-void model_init(fn_handle *hndl)
+void model_init(Handle *hndl)
 {
   Model *m = malloc(sizeof(Model));
   memset(m, 0, sizeof(Model));
@@ -184,7 +184,7 @@ void model_init(fn_handle *hndl)
   buf->filter = filter_new(hndl);
 }
 
-void model_cleanup(fn_handle *hndl)
+void model_cleanup(Handle *hndl)
 {
   Model *m = hndl->model;
   regex_destroy(hndl);
@@ -195,12 +195,12 @@ void model_cleanup(fn_handle *hndl)
   free(m);
 }
 
-void model_inherit(fn_handle *hndl)
+void model_inherit(Handle *hndl)
 {
   hndl->model->sort = focus;
 }
 
-void model_open(fn_handle *hndl)
+void model_open(Handle *hndl)
 {
   tbl_add_lis(hndl->tn, hndl->key_fld, hndl->key);
 }
@@ -216,7 +216,7 @@ static void model_save(Model *m)
   m->pfval = NULL;
 }
 
-void model_close(fn_handle *hndl)
+void model_close(Handle *hndl)
 {
   log_msg("MODEL", "model_close");
   Model *m = hndl->model;
@@ -225,7 +225,7 @@ void model_close(fn_handle *hndl)
   utarray_clear(m->lines);
 }
 
-bool model_blocking(fn_handle *hndl)
+bool model_blocking(Handle *hndl)
 {
   return hndl->model->blocking;
 }
@@ -257,23 +257,23 @@ static void refit(Model *m, Buffer *buf)
     m->plnum = (model_count(m) - m->ptop) - 1;
 }
 
-static int try_old_pos(Model *m, fn_lis *lis, int pos)
+static int try_old_pos(Model *m, TblLis *lis, int pos)
 {
-  fn_line *ln;
-  ln = (fn_line*)utarray_eltptr(m->lines, pos);
+  nv_line *ln;
+  ln = (nv_line*)utarray_eltptr(m->lines, pos);
   if (!ln)
     return 0;
   return (!strcmp(m->pfval, rec_fld(ln->rec, m->hndl->kname)));
 }
 
-static void try_old_val(Model *m, fn_lis *lis, ventry *it)
+static void try_old_val(Model *m, TblLis *lis, Ventry *it)
 {
   int pos = m->ptop + m->plnum;
-  fn_line *find;
+  nv_line *find;
   it = ent_rec(it->rec, "dir");
   if (!it)
     return;
-  fn_line ln = { .rec = it->rec };
+  nv_line ln = { .rec = it->rec };
 
   find = find_by_type(m, &ln);
   if (!find)
@@ -294,10 +294,10 @@ static void try_old_val(Model *m, fn_lis *lis, ventry *it)
 void refind_line(Model *m)
 {
   log_msg("MODEL", "refind_line");
-  fn_handle *h = m->hndl;
-  fn_lis *lis = m->lis;
+  Handle *h = m->hndl;
+  TblLis *lis = m->lis;
 
-  ventry *it = fnd_val(h->tn, m->hndl->kname, m->pfval);
+  Ventry *it = fnd_val(h->tn, m->hndl->kname, m->pfval);
   if (!it)
     return;
 
@@ -317,7 +317,7 @@ static void model_set_prev(Model *m)
   m->plnum = buf_line(buf);
 }
 
-void model_ch_focus(fn_handle *hndl)
+void model_ch_focus(Handle *hndl)
 {
   if (hndl && hndl->model)
     focus = hndl->model->sort;
@@ -338,7 +338,7 @@ void model_sort(Model *m, sort_t srt)
   buf_full_invalidate(m->hndl->buf, m->ptop, m->plnum);
 }
 
-void model_flush(fn_handle *hndl, bool reopen)
+void model_flush(Handle *hndl, bool reopen)
 {
   log_msg("MODEL", "model_flush");
   Model *m = hndl->model;
@@ -360,15 +360,15 @@ void model_recv(Model *m)
   if (!m->blocking)
     return;
 
-  fn_handle *h = m->hndl;
-  fn_lis *l = fnd_lis(h->tn, h->key_fld, h->key);
+  Handle *h = m->hndl;
+  TblLis *l = fnd_lis(h->tn, h->key_fld, h->key);
 
   if (!l->rec)
     return model_null_entry(m, l);
   if (l && !h->key[0])
     return model_full_entry(m, l);
 
-  ventry *head = lis_get_val(l, h->key_fld);
+  Ventry *head = lis_get_val(l, h->key_fld);
 
   model_read_entry(h->model, l, head);
 }
@@ -376,19 +376,19 @@ void model_recv(Model *m)
 static void generate_lines(Model *m)
 {
   /* generate hash set of index,line. */
-  ventry *it = m->head;
+  Ventry *it = m->head;
   for (int i = 0; i < tbl_ent_count(m->head); i++) {
-    fn_line ln;
+    nv_line ln;
     ln.rec = it->rec;
     utarray_push_back(m->lines, &ln);
     it = it->next;
   }
 }
 
-void model_null_entry(Model *m, fn_lis *lis)
+void model_null_entry(Model *m, TblLis *lis)
 {
   log_msg("MODEL", "model_null_entry");
-  fn_handle *h = m->hndl;
+  Handle *h = m->hndl;
   m->head = NULL;
   m->cur = NULL;
   lis->index = 0;
@@ -397,13 +397,13 @@ void model_null_entry(Model *m, fn_lis *lis)
   m->blocking = false;
 }
 
-void model_full_entry(Model *m, fn_lis *lis)
+void model_full_entry(Model *m, TblLis *lis)
 {
   log_msg("MODEL", "model_full_entry");
-  fn_rec *it = lis->rec;
+  TblRec *it = lis->rec;
   int f = 0; /* make compiler stop complaining */
   while (it) {
-    fn_line ln;
+    nv_line ln;
     ln.rec = it;
     utarray_insert(m->lines, &ln, f);
     it = tbl_iter(it);
@@ -413,7 +413,7 @@ void model_full_entry(Model *m, fn_lis *lis)
   m->blocking = false;
 }
 
-void model_read_entry(Model *m, fn_lis *lis, ventry *head)
+void model_read_entry(Model *m, TblLis *lis, Ventry *head)
 {
   log_msg("MODEL", "model_read_entry");
   if (!m->pfval) {
@@ -436,7 +436,7 @@ char* model_str_line(Model *m, int index)
   if (!m->lines || utarray_len(m->lines) < index)
     return NULL;
 
-  fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
+  nv_line *res = (nv_line*)utarray_eltptr(m->lines, index);
   return res ? rec_fld(res->rec, m->hndl->fname) : NULL;
 }
 
@@ -452,13 +452,13 @@ void* model_curs_value(Model *m, const char *fld)
 
 void* model_fld_line(Model *m, const char *fld, int index)
 {
-  fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
+  nv_line *res = (nv_line*)utarray_eltptr(m->lines, index);
   return rec_fld(res->rec, fld);
 }
 
-fn_rec* model_rec_line(Model *m, int index)
+TblRec* model_rec_line(Model *m, int index)
 {
-  fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
+  nv_line *res = (nv_line*)utarray_eltptr(m->lines, index);
   return res->rec;
 }
 
@@ -468,7 +468,7 @@ void model_set_curs(Model *m, int index)
   if (!m->lines)
     return;
 
-  fn_line *res = (fn_line*)utarray_eltptr(m->lines, index);
+  nv_line *res = (nv_line*)utarray_eltptr(m->lines, index);
   if (res)
     m->cur = res->rec;
 }

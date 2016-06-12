@@ -1,5 +1,5 @@
-#ifndef FN_COMPL_H
-#define FN_COMPL_H
+#ifndef NV_COMPL_H
+#define NV_COMPL_H
 
 #include "nav/cmd.h"
 #include "nav/lib/uthash.h"

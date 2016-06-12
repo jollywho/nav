@@ -1,5 +1,5 @@
-#ifndef FN_EVENT_HOOK_H
-#define FN_EVENT_HOOK_H
+#ifndef NV_EVENT_HOOK_H
+#define NV_EVENT_HOOK_H
 
 #include "nav/plugins/plugin.h"
 

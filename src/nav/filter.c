@@ -5,12 +5,12 @@
 #include "nav/log.h"
 
 struct Filter {
-  fn_handle *hndl;
+  Handle *hndl;
   Pattern *pat;
   char *line;
 };
 
-Filter* filter_new(fn_handle *hndl)
+Filter* filter_new(Handle *hndl)
 {
   Filter *fil = malloc(sizeof(Filter));
   fil->hndl = hndl;
@@ -19,7 +19,7 @@ Filter* filter_new(fn_handle *hndl)
   return fil;
 }
 
-void filter_destroy(fn_handle *hndl)
+void filter_destroy(Handle *hndl)
 {
   Filter *fil = hndl->buf->filter;
   if (fil->pat)
@@ -59,7 +59,7 @@ void filter_update(Filter *fil)
   model_sort(m, (sort_t){-1,0});
 }
 
-void filter_apply(fn_handle *hndl)
+void filter_apply(Handle *hndl)
 {
   Filter *fil = hndl->buf->filter;
   if (strlen(fil->line) < 1)

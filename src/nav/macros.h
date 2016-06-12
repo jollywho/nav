@@ -1,5 +1,5 @@
-#ifndef FN_MACROS_H
-#define FN_MACROS_H
+#ifndef NV_MACROS_H
+#define NV_MACROS_H
 
 /// Calculate the length of a C array.
 ///

@@ -1,5 +1,5 @@
-#ifndef FN_BSEARCH_H
-#define FN_BSEARCH_H
+#ifndef BSEARCH_H
+#define BSEARCH_H
 
 #include <stddef.h>
 

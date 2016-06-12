@@ -12,7 +12,7 @@ struct hist_item {
   TAILQ_ENTRY(hist_item) ent;
 };
 
-struct fn_hist {
+struct nv_hist {
   TAILQ_HEAD(cont, hist_item) p;
   hist_item *cur;
   uint count;
@@ -20,20 +20,20 @@ struct fn_hist {
   Cmdline *cmd;
 };
 
-static fn_hist *hist_cmds;
-static fn_hist *hist_regs;
-static fn_hist *cur;
+static nv_hist *hist_cmds;
+static nv_hist *hist_regs;
+static nv_hist *cur;
 
-static fn_hist* hist_new()
+static nv_hist* hist_new()
 {
-  fn_hist *hst = malloc(sizeof(fn_hist));
-  memset(hst, 0, sizeof(fn_hist));
+  nv_hist *hst = malloc(sizeof(nv_hist));
+  memset(hst, 0, sizeof(nv_hist));
   TAILQ_INIT(&hst->p);
   hst->max = get_opt_uint("history");
   return hst;
 }
 
-static void hist_delete(fn_hist* hst)
+static void hist_delete(nv_hist* hst)
 {
   log_msg("HIST", "hist_delete");
   while (!TAILQ_EMPTY(&hst->p)) {

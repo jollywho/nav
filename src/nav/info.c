@@ -9,15 +9,15 @@
 #include "nav/tui/history.h"
 #include "nav/tui/ex_cmd.h"
 
-typedef struct fn_mark fn_mark;
-struct fn_mark {
+typedef struct nv_mark nv_mark;
+struct nv_mark {
   char *key;
   char *path;
   UT_hash_handle hh;
 };
 
-static fn_mark *lbl_marks;
-static fn_mark *chr_marks;
+static nv_mark *lbl_marks;
+static nv_mark *chr_marks;
 
 void info_parse(char *line)
 {
@@ -40,7 +40,7 @@ void info_parse(char *line)
   }
 }
 
-static void mark_del(fn_mark **mrk, fn_mark **tbl)
+static void mark_del(nv_mark **mrk, nv_mark **tbl)
 {
   log_msg("INFO", "MARKDEL");
   HASH_DEL(*tbl, *mrk);
@@ -49,12 +49,12 @@ static void mark_del(fn_mark **mrk, fn_mark **tbl)
   free((*mrk));
 }
 
-static void write_mark_info(FILE *f, fn_mark *tbl)
+static void write_mark_info(FILE *f, nv_mark *tbl)
 {
   if (!tbl)
     return;
 
-  fn_mark *it, *tmp;
+  nv_mark *it, *tmp;
   HASH_ITER(hh, tbl, it, tmp) {
     fprintf(f, "%s %s\n", it->key, it->path);
     mark_del(&it, &tbl);
@@ -86,7 +86,7 @@ void mark_list(List *args)
 void marklbl_list(List *args)
 {
   log_msg("INFO", "marklbl_list");
-  fn_mark *it;
+  nv_mark *it;
   int i = 0;
   for (it = lbl_marks; it != NULL; it = it->hh.next) {
     compl_list_add("%s", it->key);
@@ -97,7 +97,7 @@ void marklbl_list(List *args)
 
 char* mark_path(const char *key)
 {
-  fn_mark *mrk;
+  nv_mark *mrk;
   HASH_FIND_STR(lbl_marks, key, mrk);
   if (mrk)
     return mrk->path;
@@ -107,7 +107,7 @@ char* mark_path(const char *key)
 
 char* mark_str(int chr)
 {
-  fn_mark *mrk;
+  nv_mark *mrk;
   char *key;
   asprintf(&key, "'%c", chr);
 
@@ -128,12 +128,12 @@ void mark_label_dir(char *label, const char *dir)
   asprintf(&key, "@%s", label);
 
   char *tmp = strdup(dir);
-  fn_mark *mrk;
+  nv_mark *mrk;
   HASH_FIND_STR(lbl_marks, key, mrk);
   if (mrk)
     mark_del(&mrk, &lbl_marks);
 
-  mrk = malloc(sizeof(fn_mark));
+  mrk = malloc(sizeof(nv_mark));
   mrk->key = key;
   mrk->path = tmp;
   HASH_ADD_STR(lbl_marks, key, mrk);
@@ -152,12 +152,12 @@ void mark_chr_str(int chr, const char *dir)
   asprintf(&key, "'%c", chr);
 
   char *tmp = strdup(dir);
-  fn_mark *mrk;
+  nv_mark *mrk;
   HASH_FIND_STR(chr_marks, key, mrk);
   if (mrk)
     mark_del(&mrk, &chr_marks);
 
-  mrk = malloc(sizeof(fn_mark));
+  mrk = malloc(sizeof(nv_mark));
   mrk->key = key;
   mrk->path = tmp;
   HASH_ADD_STR(chr_marks, key, mrk);

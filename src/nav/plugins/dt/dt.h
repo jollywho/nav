@@ -1,5 +1,5 @@
-#ifndef FN_PLUGINS_DT_H
-#define FN_PLUGINS_DT_H
+#ifndef NV_PLUGINS_DT_H
+#define NV_PLUGINS_DT_H
 
 #include "nav/plugins/plugin.h"
 
