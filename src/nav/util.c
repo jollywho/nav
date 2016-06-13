@@ -211,12 +211,15 @@ int count_strstr(const char *str, char *fnd)
   return count;
 }
 
-int rev_strchr_pos(char *src, int n, int ch)
+int rev_strchr_pos(char *src, int n, char *accept)
 {
   int i;
-  for (i = MAX(n-1, 0); i > n; i--) {
-    if (src[i] == ch)
-      break;
+  for (i = MAX(n-1, 0); i > 0; i--) {
+    const char *a = accept;
+    while (*a != '\0') {
+      if (*a++ == src[i])
+        return i;
+    }
   }
   return i;
 }
