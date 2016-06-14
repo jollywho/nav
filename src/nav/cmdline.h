@@ -16,6 +16,8 @@ typedef struct {
   } vval;
 } typ_T;
 
+#define TOKENCHARS "~!/;:|<>,[]{}() "
+
 #define VAR_NUMBER  1       /* "v_number" is used          */
 #define VAR_STRING  2       /* "v_string" is used          */
 #define VAR_PAIR    3       /* "v_pair" is used            */

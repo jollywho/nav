@@ -225,7 +225,7 @@ static void ex_move(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "MOVE");
   int newpos = ex.curpos + arg->arg;
-  int len = strlen(ex.line);
+  int len = cell_len(ex.line);
   ex.curpos = MAX(0, MIN(len, newpos));
 }
 
@@ -235,14 +235,14 @@ static void ex_word(void *none, Keyarg *arg)
   log_msg("EXCMD", "WORD");
 
   if (arg->arg == FORWARD) {
-    char *fnd = strpbrk(&ex.line[ex.curpos + 1], "~!/;:|<>,[]{}() \0");
+    char *fnd = strpbrk(&ex.line[ex.curpos + 1], TOKENCHARS);
     if (!fnd)
       ex.curpos = strlen(ex.line);
     else
       ex.curpos = fnd - ex.line;
   }
   if (arg->arg == BACKWARD) {
-    int pos = rev_strchr_pos(ex.line, ex.curpos, "~!/;:|<>,[]{}() ");
+    int pos = rev_strchr_pos(ex.line, ex.curpos, TOKENCHARS);
     ex.curpos = pos;
   }
 }
@@ -289,18 +289,8 @@ static void ex_bckspc()
   log_msg("EXCMD", "bkspc");
 
   if (ex.curpos > 0) {
-    wchar_t *tmp = str2wide(ex.line);
-    tmp[wcslen(tmp)-1] = '\0';
-
-    char *nline = wide2str(tmp);
-    if (strlen(nline) >= ex.maxpos) {
-      ex.line = realloc(ex.line, ex.maxpos *= 2);
-      ex.line[ex.curpos+2] = '\0';
-    }
-    strcpy(ex.line, nline);
-    ex.curpos = cell_len(ex.line);
-    free(tmp);
-    free(nline);
+    str_ins(ex.line, "", --ex.curpos, 1);
+    ex.maxpos = strlen(ex.line);
   }
 
   if (ex.curpos < 0)
@@ -315,6 +305,7 @@ static void ex_bckspc()
   log_err("MENU", "##%d %d", ex.curpos, compl_cur_pos());
 }
 
+//FIXME: handle all token symbols
 static void ex_killword()
 {
   if (ex_cmd_curch() == ' ' || ex_cmd_curch() == '/') {
@@ -322,7 +313,7 @@ static void ex_killword()
     menu_killword(ex.menu);
   }
 
-  int pos = rev_strchr_pos(ex.line, ex.curpos, "~!/;:|<>,[]{}() ");
+  int pos = rev_strchr_pos(ex.line, ex.curpos, TOKENCHARS);
   if (pos > 0)
     pos++;
 
@@ -439,19 +430,10 @@ static void ex_getchar(Keyarg *ca)
   else
     strcpy(instr, ca->utf8);
 
+  str_ins(ex.line, instr, ex.curpos, 0);
+
+  ex.maxpos = strlen(ex.line);
   int len = cell_len(instr);
-  int size = strlen(ex.line);
-
-  if (size >= ex.maxpos)
-    ex.line = realloc(ex.line, ex.maxpos = (2*ex.maxpos)+len+1);
-
-  char buf[size];
-  *buf = '\0';
-  strncat(buf, ex.line, ex.curpos);
-  strcat(buf, instr);
-  strcat(buf, &ex.line[ex.curpos]);
-  log_msg("EXCMD", "[%s]", buf);
-  strcpy(ex.line, buf);
   ex.curpos += len;
 }
 

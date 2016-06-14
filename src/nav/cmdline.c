@@ -326,7 +326,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
         st = end;
       }
     }
-    else if (strpbrk(ch, "~!/;:|<>,[]{}() ") && !esc) {
+    else if (strpbrk(ch, TOKENCHARS) && !esc) {
       create_token(cmdline->tokens, str, st, ed);
       if (*ch != ' ') {
         create_token(cmdline->tokens, str, pos-1, pos);
