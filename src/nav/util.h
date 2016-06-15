@@ -7,6 +7,8 @@ bool exparg_isset();
 wchar_t* str2wide(char *src);
 char* wide2str(wchar_t *src);
 int cell_len(char *str);
+char* prev_widechar(const char *string_start, const char *string);
+char* next_widechar(const char *string);
 void draw_wide(WINDOW *win, int row, int col, char *src, int max);
 void readable_fs(double size/*in bytes*/, char buf[]);
 void conspath_buf(char *buf, char *base, char *name);

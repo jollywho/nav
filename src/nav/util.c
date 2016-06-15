@@ -32,6 +32,78 @@ char* wide2str(wchar_t *src)
   return dest;
 }
 
+char* prev_widechar(const char *string_start, const char *string)
+{
+  if (!string || (string <= string_start))
+    return NULL;
+
+  string--;
+
+  if (((unsigned char)(string[0]) & 0xC0) == 0x80)
+  {
+    /* UTF-8, at least 2 bytes */
+    string--;
+    if (string < string_start)
+      return (char *)string + 1;
+    if (((unsigned char)(string[0]) & 0xC0) == 0x80)
+    {
+      /* UTF-8, at least 3 bytes */
+      string--;
+      if (string < string_start)
+        return (char *)string + 1;
+      if (((unsigned char)(string[0]) & 0xC0) == 0x80)
+      {
+        /* UTF-8, 4 bytes */
+        string--;
+        if (string < string_start)
+          return (char *)string + 1;
+        return (char *)string;
+      }
+      else
+        return (char *)string;
+    }
+    else
+      return (char *)string;
+  }
+  return (char *)string;
+}
+
+char* next_widechar(const char *string)
+{
+  if (!string)
+    return NULL;
+
+  /* UTF-8, 2 bytes: 110vvvvv 10vvvvvv */
+  if (((unsigned char)(string[0]) & 0xE0) == 0xC0)
+  {
+    if (!string[1])
+      return (char *)string + 1;
+    return (char *)string + 2;
+  }
+  /* UTF-8, 3 bytes: 1110vvvv 10vvvvvv 10vvvvvv */
+  else if (((unsigned char)(string[0]) & 0xF0) == 0xE0)
+  {
+    if (!string[1])
+      return (char *)string + 1;
+    if (!string[2])
+      return (char *)string + 2;
+    return (char *)string + 3;
+  }
+  /* UTF-8, 4 bytes: 11110vvv 10vvvvvv 10vvvvvv 10vvvvvv */
+  else if (((unsigned char)(string[0]) & 0xF8) == 0xF0)
+  {
+    if (!string[1])
+      return (char *)string + 1;
+    if (!string[2])
+      return (char *)string + 2;
+    if (!string[3])
+      return (char *)string + 3;
+    return (char *)string + 4;
+  }
+  /* UTF-8, 1 byte: 0vvvvvvv */
+  return (char *)string + 1;
+}
+
 int cell_len(char *str)
 {
   unsigned len = strlen(str);

@@ -32,6 +32,7 @@ struct Ex_cmd {
   WINDOW *nc_win;
   int curpos;
   int maxpos;
+  int curofs;
   Cmdline cmd;
   char *line;
   Menu *menu;
@@ -92,6 +93,7 @@ void start_ex_cmd(char symbol, int state)
 
   pos_T max = layout_size();
   ex.curpos = 0;
+  ex.curofs = 0;
   ex.maxpos = max.col - 2;
   ex.inrstate = 0;
   ex.col_text = opt_color(COMPL_TEXT);
@@ -142,6 +144,30 @@ static void str_ins(char *str, const char *ins, int pos, int ofs)
   strcpy(str+pos, ins);
   strcpy(str+strlen(str), buf+pos+ofs);
   free(buf);
+}
+
+static char* linechar(int dir)
+{
+  char *next = NULL;
+  char *prev = NULL;
+
+  if (dir == FORWARD) {
+    prev = &ex.line[ex.curofs];
+    next = next_widechar(prev);
+    if (!next || !prev)
+      return NULL;
+  }
+  else if (dir == BACKWARD) {
+    next = &ex.line[ex.curofs];
+    prev = prev_widechar(ex.line, next);
+    if (!prev)
+      return NULL;
+  }
+
+  static char buf[sizeof(wchar_t)+1];
+  *buf = '\0';
+  strncat(buf, prev,  next - prev);
+  return buf;
 }
 
 static void cmdline_draw()
@@ -224,9 +250,11 @@ static void ex_tab(void *none, Keyarg *arg)
 static void ex_move(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "MOVE");
-  int newpos = ex.curpos + arg->arg;
-  int len = cell_len(ex.line);
-  ex.curpos = MAX(0, MIN(len, newpos));
+  char *buf = linechar(arg->arg);
+  if (!buf)
+    return;
+  ex.curofs += arg->arg * strlen(buf);
+  ex.curpos += arg->arg * cell_len(buf);
 }
 
 //TODO: navigate compl prev/next
@@ -235,16 +263,19 @@ static void ex_word(void *none, Keyarg *arg)
   log_msg("EXCMD", "WORD");
 
   if (arg->arg == FORWARD) {
-    char *fnd = strpbrk(&ex.line[ex.curpos + 1], TOKENCHARS);
+    char *fnd = strpbrk(&ex.line[ex.curofs + 1], TOKENCHARS);
     if (!fnd)
-      ex.curpos = strlen(ex.line);
+      ex.curofs = strlen(ex.line);
     else
-      ex.curpos = fnd - ex.line;
+      ex.curofs = fnd - ex.line;
   }
   if (arg->arg == BACKWARD) {
-    int pos = rev_strchr_pos(ex.line, ex.curpos, TOKENCHARS);
-    ex.curpos = pos;
+    ex.curofs = rev_strchr_pos(ex.line, ex.curofs, TOKENCHARS);
   }
+  char buf[ex.curofs];
+  strncpy(buf, ex.line, ex.curofs);
+  buf[ex.curofs] = '\0';
+  ex.curpos = cell_len(buf);
 }
 
 static void ex_hist(void *none, Keyarg *arg)
@@ -289,7 +320,14 @@ static void ex_bckspc()
   log_msg("EXCMD", "bkspc");
 
   if (ex.curpos > 0) {
-    str_ins(ex.line, "", --ex.curpos, 1);
+    char *buf = linechar(BACKWARD);
+    int len = strlen(buf);
+    int clen = cell_len(buf);
+
+    str_ins(ex.line, "", ex.curofs - len, len);
+
+    ex.curofs -= len;
+    ex.curpos -= clen;
     ex.maxpos = strlen(ex.line);
   }
 
@@ -317,13 +355,10 @@ static void ex_killword()
   if (pos > 0)
     pos++;
 
-  int st = pos;
-  int ed = ex.curpos;
-  if (ed - st > 0) {
-    for (int i = st; i < ed; i++)
-      ex.line[i] = '\0';
-  }
+  int len = ex.curofs - pos;
+  str_ins(ex.line, "", pos, len);
   ex.curpos = pos;
+  ex.curofs = pos;
 }
 
 static void ex_killline()
@@ -331,6 +366,7 @@ static void ex_killline()
   free(ex.line);
   ex.line = calloc(ex.maxpos, sizeof(char*));
   ex.curpos = 0;
+  ex.curofs = 0;
 
   if (ex.ex_state == EX_CMD_STATE)
     menu_clear(ex.menu);
@@ -430,11 +466,12 @@ static void ex_getchar(Keyarg *ca)
   else
     strcpy(instr, ca->utf8);
 
-  str_ins(ex.line, instr, ex.curpos, 0);
+  str_ins(ex.line, instr, ex.curofs, 0);
 
   ex.maxpos = strlen(ex.line);
   int len = cell_len(instr);
   ex.curpos += len;
+  ex.curofs += strlen(instr);
 }
 
 void ex_input(Keyarg *ca)
