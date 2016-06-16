@@ -140,9 +140,13 @@ void stop_ex_cmd()
 static void str_ins(char *str, const char *ins, int pos, int ofs)
 {
   char *buf = strdup(str);
+  memset(str, 0, ex.maxpos);
   strncpy(str, buf, pos);
-  strcpy(str+pos, ins);
-  strcpy(str+strlen(str), buf+pos+ofs);
+  strcpy(&str[pos], ins);
+
+  if (pos + ofs < strlen(buf))
+    strcpy(&str[strlen(str)], &buf[pos+ofs]);
+
   free(buf);
 }
 
@@ -231,19 +235,23 @@ static void ex_tab(void *none, Keyarg *arg)
     return;
 
   int st = compl_cur_pos();
-  char *newline = escape_shell(line);
+  char *instr = escape_shell(line);
+  int len = strlen(instr);
 
-  int len = cell_len(newline);
-  if (st + len >= ex.maxpos)
-    ex.line = realloc(ex.line, ex.maxpos = (2*ex.maxpos)+len+1);
+  char *next = strchr(&ex.line[ex.curofs], ' ');
+  int ed = next ? next - ex.line : len;
 
-  ex.line[ex.curpos] = ' ';
-  strcpy(&ex.line[st], newline);
-  ex.curpos = cell_len(ex.line);
+  if (strlen(ex.line) + len >= ex.maxpos)
+    ex.line = realloc(ex.line, ex.maxpos = (2*ex.maxpos)+len);
+
+  str_ins(ex.line, instr, st, ed);
+  ex.line[st + len] = ' ';
+  ex.curofs = st + len;
+  ex.curpos = st + cell_len(instr);
   ex.inrstate = EX_CYCLE;
 
   free(line);
-  free(newline);
+  free(instr);
 }
 
 //TODO: navigate compl prev/next
@@ -303,6 +311,7 @@ void ex_cmd_populate(const char *newline)
   strcpy(ex.line, newline);
 
   ex.curpos = cell_len(ex.line);
+  ex.curofs = len;
 }
 
 static void ex_car()
@@ -319,7 +328,7 @@ static void ex_bckspc()
 {
   log_msg("EXCMD", "bkspc");
 
-  if (ex.curpos > 0) {
+  if (ex.curofs > 0) {
     char *buf = linechar(BACKWARD);
     int len = strlen(buf);
     int clen = cell_len(buf);
@@ -331,11 +340,8 @@ static void ex_bckspc()
     ex.maxpos = strlen(ex.line);
   }
 
-  if (ex.curpos < 0)
-    ex.curpos = 0;
-
   if (ex.ex_state == EX_CMD_STATE) {
-    if (ex.curpos < compl_cur_pos())
+    if (ex.curofs < compl_cur_pos())
       menu_killword(ex.menu);
   }
   ex.inrstate &= ~EX_FRESH;
@@ -466,12 +472,14 @@ static void ex_getchar(Keyarg *ca)
   else
     strcpy(instr, ca->utf8);
 
+  int len = strlen(instr);
+  if (strlen(ex.line) + len >= ex.maxpos)
+    ex.line = realloc(ex.line, ex.maxpos = (2*ex.maxpos)+len);
+
   str_ins(ex.line, instr, ex.curofs, 0);
 
-  ex.maxpos = strlen(ex.line);
-  int len = cell_len(instr);
-  ex.curpos += len;
-  ex.curofs += strlen(instr);
+  ex.curpos += cell_len(instr);
+  ex.curofs += len;
 }
 
 void ex_input(Keyarg *ca)
@@ -498,14 +506,14 @@ void ex_input(Keyarg *ca)
 
 char ex_cmd_curch()
 {
-  if (ex.curpos < 1)
+  if (ex.curofs < 1)
     return ex.line[0];
-  return ex.line[ex.curpos-1];
+  return ex.line[ex.curofs-1];
 }
 
 int ex_cmd_curpos()
 {
-  return ex.curpos;
+  return ex.curofs;
 }
 
 Token* ex_cmd_curtok()
@@ -514,11 +522,11 @@ Token* ex_cmd_curtok()
     return NULL;
   int st = compl_cur_pos();
   if (st > -1) {
-    int ed = ex.curpos + 1;
+    int ed = ex.curofs + 1;
     return cmdline_tokbtwn(&ex.cmd, compl_cur_pos(), ed);
   }
-  st = rev_strchr_pos(ex.line, ex.curpos-1, " ");
-  int ed = ex.curpos+1;
+  st = rev_strchr_pos(ex.line, ex.curofs-1, " ");
+  int ed = ex.curofs+1;
   return cmdline_tokbtwn(&ex.cmd, st, ed);
 }
 
@@ -543,14 +551,14 @@ int ex_cmd_state()
 Cmdstr* ex_cmd_prevcmd()
 {
   int st = compl_last_pos();
-  int ed = ex.curpos + 1;
+  int ed = ex.curofs + 1;
   return cmdline_cmdbtwn(&ex.cmd, st, ed);
 }
 
 Cmdstr* ex_cmd_curcmd()
 {
   int st = compl_cur_pos() + 1;
-  int ed = ex.curpos;
+  int ed = ex.curofs;
   return cmdline_cmdbtwn(&ex.cmd, st, ed);
 }
 
