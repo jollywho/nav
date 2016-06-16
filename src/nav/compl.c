@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include "nav/lib/sys_queue.h"
 #include "nav/compl.h"
 #include "nav/plugins/plugin.h"
 #include "nav/log.h"
@@ -19,10 +20,11 @@ struct compl_state {
   int argc;
   int st;
   compl_context *cx;   //context state
-  compl_state   *prev; //previous state TODO: DLL when editable ex_mode
+  TAILQ_ENTRY(compl_state) ent;
 };
 
 typedef struct {
+  TAILQ_HEAD(cont, compl_state) p;
   compl_state   *cs;     //current state
   compl_context *cxtbl;  //context table
   compl_context *cxroot; //context root entry
@@ -98,6 +100,7 @@ void compl_init()
     mk_cmd_params(cx, cmd_defs[i][1], cmd_defs[i][2]);
     HASH_ADD_STR(cmpl.cxtbl, key, cx);
   }
+  TAILQ_INIT(&cmpl.p);
 }
 
 void compl_cleanup()
@@ -183,6 +186,18 @@ void compl_set_repeat(char ch)
   cmpl.rep = ch;
 }
 
+void compl_next()
+{
+  if (TAILQ_PREV(cmpl.cs, cont, ent))
+    cmpl.cs = TAILQ_PREV(cmpl.cs, cont, ent);
+}
+
+void compl_prev()
+{
+  if (TAILQ_NEXT(cmpl.cs, ent))
+    cmpl.cs = TAILQ_NEXT(cmpl.cs, ent);
+}
+
 static void compl_push(compl_context *cx, int argc, int pos)
 {
   log_msg("COMPL", "compl_push");
@@ -190,8 +205,7 @@ static void compl_push(compl_context *cx, int argc, int pos)
   cs->cx = cx;
   cs->argc = argc;
   cs->st = pos;
-  if (cmpl.cs)
-    cs->prev = cmpl.cs;
+  TAILQ_INSERT_HEAD(&cmpl.p, cs, ent);
   cmpl.cs = cs;
   cmpl.rebuild = true;
 }
@@ -199,10 +213,11 @@ static void compl_push(compl_context *cx, int argc, int pos)
 static void compl_pop()
 {
   log_msg("COMPL", "compl_pop");
-  if (!cmpl.cs->prev)
+  if (TAILQ_EMPTY(&cmpl.p))
     return;
   compl_state *cs = cmpl.cs;
-  cmpl.cs = cmpl.cs->prev;
+  cmpl.cs = TAILQ_NEXT(cs, ent);
+  TAILQ_REMOVE(&cmpl.p, cs, ent);
   free(cs);
   cmpl.rebuild = true;
 }
@@ -356,11 +371,18 @@ bool compl_validate(int pos)
   return cmplist.invalid_pos > pos;
 }
 
+int compl_prev_pos()
+{
+  if (!cmpl.cs || TAILQ_PREV(cmpl.cs, cont, ent))
+    return -1;
+  return TAILQ_PREV(cmpl.cs, cont, ent)->st;
+}
+
 int compl_last_pos()
 {
-  if (!cmpl.cs || !cmpl.cs->prev)
+  if (!cmpl.cs || TAILQ_EMPTY(&cmpl.p) || !TAILQ_NEXT(cmpl.cs, ent))
     return -1;
-  return cmpl.cs->prev->st;
+  return TAILQ_NEXT(cmpl.cs, ent)->st;
 }
 
 int compl_cur_pos()
@@ -376,10 +398,12 @@ int compl_arg_pos()
   compl_context *cx = cs->cx;
   int argc = cs->argc;
 
-  while (cs->prev &&
-         cs->prev->cx == cx &&
-         cs->prev->argc == argc)
-    cs = cs->prev;
+  while (1) {
+    compl_state *tmp = TAILQ_NEXT(cs, ent);
+    if (!tmp || tmp->cx != cx || tmp->argc != argc)
+      break;
+    cs = TAILQ_NEXT(cs, ent);
+  }
 
   return cs->st;
 }
@@ -399,7 +423,7 @@ void compl_begin(int pos)
 void compl_end()
 {
   log_msg("MENU", "end");
-  while (cmpl.cs->prev)
+  while (!TAILQ_EMPTY(&cmpl.p))
     compl_pop();
   compl_clear();
   free(cmpl.cs);

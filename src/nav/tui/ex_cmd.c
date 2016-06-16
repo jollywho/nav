@@ -254,7 +254,10 @@ static void ex_tab(void *none, Keyarg *arg)
   free(instr);
 }
 
-//TODO: navigate compl prev/next
+//TODO:
+//left of cur_compl: compl_next
+//right of prev_compl: compl_prev
+//onchange: apply offset to positions of subsequent items
 static void ex_move(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "MOVE");
@@ -265,7 +268,6 @@ static void ex_move(void *none, Keyarg *arg)
   ex.curpos += arg->arg * cell_len(buf);
 }
 
-//TODO: navigate compl prev/next
 static void ex_word(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "WORD");

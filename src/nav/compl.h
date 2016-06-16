@@ -37,6 +37,8 @@ void compl_cleanup();
 
 void compl_begin(int);
 void compl_end();
+void compl_next();
+void compl_prev();
 bool compl_dead();
 
 compl_list* compl_complist();
@@ -55,6 +57,7 @@ void compl_walk_params(int (*param_cb)(char *,char,int,bool));
 
 void compl_invalidate(int pos);
 bool compl_validate(int pos);
+int compl_prev_pos();
 int compl_last_pos();
 int compl_cur_pos();
 int compl_arg_pos();
