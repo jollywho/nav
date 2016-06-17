@@ -59,6 +59,7 @@ static struct compl_entry {
 };
 
 static char *cmd_defs[][3] = {
+  {"!",         "{CMD}",                        ""},
   {"autocmd",   "-WINDOW:-GROUP:EVENT:PAT:CMD", "_win:_aug:_event::"},
   {"augroup",   "GROUP",                        "_aug"},
   {"bdelete",   "WINDOW",                       "_win"},
@@ -67,7 +68,7 @@ static char *cmd_defs[][3] = {
   {"close",     "WINDOW",                       "_win"},
   {"delmark",   "LABEL",                        "_mrklbl"},
   {"direct",    "WINDOW",                       "_win"},
-  {"echo",      "EXPR",                         ""},
+  {"echo",      "{EXPR}",                       ""},
   {"highlight", "GROUP",                        "_group"},
   {"kill",      "PID",                          "_pid"},
   {"mark",      "LABEL",                        "_mrklbl"},
@@ -263,6 +264,19 @@ void compl_filter(const char *src)
   free(key);
 }
 
+static compl_context* compl_find(const char *key, const char *alt, int pos)
+{
+  compl_context *find;
+  HASH_FIND_STR(cmpl.cxtbl, key, find);
+  if (!find && alt)
+    HASH_FIND_STR(cmpl.cxtbl, alt, find);
+  if (find) {
+    log_msg("COMPL", "push %s %d", find->key, pos);
+    compl_push(find, 0, pos);
+  }
+  return find;
+}
+
 static void compl_search(compl_context *cx, const char *key, int pos)
 {
   /* get next param */
@@ -282,17 +296,8 @@ static void compl_search(compl_context *cx, const char *key, int pos)
 
   /* get next context */
   Cmd_T *cmd = cmd_find(key);
-  if (cmd) {
-    compl_context *find;
-    HASH_FIND_STR(cmpl.cxtbl, cmd->name, find);
-    if (!find && cmd->alt)
-      HASH_FIND_STR(cmpl.cxtbl, cmd->alt, find);
-    if (find) {
-      log_msg("COMPL", "push %s %d", find->key, pos);
-      return compl_push(find, 0, pos);
-    }
-    cx = find;
-  }
+  if (cmd && (cx = compl_find(cmd->name, cmd->alt, pos)))
+    return;
 
   /* push non-blank state */
   if (key[0] != ' ')
@@ -311,7 +316,9 @@ void compl_update(const char *key, int pos, char ch)
 
   if (ch == ' ')
     compl_search(cx, key, pos);
-  if (ch == cmpl.rep)
+  else if (ch == '!')
+    compl_find("!", NULL, pos);
+  else if (ch == cmpl.rep)
     compl_push(cx, cmpl.cs->argc, pos);
 }
 
@@ -410,7 +417,7 @@ int compl_arg_pos()
 
 bool compl_dead()
 {
-  return !cmpl.cs->cx;
+  return !cmpl.cs || !cmpl.cs->cx;
 }
 
 void compl_begin(int pos)

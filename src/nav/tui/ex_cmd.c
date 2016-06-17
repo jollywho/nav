@@ -150,19 +150,19 @@ static void str_ins(char *str, const char *ins, int pos, int ofs)
   free(buf);
 }
 
-static char* linechar(int dir)
+static char* linechar(int pos, int dir)
 {
   char *next = NULL;
   char *prev = NULL;
 
   if (dir == FORWARD) {
-    prev = &ex.line[ex.curofs];
+    prev = &ex.line[pos];
     next = next_widechar(prev);
     if (!next || !prev)
       return NULL;
   }
   else if (dir == BACKWARD) {
-    next = &ex.line[ex.curofs];
+    next = &ex.line[pos];
     prev = prev_widechar(ex.line, next);
     if (!prev)
       return NULL;
@@ -261,7 +261,7 @@ static void ex_tab(void *none, Keyarg *arg)
 static void ex_move(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "MOVE");
-  char *buf = linechar(arg->arg);
+  char *buf = linechar(ex.curofs, arg->arg);
   if (!buf)
     return;
   ex.curofs += arg->arg * strlen(buf);
@@ -271,7 +271,6 @@ static void ex_move(void *none, Keyarg *arg)
 static void ex_word(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "WORD");
-
   if (arg->arg == FORWARD) {
     char *fnd = strpbrk(&ex.line[ex.curofs + 1], TOKENCHARS);
     if (!fnd)
@@ -296,10 +295,11 @@ static void ex_hist(void *none, Keyarg *arg)
     ret = hist_prev();
   if (arg->arg == FORWARD)
     ret = hist_next();
-  if (ret) {
-    ex_cmd_populate(ret);
-    ex.inrstate = EX_HIST;
-  }
+  if (!ret)
+    return;
+
+  ex_cmd_populate(ret);
+  ex.inrstate = EX_HIST;
 }
 
 void ex_cmd_populate(const char *newline)
@@ -308,10 +308,10 @@ void ex_cmd_populate(const char *newline)
     menu_rebuild(ex.menu);
 
   int len = strlen(newline);
-  if (strlen(newline) >= ex.maxpos)
+  if (len >= ex.maxpos)
     ex.line = realloc(ex.line, ex.maxpos = (2*ex.maxpos)+len);
-  strcpy(ex.line, newline);
 
+  strcpy(ex.line, newline);
   ex.curpos = cell_len(ex.line);
   ex.curofs = len;
 }
@@ -326,12 +326,21 @@ static void ex_car()
   ex.inrstate = EX_QUIT;
 }
 
+static void ex_killchar()
+{
+  if (ex.ex_state == EX_CMD_STATE && ex.curofs < compl_cur_pos())
+    menu_killword(ex.menu);
+  if (ex_cmd_curch() == '|')
+    menu_killword(ex.menu);
+  ex.inrstate &= ~EX_FRESH;
+}
+
 static void ex_bckspc()
 {
   log_msg("EXCMD", "bkspc");
 
   if (ex.curofs > 0) {
-    char *buf = linechar(BACKWARD);
+    char *buf = linechar(ex.curofs, BACKWARD);
     int len = strlen(buf);
     int clen = cell_len(buf);
 
@@ -339,15 +348,8 @@ static void ex_bckspc()
 
     ex.curofs -= len;
     ex.curpos -= clen;
-    ex.maxpos = strlen(ex.line);
   }
-
-  if (ex.ex_state == EX_CMD_STATE) {
-    if (ex.curofs < compl_cur_pos())
-      menu_killword(ex.menu);
-  }
-  ex.inrstate &= ~EX_FRESH;
-
+  ex_killchar();
   log_err("MENU", "##%d %d", ex.curpos, compl_cur_pos());
 }
 
@@ -362,18 +364,20 @@ static void ex_killword()
       ex.curofs--;
       ex.curpos--;
     }
-    return menu_killword(ex.menu);
+    return ex_killchar();
   }
 
   /* remove word from line */
   int pos = rev_strchr_pos(ex.line, ex.curofs, TOKENCHARS);
-  if (ex.line[pos] == ' ')
+  if (strchr(TOKENCHARS, ex.line[pos]) && ex.curofs - pos > 1)
     pos++;
 
   int len = ex.curofs - pos;
   str_ins(ex.line, "", pos, len);
-  ex.curpos = pos;
   ex.curofs = pos;
+  ex.curpos = pos; //FIXME: measure cell_len of deleted
+
+  ex_killchar();
 }
 
 static void ex_killline()
@@ -424,17 +428,9 @@ static void ex_check_pipe()
   if ((ex.inrstate & EX_HIST))
     return;
 
-  Cmdstr *cur = ex_cmd_curcmd();
-  if (cur && cur->exec) {
-    ex.inrstate = EX_EXEC;
-    return;
-  }
-  if (ex.inrstate & EX_EXEC) {
-    menu_restart(ex.menu);
-    ex.inrstate = 0;
-  }
   Cmdstr *prev = ex_cmd_prevcmd();
   if (prev && prev->flag) {
+  log_err("COMPL", "prevst");
     menu_restart(ex.menu);
     ex.inrstate = 0;
   }
@@ -529,14 +525,15 @@ Token* ex_cmd_curtok()
 {
   if (!ex.cmd.cmds)
     return NULL;
-  int st = compl_cur_pos();
+
+  int st = compl_cur_pos() - 1;
   if (st > -1) {
-    int ed = ex.curofs + 1;
-    return cmdline_tokbtwn(&ex.cmd, compl_cur_pos(), ed);
+    if (ex.line[st] == '|')
+      st++;
+    return cmdline_tokbtwn(&ex.cmd, st, ex.curofs);
   }
   st = rev_strchr_pos(ex.line, ex.curofs-1, " ");
-  int ed = ex.curofs+1;
-  return cmdline_tokbtwn(&ex.cmd, st, ed);
+  return cmdline_tokbtwn(&ex.cmd, st, ex.curofs);
 }
 
 char* ex_cmd_line()
