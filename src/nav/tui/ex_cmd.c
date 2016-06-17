@@ -224,11 +224,8 @@ static void ex_esc()
 static void ex_tab(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "TAB");
-  if (ex.cmd.cmds) {
-    Cmdstr *cur = ex_cmd_curcmd();
-    if (cur && cur->exec)
-      return;
-  }
+  if (ex.cmd.cmds && ex_cmd_state() & EX_EXEC)
+    return;
 
   char *line = menu_next(ex.menu, arg->arg);
   if (!line)
@@ -428,11 +425,19 @@ static void ex_check_pipe()
   if ((ex.inrstate & EX_HIST))
     return;
 
+  Cmdstr *cur = ex_cmd_curcmd();
+  if (cur && cur->exec && cur->st < ex.curofs) {
+    ex.inrstate &= EX_EXEC;
+    if (ex.curofs != compl_cur_pos() && ex_cmd_curch() == '!') {
+      return compl_set_exec(ex.curofs);
+    }
+  }
+
   Cmdstr *prev = ex_cmd_prevcmd();
-  if (prev && prev->flag) {
-  log_err("COMPL", "prevst");
+  if (ex.inrstate & EX_EXEC || (prev && prev->flag && ex_cmd_curch() == '|')) {
     menu_restart(ex.menu);
     ex.inrstate = 0;
+    return;
   }
 }
 
@@ -564,6 +569,9 @@ Cmdstr* ex_cmd_prevcmd()
 Cmdstr* ex_cmd_curcmd()
 {
   int st = compl_cur_pos() + 1;
+  if (st > -1)
+    if (ex.line[st] == '|')
+      st++;
   int ed = ex.curofs;
   return cmdline_cmdbtwn(&ex.cmd, st, ed);
 }

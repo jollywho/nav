@@ -252,17 +252,22 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
     char *key = token_val(word, VAR_STRING);
     char *next = token_val(after, VAR_STRING);
 
+    log_err("MENU", "[%s]", key);
     if (next && *next == '/') {
       compl_set_repeat('/');
       compl_update(key, word->end+1, '/');
       i++;
     }
     else if (*key == '|')
-      compl_begin(word->end);
+      compl_begin(word->end+1);
+    //FIXME: need to recreate check_pipe() conditions
+    else if (*key == '!')
+      compl_set_exec(word->end+1);
     else
       compl_update(key, word->end+1, ' ');
   }
 
+    log_err("MENU", "[%d %d]", compl_cur_pos(), ex_cmd_curpos());
   /* back out of last compl if incomplete */
   if (compl_cur_pos() > ex_cmd_curpos())
     compl_backward();

@@ -51,6 +51,7 @@ void compl_filter(const char *);
 void compl_list_add(const char *fmt, ...);
 void compl_set_col(int idx, char *fmt, ...);
 void compl_set_repeat(char ch);
+void compl_set_exec(int);
 
 compl_item* compl_idx_match(int idx);
 void compl_walk_params(int (*param_cb)(char *,char,int,bool));

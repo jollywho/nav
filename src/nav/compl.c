@@ -59,7 +59,7 @@ static struct compl_entry {
 };
 
 static char *cmd_defs[][3] = {
-  {"!",         "{CMD}",                        ""},
+  {"!",         "*{CMD}",                       ""},
   {"autocmd",   "-WINDOW:-GROUP:EVENT:PAT:CMD", "_win:_aug:_event::"},
   {"augroup",   "GROUP",                        "_aug"},
   {"bdelete",   "WINDOW",                       "_win"},
@@ -68,7 +68,7 @@ static char *cmd_defs[][3] = {
   {"close",     "WINDOW",                       "_win"},
   {"delmark",   "LABEL",                        "_mrklbl"},
   {"direct",    "WINDOW",                       "_win"},
-  {"echo",      "{EXPR}",                       ""},
+  {"echo",      "*{EXPR}",                      ""},
   {"highlight", "GROUP",                        "_group"},
   {"kill",      "PID",                          "_pid"},
   {"mark",      "LABEL",                        "_mrklbl"},
@@ -119,7 +119,14 @@ static void mk_cmd_params(compl_context *cx, const char *tmpl, const char *str)
   char *p = strtok(t, ":");
   for (int i = 0; i < cx->argc; i++) {
     cx->params[i] = malloc(sizeof(compl_param));
-    cx->params[i]->flag = *p == '-' ? *p++ : 0;
+    switch (*p) {
+      case '-':
+      case '*':
+        cx->params[i]->flag = *p++;
+        break;
+      default:
+        cx->params[i]->flag = 0;
+    }
     cx->params[i]->label = strdup(p);
     p = strtok(NULL, ":");
   }
@@ -289,8 +296,10 @@ static void compl_search(compl_context *cx, const char *key, int pos)
     }
   }
 
-  if (++argc < cx->argc)
-    return compl_push(cx, argc, pos);
+  if (argc + 1 < cx->argc)
+    return compl_push(cx, ++argc, pos);
+  else if (cx->params[argc]->flag == '*')
+    return;
   else
     cx = NULL;
 
@@ -307,7 +316,7 @@ static void compl_search(compl_context *cx, const char *key, int pos)
 void compl_update(const char *key, int pos, char ch)
 {
   log_msg("COMPL", "compl_update");
-  log_msg("COMPL", "[%s]", key);
+  log_msg("COMPL", "[%s] %c", key, ch);
   compl_context *cx = cmpl.cs->cx;
   if (!cx || !key || !key[0]) {
     log_msg("COMPL", "not available.");
@@ -316,8 +325,6 @@ void compl_update(const char *key, int pos, char ch)
 
   if (ch == ' ')
     compl_search(cx, key, pos);
-  else if (ch == '!')
-    compl_find("!", NULL, pos);
   else if (ch == cmpl.rep)
     compl_push(cx, cmpl.cs->argc, pos);
 }
@@ -341,6 +348,12 @@ void compl_build(List *args)
       break;
   }
   cmpl.rebuild = false;
+}
+
+void compl_set_exec(int pos)
+{
+  log_msg("COMPL", "compl_set_exec");
+  compl_find("!", NULL, pos);
 }
 
 compl_item* compl_idx_match(int idx)
