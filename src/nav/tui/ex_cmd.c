@@ -351,16 +351,23 @@ static void ex_bckspc()
   log_err("MENU", "##%d %d", ex.curpos, compl_cur_pos());
 }
 
-//FIXME: handle all token symbols
 static void ex_killword()
 {
-  if (ex_cmd_curch() == ' ' || ex_cmd_curch() == '/') {
-    ex.curpos--;
-    menu_killword(ex.menu);
+  if (ex.curofs < 1)
+    return;
+
+  /* strip trailing whitespace */
+  if (ex_cmd_curch() == ' ') {
+    while (ex_cmd_curch() == ' ' && ex.curofs > 1) {
+      ex.curofs--;
+      ex.curpos--;
+    }
+    return menu_killword(ex.menu);
   }
 
-  int pos = rev_strchr_pos(ex.line, ex.curpos, TOKENCHARS);
-  if (pos > 0)
+  /* remove word from line */
+  int pos = rev_strchr_pos(ex.line, ex.curofs, TOKENCHARS);
+  if (ex.line[pos] == ' ')
     pos++;
 
   int len = ex.curofs - pos;
