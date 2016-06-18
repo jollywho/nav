@@ -58,6 +58,8 @@ void compl_walk_params(int (*param_cb)(char *,char,int,bool));
 
 void compl_invalidate(int pos);
 bool compl_validate(int pos);
+bool compl_isexec();
+bool compl_isroot();
 int compl_prev_pos();
 int compl_last_pos();
 int compl_cur_pos();

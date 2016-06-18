@@ -252,24 +252,25 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
     char *key = token_val(word, VAR_STRING);
     char *next = token_val(after, VAR_STRING);
 
-    log_err("MENU", "[%s]", key);
-    if (next && *next == '/') {
+    /* simulate forward compl pushes */
+    if (!next || !strchr(TOKENCHARS, *next))
+      next = " ";
+
+    if (*next == '/') {
       compl_set_repeat('/');
       compl_update(key, word->end+1, '/');
       i++;
     }
     else if (*key == '|')
       compl_begin(word->end+1);
-    //FIXME: need to recreate check_pipe() conditions
-    else if (*key == '!')
+    else if (*key == '!' && compl_isroot())
       compl_set_exec(word->end+1);
     else
-      compl_update(key, word->end+1, ' ');
+      compl_update(key, word->end+1, *next);
   }
 
-    log_err("MENU", "[%d %d]", compl_cur_pos(), ex_cmd_curpos());
-  /* back out of last compl if incomplete */
-  if (compl_cur_pos() > ex_cmd_curpos())
+  /* pop last compl to maintain forward simulation */
+  if (compl_cur_pos() > ex_cmd_curpos() && !compl_isexec() && !compl_isroot())
     compl_backward();
 
   compl_build(ex_cmd_curlist());
@@ -299,7 +300,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
 
 void menu_rebuild(Menu *mnu)
 {
-  menu_restart(mnu);
+  menu_clear(mnu);
   mnu->rebuild = true;
 }
 

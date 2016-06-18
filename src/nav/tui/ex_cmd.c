@@ -327,8 +327,6 @@ static void ex_killchar()
 {
   if (ex.ex_state == EX_CMD_STATE && ex.curofs < compl_cur_pos())
     menu_killword(ex.menu);
-  if (ex_cmd_curch() == '|')
-    menu_killword(ex.menu);
   ex.inrstate &= ~EX_FRESH;
 }
 
@@ -422,22 +420,21 @@ static void ex_menu_mv(void *none, Keyarg *arg)
 
 static void ex_check_pipe()
 {
+  log_msg("EXCMD", "check_pipe");
   if ((ex.inrstate & EX_HIST))
     return;
 
-  Cmdstr *cur = ex_cmd_curcmd();
-  if (cur && cur->exec && cur->st < ex.curofs) {
+  int cur = ex.curofs - 1;
+  int pos = compl_cur_pos();
+
+  if (compl_isroot() && ex_cmd_curch() == '!' && pos == cur) {
     ex.inrstate &= EX_EXEC;
-    if (ex.curofs != compl_cur_pos() && ex_cmd_curch() == '!') {
-      return compl_set_exec(ex.curofs);
-    }
+    return compl_set_exec(ex.curofs);
   }
 
-  Cmdstr *prev = ex_cmd_prevcmd();
-  if (ex.inrstate & EX_EXEC || (prev && prev->flag && ex_cmd_curch() == '|')) {
+  if (ex_cmd_curch() == '|' && (pos < cur || !compl_isroot())) {
     menu_restart(ex.menu);
     ex.inrstate = 0;
-    return;
   }
 }
 

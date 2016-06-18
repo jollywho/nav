@@ -391,6 +391,16 @@ bool compl_validate(int pos)
   return cmplist.invalid_pos > pos;
 }
 
+bool compl_isexec()
+{
+  return cmpl.cs->cx ? !strcmp(cmpl.cs->cx->key, "!") : false;
+}
+
+bool compl_isroot()
+{
+  return cmpl.cs->cx == cmpl.cxroot;
+}
+
 int compl_prev_pos()
 {
   if (!cmpl.cs || TAILQ_PREV(cmpl.cs, cont, ent))
