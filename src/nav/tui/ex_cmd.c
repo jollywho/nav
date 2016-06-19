@@ -212,6 +212,27 @@ void cmdline_refresh()
   cmdline_draw();
 }
 
+static void ex_update()
+{
+  log_msg("EXCMD", "check_update");
+  if ((ex.inrstate & EX_HIST))
+    return;
+
+  int cur = ex.curofs - 1;
+  int pos = compl_cur_pos();
+
+  if (compl_isroot() && ex_cmd_curch() == '!' && pos == cur) {
+    ex.inrstate &= EX_EXEC;
+    return compl_set_exec(ex.curofs);
+  }
+
+  if (ex_cmd_curch() == '|' && (pos < cur || !compl_isroot())) {
+    menu_restart(ex.menu);
+    ex.inrstate = 0;
+  }
+  menu_update(ex.menu, &ex.cmd);
+}
+
 static void ex_esc()
 {
   if (ex.ex_state == EX_REG_STATE)
@@ -251,25 +272,28 @@ static void ex_tab(void *none, Keyarg *arg)
   free(instr);
 }
 
-//TODO:
-//left of cur_compl: compl_next
-//right of prev_compl: compl_prev
-//onchange: apply offset to positions of subsequent items
 static void ex_move(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "MOVE");
   char *buf = linechar(ex.curofs, arg->arg);
   if (!buf)
     return;
+
   ex.curofs += arg->arg * strlen(buf);
   ex.curpos += arg->arg * cell_len(buf);
+
+  if (ex.curofs < compl_cur_pos())
+    menu_killword(ex.menu);
 }
 
 static void ex_word(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "WORD");
   if (arg->arg == FORWARD) {
-    char *fnd = strpbrk(&ex.line[ex.curofs + 1], TOKENCHARS);
+    if (ex.line[++ex.curofs] != '\0')
+      ex_update();
+
+    char *fnd = strpbrk(&ex.line[ex.curofs], TOKENCHARS);
     if (!fnd)
       ex.curofs = strlen(ex.line);
     else
@@ -277,6 +301,8 @@ static void ex_word(void *none, Keyarg *arg)
   }
   if (arg->arg == BACKWARD) {
     ex.curofs = rev_strchr_pos(ex.line, ex.curofs, TOKENCHARS);
+    if (ex.curofs < compl_cur_pos())
+      compl_backward();
   }
   char buf[ex.curofs];
   strncpy(buf, ex.line, ex.curofs);
@@ -418,26 +444,6 @@ static void ex_menu_mv(void *none, Keyarg *arg)
   ex.inrstate = EX_CYCLE;
 }
 
-static void ex_check_pipe()
-{
-  log_msg("EXCMD", "check_pipe");
-  if ((ex.inrstate & EX_HIST))
-    return;
-
-  int cur = ex.curofs - 1;
-  int pos = compl_cur_pos();
-
-  if (compl_isroot() && ex_cmd_curch() == '!' && pos == cur) {
-    ex.inrstate &= EX_EXEC;
-    return compl_set_exec(ex.curofs);
-  }
-
-  if (ex_cmd_curch() == '|' && (pos < cur || !compl_isroot())) {
-    menu_restart(ex.menu);
-    ex.inrstate = 0;
-  }
-}
-
 static void ex_onkey()
 {
   log_msg("EXCMD", "##%d", ex_cmd_state());
@@ -446,8 +452,7 @@ static void ex_onkey()
 
   switch (ex.ex_state) {
     case EX_CMD_STATE:
-      ex_check_pipe();
-      menu_update(ex.menu, &ex.cmd);
+      ex_update();
       break;
     case EX_REG_STATE:
       if (window_focus_attached() && ex.curpos > 0) {

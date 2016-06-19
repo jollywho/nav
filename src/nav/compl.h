@@ -37,8 +37,6 @@ void compl_cleanup();
 
 void compl_begin(int);
 void compl_end();
-void compl_next();
-void compl_prev();
 bool compl_dead();
 
 compl_list* compl_complist();

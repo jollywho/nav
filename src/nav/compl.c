@@ -194,18 +194,6 @@ void compl_set_repeat(char ch)
   cmpl.rep = ch;
 }
 
-void compl_next()
-{
-  if (TAILQ_PREV(cmpl.cs, cont, ent))
-    cmpl.cs = TAILQ_PREV(cmpl.cs, cont, ent);
-}
-
-void compl_prev()
-{
-  if (TAILQ_NEXT(cmpl.cs, ent))
-    cmpl.cs = TAILQ_NEXT(cmpl.cs, ent);
-}
-
 static void compl_push(compl_context *cx, int argc, int pos)
 {
   log_msg("COMPL", "compl_push");
@@ -228,12 +216,6 @@ static void compl_pop()
   TAILQ_REMOVE(&cmpl.p, cs, ent);
   free(cs);
   cmpl.rebuild = true;
-}
-
-void compl_backward()
-{
-  log_msg("COMPL", "compl_backward");
-  compl_pop();
 }
 
 int cmp_match(const void *a, const void *b, void *arg)
@@ -361,7 +343,7 @@ compl_item* compl_idx_match(int idx)
   return (compl_item*)utarray_eltptr(cmplist.matches, idx);
 }
 
-void compl_walk_params(int (*param_cb)(char *,char,int,bool))
+void compl_walk_params(int (*param_cb)(char *, char, int, bool))
 {
   compl_state *cs = cmpl.cs;
   compl_context *cx = cs->cx;
@@ -399,6 +381,11 @@ bool compl_isexec()
 bool compl_isroot()
 {
   return cmpl.cs->cx == cmpl.cxroot;
+}
+
+void compl_backward()
+{
+  compl_pop();
 }
 
 int compl_prev_pos()
