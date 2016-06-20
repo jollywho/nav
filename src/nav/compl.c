@@ -8,6 +8,7 @@
 #include "nav/table.h"
 #include "nav/info.h"
 #include "nav/event/hook.h"
+#include "nav/event/input.h"
 #include "nav/option.h"
 #include "nav/util.h"
 
@@ -44,24 +45,25 @@ static struct compl_entry {
   char *key;
   compl_genfn gen;
 } compl_defaults[] = {
+  { "_aug",      augs_list    },
   { "_cmd",      cmd_list     },
-  { "_plug",     plugin_list  },
+  { "_event",    event_list   },
   { "_field",    field_list   },
-  { "_win",      win_list     },
-  { "_path",     path_list    },
+  { "_group",    groups_list  },
+  { "_map",      maps_list    },
   { "_mark",     mark_list    },
   { "_mrklbl",   marklbl_list },
-  { "_event",    event_list   },
   { "_option",   options_list },
-  { "_group",    groups_list  },
-  { "_aug",      augs_list    },
+  { "_path",     path_list    },
   { "_pid",      pid_list     },
+  { "_plug",     plugin_list  },
+  { "_win",      win_list     },
 };
 
 static char *cmd_defs[][3] = {
   {"!",         "*{CMD}",                       ""},
-  {"autocmd",   "-WINDOW:-GROUP:EVENT:PAT:CMD", "_win:_aug:_event::"},
   {"augroup",   "GROUP",                        "_aug"},
+  {"autocmd",   "-WINDOW:-GROUP:EVENT:PAT:CMD", "_win:_aug:_event::"},
   {"bdelete",   "WINDOW",                       "_win"},
   {"buffer",    "-WINDOW:PLUGIN",               "_win:_plug"},
   {"cd",        "PATH",                         "_path"},
@@ -71,6 +73,7 @@ static char *cmd_defs[][3] = {
   {"echo",      "*{EXPR}",                      ""},
   {"highlight", "GROUP",                        "_group"},
   {"kill",      "PID",                          "_pid"},
+  {"map",       "LHS:RHS",                      "_map:"},
   {"mark",      "LABEL",                        "_mrklbl"},
   {"new",       "PLUGIN",                       "_plug"},
   {"op",        "GROUP",                        "_group"},

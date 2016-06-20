@@ -84,9 +84,9 @@ static int cmp_dir(const void *a, const void *b, void *arg)
   int b1 = rec_stmode(l1.rec);
   int b2 = rec_stmode(l2.rec);
   if (b1 < b2)
-    return -1;
-  if (b1 > b2)
     return 1;
+  if (b1 > b2)
+    return -1;
   return 0;
 }
 

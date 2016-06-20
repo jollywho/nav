@@ -290,6 +290,7 @@ static void ex_word(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "WORD");
   if (arg->arg == FORWARD) {
+    //FIXME: should be ++sizeof linechar()
     if (ex.line[++ex.curofs] != '\0')
       ex_update();
 

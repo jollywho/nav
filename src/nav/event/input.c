@@ -11,6 +11,7 @@
 #include "nav/option.h"
 #include "nav/event/shell.h"
 #include "nav/util.h"
+#include "nav/compl.h"
 
 static uv_poll_t poll_handle;
 static uv_timer_t ttimer;
@@ -19,6 +20,7 @@ static Keyarg ca;
 static Map *kmap;
 static char keybuf[16];
 static unsigned keypos;
+static int gbl_map_iter;
 
 typedef unsigned char char_u;
 
@@ -536,4 +538,19 @@ void reg_yank(char *str)
   shell_exec(cpy, focus_dir());
   free(str);
   free(cpy);
+}
+
+static bool map_iter(const char *key, void *value, void *data)
+{
+  compl_list_add("%s", key);
+  compl_set_col(gbl_map_iter++, "%s", value);
+  return true;
+}
+
+void maps_list(List *args)
+{
+  log_msg("INFO", "map_list");
+  const Map *pre = map_prefix(kmap, keybuf);
+  gbl_map_iter = 0;
+  map_iterate(pre, map_iter, NULL);
 }
