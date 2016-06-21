@@ -286,12 +286,14 @@ static void ex_move(void *none, Keyarg *arg)
     menu_killword(ex.menu);
 }
 
+//TODO: BOL, EOL
 static void ex_word(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "WORD");
   if (arg->arg == FORWARD) {
-    //FIXME: should be ++sizeof linechar()
-    if (ex.line[++ex.curofs] != '\0')
+    char *buf = linechar(ex.curofs, FORWARD);
+    int len = strlen(buf);
+    if (ex.line[ex.curofs += len] != '\0')
       ex_update();
 
     char *fnd = strpbrk(&ex.line[ex.curofs], TOKENCHARS);
@@ -382,10 +384,13 @@ static void ex_killword()
 
   /* strip trailing whitespace */
   if (ex_cmd_curch() == ' ') {
-    while (ex_cmd_curch() == ' ' && ex.curofs > 1) {
-      ex.curofs--;
-      ex.curpos--;
-    }
+    int len = 0;
+    while (ex.line[ex.curofs - (len + 1)] == ' ' && ex.curofs > 1)
+      len++;
+
+    str_ins(ex.line, "", ex.curofs - len, len);
+    ex.curofs -= len;
+    ex.curpos -= len;
     return ex_killchar();
   }
 
@@ -397,7 +402,12 @@ static void ex_killword()
   int len = ex.curofs - pos;
   str_ins(ex.line, "", pos, len);
   ex.curofs = pos;
-  ex.curpos = pos; //FIXME: measure cell_len of deleted
+
+  /* find cursor position */
+  char buf[pos+1];
+  strncpy(buf, ex.line, ex.curofs);
+  buf[ex.curofs] = '\0';
+  ex.curpos = cell_len(buf);
 
   ex_killchar();
 }
