@@ -21,6 +21,7 @@ static void ex_bckspc();
 static void ex_killword();
 static void ex_killline();
 static void ex_move();
+static void ex_moveline();
 static void ex_word();
 static void ex_hist();
 static void ex_menuhints();
@@ -54,6 +55,8 @@ static nv_key key_defaults[] = {
   {BS,       ex_bckspc,        0,       0},
   {K_LEFT,   ex_move,          0,       BACKWARD},
   {K_RIGHT,  ex_move,          0,       FORWARD},
+  {Ctrl_S,   ex_moveline,      0,       BACKWARD},
+  {Ctrl_F,   ex_moveline,      0,       FORWARD},
   {Ctrl_E,   ex_word,          0,       FORWARD},
   {Ctrl_B,   ex_word,          0,       BACKWARD},
   {Ctrl_P,   ex_hist,          0,       BACKWARD},
@@ -286,7 +289,15 @@ static void ex_move(void *none, Keyarg *arg)
     menu_killword(ex.menu);
 }
 
-//TODO: BOL, EOL
+static void ex_moveline(void *none, Keyarg *arg)
+{
+  log_msg("EXCMD", "MOVELINE");
+  int len = arg->arg * strlen(ex.line);
+  int pos = arg->arg * cell_len(ex.line);
+  ex.curofs = MAX(0, len);
+  ex.curpos = MAX(0, pos);
+}
+
 static void ex_word(void *none, Keyarg *arg)
 {
   log_msg("EXCMD", "WORD");
