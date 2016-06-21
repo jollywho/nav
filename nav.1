@@ -123,6 +123,14 @@ history cycle backward
 history cycle forward
 .IP "\fBC-w\fR"
 delete word
+.IP "\fBC-b\fR"
+move cursor back word
+.IP "\fBC-e\fR"
+move cursor forward word
+.IP "\fBC-s\fR"
+move cursor start of line
+.IP "\fBC-f\fR"
+move cursor end of line
 .IP "\fBC-u\fR"
 delete line
 .IP "\fBC-l\fR"
@@ -181,6 +189,12 @@ directory
 type (opgroup)
 .IP "\fB%k\fR"
 kind (file type)
+.IP "\fB%:%\fR"
+nav pid
+.IP "\fB%:!\fR"
+the pid of the last !cmd
+.IP "\fB%:?\fR"
+the exit status of the last !cmd
 .IP "\fB%o:<var>\fR"
 opgroup variable
 

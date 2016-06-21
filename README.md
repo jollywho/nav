@@ -5,6 +5,16 @@ nav is a **work in progress**.
 
 ![](http://sicp.me/u/armtv.png)
 
+-----------------
+- [Installation](#installation)
+- [Image Display](#image-display)
+- [Clipboard](#clipboard)
+- [Default Bindings](#default-bindings)
+- [Expansion Symbols](#expansion-symbols)
+- [Non Goals](#non-goals)
+- [Future](#future)
+- [Contributing](#contributing)
+
 ### What it has
 
 * filemanager buffers
@@ -17,7 +27,7 @@ nav is a **work in progress**.
 * bulkrename
 * directory jumplist
 * file executor/opener with 'before/after' cmds.
-* [ctrlp](http://kien.github.io/ctrlp.vim/)-inspired autocomplete menu
+* strong [ctrlp](http://kien.github.io/ctrlp.vim/)-inspired autocomplete menu
 * menu hint keys
 
 ## Installation
@@ -60,10 +70,15 @@ example:
 ```
 :set copy-pipe xclip -i
 ```
+`
 
-## Contributing
+## Default Bindings
 
-...is much welcome.
+See [Wiki](https://github.com/jollywho/nav/wiki#default-mappings)
+
+## Expansion Symbols
+
+See [Wiki](https://github.com/jollywho/nav/wiki#expansion-symbols)
 
 ## Non Goals
 
@@ -72,7 +87,10 @@ example:
 
 ## Future
 
-* stronger UTF-8 support
 * parser remake for more advanced features
 * 'datatable' buffers for aggregate content
 * command pipes
+
+## Contributing
+
+...is much welcome.
