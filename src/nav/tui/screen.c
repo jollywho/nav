@@ -8,6 +8,20 @@
 #define SZ_LEN 6
 #define MAX_POS(x) ((x)-(SZ_LEN+1))
 static char szbuf[SZ_LEN*2];
+static short col_focus;
+static short col_unfocus;
+static short col_text;
+static short col_dir;
+static short col_sz;
+
+void screen_init()
+{
+  col_focus   = opt_color(BUF_SEL_ACTIVE);
+  col_unfocus = opt_color(BUF_SEL_INACTIVE);
+  col_text    = opt_color(BUF_TEXT);
+  col_dir     = opt_color(BUF_DIR);
+  col_sz      = opt_color(BUF_SZ);
+}
 
 static void draw_simple(Buffer *buf, Model *m)
 {
@@ -22,7 +36,7 @@ static void draw_simple(Buffer *buf, Model *m)
 
     int max = MAX_POS(buf->b_size.col);
     draw_wide(buf->nc_win, i, 0, it, max - 1);
-    mvwchgat(buf->nc_win, i, 0, -1, attr, buf->col_text, NULL);
+    mvwchgat(buf->nc_win, i, 0, -1, attr, col_text, NULL);
   }
 }
 
@@ -48,8 +62,8 @@ static void draw_file(Buffer *buf, Model *m)
       int col = get_syn_colpair(file_ext(it));
       mvwchgat(buf->nc_win, i, 0, -1, attr, col, NULL);
       draw_wide(buf->nc_win, i, 2+max, szbuf, SZ_LEN);
-      mvwchgat(buf->nc_win, i, 2+max, -1, attr, buf->col_sz, NULL);
-      mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, attr, buf->col_text,0);
+      mvwchgat(buf->nc_win, i, 2+max, -1, attr, col_sz, NULL);
+      mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, attr, col_text,0);
     }
     else {
       char *symb = "?";
@@ -58,9 +72,9 @@ static void draw_file(Buffer *buf, Model *m)
       else if (isrecdir(rec))
         symb = "/";
 
-      mvwchgat(buf->nc_win, i, 0, -1, attr, buf->col_dir, NULL);
+      mvwchgat(buf->nc_win, i, 0, -1, attr, col_dir, NULL);
       draw_wide(buf->nc_win, i, buf->b_size.col - 1, symb, SZ_LEN);
-      mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, attr, buf->col_sz, NULL);
+      mvwchgat(buf->nc_win, i, buf->b_size.col - 1, 1, attr, col_sz, NULL);
     }
   }
 }
@@ -106,7 +120,9 @@ void draw_curline(Buffer *buf)
   attr_t attr = A_NORMAL;
   if (select_has_line(buf, buf->lnum + buf->top))
     attr = A_REVERSE;
-  mvwchgat(buf->nc_win, buf->lnum, 0, -1, attr, buf->col_focus, NULL);
+
+  short col = buf->focused ? col_focus : col_unfocus;;
+  mvwchgat(buf->nc_win, buf->lnum, 0, -1, attr, col, NULL);
 }
 
 void draw_screen(Buffer *buf)

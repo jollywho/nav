@@ -8,6 +8,7 @@
 #include "nav/nav.h"
 #include "nav/option.h"
 #include "nav/config.h"
+#include "nav/tui/screen.h"
 #include "nav/tui/window.h"
 #include "nav/tui/ex_cmd.h"
 #include "nav/event/event.h"
@@ -54,6 +55,7 @@ void init(int debug, char *config_path)
   hist_init();
   config_start(config_path);
 
+  screen_init();
   cmd_sort_cmds();
   log_msg("INIT", "INIT_END");
 }

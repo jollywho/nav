@@ -35,12 +35,7 @@ struct Buffer {
   bool queued;
   bool del;
   bool attached;
-
-  //TODO: store colors in screen
-  short col_focus;
-  short col_text;
-  short col_dir;
-  short col_sz;
+  bool focused;
 };
 
 enum move_dir { MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT };

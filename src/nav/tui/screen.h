@@ -3,6 +3,7 @@
 
 #include "nav/tui/buffer.h"
 
+void screen_init();
 void draw_screen(Buffer *);
 
 #endif

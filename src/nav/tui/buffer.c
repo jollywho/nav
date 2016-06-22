@@ -81,10 +81,6 @@ Buffer* buf_new()
   memset(buf, 0, sizeof(Buffer));
   obtain_id(buf);
   buf->nc_win = newwin(1,1,0,0);
-  buf->col_focus = opt_color(BUF_SEL_ACTIVE);
-  buf->col_text  = opt_color(BUF_TEXT);
-  buf->col_dir   = opt_color(BUF_DIR);
-  buf->col_sz    = opt_color(BUF_SZ);
   buf->ov = overlay_new();
   buf->scr = SCR_SIMPLE;
   return buf;
@@ -192,14 +188,11 @@ void buf_set_status(Buffer *buf, char *name, char *usr, char *in)
 
 static void set_focus_col(Buffer *buf, int focus)
 {
-  if (focus) {
-    buf->col_focus = opt_color(BUF_SEL_ACTIVE);
+  buf->focused = focus;
+  if (focus)
     overlay_focus(buf->ov);
-  }
-  else {
-    buf->col_focus = opt_color(BUF_SEL_INACTIVE);
+  else
     overlay_unfocus(buf->ov);
-  }
 }
 
 void buf_toggle_focus(Buffer *buf, int focus)
