@@ -398,7 +398,7 @@ static void cmd_arrys(Cmdstr *caller, Cmdline *cmdline, List *args)
 
     Token *elem = container_elem(ary, args, fst, lst - 1);
     if (!elem)
-      nv_err("parse error: index not found");
+      return nv_err("parse error: index not found");
 
     char *var = container_str(cmdline->line, elem);
     log_msg("CMD", "var %s", var);

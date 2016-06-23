@@ -18,6 +18,7 @@ static WINDOW *win;
 static void message_draw(char *line, int color)
 {
   draw_wide(win, 0, 0, line, layout_size().col);
+  mvwchgat(win, 0, 0, strlen(line), A_NORMAL, color, NULL);
   wnoutrefresh(win);
   doupdate();
 }
