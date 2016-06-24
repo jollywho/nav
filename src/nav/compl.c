@@ -31,7 +31,7 @@ typedef struct {
   compl_context *cxroot; //context root entry
   bool rebuild;
   int build_arg;
-  char rep;
+  char esc_chars[3];
   int block;
 } Compl;
 
@@ -84,7 +84,7 @@ static char *cmd_defs[][3] = {
 
 static char *cmd_args[][3] = {
   {"plugin", "fm",  "PATH:paths"},
-  {"plugin", "img", "WINDow:wins"},
+  {"plugin", "img", "WINDOW:wins"},
   {"plugin", "dt",  "PATH:paths"},
 };
 
@@ -166,7 +166,7 @@ void compl_clear()
   }
   utarray_clear(cmplist.rows);
   utarray_clear(cmplist.matches);
-  cmpl.rep = 0;
+  memset(cmpl.esc_chars, 0, 3);
   cmplist.invalid_pos = 0;
 }
 
@@ -192,9 +192,9 @@ void compl_set_col(int idx, char *fmt, ...)
   ci->colcount = 1;
 }
 
-void compl_set_repeat(char ch)
+void compl_set_escapes(char ch[3])
 {
-  cmpl.rep = ch;
+  memcpy(cmpl.esc_chars, ch, 3);
 }
 
 static void compl_push(compl_context *cx, int argc, int pos)
@@ -310,8 +310,8 @@ void compl_update(const char *key, int pos, char ch)
 
   if (ch == ' ')
     compl_search(cx, key, pos);
-  else if (ch == cmpl.rep)
-    compl_push(cx, cmpl.cs->argc, pos);
+  else if (strchr(cmpl.esc_chars, ch))
+    compl_push(cx, cmpl.cs->argc, pos+1);
 }
 
 void compl_build(List *args)

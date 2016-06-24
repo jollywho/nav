@@ -57,7 +57,6 @@ static void menu_fs_cb(void **args)
   if (!ent)
     return;
 
-  compl_set_repeat('/');
   for (int i = 0; i < tbl_ent_count(ent); i++) {
     TblRec *rec = ent->rec;
     compl_list_add("%s", rec_fld(rec, "name"));
@@ -108,6 +107,7 @@ static int expand_path(char **path)
 void path_list(List *args)
 {
   log_msg("MENU", "path_list");
+  compl_set_escapes("@/");
   if (!cur_menu)
     return;
 
@@ -124,9 +124,7 @@ void path_list(List *args)
     fs_read(cur_menu->fs, path);
   }
   else {
-    char *path = malloc(len*sizeof(char*));
-    *path = '\0';
-    strncat(path, &ex_cmd_line()[pos], len);
+    char *path = &ex_cmd_line()[compl_arg_pos()];
     log_msg("MENU", "path %s", path);
 
     if (path[0] == '@') {
@@ -135,6 +133,7 @@ void path_list(List *args)
       return;
     }
 
+    path = strdup(path);
     int exec = expand_path(&path);
 
     if (compl_validate(ex_cmd_curpos()) || ex_cmd_curch() != '/') {
@@ -257,7 +256,7 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
       next = " ";
 
     if (*next == '/') {
-      compl_set_repeat('/');
+      compl_set_escapes("/");
       compl_update(key, word->end+1, '/');
       i++;
     }
