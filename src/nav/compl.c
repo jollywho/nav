@@ -197,6 +197,8 @@ void compl_set_escapes(char ch[3])
   memcpy(cmpl.esc_chars, ch, 3);
 }
 
+static int plvl;
+
 static void compl_push(compl_context *cx, int argc, int pos)
 {
   log_msg("COMPL", "compl_push");
@@ -207,6 +209,7 @@ static void compl_push(compl_context *cx, int argc, int pos)
   TAILQ_INSERT_HEAD(&cmpl.p, cs, ent);
   cmpl.cs = cs;
   cmpl.rebuild = true;
+  plvl++;
 }
 
 static void compl_pop()
@@ -219,6 +222,7 @@ static void compl_pop()
   TAILQ_REMOVE(&cmpl.p, cs, ent);
   free(cs);
   cmpl.rebuild = true;
+  plvl--;
 }
 
 int cmp_match(const void *a, const void *b, void *arg)
@@ -301,13 +305,14 @@ static void compl_search(compl_context *cx, const char *key, int pos)
 void compl_update(const char *key, int pos, char ch)
 {
   log_msg("COMPL", "compl_update");
+  log_err("COMPL", "[%d]", plvl);
   log_msg("COMPL", "[%s] %c", key, ch);
-  compl_context *cx = cmpl.cs->cx;
-  if (!cx || !key || !key[0]) {
+  if (compl_dead() || !key || !key[0]) {
     log_msg("COMPL", "not available.");
     return;
   }
 
+  compl_context *cx = cmpl.cs->cx;
   if (ch == ' ')
     compl_search(cx, key, pos);
   else if (strchr(cmpl.esc_chars, ch))
@@ -383,12 +388,13 @@ bool compl_isexec()
 
 bool compl_isroot()
 {
-  return cmpl.cs->cx == cmpl.cxroot;
+  return cmpl.cs && cmpl.cs->cx == cmpl.cxroot;
 }
 
 void compl_backward()
 {
-  compl_pop();
+  if (TAILQ_NEXT(cmpl.cs, ent))
+    compl_pop();
 }
 
 int compl_prev_pos()

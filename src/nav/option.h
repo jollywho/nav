@@ -10,6 +10,9 @@ extern char *p_rm;          /* 'remove    cmd' */
 extern char *p_xc;          /* 'clipboard cmd' */
 
 typedef struct nv_group nv_group;
+typedef struct nv_module nv_module;
+typedef struct nv_syn nv_syn;
+
 struct nv_group {
   UT_hash_handle hh;
   char *key;
@@ -17,14 +20,11 @@ struct nv_group {
   Op_group *opgrp; /* make array if support > 1 binding per group */
 };
 
-typedef struct nv_syn nv_syn;
 struct nv_syn {
   UT_hash_handle hh;
   char *key;
   nv_group *group;
 };
-
-typedef struct nv_module nv_module;
 
 typedef struct {
   UT_hash_handle hh;

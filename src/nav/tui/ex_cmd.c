@@ -219,7 +219,7 @@ static void ex_update()
 {
   log_msg("EXCMD", "check_update");
   if ((ex.inrstate & EX_HIST))
-    return;
+    return menu_update(ex.menu, &ex.cmd);
 
   int cur = ex.curofs - 1;
   int pos = compl_cur_pos();

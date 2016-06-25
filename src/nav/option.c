@@ -236,7 +236,6 @@ char* opt_var(Token *word, nv_block *blk)
 
   if (blk)
     HASH_FIND_STR(blk->vars, key, var);
-  //TODO: lookup in source variables
   if (!var)
     HASH_FIND_STR(gbl_vars, key, var);
   if (!var) {
