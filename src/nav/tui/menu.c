@@ -107,7 +107,6 @@ static int expand_path(char **path)
 void path_list(List *args)
 {
   log_msg("MENU", "path_list");
-  compl_set_escapes("@/");
   if (!cur_menu)
     return;
 
@@ -119,32 +118,33 @@ void path_list(List *args)
   int pos = compl_arg_pos();
   int len = ex_cmd_curpos() - pos;
 
+  compl_set_escapes("@/");
+
   if (pos >= ex_cmd_curpos() || len < 1) {
     char *path = window_cur_dir();
+    return fs_read(cur_menu->fs, path);
+  }
+
+  char *path = &ex_cmd_line()[compl_arg_pos()];
+  log_msg("MENU", "path %s", path);
+
+  if (path[0] == '@') {
+    marklbl_list(args);
+    compl_filter(ex_cmd_curstr());
+    return;
+  }
+
+  path = strdup(path);
+  int exec = expand_path(&path);
+
+  if (compl_validate(ex_cmd_curpos()) || ex_cmd_curch() != '/') {
+    exec = true;
+    path = fs_parent_dir(path);
+  }
+  if (exec)
     fs_read(cur_menu->fs, path);
-  }
-  else {
-    char *path = &ex_cmd_line()[compl_arg_pos()];
-    log_msg("MENU", "path %s", path);
 
-    if (path[0] == '@') {
-      marklbl_list(args);
-      compl_filter(ex_cmd_curstr());
-      return;
-    }
-
-    path = strdup(path);
-    int exec = expand_path(&path);
-
-    if (compl_validate(ex_cmd_curpos()) || ex_cmd_curch() != '/') {
-      exec = true;
-      path = fs_parent_dir(path);
-    }
-    if (exec)
-      fs_read(cur_menu->fs, path);
-
-    free(path);
-  }
+  free(path);
 }
 
 Menu* menu_new()

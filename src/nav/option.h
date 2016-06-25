@@ -24,6 +24,8 @@ struct nv_syn {
   nv_group *group;
 };
 
+typedef struct nv_module nv_module;
+
 typedef struct {
   UT_hash_handle hh;
   char *key;
@@ -32,12 +34,25 @@ typedef struct {
 
 typedef struct {
   UT_hash_handle hh;
-  UT_array *lines;    //saved lines as string
-  nv_var *locals;     //local vars
+  char *key;
   int argc;
   char **argv;
-  char *key;
+  UT_array *lines;
+  nv_module *module;
 } nv_func;
+
+typedef struct {
+  nv_var *vars;
+  nv_func *fn;
+} nv_block;
+
+struct nv_module {
+  UT_hash_handle hh;
+  char *key;
+  int curline;
+  nv_func *funcs;
+  nv_var  *vars;
+};
 
 enum nv_color_group {
   BUF_SEL_ACTIVE,
@@ -75,10 +90,11 @@ void set_syn(nv_syn *);
 nv_syn* get_syn(const char *);
 int get_syn_colpair(const char *);
 
-void set_var(nv_var *, nv_func *);
-char* opt_var(Token *, nv_func *);
+void set_var(nv_var *, nv_block *);
+char* opt_var(Token *, nv_block *);
 void set_func(nv_func *);
-void clear_locals(nv_func *);
+void clear_block(nv_block *);
+
 nv_func* opt_func(const char *);
 void set_opt(const char *, const char *);
 char* get_opt_str(const char *);

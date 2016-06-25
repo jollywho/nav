@@ -31,8 +31,8 @@ typedef struct {
 typedef struct Cmdblock Cmdblock;
 struct Cmdblock {
   Cmdblock *parent;
-  nv_func *func;
   int brk;
+  nv_block blk;
   Cmdret ret;
 };
 
@@ -167,12 +167,11 @@ void cmd_flush()
   cmd_reset();
 }
 
-static void push_callstack(Cmdblock *blk, nv_func *fn)
+static void push_callstack(Cmdblock *blk)
 {
   if (!nvs.callstack)
     nvs.callstack = blk;
   blk->parent = nvs.callstack;
-  blk->func = fn;
   nvs.callstack = blk;
 }
 
@@ -180,7 +179,7 @@ static void pop_callstack()
 {
   if (!nvs.callstack)
     return;
-  clear_locals(nvs.callstack->func);
+  clear_block(&nvs.callstack->blk);
   if (nvs.callstack == nvs.callstack->parent)
     nvs.callstack = NULL;
   else
@@ -242,8 +241,8 @@ static Cmdret cmd_call(Cmdstr *caller, nv_func *fn, char *line)
   List *args = cmdline_lst(&cmd);
   int argc = utarray_len(args->items);
 
-  Cmdblock blk = {.brk = 0};
-  push_callstack(&blk, fn);
+  Cmdblock blk = {.brk = 0, .blk.vars = 0, .blk.fn = fn};
+  push_callstack(&blk);
   caller->ret = nvs.callstack->ret;
 
   if (argc != fn->argc) {
@@ -871,10 +870,10 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
   return ret2caller(cmdstr, fun->cmd_func(args, &flags));
 }
 
-nv_func* cmd_callstack()
+nv_block* cmd_callstack()
 {
   if (nvs.callstack)
-    return nvs.callstack->func;
+    return &nvs.callstack->blk;
   return NULL;
 }
 

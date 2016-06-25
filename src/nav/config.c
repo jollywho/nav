@@ -397,9 +397,7 @@ static Cmdret conf_variable(List *args, Cmdarg *ca)
     SWAP_ALLOC_PTR(var.var, newexpr);
   }
 
-  nv_func *blk = cmd_callstack();
-  set_var(&var, blk);
-
+  set_var(&var, cmd_callstack());
   return NORET;
 cleanup:
   free(var.key);

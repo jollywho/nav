@@ -124,7 +124,6 @@ void option_cleanup()
   CLEAR_OPT(nv_func,  gbl_funcs, {
     del_param_list(it->argv, it->argc);
     utarray_free(it->lines);
-    clear_locals(it);
   });
 
   nv_option *it, *tmp;
@@ -135,10 +134,9 @@ void option_cleanup()
   }
 }
 
-void clear_locals(nv_func *func)
+void clear_block(nv_block *blk)
 {
-  CLEAR_OPT(nv_var, func->locals, free(it->var));
-  func->locals = NULL;
+  CLEAR_OPT(nv_var, blk->vars, free(it->var));
 }
 
 void set_color(nv_group *grp, int fg, int bg)
@@ -203,7 +201,7 @@ int get_syn_colpair(const char *name)
   return sy->group->colorpair;
 }
 
-void set_var(nv_var *variable, nv_func *blk)
+void set_var(nv_var *variable, nv_block *blk)
 {
   nv_var *var = malloc(sizeof(nv_var));
   memmove(var, variable, sizeof(nv_var));
@@ -211,12 +209,12 @@ void set_var(nv_var *variable, nv_func *blk)
   log_msg("CONFIG", "%s := %s", var->key, var->var);
   nv_var **container = &gbl_vars;
   if (blk)
-    container = &blk->locals;
+    container = &blk->vars;
   FLUSH_OLD_OPT(nv_var, *container, var->key, free(find->var));
   HASH_ADD_STR(*container, key, var);
 }
 
-char* opt_var(Token *word, nv_func *blk)
+char* opt_var(Token *word, nv_block *blk)
 {
   log_msg("OPT", "opt_var");
   char *key = token_val(word, VAR_STRING);
@@ -237,7 +235,7 @@ char* opt_var(Token *word, nv_func *blk)
   nv_var *var = NULL;
 
   if (blk)
-    HASH_FIND_STR(blk->locals, key, var);
+    HASH_FIND_STR(blk->vars, key, var);
   //TODO: lookup in source variables
   if (!var)
     HASH_FIND_STR(gbl_vars, key, var);
@@ -255,7 +253,6 @@ char* opt_var(Token *word, nv_func *blk)
 void set_func(nv_func *func)
 {
   nv_func *fn = func;
-  fn->locals = NULL;
   HASH_ADD_STR(gbl_funcs, key, fn);
 }
 
