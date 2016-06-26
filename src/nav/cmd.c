@@ -303,9 +303,13 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
     if (cmd->ret.type != STRING)
       continue;
 
-    List *args = cmdline_lst(cmdline);
-    char *symb = list_arg(args, cmd->idx, VAR_STRING);
+    char *symb = list_arg(cmdline_lst(cmdline), cmd->idx, VAR_STRING);
+    char *module = list_arg(cmdline_lst(cmdline), cmd->idx-1, VAR_STRING);
     if (symb) {
+      int slen = strlen(symb);
+      char res = cmdline->line[MIN(0, pos - (slen + 1))];
+      log_err("CMD", "%s %c %s", module, res, symb);
+      //TODO: lookup in module namespace
       nv_func *fn = opt_func(symb);
       if (fn) {
         Cmdstr rstr;
@@ -316,7 +320,6 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
         if (cmd->ret.type != STRING)
           cmd->ret.val.v_str = "''";
       }
-      //TODO: error here unless symb is '$'
     }
 
     char *retline = cmd->ret.val.v_str;

@@ -44,7 +44,7 @@ struct Ex_cmd {
   int ex_state;
   int col_text;
   int col_symb;
-  int inrstate;
+  int state;
 };
 
 static nv_key key_defaults[] = {
@@ -98,7 +98,7 @@ void start_ex_cmd(char symbol, int state)
   ex.curpos = 0;
   ex.curofs = 0;
   ex.maxpos = max.col - 2;
-  ex.inrstate = 0;
+  ex.state = 0;
   ex.col_text = opt_color(COMPL_TEXT);
   ex.col_symb = opt_color(BUF_TEXT);
 
@@ -218,20 +218,20 @@ void cmdline_refresh()
 static void ex_update()
 {
   log_msg("EXCMD", "check_update");
-  if ((ex.inrstate & EX_HIST))
+  if ((ex.state & EX_HIST))
     return menu_update(ex.menu, &ex.cmd);
 
   int cur = ex.curofs - 1;
   int pos = compl_cur_pos();
 
   if (compl_isroot() && ex_cmd_curch() == '!' && pos == cur) {
-    ex.inrstate &= EX_EXEC;
+    ex.state &= EX_EXEC;
     return compl_set_exec(ex.curofs);
   }
 
   if (ex_cmd_curch() == '|' && (pos < cur || !compl_isroot())) {
     menu_restart(ex.menu);
-    ex.inrstate = 0;
+    ex.state = 0;
   }
   menu_update(ex.menu, &ex.cmd);
 }
@@ -242,7 +242,7 @@ static void ex_esc()
     regex_pivot(ex.lm);
 
   hist_save();
-  ex.inrstate = EX_QUIT;
+  ex.state = EX_QUIT;
 }
 
 static void ex_tab(void *none, Keyarg *arg)
@@ -269,7 +269,7 @@ static void ex_tab(void *none, Keyarg *arg)
   ex.line[st + len] = ' ';
   ex.curofs = st + len;
   ex.curpos = st + cell_len(instr);
-  ex.inrstate = EX_CYCLE;
+  ex.state = EX_CYCLE;
 
   free(line);
   free(instr);
@@ -296,6 +296,11 @@ static void ex_moveline(void *none, Keyarg *arg)
   int pos = arg->arg * cell_len(ex.line);
   ex.curofs = MAX(0, len);
   ex.curpos = MAX(0, pos);
+
+  if (arg->arg == FORWARD)
+    menu_rebuild(ex.menu);
+  else
+    menu_clear(ex.menu);
 }
 
 static void ex_word(void *none, Keyarg *arg)
@@ -336,7 +341,7 @@ static void ex_hist(void *none, Keyarg *arg)
     return;
 
   ex_cmd_populate(ret);
-  ex.inrstate = EX_HIST;
+  ex.state = EX_HIST;
 }
 
 void ex_cmd_populate(const char *newline)
@@ -360,14 +365,14 @@ static void ex_car()
     cmd_eval(NULL, ex.line);
 
   hist_save();
-  ex.inrstate = EX_QUIT;
+  ex.state = EX_QUIT;
 }
 
 static void ex_killchar()
 {
   if (ex.ex_state == EX_CMD_STATE && ex.curofs < compl_cur_pos())
     menu_killword(ex.menu);
-  ex.inrstate &= ~EX_FRESH;
+  ex.state &= ~EX_FRESH;
 }
 
 static void ex_bckspc()
@@ -433,7 +438,7 @@ static void ex_killline()
   if (ex.ex_state == EX_CMD_STATE)
     menu_clear(ex.menu);
 
-  ex.inrstate = 0;
+  ex.state = 0;
 }
 
 void ex_cmdinvert()
@@ -457,13 +462,13 @@ void ex_cmdinvert()
 static void ex_menuhints()
 {
   menu_toggle_hints(ex.menu);
-  ex.inrstate = EX_CYCLE;
+  ex.state = EX_CYCLE;
 }
 
 static void ex_menu_mv(void *none, Keyarg *arg)
 {
   menu_mv(ex.menu, arg->arg);
-  ex.inrstate = EX_CYCLE;
+  ex.state = EX_CYCLE;
 }
 
 static void ex_onkey()
@@ -489,7 +494,7 @@ static void ex_onkey()
       }
       break;
   }
-  ex.inrstate &= ~EX_CLEAR;
+  ex.state &= ~EX_CLEAR;
   window_req_draw(NULL, NULL);
 }
 
@@ -498,7 +503,7 @@ static void ex_getchar(Keyarg *ca)
   if (IS_SPECIAL(ca->key))
     return;
 
-  ex.inrstate &= ~(EX_FRESH);
+  ex.state &= ~(EX_FRESH);
 
   char instr[7] = {0,0};
   if (!ca->utf8)
@@ -532,7 +537,7 @@ void ex_input(Keyarg *ca)
   else
     ex_getchar(ca);
 
-  if (ex.inrstate & EX_QUIT)
+  if (ex.state & EX_QUIT)
     stop_ex_cmd();
   else
     ex_onkey();
@@ -580,7 +585,7 @@ char* ex_cmd_curstr()
 
 int ex_cmd_state()
 {
-  return ex.inrstate;
+  return ex.state;
 }
 
 Cmdstr* ex_cmd_prevcmd()

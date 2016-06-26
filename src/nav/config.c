@@ -378,6 +378,7 @@ static Cmdret conf_variable(List *args, Cmdarg *ca)
   if (delm == -1 || delm >= utarray_len(args->items))
     return NORET;
 
+  //FIXME: breaks on pair type
   char *expr = cmdline_line_from(ca->cmdline, delm);
   nv_var var = {
     .key = strdup(key),

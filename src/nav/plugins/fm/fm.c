@@ -266,47 +266,6 @@ cleanup:
   free(src);
 }
 
-#ifdef PIPES_SUPPORTED
-static void fm_cursor_change_cb(Plugin *host, Plugin *caller, HookArg *hka)
-{
-  log_msg("FM", "fm_cursor_change_cb");
-  FM *self = (FM*)caller->top;
-  Handle *h = host->hndl;
-
-  char *path = model_curs_value(h->model, "fullpath");
-  if (!path)
-    return;
-
-  if (isdir(path)) {
-    fs_close(self->fs);
-    fm_opendir(caller, path, FORWARD);
-  }
-}
-
-static void fm_diropen_cb(Plugin *host, Plugin *caller, HookArg *hka)
-{
-  log_msg("FM", "fm_diropen_cb");
-  FM *self = (FM*)caller->top;
-  fs_close(self->fs);
-  char *path = strdup(hka->arg);
-  fm_opendir(caller, path, BACKWARD);
-  free(path);
-}
-
-static void fm_pipe_left(Plugin *host, Plugin *caller, HookArg *hka)
-{
-  log_msg("FM", "fm_pipe_left");
-  //TODO: check if host is fm
-  hook_add_intl(caller, host, fm_cursor_change_cb, "cursor_change");
-}
-
-static void fm_pipe_right(Plugin *host, Plugin *caller, HookArg *hka)
-{
-  log_msg("FM", "fm_pipe_right");
-  hook_add_intl(caller, host, fm_diropen_cb, "diropen");
-}
-#endif
-
 static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, char *val)
 {
   Handle *hndl = malloc(sizeof(Handle));
@@ -352,10 +311,6 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   hook_add_intl(buf->id, plugin, plugin, fm_right,   "right" );
   hook_add_intl(buf->id, plugin, plugin, fm_req_dir, "open"  );
   hook_add_intl(buf->id, plugin, plugin, fm_jump,    "jump"  );
-#ifdef PIPES_SUPPORTED
-  hook_add_intl(buf->id, plugin, plugin, fm_pipe_left,  "pipe_left" );
-  hook_add_intl(buf->id, plugin, plugin, fm_pipe_right, "pipe_right");
-#endif
 
   fm->fs = fs_init(plugin->hndl);
   fm->fs->stat_cb = fm_ch_dir;

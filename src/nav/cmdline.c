@@ -343,33 +343,6 @@ static void cmdline_tokenize(Cmdline *cmdline)
   cmdline->cont = esc;
 }
 
-#ifdef PIPES_SUPPORTED
-static Token* pipe_type(Cmdline *cmdline, Token *word, Cmdstr *cmd)
-{
-  Token *nword = (Token*)utarray_next(cmdline->tokens, word);
-  Token *bword = (Token*)utarray_prev(cmdline->tokens, word);
-  if (nword) {
-    char n_ch = nword->var.vval.v_string[0];
-    if (n_ch == '>') {
-      (*cmd).flag = PIPE_RIGHT;
-      return nword;
-    }
-  }
-  if (bword) {
-    char b_ch = bword->var.vval.v_string[0];
-    if (b_ch == '<') {
-      Token parent = stack_head(&cmd->stack);
-      List *l = token_val(&parent, VAR_LIST);
-      utarray_pop_back(l->items);
-      (*cmd).flag = PIPE_LEFT;
-      return word;
-    }
-  }
-  (*cmd).flag = PIPE;
-  return word;
-}
-#endif
-
 static void check_flags(Cmdline *cmdline, Cmdstr *cmd, Token *word)
 {
   /* first token or first token in cmdstr */
@@ -499,10 +472,10 @@ static void pop(QUEUE *stack, Cmdline *cmdline)
 
     bool var = cmdline_push_var(p, cmdline);
 
-    stack_pop(stack);
+    Token pair = stack_pop(stack);
     Token *pt = stack_head(stack);
     if (!var)
-      utarray_push_back(pt->var.vval.v_list->items, &p);
+      utarray_push_back(pt->var.vval.v_list->items, &pair);
   }
 }
 
@@ -579,11 +552,6 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
           cmd.ed = word->start;
           goto breakout;
         }
-      case '!':
-        if (idx != 1)
-          goto push;
-        cmd.rev = 1;
-        break;
       case ')':
         if (cmdline->lvl < 1)
           break;
@@ -598,8 +566,9 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         if (!word)
           goto breakout;
         break;
+      case '.':
+        idx--;
       case ':':
-        break;
       case ',':
         break;
       case ']':
@@ -613,9 +582,13 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         push(list_new(cmdline), stack, word->start);
         stack_head(stack)->start = word->start;
         break;
+      case '!':
+        if (idx == 1) {
+          cmd.rev = 1;
+          break;
+        }
+      /*FALLTHROUGH*/
       default:
-        /*FALLTHROUGH*/
-push:
         seek = seek_ahead(cmdline, stack, word);
         push(*word, stack, word->start);
         if (!seek)
