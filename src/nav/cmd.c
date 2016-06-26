@@ -304,11 +304,9 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
       continue;
 
     char *symb = list_arg(cmdline_lst(cmdline), cmd->idx, VAR_STRING);
-    char *module = list_arg(cmdline_lst(cmdline), cmd->idx-1, VAR_STRING);
+    Scope *scope = list_arg(cmdline_lst(cmdline), cmd->idx, VAR_SCOPE);
+    log_err("CMD", "%p %p %d", symb, scope, cmd->idx);
     if (symb) {
-      int slen = strlen(symb);
-      char res = cmdline->line[MIN(0, pos - (slen + 1))];
-      log_err("CMD", "%s %c %s", module, res, symb);
       //TODO: lookup in module namespace
       nv_func *fn = opt_func(symb);
       if (fn) {
@@ -778,7 +776,7 @@ static Cmdret cmd_returnblock(List *args, Cmdarg *ca)
   }
 
   nvs.callstack->brk = 1;
-  char *line = cmdline_line_after(ca->cmdline, 0);
+  char *line = cmdline_line_from(ca->cmdline, 1);
 
   if (line) {
     Cmdstr nstr;

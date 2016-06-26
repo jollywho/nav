@@ -137,6 +137,8 @@ void* token_val(Token *token, char v_type)
       return token->var.vval.v_list;
     case VAR_PAIR:
       return token->var.vval.v_pair;
+    case VAR_SCOPE:
+      return token->var.vval.v_scope;
     case VAR_STRING:
       return token->var.vval.v_string;
     default:
@@ -265,6 +267,16 @@ static Token pair_new(Cmdline *cmdline)
   ref_push(&cmdline->refs, p, VAR_PAIR);
   token.var.v_type = VAR_PAIR;
   token.var.vval.v_pair = p;
+  return token;
+}
+
+static Token scope_new(Cmdline *cmdline)
+{
+  Token token = {0};
+  Scope *s = malloc(sizeof(Scope));
+  ref_push(&cmdline->refs, s, VAR_SCOPE);
+  token.var.v_type = VAR_SCOPE;
+  token.var.vval.v_scope = s;
   return token;
 }
 
@@ -453,30 +465,36 @@ bool cmdline_push_var(Token *token, Cmdline *cmdline)
   return false;
 }
 
-static void pop(QUEUE *stack, Cmdline *cmdline)
+static void pop(QUEUE *stack, Cmdline *cmdline, int *idx)
 {
   Token token = stack_pop(stack);
   Token *parent = stack_head(stack);
+  Token *p;
 
   if (parent->var.v_type == VAR_LIST) {
     if (!cmdline_push_var(&token, cmdline))
       utarray_push_back(parent->var.vval.v_list->items, &token);
     parent->end = token.end;
   }
-  else if (stack_prevprev(stack)->var.v_type == VAR_PAIR) {
+  else if ((p = stack_prevprev(stack))->var.v_type != VAR_STRING) {
     Token key = stack_pop(stack);
-    Token *p = stack_prevprev(stack);
-    p->var.vval.v_pair->key = key;
+
+    if (p->var.v_type == VAR_PAIR)
+      p->var.vval.v_pair->key = key;
+    if (p->var.v_type == VAR_SCOPE)
+      p->var.vval.v_scope->key = key;
+
     p->var.vval.v_pair->value = token;
     p->end = token.end;
 
     bool var = cmdline_push_var(p, cmdline);
 
-    Token pair = stack_pop(stack);
+    token = stack_pop(stack);
     Token *pt = stack_head(stack);
     if (!var)
-      utarray_push_back(pt->var.vval.v_list->items, &pair);
+      utarray_push_back(pt->var.vval.v_list->items, &token);
   }
+  (*idx)++;
 }
 
 static void push(Token token, QUEUE *stack, int st)
@@ -494,6 +512,10 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
   char *str = token_val(next, VAR_STRING);
   if (str && str[0] == ':') {
     push(pair_new(cmdline), stack, token->start);
+    return true;
+  }
+  else if (str && str[0] == '.') {
+    push(scope_new(cmdline), stack, token->start);
     return true;
   }
 
@@ -540,47 +562,45 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
 
   check_flags(cmdline, &cmd, word);
 
-  int idx = -1;
+  int idx = 0;
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
-    idx++;
     char *str = token_val(word, VAR_STRING);
 
     switch(ch = str[0]) {
-      case '|':
-        if (cmdline->lvl < 1) {
-          cmd.flag = PIPE;
-          cmd.ed = word->start;
+      case '(':
+        cmdline->lvl++;
+        word = cmdline_parse(cmdline, word, cmd.chlds);
+        ((Cmdstr*)utarray_back(cmd.chlds))->idx = idx - 1;
+        if (!word)
           goto breakout;
-        }
+        break;
       case ')':
         if (cmdline->lvl < 1)
           break;
         cmdline->lvl--;
         cmd.ed = word->start;
         goto breakout;
-      case '(':
-        cmdline->lvl++;
-        word = cmdline_parse(cmdline, word, cmd.chlds);
-        Cmdstr *pcmd = (Cmdstr*)utarray_back(cmd.chlds);
-        pcmd->idx = --idx;
-        if (!word)
-          goto breakout;
-        break;
-      case '.':
-        idx--;
-      case ':':
-      case ',':
+      case '[':
+        push(list_new(cmdline), stack, word->start);
+        stack_head(stack)->start = word->start;
         break;
       case ']':
         if (!valid_arry(cmdline, stack, headref))
           break;
         stack_head(stack)->end = word->end;
         push_arry_cont(cmdline, idx, headref);
-        pop(stack, cmdline);
+        pop(stack, cmdline, &idx);
         break;
-      case '[':
-        push(list_new(cmdline), stack, word->start);
-        stack_head(stack)->start = word->start;
+      case '|':
+        if (cmdline->lvl < 1) {
+          cmd.flag = PIPE;
+          cmd.ed = word->start;
+          goto breakout;
+        }
+      /*FALLTHROUGH*/
+      case '.':
+      case ':':
+      case ',':
         break;
       case '!':
         if (idx == 1) {
@@ -592,7 +612,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         seek = seek_ahead(cmdline, stack, word);
         push(*word, stack, word->start);
         if (!seek)
-          pop(stack, cmdline);
+          pop(stack, cmdline, &idx);
     }
   }
 breakout:

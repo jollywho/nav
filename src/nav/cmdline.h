@@ -13,6 +13,7 @@ typedef struct {
     Pair    *v_pair;        /* pair value (can be NULL!)   */
     List    *v_list;        /* list value (can be NULL!)   */
     Dict    *v_dict;        /* dict value (can be NULL!)   */
+    Scope   *v_scope;       /* scope value (can be NULL!)   */
   } vval;
 } typ_T;
 
@@ -22,6 +23,7 @@ typedef struct {
 #define VAR_STRING  2       /* "v_string" is used          */
 #define VAR_PAIR    3       /* "v_pair" is used            */
 #define VAR_LIST    4       /* "v_list" is used            */
+#define VAR_SCOPE   5       /* "v_scope" is used            */
 
 struct Token {
   int start;                /* start pos of token in line */
@@ -32,11 +34,15 @@ struct Token {
 struct Pair {
   Token key;
   Token value;
-  bool ns;
 };
 
 struct List {
   UT_array *items;
+};
+
+struct Scope {
+  Token key;
+  Token value;
 };
 
 struct Cmdret {
