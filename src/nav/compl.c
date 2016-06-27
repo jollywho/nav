@@ -197,7 +197,7 @@ void compl_set_escapes(char ch[3])
   memcpy(cmpl.esc_chars, ch, 3);
 }
 
-static int plvl;
+static int plvl; //debug
 
 static void compl_push(compl_context *cx, int argc, int pos)
 {
@@ -305,7 +305,6 @@ static void compl_search(compl_context *cx, const char *key, int pos)
 void compl_update(const char *key, int pos, char ch)
 {
   log_msg("COMPL", "compl_update");
-  log_err("COMPL", "[%d]", plvl);
   log_msg("COMPL", "[%s] %c", key, ch);
   if (compl_dead() || !key || !key[0]) {
     log_msg("COMPL", "not available.");

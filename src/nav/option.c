@@ -221,6 +221,9 @@ char* opt_var(Token *word, nv_block *blk)
   char *alt = NULL;
   if (!key) {
     Pair *p = token_val(word, VAR_PAIR);
+    if (!p)
+      p = token_val(word, VAR_SCOPE);
+    //TODO: scope resolution
     key = token_val(&p->key, VAR_STRING);
     alt = token_val(&p->value, VAR_STRING);
   }

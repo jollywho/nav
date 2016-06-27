@@ -455,6 +455,12 @@ bool cmdline_push_var(Token *token, Cmdline *cmdline)
     if (p)
       word = &p->key;
   }
+  else if (word->var.v_type == VAR_SCOPE) {
+    Scope *p = token_val(word, VAR_SCOPE);
+    if (p)
+      word = &p->value;
+  }
+
   if (word->var.v_type == VAR_STRING) {
     char *str = token_val(word, VAR_STRING);
     if (str[0] == '$' || str[0] == '%') {
@@ -487,12 +493,11 @@ static void pop(QUEUE *stack, Cmdline *cmdline, int *idx)
     p->var.vval.v_pair->value = token;
     p->end = token.end;
 
-    bool var = cmdline_push_var(p, cmdline);
-
-    token = stack_pop(stack);
-    Token *pt = stack_head(stack);
-    if (!var)
+    if (!cmdline_push_var(p, cmdline)) {
+      token = stack_pop(stack);
+      Token *pt = stack_head(stack);
       utarray_push_back(pt->var.vval.v_list->items, &token);
+    }
   }
   (*idx)++;
 }
@@ -506,7 +511,7 @@ static void push(Token token, QUEUE *stack, int st)
 static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
 {
   Token *next = (Token*)utarray_next(cmdline->tokens, token);
-  if (!next)
+  if (!next || stack_head(stack)->var.v_type != VAR_LIST)
     return false;
 
   char *str = token_val(next, VAR_STRING);
@@ -514,6 +519,7 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
     push(pair_new(cmdline), stack, token->start);
     return true;
   }
+  //TODO: check for no gaps around '.'
   else if (str && str[0] == '.') {
     push(scope_new(cmdline), stack, token->start);
     return true;

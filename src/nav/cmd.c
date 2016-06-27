@@ -307,7 +307,7 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
     Scope *scope = list_arg(cmdline_lst(cmdline), cmd->idx, VAR_SCOPE);
     log_err("CMD", "%p %p %d", symb, scope, cmd->idx);
     if (symb) {
-      //TODO: lookup in module namespace
+      //TODO: scope resolution
       nv_func *fn = opt_func(symb);
       if (fn) {
         Cmdstr rstr;
