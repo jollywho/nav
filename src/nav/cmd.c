@@ -304,8 +304,12 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
       continue;
 
     char *symb = list_arg(cmdline_lst(cmdline), cmd->idx, VAR_STRING);
-    Scope *scope = list_arg(cmdline_lst(cmdline), cmd->idx, VAR_SCOPE);
-    log_err("CMD", "%p %p %d", symb, scope, cmd->idx);
+    Pair *scope = list_arg(cmdline_lst(cmdline), cmd->idx, VAR_PAIR);
+    if (scope) {
+      log_err("CMD", "%p %p %d", symb, scope, scope->scope);
+      symb = token_val(&scope->value, VAR_STRING);
+    }
+
     if (symb) {
       //TODO: scope resolution
       nv_func *fn = opt_func(symb);

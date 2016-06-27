@@ -16,7 +16,6 @@ typedef struct Token Token;
 typedef struct Pair Pair;
 typedef struct Dict Dict;
 typedef struct List List;
-typedef struct Scope Scope;
 typedef struct Cmdstr Cmdstr;
 typedef struct Cmdline Cmdline;
 typedef struct Cmdret Cmdret;
