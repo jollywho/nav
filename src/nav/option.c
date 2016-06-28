@@ -96,6 +96,7 @@ static nv_syn    *syntaxes;
 static nv_var    *gbl_vars;
 static nv_func   *gbl_funcs;
 static nv_option *options;
+static nv_module *modules;
 
 const char *builtin_color(enum nv_color_group col) {
   return col < LENGTH(default_groups) ? default_groups[col] : NULL;
@@ -118,10 +119,11 @@ void option_init()
 
 void option_cleanup()
 {
-  CLEAR_OPT(nv_syn,   syntaxes,  {});
-  CLEAR_OPT(nv_var,   gbl_vars,  free(it->var));
-  CLEAR_OPT(nv_group, groups,    op_delgrp(it->opgrp));
-  CLEAR_OPT(nv_func,  gbl_funcs, {
+  CLEAR_OPT(nv_module, modules,   {});
+  CLEAR_OPT(nv_syn,    syntaxes,  {});
+  CLEAR_OPT(nv_var,    gbl_vars,  free(it->var));
+  CLEAR_OPT(nv_group,  groups,    op_delgrp(it->opgrp));
+  CLEAR_OPT(nv_func,   gbl_funcs, {
     del_param_list(it->argv, it->argc);
     utarray_free(it->lines);
   });
@@ -199,6 +201,14 @@ int get_syn_colpair(const char *name)
   if (!sy)
     return default_syn_color;
   return sy->group->colorpair;
+}
+
+void set_module(nv_module *module)
+{
+  nv_module *mod = malloc(sizeof(nv_module));
+  memmove(mod, module, sizeof(nv_module));
+  FLUSH_OLD_OPT(nv_module, modules, mod->key, {});
+  HASH_ADD_STR(modules, key, mod);
 }
 
 void set_var(nv_var *variable, nv_block *blk)

@@ -90,6 +90,7 @@ void set_syn(nv_syn *);
 nv_syn* get_syn(const char *);
 int get_syn_colpair(const char *);
 
+void set_module(nv_module *);
 void set_var(nv_var *, nv_block *);
 char* opt_var(Token *, nv_block *);
 void set_func(nv_func *);

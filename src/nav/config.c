@@ -20,6 +20,7 @@ static Cmdret conf_syntax();
 static Cmdret conf_variable();
 static Cmdret conf_mapping();
 static Cmdret conf_op();
+static Cmdret conf_plug();
 static Cmdret conf_source();
 
 static Cmd_T cmdtable[] = {
@@ -31,6 +32,7 @@ static Cmd_T cmdtable[] = {
   {"local","lo",     "Define a local variable.",    conf_variable,   1},
   {"map",0,          "Map {lhs} to {rhs}.",         conf_mapping,    0, 1},
   {"opcmd","op",     "Set open command for group.", conf_op,         0},
+  {"plugin","plug",  "Load a plugin",               conf_plug,       0},
   {"set",0,          "Set option value.",           conf_setting,    0},
   {"source","so",    "Read from file.",             conf_source,     0},
   {"syntax","syn",   "Define syntax group.",        conf_syntax,     0},
@@ -384,6 +386,7 @@ static Cmdret conf_variable(List *args, Cmdarg *ca)
     .key = strdup(key),
     .var = strdup(expr),
   };
+  //TODO: scope resolution
 
   /* when delm isn't 3 the key should be expanded */
   if (delm != 3) {
@@ -454,6 +457,29 @@ static Cmdret conf_op(List *args, Cmdarg *ca)
     free(grp->opgrp);
   }
   grp->opgrp = op_newgrp(before, after);
+  return NORET;
+}
+
+static Cmdret conf_plug(List *args, Cmdarg *ca)
+{
+  log_msg("CONFIG", "conf_plug");
+  char *file = cmdline_line_after(ca->cmdline, 0);
+  if (!file)
+    return NORET;
+
+  char *path = fs_expand_path(file);
+  if (!path || !file_exists(path))
+    goto cleanup;
+
+  nv_module mod = {.key = strdup(path)};
+  set_module(&mod);
+
+  //set block to module
+  //read plugin file
+
+cleanup:
+  if (path)
+    free(path);
   return NORET;
 }
 
