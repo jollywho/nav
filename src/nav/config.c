@@ -11,6 +11,7 @@
 #include "nav/event/input.h"
 #include "nav/event/fs.h"
 #include "nav/event/hook.h"
+#include "nav/util.h"
 
 static Cmdret conf_augroup();
 static Cmdret conf_autocmd();
@@ -20,7 +21,6 @@ static Cmdret conf_syntax();
 static Cmdret conf_variable();
 static Cmdret conf_mapping();
 static Cmdret conf_op();
-static Cmdret conf_plug();
 static Cmdret conf_source();
 
 static Cmd_T cmdtable[] = {
@@ -32,7 +32,7 @@ static Cmd_T cmdtable[] = {
   {"local","lo",     "Define a local variable.",    conf_variable,   1},
   {"map",0,          "Map {lhs} to {rhs}.",         conf_mapping,    0, 1},
   {"opcmd","op",     "Set open command for group.", conf_op,         0},
-  {"plugin","plug",  "Load a plugin",               conf_plug,       0},
+  {"plugin","plug",  "Load a plugin",               conf_source,     1},
   {"set",0,          "Set option value.",           conf_setting,    0},
   {"source","so",    "Read from file.",             conf_source,     0},
   {"syntax","syn",   "Define syntax group.",        conf_syntax,     0},
@@ -460,40 +460,31 @@ static Cmdret conf_op(List *args, Cmdarg *ca)
   return NORET;
 }
 
-static Cmdret conf_plug(List *args, Cmdarg *ca)
-{
-  log_msg("CONFIG", "conf_plug");
-  char *file = cmdline_line_after(ca->cmdline, 0);
-  if (!file)
-    return NORET;
-
-  char *path = fs_expand_path(file);
-  if (!path || !file_exists(path))
-    goto cleanup;
-
-  nv_module mod = {.key = strdup(path)};
-  set_module(&mod);
-
-  //set block to module
-  //read plugin file
-
-cleanup:
-  if (path)
-    free(path);
-  return NORET;
-}
-
 static Cmdret conf_source(List *args, Cmdarg *ca)
 {
-  char *file = cmdline_line_after(ca->cmdline, 0);
-  if (!file)
+  log_msg("CONFIG", "conf_op");
+  char *file  = list_arg(args, 1, VAR_STRING);
+  char *scope = list_arg(args, 2, VAR_STRING);
+  if (!file || (ca->flags && !scope))
     return NORET;
 
-  char *path = fs_expand_path(file);
-  if (path && file_exists(path))
-    config_load(path);
-  if (path)
-    free(path);
+  char *name = strip_quotes(file);
+  char *path = fs_expand_path(name);
 
+  if (path && file_exists(path)) {
+    if (ca->flags) {
+      nv_module mod = {.key = strdup(scope), .path = strdup(path)};
+      set_module(&mod);
+      load_module(scope);
+    }
+
+    config_load(path);
+
+    if (ca->flags)
+      cmd_unload();
+  }
+
+  free(path);
+  free(name);
   return NORET;
 }

@@ -12,6 +12,7 @@ extern char *p_xc;          /* 'clipboard cmd' */
 typedef struct nv_group nv_group;
 typedef struct nv_module nv_module;
 typedef struct nv_syn nv_syn;
+typedef struct nv_block nv_block;
 
 struct nv_group {
   UT_hash_handle hh;
@@ -41,17 +42,17 @@ typedef struct {
   nv_module *module;
 } nv_func;
 
-typedef struct {
+struct nv_block {
   nv_var *vars;
   nv_func *fn;
-} nv_block;
+};
 
 struct nv_module {
   UT_hash_handle hh;
   char *key;
+  char *path;
   int curline;
-  nv_func *funcs;
-  nv_var  *vars;
+  nv_block blk;
 };
 
 enum nv_color_group {
@@ -91,12 +92,15 @@ nv_syn* get_syn(const char *);
 int get_syn_colpair(const char *);
 
 void set_module(nv_module *);
+nv_module* get_module(const char *);
+void load_module(const char *name);
+
 void set_var(nv_var *, nv_block *);
 char* opt_var(Token *, nv_block *);
-void set_func(nv_func *);
+void set_func(nv_func *, nv_block *);
 void clear_block(nv_block *);
 
-nv_func* opt_func(const char *);
+nv_func* opt_func(const char *, nv_block *);
 void set_opt(const char *, const char *);
 char* get_opt_str(const char *);
 uint get_opt_uint(const char *);

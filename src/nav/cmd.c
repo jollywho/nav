@@ -32,7 +32,7 @@ typedef struct Cmdblock Cmdblock;
 struct Cmdblock {
   Cmdblock *parent;
   int brk;
-  nv_block blk;
+  nv_block *blk;
   Cmdret ret;
 };
 
@@ -40,6 +40,7 @@ typedef struct Script Script;
 struct Script {
   nv_func *fndef;
   Cmdblock *callstack;
+  Cmdblock scope;
   Symb *tape;
   Symb *cur;
   Symb root;
@@ -179,7 +180,8 @@ static void pop_callstack()
 {
   if (!nvs.callstack)
     return;
-  clear_block(&nvs.callstack->blk);
+  if (nvs.callstack != &nvs.scope)
+    clear_block(nvs.callstack->blk);
   if (nvs.callstack == nvs.callstack->parent)
     nvs.callstack = NULL;
   else
@@ -241,7 +243,7 @@ static Cmdret cmd_call(Cmdstr *caller, nv_func *fn, char *line)
   List *args = cmdline_lst(&cmd);
   int argc = utarray_len(args->items);
 
-  Cmdblock blk = {.brk = 0, .blk.vars = 0, .blk.fn = fn};
+  Cmdblock blk = {.brk = 0, .blk = &(nv_block){}};
   push_callstack(&blk);
   caller->ret = nvs.callstack->ret;
 
@@ -303,26 +305,30 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
     if (cmd->ret.type != STRING)
       continue;
 
+    char *scope = "";
     char *symb = list_arg(cmdline_lst(cmdline), cmd->idx, VAR_STRING);
-    Pair *scope = list_arg(cmdline_lst(cmdline), cmd->idx, VAR_PAIR);
-    if (scope) {
-      log_err("CMD", "%p %p %d", symb, scope, scope->scope);
-      symb = token_val(&scope->value, VAR_STRING);
+    Pair *p = list_arg(cmdline_lst(cmdline), cmd->idx, VAR_PAIR);
+    if (p) {
+      scope = token_val(&p->key, VAR_STRING);
+      symb = token_val(&p->value, VAR_STRING);
+      load_module(scope);
     }
 
     if (symb) {
-      //TODO: scope resolution
-      nv_func *fn = opt_func(symb);
+      nv_func *fn = opt_func(symb, cmd_callstack());
       if (fn) {
         Cmdstr rstr;
         cmd_call(&rstr, fn, cmd->ret.val.v_str);
-        pos -= strlen(symb);
+        pos -= strlen(symb) + strlen(scope) + 2;
         free(cmd->ret.val.v_str);
         cmd->ret = rstr.ret;
         if (cmd->ret.type != STRING)
           cmd->ret.val.v_str = "''";
       }
     }
+
+    if (p)
+      cmd_unload();
 
     char *retline = cmd->ret.val.v_str;
     int retlen = strlen(retline);
@@ -689,7 +695,7 @@ static Cmdret cmd_endblock(List *args, Cmdarg *ca)
   log_msg("CMD", "endblock");
   --nvs.lvl;
   if (IS_READ && nvs.lvl == 0) {
-    set_func(nvs.fndef);
+    set_func(nvs.fndef, cmd_callstack());
     nvs.opendef = 0;
     cmd_flush();
     return NORET;
@@ -764,7 +770,7 @@ static Cmdret cmd_funcblock(List *args, Cmdarg *ca)
     nvs.opendef = 1;
   }
   else { /* print */
-    nv_func *fn = opt_func(name);
+    nv_func *fn = opt_func(name, cmd_callstack());
     for (int i = 0; i < utarray_len(fn->lines); i++)
       log_msg("CMD", "%s", *(char**)utarray_eltptr(fn->lines, i));
   }
@@ -878,8 +884,20 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
 nv_block* cmd_callstack()
 {
   if (nvs.callstack)
-    return &nvs.callstack->blk;
+    return nvs.callstack->blk;
   return NULL;
+}
+
+void cmd_load(nv_block *blk)
+{
+  nvs.scope = (Cmdblock){.brk = 0, .blk = blk};
+  push_callstack(&nvs.scope);
+}
+
+void cmd_unload()
+{
+  /* stack should be empty except scope */
+  pop_callstack();
 }
 
 bool cmd_conditional()

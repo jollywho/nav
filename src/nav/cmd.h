@@ -44,6 +44,8 @@ Cmd_T* cmd_find(const char *);
 void cmd_list(List *args);
 void cmd_eval(Cmdstr *caller, char *line);
 nv_block* cmd_callstack();
+void cmd_load(nv_block *);
+void cmd_unload();
 bool cmd_conditional();
 
 #endif

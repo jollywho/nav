@@ -119,14 +119,10 @@ void option_init()
 
 void option_cleanup()
 {
-  CLEAR_OPT(nv_module, modules,   {});
+  clear_block(&(nv_block){gbl_vars, gbl_funcs});
   CLEAR_OPT(nv_syn,    syntaxes,  {});
-  CLEAR_OPT(nv_var,    gbl_vars,  free(it->var));
   CLEAR_OPT(nv_group,  groups,    op_delgrp(it->opgrp));
-  CLEAR_OPT(nv_func,   gbl_funcs, {
-    del_param_list(it->argv, it->argc);
-    utarray_free(it->lines);
-  });
+  CLEAR_OPT(nv_module, modules,   { free(it->path); clear_block(&it->blk); });
 
   nv_option *it, *tmp;
   HASH_ITER(hh, options, it, tmp) {
@@ -138,7 +134,11 @@ void option_cleanup()
 
 void clear_block(nv_block *blk)
 {
-  CLEAR_OPT(nv_var, blk->vars, free(it->var));
+  CLEAR_OPT(nv_var,  blk->vars, free(it->var));
+  CLEAR_OPT(nv_func, blk->fn, {
+    del_param_list(it->argv, it->argc);
+    utarray_free(it->lines);
+  });
 }
 
 void set_color(nv_group *grp, int fg, int bg)
@@ -211,6 +211,20 @@ void set_module(nv_module *module)
   HASH_ADD_STR(modules, key, mod);
 }
 
+nv_module* get_module(const char *name)
+{
+  nv_module *mod;
+  HASH_FIND_STR(modules, name, mod);
+  return mod;
+}
+
+void load_module(const char *name)
+{
+  nv_module *mod = get_module(name);
+  if (mod)
+    cmd_load(&mod->blk);
+}
+
 void set_var(nv_var *variable, nv_block *blk)
 {
   nv_var *var = malloc(sizeof(nv_var));
@@ -231,9 +245,14 @@ char* opt_var(Token *word, nv_block *blk)
   char *alt = NULL;
   if (!key) {
     Pair *p = token_val(word, VAR_PAIR);
-    //TODO: scope resolution
     key = token_val(&p->key, VAR_STRING);
     alt = token_val(&p->value, VAR_STRING);
+    if (p->scope) {
+      nv_module *mod = get_module(key);
+      key = alt;
+      if (mod)
+        blk = &mod->blk;
+    }
   }
 
   if (!key || !key[0])
@@ -260,16 +279,22 @@ char* opt_var(Token *word, nv_block *blk)
   return strdup(var->var);
 }
 
-void set_func(nv_func *func)
+void set_func(nv_func *func, nv_block *blk)
 {
   nv_func *fn = func;
-  HASH_ADD_STR(gbl_funcs, key, fn);
+  nv_func **container = &gbl_funcs;
+  if (blk)
+    container = &blk->fn;
+  HASH_ADD_STR(*container, key, fn);
 }
 
-nv_func* opt_func(const char *name)
+nv_func* opt_func(const char *name, nv_block *blk)
 {
   nv_func *fn;
-  HASH_FIND_STR(gbl_funcs, name, fn);
+  nv_func **container = &gbl_funcs;
+  if (blk)
+    container = &blk->fn;
+  HASH_FIND_STR(*container, name, fn);
   return fn;
 }
 
