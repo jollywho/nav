@@ -70,6 +70,7 @@ struct Cmdline {
   UT_array *arys;      //list of arys
   QUEUE refs;          //queue of token refs to avoid recursive cleanup
   char *line;          //the raw string being built upon
+  int len;
   int lvl;             //subexpression level
   bool cont;           //line continuation
   bool err;

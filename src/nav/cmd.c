@@ -308,10 +308,12 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
     char *scope = "";
     char *symb = list_arg(cmdline_lst(cmdline), cmd->idx, VAR_STRING);
     Pair *p = list_arg(cmdline_lst(cmdline), cmd->idx, VAR_PAIR);
+    int slen = 0;
     if (p) {
       scope = token_val(&p->key, VAR_STRING);
       symb = token_val(&p->value, VAR_STRING);
       load_module(scope);
+      slen = strlen(scope) + 2;
     }
 
     if (symb) {
@@ -319,7 +321,7 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
       if (fn) {
         Cmdstr rstr;
         cmd_call(&rstr, fn, cmd->ret.val.v_str);
-        pos -= strlen(symb) + strlen(scope) + 2;
+        pos -= strlen(symb) + slen;
         free(cmd->ret.val.v_str);
         cmd->ret = rstr.ret;
         if (cmd->ret.type != STRING)

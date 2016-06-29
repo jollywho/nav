@@ -49,12 +49,7 @@ static fentry* fs_mux(nv_fs *fs)
   fentry *ent = NULL;
   HASH_FIND_STR(ent_tbl, fs->path, ent);
   if (!ent) {
-    ent = malloc(sizeof(fentry));
-    ent->running = false;
-    ent->flush = false;
-    ent->cancel = false;
-    ent->reopen = false;
-    ent->listeners = NULL;
+    ent = calloc(1, sizeof(fentry));
     ent->key = strdup(fs->path);
     ent->refs = 2;
     uv_fs_event_init(eventloop(), &ent->watcher);

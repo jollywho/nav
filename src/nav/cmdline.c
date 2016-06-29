@@ -321,7 +321,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
       char *closech = strchr(&str[pos], ch[0]);
       if (closech && closech[-1] != '\\') {
         int end = (closech - &str[pos]) + pos;
-        create_token(cmdline->tokens, str, pos-1, end+1);
+        create_token(cmdline->tokens, str, pos, end);
         end++;
         pos = end;
         st = end;
@@ -405,9 +405,14 @@ char* cmdline_line_from(Cmdline *cmdline, int idx)
   Token *word = cmdline_tokindex(cmdline, idx);
   if (!word)
     return NULL;
-  if (word->start >= strlen(cmdline->line))
+  if (word->start >= cmdline->len)
     return NULL;
-  return &cmdline->line[word->start];
+  char *line = &cmdline->line[word->start];
+  if (word->start == 0)
+    return line;
+  if (*(line-1) == '\"' || *(line-1) == '\'')
+    return (line-1);
+  return line;
 }
 
 char* cmdline_line_after(Cmdline *cmdline, int idx)
@@ -415,7 +420,7 @@ char* cmdline_line_after(Cmdline *cmdline, int idx)
   Token *word = cmdline_tokindex(cmdline, idx);
   if (!word || idx >= utarray_len(cmdline->tokens))
     return NULL;
-  if (word->end >= strlen(cmdline->line))
+  if (word->end >= cmdline->len)
     return NULL;
   return &cmdline->line[word->end];
 }
@@ -613,6 +618,7 @@ void cmdline_build(Cmdline *cmdline, char *line)
   log_msg("CMDSTR", "cmdline_build");
   cmdline->lvl = 0;
   cmdline->line = strdup(line);
+  cmdline->len = strlen(line);
   cmdline->err = false;
   cmdline->cont = false;
   QUEUE_INIT(&cmdline->refs);

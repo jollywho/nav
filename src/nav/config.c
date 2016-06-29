@@ -468,9 +468,9 @@ static Cmdret conf_source(List *args, Cmdarg *ca)
   if (!file || (ca->flags && !scope))
     return NORET;
 
-  char *name = strip_quotes(file);
-  char *path = fs_expand_path(name);
-
+  //TODO: search plug path
+  //TODO: module line numbers
+  char *path = fs_expand_path(file);
   if (path && file_exists(path)) {
     if (ca->flags) {
       nv_module mod = {.key = strdup(scope), .path = strdup(path)};
@@ -485,6 +485,5 @@ static Cmdret conf_source(List *args, Cmdarg *ca)
   }
 
   free(path);
-  free(name);
   return NORET;
 }
