@@ -102,9 +102,15 @@ static void read_line(char *line)
 
 static void cmd_reset()
 {
+  if (nvs.opendef) {
+    del_param_list(nvs.fndef->argv, nvs.fndef->argc);
+    utarray_free(nvs.fndef->lines);
+    free(nvs.fndef->key);
+    free(nvs.fndef);
+  }
   if (!IS_READ || nvs.error) {
     nvs.fndef = NULL;
-    nvs.opendef = 0;
+    nvs.opendef = false;
   }
   nvs.line = NULL;
   nvs.error = false;
@@ -149,17 +155,15 @@ void cmd_flush()
 {
   log_msg("CMD", "flush");
 
-  if (nvs.error && nvs.opendef) {
-    nv_err("parse error: open definition not closed!");
-    del_param_list(nvs.fndef->argv, nvs.fndef->argc);
-    utarray_free(nvs.fndef->lines);
-    free(nvs.fndef->key);
-    free(nvs.fndef);
-  }
   if (nvs.lvl > 0)
     nv_err("parse error: open block not closed!");
-  if (nvs.lvlcont)
+  else if (nvs.lvlcont)
     nv_err("parse error: open '(' not closed!");
+  else if (nvs.error && IS_READ)
+    nv_err("parse error: open definition not closed!");
+
+  nvs.error = nvs.lvl > 0 || nvs.lvlcont;
+
   for (int i = 0; nvs.tape[i].line; i++)
     free(nvs.tape[i].line);
 
@@ -624,7 +628,7 @@ static int ctl_cmd(const char *line)
     if (!strncmp(str, line, strlen(str)))
       return i;
     char *alt = builtins[i].alt;
-    if (!strncmp(alt, line, strlen(str)))
+    if (!strncmp(alt, line, strlen(alt)))
       return i;
   }
   return -1;
@@ -698,7 +702,7 @@ static Cmdret cmd_endblock(List *args, Cmdarg *ca)
   --nvs.lvl;
   if (IS_READ && nvs.lvl == 0) {
     set_func(nvs.fndef, cmd_callstack());
-    nvs.opendef = 0;
+    nvs.opendef = false;
     cmd_flush();
     return NORET;
   }
@@ -769,7 +773,7 @@ static Cmdret cmd_funcblock(List *args, Cmdarg *ca)
     nvs.fndef->argc = mk_param_list(ca, &nvs.fndef->argv);
     utarray_new(nvs.fndef->lines, &ut_str_icd);
     nvs.fndef->key = strdup(name);
-    nvs.opendef = 1;
+    nvs.opendef = true;
   }
   else { /* print */
     nv_func *fn = opt_func(name, cmd_callstack());
