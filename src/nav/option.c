@@ -218,13 +218,6 @@ nv_module* get_module(const char *name)
   return mod;
 }
 
-void load_module(const char *name)
-{
-  nv_module *mod = get_module(name);
-  if (mod)
-    cmd_load(&mod->blk);
-}
-
 void set_var(nv_var *variable, nv_block *blk)
 {
   nv_var *var = malloc(sizeof(nv_var));

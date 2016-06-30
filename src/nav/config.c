@@ -149,16 +149,15 @@ static FILE* config_open(const char *file, const char **defaults, char *mode)
     path = get_config_path(defaults, sizeof(defaults));
 
   if (!path) {
-    log_msg("CONFIG", "Unable to find a config file!");
+    log_msg("CONFIG", "Unable to open file %s", file);
     return NULL;
   }
 
   FILE *f = fopen(path, mode);
   free(path);
-  if (!f) {
-    fprintf(stderr, "Unable to open '%s' for reading", path);
+  if (!f)
     return NULL;
-  }
+
   return f;
 }
 
@@ -168,6 +167,7 @@ void config_load(const char *file)
   if (!f)
     return;
   config_read(f);
+  cmd_setfile(NULL);
   fclose(f);
 }
 
@@ -217,16 +217,17 @@ bool info_read(FILE *file)
 
 bool config_read(FILE *file)
 {
-  int line_number = 0;
   char *line;
+  int lineno = 0;
   while (!feof(file)) {
+    ++lineno;
     line = read_line(file);
-    line_number++;
     line = strip_whitespace(line);
     if (line[0] == '#' || strlen(line) < 1) {
       free(line);
       continue;
     }
+    cmd_setline(lineno);
     cmd_eval(NULL, line);
     free(line);
   }
@@ -469,19 +470,17 @@ static Cmdret conf_source(List *args, Cmdarg *ca)
     return NORET;
 
   //TODO: search plug path
-  //TODO: module line numbers
   char *path = fs_expand_path(file);
   if (path && file_exists(path)) {
     if (ca->flags) {
       nv_module mod = {.key = strdup(scope), .path = strdup(path)};
       set_module(&mod);
-      load_module(scope);
     }
 
+    cmd_load(scope);
+    cmd_setfile(path);
     config_load(path);
-
-    if (ca->flags)
-      cmd_unload();
+    cmd_unload(ca->flags);
   }
 
   free(path);

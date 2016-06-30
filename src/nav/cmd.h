@@ -41,11 +41,13 @@ void cmd_clearall();
 void cmd_flush();
 void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline);
 Cmd_T* cmd_find(const char *);
-void cmd_list(List *args);
+void cmd_setfile(char *);
+void cmd_setline(int);
 void cmd_eval(Cmdstr *caller, char *line);
 nv_block* cmd_callstack();
-void cmd_load(nv_block *);
-void cmd_unload();
+void cmd_load(const char *);
+void cmd_unload(bool);
 bool cmd_conditional();
+void cmd_list(List *args);
 
 #endif

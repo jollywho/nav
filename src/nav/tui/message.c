@@ -1,10 +1,5 @@
-#include <stdio.h>
-#include <stdarg.h>
-#include <malloc.h>
-#include <ncurses.h>
 #include "nav/tui/message.h"
 #include "nav/tui/layout.h"
-#include "nav/log.h"
 #include "nav/event/input.h"
 #include "nav/event/event.h"
 #include "nav/option.h"

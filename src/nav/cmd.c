@@ -46,6 +46,9 @@ struct Script {
   Symb root;
   int pos;
   int lvl;
+  int deflno;
+  char *filename;
+  int lineno;
   int maxpos;
   char *line;
   bool lncont;
@@ -112,6 +115,8 @@ static void cmd_reset()
     nvs.fndef = NULL;
     nvs.opendef = false;
   }
+  nvs.lineno = 0;
+  nvs.deflno = 0;
   nvs.line = NULL;
   nvs.error = false;
   nvs.lncont = false;
@@ -128,6 +133,7 @@ static void cmd_reset()
 void cmd_init()
 {
   cmd_reset();
+  nvs.filename = NULL;
   nvs.callstack = NULL;
   for (int i = 1; i < LENGTH(builtins); i++)
     cmd_add(&builtins[i]);
@@ -151,16 +157,24 @@ void cmd_sort_cmds()
   HASH_SORT(cmd_tbl, name_sort);
 }
 
+void report_line(const char *str)
+{
+  if (nvs.filename)
+    nv_err("%s (%s:%d)", str, nvs.filename, nvs.deflno);
+  else
+    nv_err("%s", str);
+}
+
 void cmd_flush()
 {
   log_msg("CMD", "flush");
 
   if (nvs.lvl > 0)
-    nv_err("parse error: open block not closed!");
+    report_line("parse error: open block not closed!");
   else if (nvs.lvlcont)
-    nv_err("parse error: open '(' not closed!");
+    report_line("parse error: open '(' not closed!");
   else if (nvs.error && IS_READ)
-    nv_err("parse error: open definition not closed!");
+    report_line("parse error: open definition not closed!");
 
   nvs.error = nvs.lvl > 0 || nvs.lvlcont;
 
@@ -170,6 +184,11 @@ void cmd_flush()
   free(nvs.tape);
   free(nvs.line);
   cmd_reset();
+}
+
+void cmd_setline(int lno)
+{
+  nvs.lineno = lno;
 }
 
 static void push_callstack(Cmdblock *blk)
@@ -316,7 +335,7 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
     if (p) {
       scope = token_val(&p->key, VAR_STRING);
       symb = token_val(&p->value, VAR_STRING);
-      load_module(scope);
+      cmd_load(scope);
       slen = strlen(scope) + 2;
     }
 
@@ -333,8 +352,7 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
       }
     }
 
-    if (p)
-      cmd_unload();
+    cmd_unload(p);
 
     char *retline = cmd->ret.val.v_str;
     int retlen = strlen(retline);
@@ -651,14 +669,14 @@ void cmd_eval(Cmdstr *caller, char *line)
 static Cmdret cmd_ifblock(List *args, Cmdarg *ca)
 {
   log_msg("CMD", "ifblock");
+  nvs.deflno = nvs.lineno;
+  ++nvs.lvl;
   if (IS_READ) {
-    ++nvs.lvl;
     read_line(ca->cmdline->line);
     return NORET;
   }
   if (!IS_SEEK)
     cmd_flush();
-  ++nvs.lvl;
   stack_push(cmdline_line_after(ca->cmdline, 0));
   nvs.cur = &nvs.tape[nvs.pos];
   nvs.cur->st = nvs.pos;
@@ -769,6 +787,7 @@ static Cmdret cmd_funcblock(List *args, Cmdarg *ca)
 
   if (ca->cmdstr->rev) {
     ++nvs.lvl;
+    nvs.deflno = nvs.lineno;
     nvs.fndef = malloc(sizeof(nv_func));
     nvs.fndef->argc = mk_param_list(ca, &nvs.fndef->argv);
     utarray_new(nvs.fndef->lines, &ut_str_icd);
@@ -894,16 +913,24 @@ nv_block* cmd_callstack()
   return NULL;
 }
 
-void cmd_load(nv_block *blk)
+void cmd_load(const char *key)
 {
-  nvs.scope = (Cmdblock){.brk = 0, .blk = blk};
-  push_callstack(&nvs.scope);
+  nv_module *mod = get_module(key);
+  if (mod) {
+    nvs.scope = (Cmdblock){.brk = 0, .blk = &mod->blk};
+    push_callstack(&nvs.scope);
+  }
 }
 
-void cmd_unload()
+void cmd_unload(bool scope)
 {
-  /* stack should be empty except scope */
-  pop_callstack();
+  if (scope)
+    pop_callstack();
+}
+
+void cmd_setfile(char *path)
+{
+  nvs.filename = path;
 }
 
 bool cmd_conditional()

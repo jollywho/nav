@@ -51,7 +51,6 @@ struct nv_module {
   UT_hash_handle hh;
   char *key;
   char *path;
-  int curline;
   nv_block blk;
 };
 
@@ -93,7 +92,6 @@ int get_syn_colpair(const char *);
 
 void set_module(nv_module *);
 nv_module* get_module(const char *);
-void load_module(const char *name);
 
 void set_var(nv_var *, nv_block *);
 char* opt_var(Token *, nv_block *);
