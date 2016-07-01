@@ -38,9 +38,6 @@ typedef struct {
 static Compl cmpl;
 static compl_list cmplist;
 
-//TODO:
-//block: block level (quotes, arrays). ignore pushes if > 0
-
 static struct compl_entry {
   char *key;
   compl_genfn gen;

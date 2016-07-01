@@ -60,29 +60,6 @@ static bool file_exists(const char *path)
   return access(path, R_OK) != -1;
 }
 
-char* strip_whitespace(char *_str)
-{
-  if (*_str == '\0')
-    return _str;
-
-  char *strold = _str;
-  while (*_str == ' ' || *_str == '\t')
-    _str++;
-
-  char *str = strdup(_str);
-  free(strold);
-  int i;
-
-  /* seek forwards */
-  for (i = 0; str[i] != '\0'; ++i);
-
-  while (i >= 0 && (str[i] == ' ' || str[i] == '\t'))
-    i--;
-
-  str[i] = '\0';
-  return str;
-}
-
 static char* get_config_path(const char **paths, ssize_t len)
 {
   wordexp_t p;
@@ -139,7 +116,7 @@ static char* read_line(FILE *file)
   return string;
 }
 
-static FILE* config_open(const char *file, const char **defaults, char *mode)
+static char* config_path(const char *file, const char **defaults)
 {
   log_msg("CONFIG", "config_open");
   char *path;
@@ -152,50 +129,55 @@ static FILE* config_open(const char *file, const char **defaults, char *mode)
     log_msg("CONFIG", "Unable to open file %s", file);
     return NULL;
   }
-
-  FILE *f = fopen(path, mode);
-  free(path);
-  if (!f)
-    return NULL;
-
-  return f;
+  return path;
 }
 
 void config_load(const char *file)
 {
-  FILE *f = config_open(file, config_paths, "r");
-  if (!f)
+  char *path = config_path(file, config_paths);
+  if (!path)
     return;
+
+  FILE *f = fopen(path, "r");
+  cmd_pushfile(&(ConfFile){.path = path});
   config_read(f);
-  cmd_setfile(NULL);
   fclose(f);
+  cmd_popfile();
+  free(path);
 }
 
-void config_start(char *config_path)
+//TODO: relative path to current file
+void config_start(char *default_path)
 {
-  config_load(config_path);
-  FILE *f = config_open(NULL, info_paths, "r");
-  log_msg("CONFIG", "%p", f);
-  if (!f) {
-    char *path = fs_expand_path(info_paths[0]);
-    f = fopen(path, "w+");
-    if (f)
-      fclose(f);
-    free(path);
+  config_load(default_path);
+  char *path = config_path(NULL, info_paths);
+  if (!path)
     return;
+
+  FILE *f = fopen(path, "r");
+  if (!f) {
+    path = fs_expand_path(info_paths[0]);
+    f = fopen(path, "w+");
   }
+
   info_read(f);
   fclose(f);
+  free(path);
 }
 
 void config_write_info()
 {
   log_msg("CONFIG", "config_write_info");
-  FILE *f = config_open(NULL, info_paths, "w");
-  if (!f)
+  char *path = config_path(NULL, info_paths);
+  if (!path)
     return;
-  info_write_file(f);
-  fclose(f);
+
+  FILE *f = fopen(path, "w");
+  if (f) {
+    info_write_file(f);
+    fclose(f);
+  }
+  free(path);
 }
 
 bool info_read(FILE *file)
@@ -476,9 +458,7 @@ static Cmdret conf_source(List *args, Cmdarg *ca)
       nv_module mod = {.key = strdup(scope), .path = strdup(path)};
       set_module(&mod);
     }
-
     cmd_load(scope);
-    cmd_setfile(path);
     config_load(path);
     cmd_unload(ca->flags);
   }

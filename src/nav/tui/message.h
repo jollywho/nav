@@ -8,6 +8,7 @@ void dialog_input(int);
 int confirm(char *, ...);
 void nv_err(char *fmt, ...);
 void nv_msg(char *fmt, ...);
+void nv_trace(char *f, int l, char *fmt, ...);
 void msg_clear();
 
 #endif

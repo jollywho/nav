@@ -10,6 +10,11 @@ void config_start(char *);
 void config_write_info();
 bool config_read(FILE *);
 bool info_read(FILE *);
-char* strip_whitespace(char *);
+
+typedef struct ConfFile ConfFile;
+struct ConfFile {
+  ConfFile *parent;
+  char *path;
+};
 
 #endif

@@ -39,6 +39,7 @@ struct Cmdblock {
 typedef struct Script Script;
 struct Script {
   nv_func *fndef;
+  ConfFile *filestack;
   Cmdblock *callstack;
   Cmdblock scope;
   Symb *tape;
@@ -47,7 +48,6 @@ struct Script {
   int pos;
   int lvl;
   int deflno;
-  char *filename;
   int lineno;
   int maxpos;
   char *line;
@@ -133,7 +133,7 @@ static void cmd_reset()
 void cmd_init()
 {
   cmd_reset();
-  nvs.filename = NULL;
+  nvs.filestack = NULL;
   nvs.callstack = NULL;
   for (int i = 1; i < LENGTH(builtins); i++)
     cmd_add(&builtins[i]);
@@ -157,12 +157,12 @@ void cmd_sort_cmds()
   HASH_SORT(cmd_tbl, name_sort);
 }
 
-void report_line(const char *str)
+static void trace_err(char *msg, ...)
 {
-  if (nvs.filename)
-    nv_err("%s (%s:%d)", str, nvs.filename, nvs.deflno);
+  if (nvs.filestack)
+    nv_err("%s (%s:%d)", msg, nvs.filestack->path, nvs.deflno);
   else
-    nv_err("%s", str);
+    nv_err(msg);
 }
 
 void cmd_flush()
@@ -170,11 +170,11 @@ void cmd_flush()
   log_msg("CMD", "flush");
 
   if (nvs.lvl > 0)
-    report_line("parse error: open block not closed!");
+    trace_err("parse error: open block not closed!");
   else if (nvs.lvlcont)
-    report_line("parse error: open '(' not closed!");
+    trace_err("parse error: open '(' not closed!");
   else if (nvs.error && IS_READ)
-    report_line("parse error: open definition not closed!");
+    trace_err("parse error: open definition not closed!");
 
   nvs.error = nvs.lvl > 0 || nvs.lvlcont;
 
@@ -272,7 +272,7 @@ static Cmdret cmd_call(Cmdstr *caller, nv_func *fn, char *line)
 
   if (argc != fn->argc) {
     //TODO: send error up nvs.callstack
-    nv_err("incorrect arguments to call: expected %d, got %d!",
+    trace_err("incorrect arguments to call: expected %d, got %d!",
         fn->argc, argc);
     goto cleanup;
   }
@@ -428,11 +428,11 @@ static void cmd_arrys(Cmdstr *caller, Cmdline *cmdline, List *args)
     }
 
     if (!ary)
-      return nv_err("parse error: invalid expression");
+      return trace_err("parse error: invalid expression");
 
     Token *elem = container_elem(ary, args, fst, lst - 1);
     if (!elem)
-      return nv_err("parse error: index not found");
+      return trace_err("parse error: index not found");
 
     char *var = container_str(cmdline->line, elem);
     log_msg("CMD", "var %s", var);
@@ -586,7 +586,7 @@ static int cond_do(char *line)
   goto cleanup;
 error:
   nvs.error = 1;
-  nv_err("%s:%s", err, condline);
+  trace_err("%s:%s", err, condline);
 cleanup:
   cmdline_cleanup(&cmd);
   free(condline);
@@ -770,7 +770,7 @@ static int mk_param_list(Cmdarg *ca, char ***dest)
 
   goto cleanup;
 type_error:
-  nv_err("parse error: invalid function argument!");
+  trace_err("parse error: invalid function argument!");
   del_param_list(*dest, argc);
 cleanup:
   cmdline_cleanup(&cmd);
@@ -796,6 +796,8 @@ static Cmdret cmd_funcblock(List *args, Cmdarg *ca)
   }
   else { /* print */
     nv_func *fn = opt_func(name, cmd_callstack());
+    if (!fn)
+      return NORET;
     for (int i = 0; i < utarray_len(fn->lines); i++)
       log_msg("CMD", "%s", *(char**)utarray_eltptr(fn->lines, i));
   }
@@ -928,9 +930,26 @@ void cmd_unload(bool scope)
     pop_callstack();
 }
 
-void cmd_setfile(char *path)
+//TODO: cmd_call
+//path: function->module->path
+//line: def line + offset
+void cmd_pushfile(ConfFile *fi)
 {
-  nvs.filename = path;
+  if (!nvs.filestack)
+    nvs.filestack = fi;
+  fi->parent = nvs.filestack;
+  nvs.filestack = fi;
+}
+
+void cmd_popfile()
+{
+  cmd_flush();
+  if (!nvs.filestack)
+    return;
+  if (nvs.filestack == nvs.filestack->parent)
+    nvs.filestack = NULL;
+  else
+    nvs.filestack = nvs.filestack->parent;
 }
 
 bool cmd_conditional()

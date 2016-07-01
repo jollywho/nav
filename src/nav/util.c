@@ -245,6 +245,29 @@ char* strip_shell(const char *src)
   return dest;
 }
 
+char* strip_whitespace(char *_str)
+{
+  if (*_str == '\0')
+    return _str;
+
+  char *strold = _str;
+  while (*_str == ' ' || *_str == '\t')
+    _str++;
+
+  char *str = strdup(_str);
+  free(strold);
+  int i;
+
+  /* seek forwards */
+  for (i = 0; str[i] != '\0'; ++i);
+
+  while (i >= 0 && (str[i] == ' ' || str[i] == '\t'))
+    i--;
+
+  str[i] = '\0';
+  return str;
+}
+
 char* strncat_shell(char *dest, const char *src)
 {
   char c;
