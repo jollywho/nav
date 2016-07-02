@@ -479,9 +479,9 @@ static void pop(QUEUE *stack, Cmdline *cmdline, int *idx)
     p->var.vval.v_pair->key = key;
     p->var.vval.v_pair->value = token;
     p->end = token.end;
+    token = stack_pop(stack);
 
-    if (!cmdline_push_var(p, cmdline)) {
-      token = stack_pop(stack);
+    if (!cmdline_push_var(&token, cmdline)) {
       Token *pt = stack_head(stack);
       utarray_push_back(pt->var.vval.v_list->items, &token);
     }

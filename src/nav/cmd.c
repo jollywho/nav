@@ -816,6 +816,12 @@ static Cmdret cmd_returnblock(List *args, Cmdarg *ca)
   char *line = cmdline_line_from(ca->cmdline, 1);
 
   if (line) {
+    /* trim trailing space */
+    char *end = ca->cmdline->line + ca->cmdline->len - 1;
+    while (end >= line && *end == ' ')
+      end--;
+    *(end + 1) = '\0';
+
     Cmdstr nstr;
     cmd_eval(&nstr, line);
     nvs.callstack->ret = nstr.ret;
