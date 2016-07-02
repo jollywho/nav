@@ -259,7 +259,7 @@ char* opt_var(Token *word, nv_block *blk)
 
   if (blk)
     HASH_FIND_STR(blk->vars, key, var);
-  if (!var)
+  if (!var && !alt)
     HASH_FIND_STR(gbl_vars, key, var);
   if (!var) {
     char *env = getenv(key);

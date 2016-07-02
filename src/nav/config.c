@@ -139,10 +139,12 @@ void config_load(const char *file)
     return;
 
   FILE *f = fopen(path, "r");
-  cmd_pushfile(&(ConfFile){.path = path});
-  config_read(f);
-  fclose(f);
-  cmd_popfile();
+  if (f) {
+    cmd_pushfile(&(ConfFile){.path = path});
+    config_read(f);
+    fclose(f);
+    cmd_popfile();
+  }
   free(path);
 }
 
@@ -345,12 +347,6 @@ static Cmdret conf_variable(List *args, Cmdarg *ca)
   log_msg("CONFIG", "conf_variable");
   log_msg("CONFIG", "%s", ca->cmdline->line);
 
-  /* statement needs valid name */
-  Token *lhs = tok_arg(args, 1);
-  char *key = list_arg(args, 1, VAR_STRING);
-  if (!lhs || !key)
-    return NORET;
-
   /* find where '=' delimits statement */
   int delm = -1;
   for (int i = 0; i < utarray_len(args->items); i++) {
@@ -363,13 +359,26 @@ static Cmdret conf_variable(List *args, Cmdarg *ca)
   if (delm == -1 || delm >= utarray_len(args->items))
     return NORET;
 
-  //FIXME: breaks on pair type
+  /* statement needs valid name */
+  Token *lhs = tok_arg(args, 1);
+  char *key = list_arg(args, 1, VAR_STRING);
+  bool scope = false;
+
+  /* load module block */
+  if (!key && lhs) {
+    Pair *p = token_val(lhs, VAR_PAIR);
+    if (p->scope) {
+      scope = true;
+      key = token_val(&p->value, VAR_STRING);
+      cmd_load(token_val(&p->key, VAR_STRING));
+    }
+  }
+
+  if (!key)
+    return NORET;
+
   char *expr = cmdline_line_from(ca->cmdline, delm);
-  nv_var var = {
-    .key = strdup(key),
-    .var = strdup(expr),
-  };
-  //TODO: scope resolution
+  nv_var var = {.key = strdup(key), .var = strdup(expr)};
 
   /* when delm isn't 3 the key should be expanded */
   if (delm != 3) {
@@ -385,8 +394,10 @@ static Cmdret conf_variable(List *args, Cmdarg *ca)
   }
 
   set_var(&var, cmd_callstack());
+  cmd_unload(scope);
   return NORET;
 cleanup:
+  cmd_unload(scope);
   free(var.key);
   free(var.var);
   return NORET;
@@ -451,7 +462,6 @@ static Cmdret conf_source(List *args, Cmdarg *ca)
   if (!file || (ca->flags && !scope))
     return NORET;
 
-  //TODO: search plug path
   char *path = fs_expand_path(file);
   if (path && file_exists(path)) {
     if (ca->flags) {
