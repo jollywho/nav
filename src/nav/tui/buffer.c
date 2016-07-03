@@ -387,11 +387,11 @@ varg_T buf_select(Buffer *buf, const char *fld, select_cb cb)
     cb = default_select_cb;
 
   if (!select_active()) {
-    char *val = cb(model_curs_value(m, fld));
+    char *val = model_curs_value(m, fld);
     if (!val)
       val = "";
     char **str = malloc(sizeof(char*));
-    str[0] = val;
+    str[0] = cb(val);
     return (varg_T){1,str};
   }
 
