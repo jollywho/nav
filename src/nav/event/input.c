@@ -263,8 +263,9 @@ bool try_do_map(Keyarg *ca)
   char ch;
   char *rhs = get;
   while ((ch = *rhs++)) {
-    Keyarg ca = {.key = ch, .utf8 = (char[7]){ch,0,0,0,0,0,0}};
-    window_input(&ca);
+    ca->key = ch;
+    ca->utf8 = (char[7]){ch,0,0,0,0,0,0};
+    window_input(ca);
   }
   return true;
 }
@@ -476,7 +477,6 @@ int find_do_key(nv_keytbl *kt, Keyarg *ca, void *obj)
     }
   }
 
-  //TODO: dont erase opcount on map prefix
   if (ISDIGIT(ca->key)) {
     ca->opcount *= 10;
     ca->opcount += ca->key - '0';
