@@ -5,7 +5,6 @@
 #include "nav/event/event.h"
 #include "nav/event/process.h"
 #include "nav/event/uv_process.h"
-#include "nav/event/pty_process.h"
 #include "nav/log.h"
 
 // {SIGNAL}_TIMEOUT is the time (in nanoseconds) that a process has to cleanly
@@ -43,17 +42,7 @@ bool process_spawn(Process *proc)
     uv_pipe_init(&proc->loop->uv, &proc->err->uv.pipe, 0);
   }
 
-  bool success;
-  switch (proc->type) {
-    case kProcessTypeUv:
-      success = uv_process_spawn((UvProcess *)proc);
-      break;
-    case kProcessTypePty:
-      success = pty_process_spawn((PtyProcess *)proc);
-      break;
-    default:
-      abort();
-  }
+  bool success = uv_process_spawn((UvProcess *)proc);
 
   if (!success) {
     if (proc->in) {
@@ -66,11 +55,7 @@ bool process_spawn(Process *proc)
       uv_close((uv_handle_t *)&proc->err->uv.pipe, NULL);
     }
 
-    if (proc->type == kProcessTypeUv) {
-      uv_close((uv_handle_t *)&(((UvProcess *)proc)->uv), NULL);
-    } else {
-      process_close(proc);
-    }
+    uv_close((uv_handle_t *)&(((UvProcess *)proc)->uv), NULL);
     free(proc->argv);
     proc->status = -1;
     return false;
@@ -109,24 +94,6 @@ bool process_spawn(Process *proc)
   return true;
 }
 
-void process_teardown(Loop *loop)
-{
-  log_msg("PROCESS", "teardown");
-  process_is_tearing_down = true;
-  Process *it;
-  SLIST_FOREACH(it, &loop->children, ent) {
-    log_msg("PROCESS", "*********");
-    Process *proc = it;
-    uv_kill(proc->pid, SIGTERM);
-    proc->term_sent = true;
-    process_stop(proc);
-  }
-
-  // Wait until all children exit
-  //PROCESS_EVENTS_UNTIL(loop, loop->events, -1, SLIST_EMPTY(&loop->children));
-  pty_process_teardown(loop);
-}
-
 // Wrappers around `stream_close` that protect against double-closing.
 void process_close_streams(Process *proc) 
 {
@@ -163,21 +130,10 @@ void process_stop(Process *proc)
   }
 
   proc->stopped_time = os_hrtime();
-  switch (proc->type) {
-    case kProcessTypeUv:
-      // Close the process's stdin. If the process doesn't close its own
-      // stdout/stderr, they will be closed when it exits(possibly due to being
-      // terminated after a timeout)
-      process_close_in(proc);
-      break;
-    case kProcessTypePty:
-      // close all streams for pty processes to send SIGHUP to the process
-      process_close_streams(proc);
-      pty_process_close_master((PtyProcess *)proc);
-      break;
-    default:
-      abort();
-  }
+  // Close the process's stdin. If the process doesn't close its own
+  // stdout/stderr, they will be closed when it exits(possibly due to being
+  // terminated after a timeout)
+  process_close_in(proc);
 
   Loop *loop = proc->loop;
   if (!loop->children_stop_requests++) {
@@ -199,9 +155,9 @@ static void children_kill_cb(uv_timer_t *handle)
   Process *it;
   SLIST_FOREACH(it, &loop->children, ent) {
     Process *proc = it;
-    if (!proc->stopped_time) {
+    if (!proc->stopped_time)
       continue;
-    }
+
     uint64_t elapsed = now - proc->stopped_time;
 
     if (!proc->term_sent && elapsed >= TERM_TIMEOUT) {
@@ -220,20 +176,15 @@ static void process_close_event(void **args)
   log_msg("PROCESS", "process_close_event");
   Process *proc = args[0];
 
-  if (proc->type == kProcessTypePty) {
-    free(((PtyProcess *)proc)->term_name);
-  }
-  if (proc->cb) {
+  if (proc->cb)
     proc->cb(proc, proc->status, proc->data);
-  }
 }
 
 static void decref(Process *proc)
 {
   log_msg("PROCESS", "decref");
-  if (--proc->refcount != 0) {
+  if (--proc->refcount != 0)
     return;
-  }
 
   Loop *loop = proc->loop;
   Process *node = NULL;
@@ -257,16 +208,7 @@ static void process_close(Process *proc)
   }
 
   proc->closed = true;
-  switch (proc->type) {
-    case kProcessTypeUv:
-      uv_process_close((UvProcess *)proc);
-      break;
-    case kProcessTypePty:
-      pty_process_close((PtyProcess *)proc);
-      break;
-    default:
-      abort();
-  }
+  uv_process_close((UvProcess *)proc);
 }
 
 static void process_close_handles(void **argv)

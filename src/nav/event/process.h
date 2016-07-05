@@ -4,17 +4,11 @@
 #include "nav/event/event.h"
 #include "nav/event/stream.h"
 
-typedef enum {
-  kProcessTypeUv,
-  kProcessTypePty
-} ProcessType;
-
 typedef struct process Process;
 typedef void (*process_exit_cb)(Process *proc, int status, void *data);
 typedef void (*internal_process_cb)(Process *proc);
 
 struct process {
-  ProcessType type;
   Loop *loop;
   void *data;
   int pid, status, refcount;
@@ -30,10 +24,9 @@ struct process {
   SLIST_ENTRY(process) ent;
 };
 
-static inline Process process_init(Loop *loop, ProcessType type, void *data)
+static inline Process process_init(Loop *loop, void *data)
 {
   return (Process) {
-    .type = type,
     .data = data,
     .loop = loop,
     .pid = 0,

@@ -204,12 +204,13 @@ static void term_close(Term *term)
 
 static void chld_handler(uv_signal_t *handle, int signum)
 {
+  log_err("TERM", "sigchld");
   int stat = 0;
   int pid;
 
-  do {
+  do
     pid = waitpid(-1, &stat, WNOHANG);
-  } while (pid < 0 && errno == EINTR);
+  while (pid < 0 && errno == EINTR);
 
   if (pid <= 0)
     return;

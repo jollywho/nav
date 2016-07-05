@@ -14,7 +14,7 @@ typedef struct uv_process {
 static inline UvProcess uv_process_init(Loop *loop, void *data)
 {
   UvProcess rv;
-  rv.process = process_init(loop, kProcessTypeUv, data);
+  rv.process = process_init(loop, data);
   return rv;
 }
 
