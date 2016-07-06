@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <stdlib.h>
 
 #include "nav/plugins/ed/ed.h"
 #include "nav/plugins/term/term.h"
@@ -175,7 +176,7 @@ static void ed_start_term(Ed *ed, varg_T *arg)
   ed_dump_contents(ed, arg);
 
   char *line;
-  asprintf(&line, "$EDITOR %s", ed->tmp_name);
+  asprintf(&line, "%s %s", getenv("EDITOR"), ed->tmp_name);
   term_new(ed->base, ed->buf, line);
   free(line);
 
