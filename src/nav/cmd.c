@@ -306,7 +306,7 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
   nvs.condition = false;
 
   Cmdstr *cmd = NULL;
-  int maxlen = strlen(cmdline->line) + 2;
+  int maxlen = cmdline->len + 2;
   char *base = malloc(maxlen);
   int pos = 0;
   int prevst = 0;
@@ -377,7 +377,7 @@ static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
   char *var_lst[count];
   Token *tok_lst[count];
   int len_lst[count];
-  int size = strlen(cmdline->line);
+  int size = cmdline->len;
 
   for (int i = 0; i < count; i++) {
     Token *word = (Token*)utarray_eltptr(cmdline->vars, i);
@@ -407,9 +407,8 @@ static void cmd_arrys(Cmdstr *caller, Cmdline *cmdline, List *args)
   log_msg("CMD", "cmd_arrys");
   int count = utarray_len(cmdline->arys);
   char *var_lst[count];
-  int len_lst[count];
-  int st_lst[count], ed_lst[count];
-  int size = strlen(cmdline->line);
+  int len_lst[count], st_lst[count], ed_lst[count];
+  int size = cmdline->len;
   int num = 0;
 
   for (int i = 0; i < count; i++) {

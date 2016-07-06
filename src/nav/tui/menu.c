@@ -139,7 +139,11 @@ void path_list(List *args)
 
   if (compl_validate(ex_cmd_curpos()) || ex_cmd_curch() != '/') {
     exec = true;
-    SWAP_ALLOC_PTR(path, strdup(fs_parent_dir(path)));
+    char *parent = fs_parent_dir(path);
+    if (*parent == '.')
+      parent = window_cur_dir();
+
+    SWAP_ALLOC_PTR(path, strdup(parent));
   }
   if (exec)
     fs_read(cur_menu->fs, path);
@@ -150,12 +154,10 @@ void path_list(List *args)
 Menu* menu_new()
 {
   log_msg("MENU", "menu_new");
-  Menu *mnu = malloc(sizeof(Menu));
-  memset(mnu, 0, sizeof(Menu));
-  Handle *hndl = malloc(sizeof(Handle));
+  Menu *mnu = calloc(1, sizeof(Menu));
+  Handle *hndl = calloc(1, sizeof(Handle));
   mnu->hndl = hndl;
 
-  memset(mnu->hndl, 0, sizeof(Handle));
   mnu->hndl->tn = "fm_files";
   mnu->hndl->key_fld = "dir";
   mnu->hndl->fname = "name";
