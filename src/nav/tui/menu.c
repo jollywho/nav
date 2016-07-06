@@ -139,7 +139,7 @@ void path_list(List *args)
 
   if (compl_validate(ex_cmd_curpos()) || ex_cmd_curch() != '/') {
     exec = true;
-    path = fs_parent_dir(path);
+    SWAP_ALLOC_PTR(path, strdup(fs_parent_dir(path)));
   }
   if (exec)
     fs_read(cur_menu->fs, path);
