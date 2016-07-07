@@ -135,15 +135,18 @@ void path_list(List *args)
   }
 
   path = strdup(path);
-  int exec = expand_path(&path);
+  bool exec = expand_path(&path);
 
   if (compl_validate(ex_cmd_curpos()) || ex_cmd_curch() != '/') {
     exec = true;
-    char *parent = fs_parent_dir(path);
-    if (*parent == '.')
-      parent = window_cur_dir();
 
-    SWAP_ALLOC_PTR(path, strdup(parent));
+    char *cur = window_cur_dir();
+    if (strcmp(path, cur) && !strcmp(path, ".."))
+      cur = fs_parent_dir(path);
+    if (*cur == '.')
+      cur = window_cur_dir();
+
+    SWAP_ALLOC_PTR(path, strdup(cur));
   }
   if (exec)
     fs_read(cur_menu->fs, path);
