@@ -393,9 +393,9 @@ void compl_backward()
     compl_pop();
 }
 
-int compl_prev_pos()
+int compl_next_pos()
 {
-  if (!cmpl.cs || TAILQ_PREV(cmpl.cs, cont, ent))
+  if (!cmpl.cs || !TAILQ_PREV(cmpl.cs, cont, ent))
     return -1;
   return TAILQ_PREV(cmpl.cs, cont, ent)->st;
 }

@@ -255,18 +255,22 @@ static void ex_tab(void *none, Keyarg *arg)
   if (!line)
     return;
 
-  int st = compl_cur_pos();
+  int st = compl_cur_pos() - 1;
+  int ed = compl_next_pos();
   char *instr = escape_shell(line);
   int len = strlen(instr);
+  int slen = strlen(ex.line);
 
-  char *next = strchr(&ex.line[ex.curofs], ' ');
-  int ed = next ? next - ex.line : len;
-
-  if (strlen(ex.line) + len >= ex.maxpos)
+  if (slen + len >= ex.maxpos)
     ex.line = realloc(ex.line, ex.maxpos = (2*ex.maxpos)+len);
 
+  if (ed == -1)
+    ed = slen - st;
+  if (ex.line[st] == ' ')
+    st++;
+
   str_ins(ex.line, instr, st, ed);
-  ex.line[st + len] = ' ';
+  //TODO: strcat trailing from ed + set next compl pos
   ex.curofs = st + len;
   ex.curpos = st + cell_len(instr);
   ex.state = EX_CYCLE;
@@ -313,10 +317,7 @@ static void ex_word(void *none, Keyarg *arg)
       ex_update();
 
     char *fnd = strpbrk(&ex.line[ex.curofs], TOKENCHARS);
-    if (!fnd)
-      ex.curofs = strlen(ex.line);
-    else
-      ex.curofs = fnd - ex.line;
+    ex.curofs = fnd ? fnd - ex.line : strlen(ex.line);
   }
   if (arg->arg == BACKWARD) {
     ex.curofs = rev_strchr_pos(ex.line, ex.curofs, TOKENCHARS);
