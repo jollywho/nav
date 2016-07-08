@@ -145,7 +145,7 @@ static void out_data_cb(Stream *stream, RBuffer *buf, size_t count, void *data,
   if (sh->readout)
     sh->readout(sh->caller, ptr);
   else
-    out_recv(pid, fd, ptr);
+    out_recv(pid, fd, count, ptr);
 
   size_t written = count;
   // No output written, force emptying the Rbuffer if it is full.

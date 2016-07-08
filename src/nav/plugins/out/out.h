@@ -15,6 +15,6 @@ void out_init();
 void out_new(Plugin *plugin, Buffer *buf, char *arg);
 void out_delete(Plugin *plugin);
 
-void out_recv(int, int, char *);
+void out_recv(int, int, size_t, char *);
 
 #endif

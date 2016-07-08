@@ -66,7 +66,7 @@ static void out_signal_model(void **data)
   }
 }
 
-void out_recv(int pid, int fd, char *out)
+void out_recv(int pid, int fd, size_t count, char *out)
 {
   if (!out)
     return;
@@ -84,7 +84,7 @@ void out_recv(int pid, int fd, char *out)
   char c;
   int pos = 0;
   int prev = 0;
-  while ((c = out[pos++])) {
+  while (pos < count && (c = out[pos++])) {
     if (c != '\n')
       continue;
     int len = (pos - prev) - 1;
