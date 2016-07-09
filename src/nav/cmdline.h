@@ -26,6 +26,7 @@ typedef struct {
 struct Token {
   int start;                /* start pos of token in line */
   int end;                  /* start pos of token in line */
+  bool quoted;
   typ_T var;
 };
 

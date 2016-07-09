@@ -309,7 +309,7 @@ void compl_update(const char *key, int pos, char ch)
   }
 
   compl_context *cx = cmpl.cs->cx;
-  if (ch == ' ')
+  if (ch == ' ' && *key != '\"' && *key != '\'')
     compl_search(cx, key, pos);
   else if (strchr(cmpl.esc_chars, ch))
     compl_push(cx, cmpl.cs->argc, pos+1);

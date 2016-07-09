@@ -280,7 +280,7 @@ static Token list_new(Cmdline *cmdline)
   return token;
 }
 
-static void create_token(UT_array *ar, char *str, int st, int ed)
+static void create_token(UT_array *ar, char *str, int st, int ed, bool q)
 {
   int len = ed - st;
   if (len < 1)
@@ -291,6 +291,7 @@ static void create_token(UT_array *ar, char *str, int st, int ed)
   Token token = {
     .start = st,
     .end = ed,
+    .quoted = q,
     .var = {
       .v_type = VAR_STRING,
       .vval.v_string = vstr
@@ -310,7 +311,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
   for (;;) {
     ch[0] = str[pos++];
     if (ch[0] == '\0') {
-      create_token(cmdline->tokens, str, st, ed);
+      create_token(cmdline->tokens, str, st, ed, false);
       break;
     }
     else if (ch[0] == '\\' && !esc) {
@@ -321,16 +322,16 @@ static void cmdline_tokenize(Cmdline *cmdline)
       char *closech = strchr(&str[pos], ch[0]);
       if (closech && closech[-1] != '\\') {
         int end = (closech - &str[pos]) + pos;
-        create_token(cmdline->tokens, str, pos, end);
+        create_token(cmdline->tokens, str, pos, end, true);
         end++;
         pos = end;
         st = end;
       }
     }
     else if (strpbrk(ch, TOKENCHARS) && !esc) {
-      create_token(cmdline->tokens, str, st, ed);
+      create_token(cmdline->tokens, str, st, ed, false);
       if (*ch != ' ') {
-        create_token(cmdline->tokens, str, pos-1, pos);
+        create_token(cmdline->tokens, str, pos-1, pos, false);
         ed = pos;
       }
       st = pos;
@@ -410,8 +411,8 @@ char* cmdline_line_from(Cmdline *cmdline, int idx)
   char *line = &cmdline->line[word->start];
   if (word->start == 0)
     return line;
-  if (*(line-1) == '\"' || *(line-1) == '\'')
-    return (line-1);
+  if (word->quoted)
+    return line-1;
   return line;
 }
 
@@ -443,6 +444,8 @@ char* cmdline_line_tok(Cmdline *cmdline, Token *word)
 bool cmdline_push_var(Token *token, Cmdline *cmdline)
 {
   Token *word = token;
+  if (word->quoted)
+    return false;
 
   if (word->var.v_type == VAR_PAIR) {
     Pair *p = token_val(word, VAR_PAIR);
@@ -555,6 +558,12 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
   int idx = 0;
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
     char *str = token_val(word, VAR_STRING);
+
+    if (word->quoted) {
+      push(*word, stack, word->start);
+      pop(stack, cmdline, &idx);
+      continue;
+    }
 
     switch(ch = str[0]) {
       case '(':
