@@ -212,3 +212,21 @@ void win_list(List *args)
     i++;
   }
 }
+
+void type_list(List *args)
+{
+  log_msg("PLUGIN", "type_list");
+  Plugin *plug = window_get_plugin();
+  if (!plug)
+    return;
+
+  int types = tbl_types(plug->hndl->tn);
+
+  if (types & TYP_STR)
+    compl_list_add("%s", "name");
+  if (types & TYP_STAT) {
+    compl_list_add("%s", "size");
+    compl_list_add("%s", "type");
+    compl_list_add("%s", "ctime");
+  }
+}

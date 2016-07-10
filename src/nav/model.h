@@ -4,10 +4,6 @@
 #include "nav/table.h"
 
 typedef struct nv_line nv_line;
-typedef struct {
-  int sort_type; //sort type flag
-  int sort_rev;  //reversed sort flag
-} sort_t;
 
 void model_init(Handle *hndl);
 void model_cleanup(Handle *hndl);
@@ -17,7 +13,7 @@ bool model_blocking(Handle *hndl);
 void model_inherit(Handle *hndl);
 
 void model_ch_focus(Handle *);
-void model_sort(Model *m, sort_t);
+void model_sort(Model *m, char *, int);
 void model_flush(Handle *, bool);
 void model_recv(Model *m);
 void refind_line(Model *m);

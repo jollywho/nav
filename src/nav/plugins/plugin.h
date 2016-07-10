@@ -67,5 +67,6 @@ char *focus_dir();
 
 void plugin_list(List *args);
 void win_list(List *args);
+void type_list(List *args);
 
 #endif

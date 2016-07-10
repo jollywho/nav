@@ -495,12 +495,11 @@ static void buf_esc(Buffer *buf, Keyarg *ca)
 
 void buf_sort(Buffer *buf, char *fld, int flags)
 {
+  log_err("BUFFER", "%s", fld);
   if (!buf->hndl)
     return;
   DO_EVENTS_UNTIL(!model_blocking(buf->hndl));
-  int type = fld_type(buf->hndl->tn, fld);
-  sort_t sort = {type,flags};
-  model_sort(buf->hndl->model, sort);
+  model_sort(buf->hndl->model, fld, flags);
 }
 
 /* public fields */

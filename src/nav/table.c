@@ -32,18 +32,11 @@ struct TblFld {
   UT_hash_handle hh;
 };
 
-struct nv_vt_fld {
-  char *key;
-  int type;
-  UT_hash_handle hh;
-};
-
 struct Table {
   char *key;
   TblFld *fields;
-  nv_vt_fld *vtfields;
+  int srt_types;
   int rec_count;
-  int vis_fld_count;
   LIST_HEAD(Rec, TblRec) recs;
   UT_hash_handle hh;
 };
@@ -96,7 +89,7 @@ void tbl_del(const char *name)
       val->count--;
       free(it->vlist[itf]);
       if (val->count < 1) {
-        if (fld->type == TYP_VOID)
+        if (BITMASK_CHECK(fld->type, TYP_STAT))
           free(val->data);
         else {
           HASH_DEL(fld->vals, val);
@@ -118,13 +111,6 @@ void tbl_del(const char *name)
     tbl_del_fld_lis(f);
     free(f->key);
     free(f);
-  }
-  nv_vt_fld *vf, *vftmp;
-  HASH_ITER(hh, t->vtfields, vf, vftmp) {
-    HASH_DEL(t->vtfields, vf);
-    log_msg("CLEANUP", "deleting field {%s} ...", vf->key);
-    free(vf->key);
-    free(vf);
   }
   HASH_DEL(NV_MASTER, t);
 }
@@ -151,24 +137,9 @@ void tbl_mk_fld(const char *tn, const char *name, int type)
   memset(fld, 0, sizeof(TblFld));
   fld->key = strdup(name);
   fld->type = type;
-  if (type != TYP_VOID)
-    t->vis_fld_count++;
+  t->srt_types |= type;
   HASH_ADD_STR(t->fields, key, fld);
   HASH_SORT(t->fields, fld_sort);
-  log_msg("TABLE", "made %s", fld->key);
-}
-
-void tbl_mk_vt_fld(const char *tn, const char *name, int type)
-{
-  log_msg("TABLE", "making {%s} vt_field {%s} ...", tn, name);
-  Table *t = get_tbl(tn);
-  nv_vt_fld *fld = malloc(sizeof(nv_vt_fld));
-  memset(fld, 0, sizeof(nv_vt_fld));
-  fld->key = strdup(name);
-  fld->type = type;
-  if (type != TYP_VOID)
-    t->vis_fld_count++;
-  HASH_ADD_STR(t->vtfields, key, fld);
   log_msg("TABLE", "made %s", fld->key);
 }
 
@@ -249,7 +220,7 @@ void* rec_fld(TblRec *rec, const char *fld)
     if (strcmp(val->fld->key, fld) != 0)
       continue;
 
-    if (val->fld->type == TYP_STR)
+    if (BITMASK_CHECK(val->fld->type, TYP_STR))
       return val->key;
     else
       return val->data;
@@ -287,12 +258,12 @@ int fld_type(const char *tn, const char *fld)
   if (f)
     return f->type;
 
-  nv_vt_fld *vf;
-  HASH_FIND_STR(t->vtfields, fld, vf);
-  if (vf)
-    return vf->type;
-
   return -1;
+}
+
+int tbl_types(const char *tn)
+{
+  return (get_tbl(tn)->srt_types);
 }
 
 int tbl_fld_count(const char *tn)
@@ -460,7 +431,7 @@ static void tbl_insert(Table *t, trans_rec *trec)
     TblFld *f;
     HASH_FIND_STR(t->fields, trec->flds[i], f);
 
-    if (f->type == TYP_VOID) {
+    if (BITMASK_CHECK(f->type, TYP_STAT)) {
       rec->vals[i] = new_entry(rec, f, data, 1, i);
       rec->vlist[i] = NULL;
       continue;
@@ -492,13 +463,13 @@ static void del_fldval(TblFld *fld, TblVal *val)
   if (ll)
     ll->rec = NULL;
 
-  if (fld->type == TYP_VOID)
+  if (BITMASK_CHECK(fld->type, TYP_STAT))
     free(val->data);
   free(val->key);
   val->rlist = NULL;
 }
 
-static void pop_Ventry(Ventry *it, TblVal *val, Ventry **cur)
+static void pop_ventry(Ventry *it, TblVal *val, Ventry **cur)
 {
   log_msg("TABLE", "popped");
   if (it == val->rlist)
@@ -519,7 +490,7 @@ static Ventry* tbl_del_rec(Table *t, TblRec *rec, Ventry *cur)
   for(int i = 0; i < rec->fld_count; i++) {
     Ventry *it = rec->vlist[i];
     if (!it) {
-      if (rec->vals[i]->fld->type == TYP_VOID)
+      if (BITMASK_CHECK(rec->vals[i]->fld->type, TYP_STAT))
         free(rec->vals[i]->data);
       free(rec->vals[i]);
     }
@@ -540,7 +511,7 @@ static Ventry* tbl_del_rec(Table *t, TblRec *rec, Ventry *cur)
         free(it);
       }
       else
-        pop_Ventry(it, val, &cur);
+        pop_ventry(it, val, &cur);
     }
   }
   LIST_REMOVE(rec, ent);
@@ -585,31 +556,6 @@ void clear_trans(trans_rec *r, int flush)
   free(r->flds);
   free(r->data);
   free(r);
-}
-
-void field_list(List *args)
-{
-  if (HASH_COUNT(NV_MASTER) < 1)
-    return;
-
-  Table *t = get_tbl("fm_files");
-
-  TblFld *it;
-  int i = 0;
-  for (it = t->fields; it != NULL; it = it->hh.next) {
-    if (it->type == TYP_VOID)
-      continue;
-    compl_list_add("%s", it->key);
-    i++;
-  }
-
-  nv_vt_fld *vit;
-  for (vit = t->vtfields; vit != NULL; vit = vit->hh.next) {
-    if (vit->type == TYP_VOID)
-      continue;
-    compl_list_add("%s", vit->key);
-    i++;
-  }
 }
 
 void record_list(const char *tn, char *f1, char *f2)

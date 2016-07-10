@@ -45,7 +45,7 @@ static struct compl_entry {
   { "_aug",      augs_list    },
   { "_cmd",      cmd_list     },
   { "_event",    event_list   },
-  { "_field",    field_list   },
+  { "_type",     type_list    },
   { "_group",    groups_list  },
   { "_map",      maps_list    },
   { "_mark",     mark_list    },
@@ -75,7 +75,7 @@ static char *cmd_defs[][3] = {
   {"new",       "PLUGIN",                       "_plug"},
   {"op",        "GROUP",                        "_group"},
   {"set",       "OPTION",                       "_option"},
-  {"sort",      "TYPE",                         "_field"},
+  {"sort",      "TYPE",                         "_type"},
   {"vnew",      "PLUGIN",                       "_plug"},
 };
 

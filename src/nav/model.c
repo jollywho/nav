@@ -1,6 +1,3 @@
-// model
-// stream and table callbacks should be directed here for
-// managing data structures read by attached buffers.
 #include <malloc.h>
 #include <sys/time.h>
 #include <uv.h>
@@ -19,45 +16,43 @@
 struct nv_line {
   TblRec *rec;
 };
-static const UT_icd icd = {sizeof(nv_line),NULL,NULL,NULL};
-
-struct Model {
-  Handle *hndl;  //opened handle
-  TblLis *lis;      //listener
-  TblRec *cur;      //current rec
-  Ventry *head;     //head entry of listener
-  bool blocking;
-  char *pfval;      //prev field value
-  int plnum;        //prev lnum
-  int ptop;         //prev top
-  sort_t sort;
-  UT_array *lines;
-};
-static sort_t focus = {0,1};
-
 typedef struct {
   int i;
   bool rev;
 } sort_ent;
 
+static const UT_icd icd = {sizeof(nv_line),NULL,NULL,NULL};
+
+struct Model {
+  Handle *hndl;     //opened handle
+  TblLis *lis;      //listener
+  TblRec *cur;      //current rec
+  Ventry *head;     //head entry of listener
+  bool blocking;    //blocking state
+  char *pfval;      //prev field value
+  int plnum;        //prev lnum
+  int ptop;         //prev top
+  sort_ent sort;    //current sort type
+  UT_array *lines;
+};
+static sort_ent focus = {0,1};
+
 static int cmp_str(const void *, const void *, void *);
 static int cmp_time(const void *, const void *, void *);
 static int cmp_dir(const void *, const void *, void *);
-static int cmp_num(const void *, const void *, void *);
+static int cmp_size(const void *, const void *, void *);
 static int cmp_type(const void *, const void *, void *);
 typedef struct Sort_T Sort_T;
 static struct Sort_T {
-  int val;
+  char *key;
   int (*cmp)(const void *, const void *, void *);
 } sort_tbl[] = {
-  {SRT_STR,    cmp_str},
-  {SRT_TIME,   cmp_time},
-  {SRT_DIR,    cmp_dir},
-  {SRT_NUM,    cmp_num},
-  {SRT_TYPE,   cmp_type},
+  {"name",   cmp_str},
+  {"ctime",  cmp_time},
+  {"dir",    cmp_dir},
+  {"size",   cmp_size},
+  {"type",   cmp_type},
 };
-//TODO: remove field name from cmp functions:
-//field name can be passed into each cmp fn within an arg struct.
 
 static int cmp_time(const void *a, const void *b, void *arg)
 {
@@ -74,6 +69,7 @@ static int cmp_str(const void *a, const void *b, void *arg)
   nv_line l2 = *(nv_line*)b;
   char *s1 = rec_fld(l1.rec, "name");
   char *s2 = rec_fld(l2.rec, "name");
+  //FIXME: handle string fields with other names
   return strcmp(s2, s1);
 }
 
@@ -90,7 +86,7 @@ static int cmp_dir(const void *a, const void *b, void *arg)
   return 0;
 }
 
-static int cmp_num(const void *a, const void *b, void *arg)
+static int cmp_size(const void *a, const void *b, void *arg)
 {
   nv_line l1 = *(nv_line*)a;
   nv_line l2 = *(nv_line*)b;
@@ -133,30 +129,19 @@ static int sort_by_type(const void *a, const void *b, void *arg)
   return srt->rev ? ret : -ret;
 }
 
-static void do_sort(Model *m)
+static void get_sort_type(Model *m, char *key)
 {
-  sort_ent srt = {0, m->sort.sort_rev};
   for (int i = 0; i < LENGTH(sort_tbl); i++) {
-    int row_type = sort_tbl[i].val;
-    if ((m->sort.sort_type & row_type) == row_type) {
-      srt.i = i;
-      utarray_sort(m->lines, sort_by_type, &srt);
+    if (!strcmp(key, sort_tbl[i].key)) {
+      m->sort.i = i;
+      break;
     }
   }
 }
 
 static nv_line* find_by_type(Model *m, nv_line *ln)
 {
-  sort_ent srt = {0, m->sort.sort_rev};
-
-  for (int i = 0; i < LENGTH(sort_tbl); i++) {
-    int row_type = sort_tbl[i].val;
-    if ((m->sort.sort_type & row_type) == row_type) {
-      srt.i = i;
-      break;
-    }
-  }
-  return utarray_find(m->lines, ln, sort_by_type, &srt);
+  return utarray_find(m->lines, ln, sort_by_type, &m->sort);
 }
 
 static nv_line* find_linear(Model *m, const char *val)
@@ -176,7 +161,6 @@ void model_init(Handle *hndl)
   m->hndl = hndl;
   hndl->model = m;
 
-  m->sort = (sort_t){0,1};
   m->blocking = true;
   utarray_new(m->lines, &icd);
   Buffer *buf = hndl->buf;
@@ -323,16 +307,18 @@ void model_ch_focus(Handle *hndl)
     focus = hndl->model->sort;
 }
 
-void model_sort(Model *m, sort_t srt)
+void model_sort(Model *m, char *key, int flags)
 {
   log_msg("MODEL", "model_sort");
   if (!m->blocking)
     model_set_prev(m);
 
-  if (srt.sort_type != -1)
-    focus = m->sort = srt;
+  if (key) {
+    get_sort_type(m, key);
+    focus = m->sort = (sort_ent){m->sort.i, flags};
+  }
 
-  do_sort(m);
+  utarray_sort(m->lines, sort_by_type, &m->sort);
   refind_line(m);
   refit(m, m->hndl->buf);
   buf_full_invalidate(m->hndl->buf, m->ptop, m->plnum);
@@ -401,10 +387,10 @@ void model_full_entry(Model *m, TblLis *lis)
 {
   log_msg("MODEL", "model_full_entry");
   TblRec *it = lis->rec;
-  int f = 0; /* make compiler stop complaining */
   while (it) {
     nv_line ln;
     ln.rec = it;
+    int f = 0; /* make compiler stop complaining */
     utarray_insert(m->lines, &ln, f);
     it = tbl_iter(it);
   }
@@ -427,7 +413,7 @@ void model_read_entry(Model *m, TblLis *lis, Ventry *head)
   m->lis = lis;
   generate_lines(m);
   filter_apply(m->hndl);
-  model_sort(m, (sort_t){-1,0});
+  model_sort(m, NULL, 0);
   m->blocking = false;
 }
 
