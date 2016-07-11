@@ -99,7 +99,6 @@ static varg_T op_type(const char *name)
 
 static varg_T proc_type(const char *name)
 {
-  log_err("OP", "nav %s", name);
   varg_T arg = {};
   if (!name || !strchr("%!?", *name))
     return arg;

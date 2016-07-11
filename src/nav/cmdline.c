@@ -602,7 +602,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
       case ',':
         break;
       case '!':
-        if (idx == 1) {
+        if (utarray_eltidx(cmdline->tokens, word) == 1) {
           cmd.rev = 1;
           break;
         }

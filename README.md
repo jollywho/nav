@@ -70,7 +70,6 @@ example:
 ```
 :set copy-pipe xclip -i
 ```
-`
 
 ## Default Bindings
 
