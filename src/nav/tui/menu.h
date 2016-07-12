@@ -25,7 +25,7 @@ void menu_resize(Menu *mnu);
 void menu_draw(Menu *mnu);
 char* menu_next(Menu *mnu, int dir);
 
-void path_list(List *args);
+void path_list();
 void menu_ch_dir(void **args);
 
 #endif

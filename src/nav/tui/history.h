@@ -9,9 +9,9 @@ void hist_init();
 void hist_cleanup();
 void hist_set_state(int);
 
-void hist_push(int, Cmdline *);
+void hist_push(int);
 void hist_pop();
-void hist_save();
+void hist_save(char *, int);
 void hist_insert(int, char *);
 
 const char* hist_first();

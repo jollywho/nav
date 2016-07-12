@@ -25,7 +25,7 @@ typedef struct {
   nv_group *grp;
 } Op_proc;
 
-void pid_list(List *args)
+void pid_list()
 {
   record_list("op_procs", "pid", "group");
 }

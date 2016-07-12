@@ -962,7 +962,7 @@ bool cmd_conditional()
   return nvs.condition;
 }
 
-void cmd_list(List *args)
+void cmd_list()
 {
   log_msg("CMD", "compl cmd_list");
   int i = 0;

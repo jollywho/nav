@@ -50,6 +50,6 @@ void cmd_pushfile(ConfFile *);
 void cmd_popfile();
 
 bool cmd_conditional();
-void cmd_list(List *args);
+void cmd_list();
 
 #endif

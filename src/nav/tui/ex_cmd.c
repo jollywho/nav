@@ -13,7 +13,7 @@
 #include "nav/event/input.h"
 #include "nav/util.h"
 
-static void cmdline_draw();
+static void ex_draw();
 static void ex_esc();
 static void ex_car();
 static void ex_tab();
@@ -118,7 +118,8 @@ void start_ex_cmd(char symbol, int state)
   ex.line = calloc(max.col, sizeof(char*));
   ex.cmd.cmds = NULL;
   ex.cmd.line = NULL;
-  hist_push(state, &ex.cmd);
+  hist_push(state);
+  cmdline_build(&ex.cmd, ex.line);
 }
 
 void stop_ex_cmd()
@@ -130,6 +131,7 @@ void stop_ex_cmd()
   ex.fil = NULL;
   free(ex.line);
   cmdline_cleanup(&ex.cmd);
+
   if (!message_pending) {
     werase(ex.nc_win);
     wnoutrefresh(ex.nc_win);
@@ -177,9 +179,9 @@ static char* linechar(int pos, int dir)
   return buf;
 }
 
-static void cmdline_draw()
+static void ex_draw()
 {
-  log_msg("EXCMD", "cmdline_draw");
+  log_msg("EXCMD", "ex_draw");
   werase(ex.nc_win);
 
   if (ex.ex_state == EX_CMD_STATE)
@@ -212,7 +214,7 @@ void cmdline_resize()
 
 void cmdline_refresh()
 {
-  cmdline_draw();
+  ex_draw();
 }
 
 static void ex_update()
@@ -241,7 +243,7 @@ static void ex_esc()
   if (ex.ex_state == EX_REG_STATE)
     regex_pivot(ex.lm);
 
-  hist_save();
+  hist_save(ex.line, utarray_len(ex.cmd.tokens));
   ex.state = EX_QUIT;
 }
 
@@ -365,7 +367,7 @@ static void ex_car()
   if (ex.ex_state == EX_CMD_STATE)
     cmd_eval(NULL, ex.line);
 
-  hist_save();
+  hist_save(ex.line, utarray_len(ex.cmd.tokens));
   ex.state = EX_QUIT;
 }
 
@@ -444,20 +446,25 @@ static void ex_killline()
 
 void ex_cmdinvert()
 {
-  List *list = ex_cmd_curlist();
-  if (!list || utarray_len(list->items) < 1)
-    return;
-  Token *word0 = tok_arg(list, 0);
-  Token *word1 = cmdline_tokbtwn(&ex.cmd, word0->end, word0->end+1);
-  char *excl = token_val(word1, VAR_STRING);
-  if (excl && excl[0] == '!') {
-    str_ins(ex.line, "", word1->start, 1);
-    ex.curpos--;
-  }
-  else {
-    str_ins(ex.line, "!", word0->end, 0);
-    ex.curpos++;
-  }
+  //FIXME: dont use cmdstr to insert
+  //for example: scan compl until root
+  //use compl position to insert char
+  //iff next compl isnt '!'
+  //
+  //List *list = ex_cmd_curlist();
+  //if (!list || utarray_len(list->items) < 1)
+  //  return;
+  //Token *word0 = tok_arg(list, 0);
+  //Token *word1 = cmdline_tokbtwn(&ex.cmd, word0->end, word0->end+1);
+  //char *excl = token_val(word1, VAR_STRING);
+  //if (excl && excl[0] == '!') {
+  //  str_ins(ex.line, "", word1->start, 1);
+  //  ex.curpos--;
+  //}
+  //else {
+  //  str_ins(ex.line, "!", word0->end, 0);
+  //  ex.curpos++;
+  //}
 }
 
 static void ex_menuhints()
@@ -475,8 +482,7 @@ static void ex_menu_mv(void *none, Keyarg *arg)
 static void ex_onkey()
 {
   log_msg("EXCMD", "##%d", ex_cmd_state());
-  cmdline_cleanup(&ex.cmd);
-  cmdline_build(&ex.cmd, ex.line);
+  cmdline_build_tokens(&ex.cmd, ex.line);
 
   switch (ex.ex_state) {
     case EX_CMD_STATE:
@@ -587,37 +593,6 @@ char* ex_cmd_curstr()
 int ex_cmd_state()
 {
   return ex.state;
-}
-
-Cmdstr* ex_cmd_prevcmd()
-{
-  int st = compl_last_pos();
-  int ed = ex.curofs + 1;
-  return cmdline_cmdbtwn(&ex.cmd, st, ed);
-}
-
-Cmdstr* ex_cmd_curcmd()
-{
-  int st = compl_cur_pos() + 1;
-  if (st > -1)
-    if (ex.line[st] == '|')
-      st++;
-  int ed = ex.curofs;
-  return cmdline_cmdbtwn(&ex.cmd, st, ed);
-}
-
-List* ex_cmd_curlist()
-{
-  if (ex.ex_state == EX_OFF_STATE)
-    return NULL;
-  if (!ex.cmd.cmds)
-    return NULL;
-
-  Cmdstr *cmdstr = ex_cmd_curcmd();
-  if (!cmdstr)
-    cmdstr = (Cmdstr*)utarray_front(ex.cmd.cmds);
-  List *list = token_val(&cmdstr->args, VAR_LIST);
-  return list;
 }
 
 int ex_cmd_height()

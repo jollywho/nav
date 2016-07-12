@@ -4,7 +4,7 @@
 #include "nav/cmd.h"
 #include "nav/lib/uthash.h"
 
-typedef void (*compl_genfn)(List *args);
+typedef void (*compl_genfn)(void);
 typedef struct {
   char flag;
   char *label;
@@ -43,7 +43,7 @@ compl_list* compl_complist();
 
 void compl_backward();
 void compl_update(const char *, int, char);
-void compl_build(List *args);
+void compl_build();
 void compl_filter(const char *);
 
 void compl_list_add(const char *fmt, ...);

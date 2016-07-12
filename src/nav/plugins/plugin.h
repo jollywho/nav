@@ -65,8 +65,8 @@ int id_from_plugin(Plugin *plug);
 int plugin_requires_buf(const char *);
 char *focus_dir();
 
-void plugin_list(List *args);
-void win_list(List *args);
-void type_list(List *args);
+void plugin_list();
+void win_list();
+void type_list();
 
 #endif

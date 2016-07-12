@@ -188,7 +188,7 @@ int id_from_plugin(Plugin *plug)
   return plug->hndl->buf->id;
 }
 
-void plugin_list(List *args)
+void plugin_list()
 {
   int k = 0;
   for (int i = 0; i < LENGTH(plugin_table); i++) {
@@ -199,7 +199,7 @@ void plugin_list(List *args)
   }
 }
 
-void win_list(List *args)
+void win_list()
 {
   int i = 0;
   Cid *it;
@@ -213,7 +213,7 @@ void win_list(List *args)
   }
 }
 
-void type_list(List *args)
+void type_list()
 {
   log_msg("PLUGIN", "type_list");
   Plugin *plug = window_get_plugin();

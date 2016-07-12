@@ -4,7 +4,6 @@
 #include "nav/tui/history.h"
 #include "nav/tui/ex_cmd.h"
 #include "nav/log.h"
-#include "nav/cmdline.h"
 
 typedef struct hist_item hist_item;
 struct hist_item {
@@ -17,7 +16,6 @@ struct nv_hist {
   hist_item *cur;
   uint count;
   uint max;
-  Cmdline *cmd;
 };
 
 static nv_hist *hist_cmds;
@@ -102,11 +100,10 @@ void hist_pop()
   cur->count--;
 }
 
-void hist_push(int state, Cmdline *cmd)
+void hist_push(int state)
 {
   log_msg("HIST", "hist_push");
   hist_set_state(state);
-  cur->cmd = cmd;
   hist_item *item = malloc(sizeof(hist_item));
   cur->count++;
   item->line = strdup("");
@@ -115,21 +112,17 @@ void hist_push(int state, Cmdline *cmd)
   hst_chk_limits();
 }
 
-void hist_save()
+void hist_save(char *line, int count)
 {
   log_msg("HIST", "hist_save");
-  if (!cur->cmd->line)
-    return;
   hist_item *last = TAILQ_LAST(&cur->p, cont);
   hist_item *prev = TAILQ_PREV(last, cont, ent);
 
-  if (prev && !strcmp(prev->line, cur->cmd->line))
-    return hist_pop();
-  if (cur->cmd->tokens && utarray_len(cur->cmd->tokens) < 1)
+  if ((prev && !strcmp(prev->line, line)) || count < 1)
     return hist_pop();
 
   free(last->line);
-  last->line = strdup(cur->cmd->line);
+  last->line = strdup(line);
 }
 
 const char* hist_prev()

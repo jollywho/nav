@@ -547,7 +547,7 @@ static bool map_iter(const char *key, void *value, void *data)
   return true;
 }
 
-void maps_list(List *args)
+void maps_list()
 {
   log_msg("INFO", "map_list");
   const Map *pre = map_prefix(kmap, keybuf);

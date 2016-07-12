@@ -315,7 +315,7 @@ void compl_update(const char *key, int pos, char ch)
     compl_push(cx, cmpl.cs->argc, pos+1);
 }
 
-void compl_build(List *args)
+void compl_build()
 {
   log_msg("COMPL", "compl_build");
   if (compl_dead() || !cmpl.rebuild)
@@ -329,7 +329,7 @@ void compl_build(List *args)
   for (int i = cs->argc; i < cx->argc; i++) {
     cmpl.build_arg = i;
     if (cx->params[i]->gen)
-      cx->params[i]->gen(args);
+      cx->params[i]->gen();
     if (cx->params[i]->flag != '-')
       break;
   }
@@ -438,7 +438,7 @@ bool compl_dead()
 void compl_begin(int pos)
 {
   compl_push(cmpl.cxroot, 0, pos);
-  compl_build(NULL);
+  compl_build();
   compl_filter("");
 }
 

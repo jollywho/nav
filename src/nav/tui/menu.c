@@ -104,16 +104,11 @@ static int expand_path(char **path)
   return 1;
 }
 
-void path_list(List *args)
+void path_list()
 {
   log_msg("MENU", "path_list");
   if (!cur_menu)
     return;
-
-  if (!args) {
-    log_msg("ERR", "unhandled execution path");
-    return abort();
-  }
 
   int pos = compl_arg_pos();
   int len = ex_cmd_curpos() - pos;
@@ -128,11 +123,12 @@ void path_list(List *args)
   char *path = &ex_cmd_line()[compl_arg_pos()];
   log_msg("MENU", "path %s", path);
 
-  if (path[0] == '@') {
-    marklbl_list(args);
-    compl_filter(ex_cmd_curstr());
-    return;
-  }
+  //FIXME: redo without compl args
+  //if (path[0] == '@') {
+  //  marklbl_list(args);
+  //  compl_filter(ex_cmd_curstr());
+  //  return;
+  //}
 
   path = strdup(path);
   bool exec = expand_path(&path);
@@ -277,7 +273,7 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
   if (compl_cur_pos() > ex_cmd_curpos() && !compl_isexec() && !compl_isroot())
     compl_backward();
 
-  compl_build(ex_cmd_curlist());
+  compl_build();
   compl_filter(ex_cmd_curstr());
   mnu->rebuild = false;
 }
@@ -298,7 +294,7 @@ void menu_update(Menu *mnu, Cmdline *cmd)
   mnu->moved = true;
 
   compl_update(ex_cmd_curstr(), ex_cmd_curpos(), ex_cmd_curch());
-  compl_build(ex_cmd_curlist());
+  compl_build();
   compl_filter(ex_cmd_curstr());
 }
 

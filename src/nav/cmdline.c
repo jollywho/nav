@@ -158,38 +158,12 @@ void* list_arg(List *lst, int argc, char v_type)
   return token_val(word, v_type);
 }
 
-Token* list_tokbtwn(List *lst, int st, int ed)
-{
-  Token *word = NULL;
-  while ((word = (Token*)utarray_next(lst->items, word))) {
-    if (MAX(0, MIN(ed, word->end) - MAX(st, word->start)) > 0)
-      return word;
-  }
-  return NULL;
-}
-
 void* tok_arg(List *lst, int argc)
 {
   if (!lst || utarray_len(lst->items) < argc)
     return NULL;
   Token *word = (Token*)utarray_eltptr(lst->items, argc);
   return word;
-}
-
-void cmdline_cleanup(Cmdline *cmdline)
-{
-  if (!cmdline->cmds)
-    return;
-  Token *word = NULL;
-  while ((word = (Token*)utarray_next(cmdline->tokens, word)))
-    free(word->var.vval.v_string);
-  while (!QUEUE_EMPTY(&cmdline->refs))
-    ref_pop(&cmdline->refs);
-  utarray_free(cmdline->cmds);
-  utarray_free(cmdline->tokens);
-  utarray_free(cmdline->vars);
-  utarray_free(cmdline->arys);
-  free(cmdline->line);
 }
 
 Cmdstr* cmdline_getcmd(Cmdline *cmdline)
@@ -622,6 +596,17 @@ breakout:
   return word;
 }
 
+void cmdline_build_tokens(Cmdline *cmdline, char *line)
+{
+  log_msg("CMDSTR", "cmdline_build_tokens");
+  SWAP_ALLOC_PTR(cmdline->line, strdup(line));
+  Token *word = NULL;
+  while ((word = (Token*)utarray_next(cmdline->tokens, word)))
+    free(word->var.vval.v_string);
+  utarray_clear(cmdline->tokens);
+  cmdline_tokenize(cmdline);
+}
+
 void cmdline_build(Cmdline *cmdline, char *line)
 {
   log_msg("CMDSTR", "cmdline_build");
@@ -643,6 +628,22 @@ void cmdline_build(Cmdline *cmdline, char *line)
   do
     word = cmdline_parse(cmdline, word, cmdline->cmds);
   while (word);
+}
+
+void cmdline_cleanup(Cmdline *cmdline)
+{
+  if (!cmdline->cmds)
+    return;
+  Token *word = NULL;
+  while ((word = (Token*)utarray_next(cmdline->tokens, word)))
+    free(word->var.vval.v_string);
+  while (!QUEUE_EMPTY(&cmdline->refs))
+    ref_pop(&cmdline->refs);
+  utarray_free(cmdline->cmds);
+  utarray_free(cmdline->tokens);
+  utarray_free(cmdline->vars);
+  utarray_free(cmdline->arys);
+  free(cmdline->line);
 }
 
 int cmdline_can_exec(Cmdstr *cmd, char *line)

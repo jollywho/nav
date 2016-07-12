@@ -27,7 +27,7 @@ void hook_rm_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg);
 void hook_set_tmp(char *msg);
 void hook_clear_msg(Plugin *host, char *msg);
 
-void event_list(List *args);
-void augs_list(List *args);
+void event_list();
+void augs_list();
 
 #endif

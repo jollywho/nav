@@ -84,6 +84,6 @@ nv_reg* reg_dcur();
 void reg_clear_dcur();
 void reg_set(int ch, varg_T);
 void reg_yank(char *);
-void maps_list(List *);
+void maps_list();
 
 #endif

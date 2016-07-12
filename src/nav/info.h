@@ -14,7 +14,7 @@ void mark_label_dir(char *, const char *);
 void mark_strchr_str(const char *, const char *);
 void mark_chr_str(int chr, const char *);
 
-void mark_list(List *args);
-void marklbl_list(List *args);
+void mark_list();
+void marklbl_list();
 
 #endif

@@ -345,7 +345,7 @@ int get_opt_int(const char *name)
     return 0;
 }
 
-void options_list(List *args)
+void options_list()
 {
   log_msg("INFO", "setting_list");
   nv_option *it;
@@ -360,7 +360,7 @@ void options_list(List *args)
   }
 }
 
-void groups_list(List *args)
+void groups_list()
 {
   log_msg("INFO", "setting_list");
   nv_group *it;

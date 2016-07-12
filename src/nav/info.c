@@ -79,11 +79,11 @@ void info_write_file(FILE *file)
   write_hist_info(file, EX_CMD_STATE);
 }
 
-void mark_list(List *args)
+void mark_list()
 {
 }
 
-void marklbl_list(List *args)
+void marklbl_list()
 {
   log_msg("INFO", "marklbl_list");
   nv_mark *it;

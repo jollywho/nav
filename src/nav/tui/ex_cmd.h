@@ -31,11 +31,8 @@ void ex_cmd_populate(const char *);
 
 char ex_cmd_curch();
 int ex_cmd_curpos();
-Cmdstr* ex_cmd_curcmd();
-Cmdstr* ex_cmd_prevcmd();
 Token* ex_cmd_curtok();
 char* ex_cmd_curstr();
-List* ex_cmd_curlist();
 int ex_cmd_state();
 char* ex_cmd_line();
 
