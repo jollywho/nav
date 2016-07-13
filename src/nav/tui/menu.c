@@ -261,7 +261,7 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
       compl_update(key, word->end+1, '/');
       i++;
     }
-    else if (*key == '|')
+    else if (*key == '|' && !word->quoted)
       compl_begin(word->end+1);
     else if (*key == '!' && compl_isroot())
       compl_set_exec(word->end+1);

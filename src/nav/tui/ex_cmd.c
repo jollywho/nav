@@ -225,15 +225,20 @@ static void ex_update()
 
   int cur = ex.curofs - 1;
   int pos = compl_cur_pos();
+  char ch = ex_cmd_curch();
+  bool root = compl_isroot();
 
-  if (compl_isroot() && ex_cmd_curch() == '!' && pos == cur) {
-    ex.state &= EX_EXEC;
-    return compl_set_exec(ex.curofs);
-  }
+  Token *tok = ex_cmd_curtok();
+  char *str = token_val(tok, VAR_STRING);
+  bool quote = (str && (*str == '\'' || *str == '\"'));
 
-  if (ex_cmd_curch() == '|' && (pos < cur || !compl_isroot())) {
+  if (ch == '|' && !quote && (pos < cur || !root)) {
     menu_restart(ex.menu);
     ex.state = 0;
+  }
+  else if (ch == '!' && !quote && root && pos == cur) {
+    ex.state &= EX_EXEC;
+    return compl_set_exec(ex.curofs);
   }
   menu_update(ex.menu, &ex.cmd);
 }
