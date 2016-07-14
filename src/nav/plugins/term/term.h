@@ -26,5 +26,6 @@ void term_delete(Plugin *plugin);
 void term_keypress(Plugin *plugin, Keyarg *ca);
 void term_cursor(Plugin *plugin);
 void term_set_editor(Plugin *plugin, Ed *ed);
+void term_close(Term *term);
 
 #endif

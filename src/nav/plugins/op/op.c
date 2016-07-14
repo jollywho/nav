@@ -4,6 +4,7 @@
 #include "nav/lib/utarray.h"
 #include "nav/tui/window.h"
 #include "nav/plugins/op/op.h"
+#include "nav/plugins/term/term.h"
 #include "nav/log.h"
 #include "nav/model.h"
 #include "nav/option.h"
@@ -92,12 +93,26 @@ static void chld_handler(uv_signal_t *handle, int signum)
   int stat = 0;
   int pid;
 
-  do {
+  do
     pid = waitpid(-1, &stat, WNOHANG);
-  } while (pid < 0 && errno == EINTR);
+  while (pid < 0 && errno == EINTR);
 
   if (pid <= 0)
     return;
+
+  Term *it;
+  SLIST_FOREACH(it, &mainloop()->subterms, ent) {
+    Term *term = it;
+    if (term->pid == pid) {
+      if (WIFEXITED(stat))
+        term->status = WEXITSTATUS(stat);
+      else if (WIFSIGNALED(stat))
+        term->status = WTERMSIG(stat);
+
+      term_close(it);
+      break;
+    }
+  }
 }
 
 static void create_proc(nv_group *grp, char *line)

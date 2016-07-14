@@ -18,7 +18,6 @@
 static void readfd_ready(uv_poll_t *, int, int);
 static void plugin_resize(Plugin *, Plugin *, HookArg *);
 static void plugin_focus(Plugin *);
-static void chld_handler(uv_signal_t *, int);
 static void plugin_cancel(Plugin *plugin);
 
 void term_new(Plugin *plugin, Buffer *buf, char *arg)
@@ -50,7 +49,6 @@ void term_new(Plugin *plugin, Buffer *buf, char *arg)
   }
 
   SLIST_INSERT_HEAD(&mainloop()->subterms, term, ent);
-  uv_signal_start(&mainloop()->children_watcher, chld_handler, SIGCHLD);
 
   term->pid = vt_forkpty(term->vt, shell, pargs, cwd, NULL, NULL, NULL);
   if (term->closed) {
@@ -192,7 +190,7 @@ static void readfd_ready(uv_poll_t *handle, int status, int events)
   term_draw(term);
 }
 
-static void term_close(Term *term)
+void term_close(Term *term)
 {
   log_msg("TERM", "term_close");
   term->closed = true;
@@ -200,32 +198,4 @@ static void term_close(Term *term)
     ed_close_cb(term->base, term->ed, false);
   else
     window_close_focus();
-}
-
-static void chld_handler(uv_signal_t *handle, int signum)
-{
-  log_err("TERM", "sigchld");
-  int stat = 0;
-  int pid;
-
-  do
-    pid = waitpid(-1, &stat, WNOHANG);
-  while (pid < 0 && errno == EINTR);
-
-  if (pid <= 0)
-    return;
-
-  Term *it;
-  SLIST_FOREACH(it, &mainloop()->subterms, ent) {
-    Term *term = it;
-    if (term->pid == pid) {
-      if (WIFEXITED(stat))
-        term->status = WEXITSTATUS(stat);
-      else if (WIFSIGNALED(stat))
-        term->status = WTERMSIG(stat);
-
-      term_close(it);
-      break;
-    }
-  }
 }
