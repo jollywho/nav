@@ -94,23 +94,9 @@ static char* read_line(FILE *file)
     if (c == '\r')
       continue;
 
-    if (length == size) {
-      char *new_string = realloc(string, size *= 2);
-      if (!new_string) {
-        free(string);
-        return NULL;
-      }
-      string = new_string;
-    }
     string[length++] = c;
-  }
-  if (length + 1 == size) {
-    char *new_string = realloc(string, length + 1);
-    if (!new_string) {
-      free(string);
-      return NULL;
-    }
-    string = new_string;
+    if (length >= size)
+      string = realloc(string, size *= 2);
   }
   string[length] = '\0';
   return string;
