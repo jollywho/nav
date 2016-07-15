@@ -231,8 +231,6 @@ static void ex_update()
   Token *tok = ex_cmd_curtok();
   char *str = token_val(tok, VAR_STRING);
   bool quote = (str && (*str == '\'' || *str == '\"'));
-  log_err("COMPL", "[%s] %d", str, quote);
-  //FIXME: breaks on `echo "|`
 
   if (ch == '|' && !quote && (pos < cur || !root)) {
     menu_restart(ex.menu);
