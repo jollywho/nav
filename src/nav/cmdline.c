@@ -285,7 +285,7 @@ static void cmdline_tokenize(Cmdline *cmdline)
   for (;;) {
     ch[0] = str[pos++];
     if (ch[0] == '\0') {
-      create_token(cmdline->tokens, str, st, pos-1, false);
+      create_token(cmdline->tokens, str, st, ed, false);
       break;
     }
     else if (ch[0] == '\\' && !esc) {
@@ -296,10 +296,10 @@ static void cmdline_tokenize(Cmdline *cmdline)
       char *closech = strchrnul(&str[pos], ch[0]);
       if (closech[-1] != '\\') {
         int end = (closech - &str[pos]) + pos;
-        bool isend = str[end] == '\0';
-        pos = isend ? pos-1 : pos;
-        create_token(cmdline->tokens, str, pos, end, isend);
-        st = pos = isend ? end : ++end;
+        bool quote = str[end] == '\0';
+        pos = quote ? pos-1 : pos;
+        create_token(cmdline->tokens, str, pos, end, !quote);
+        st = pos = quote ? end : ++end;
       }
     }
     else if (strpbrk(ch, TOKENCHARS) && !esc) {

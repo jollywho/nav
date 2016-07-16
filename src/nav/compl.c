@@ -285,7 +285,7 @@ static void compl_search(compl_context *cx, const char *key, int pos)
   if (argc + 1 < cx->argc)
     return compl_push(cx, ++argc, pos);
   else if (cx->params[argc]->flag == '*')
-    return;
+    return compl_push(cx, argc, pos);
   else
     cx = NULL;
 

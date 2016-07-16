@@ -251,22 +251,23 @@ static void rebuild_contexts(Menu *mnu, Cmdline *cmd)
     Token *after = (Token*)utarray_eltptr(cmd->tokens, i+1);
     char *key = token_val(word, VAR_STRING);
     char *next = token_val(after, VAR_STRING);
+    int end = word->quoted ? word->end+2 : word->end+1;
 
     /* simulate forward compl pushes */
-    if (!next || !strchr(TOKENCHARS, *next))
+    if (!next || !strchr(TOKENCHARS, *next) || after->quoted)
       next = " ";
 
     if (*next == '/') {
       compl_set_escapes("/");
-      compl_update(key, word->end+1, '/');
+      compl_update(key, end, '/');
       i++;
     }
     else if (*key == '|' && !word->quoted)
-      compl_begin(word->end+1);
+      compl_begin(end);
     else if (*key == '!' && compl_isroot())
-      compl_set_exec(word->end+1);
+      compl_set_exec(end);
     else
-      compl_update(key, word->end+1, *next);
+      compl_update(key, end, *next);
   }
 
   /* pop last compl to maintain forward simulation */
