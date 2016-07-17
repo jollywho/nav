@@ -62,5 +62,6 @@ int compl_next_pos();
 int compl_last_pos();
 int compl_cur_pos();
 int compl_arg_pos();
+int compl_root_pos();
 
 #endif

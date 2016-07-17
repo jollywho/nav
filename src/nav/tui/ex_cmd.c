@@ -451,25 +451,25 @@ static void ex_killline()
 
 void ex_cmdinvert()
 {
-  //FIXME: dont use cmdstr to insert
-  //for example: scan compl until root
-  //use compl position to insert char
-  //iff next compl isnt '!'
-  //
-  //List *list = ex_cmd_curlist();
-  //if (!list || utarray_len(list->items) < 1)
-  //  return;
-  //Token *word0 = tok_arg(list, 0);
-  //Token *word1 = cmdline_tokbtwn(&ex.cmd, word0->end, word0->end+1);
-  //char *excl = token_val(word1, VAR_STRING);
-  //if (excl && excl[0] == '!') {
-  //  str_ins(ex.line, "", word1->start, 1);
-  //  ex.curpos--;
-  //}
-  //else {
-  //  str_ins(ex.line, "!", word0->end, 0);
-  //  ex.curpos++;
-  //}
+  int st = compl_root_pos();
+  int ed = st;
+  while (ex.line[ed++] == ' ');
+
+  Token *cur = cmdline_tokbtwn(&ex.cmd, st, ed);
+  Token *tok = (Token*)utarray_next(ex.cmd.tokens, cur);
+  char *symb = token_val(tok, VAR_STRING);
+  if (!cur)
+    return;
+
+  //TODO: rebuild compl
+  if (symb && *symb == '!') {
+    str_ins(ex.line, "", tok->start, 1);
+    ex.curofs--, ex.curpos--;
+  }
+  else {
+    str_ins(ex.line, "!", cur->end, 0);
+    ex.curofs++, ex.curpos++;
+  }
 }
 
 static void ex_menuhints()

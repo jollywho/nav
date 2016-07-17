@@ -123,12 +123,11 @@ void path_list()
   char *path = &ex_cmd_line()[compl_arg_pos()];
   log_msg("MENU", "path %s", path);
 
-  //FIXME: redo without compl args
-  //if (path[0] == '@') {
-  //  marklbl_list(args);
-  //  compl_filter(ex_cmd_curstr());
-  //  return;
-  //}
+  if (path[0] == '@') {
+    marklbl_list();
+    compl_filter(ex_cmd_curstr());
+    return;
+  }
 
   path = strdup(path);
   bool exec = expand_path(&path);

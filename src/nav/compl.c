@@ -430,6 +430,15 @@ int compl_arg_pos()
   return cs->st;
 }
 
+int compl_root_pos()
+{
+  compl_state *cs = cmpl.cs;
+  while (cs && cs->cx != cmpl.cxroot) {
+    cs = TAILQ_NEXT(cs, ent);
+  }
+  return cs->st;
+}
+
 bool compl_dead()
 {
   return !cmpl.cs || !cmpl.cs->cx;
