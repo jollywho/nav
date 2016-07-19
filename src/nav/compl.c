@@ -312,7 +312,7 @@ void compl_update(const char *key, int pos, char ch)
   if (ch == ' ' && *key != '\"' && *key != '\'')
     compl_search(cx, key, pos);
   else if (strchr(cmpl.esc_chars, ch))
-    compl_push(cx, cmpl.cs->argc, pos+1);
+    compl_push(cx, cmpl.cs->argc, ch == '/' ? pos+1 : pos);
 }
 
 void compl_build()

@@ -268,13 +268,18 @@ static void ex_tab(void *none, Keyarg *arg)
   int len = strlen(instr);
   int slen = strlen(ex.line);
 
-  if (slen + len >= ex.maxpos)
-    ex.line = realloc(ex.line, ex.maxpos = (2*ex.maxpos)+len);
-
-  if (ed == -1)
+  if (st == -1)
+    st = 0;
+  else if (ed == -1)
     ed = slen - st;
+
+  if (ex.line[st] == '|')
+    st++;
   if (ex.line[st] == ' ')
     st++;
+
+  if (slen + (ed - st) >= ex.maxpos)
+    ex.line = realloc(ex.line, ex.maxpos = (2*ex.maxpos)+len);
 
   str_ins(ex.line, instr, st, ed);
   //TODO: strcat trailing from ed + set next compl pos
