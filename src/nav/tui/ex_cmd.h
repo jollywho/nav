@@ -35,6 +35,7 @@ Token* ex_cmd_curtok();
 char* ex_cmd_curstr();
 int ex_cmd_state();
 char* ex_cmd_line();
+char* ex_cmd_curline();
 
 int ex_cmd_height();
 

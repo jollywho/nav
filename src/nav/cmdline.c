@@ -344,21 +344,6 @@ Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
   return NULL;
 }
 
-Cmdstr* cmdline_cmdbtwn(Cmdline *cmdline, int st, int ed)
-{
-  Cmdstr *cmd = NULL;
-  for (int i = 0; i < utarray_len(cmdline->cmds); i++) {
-    cmd = (Cmdstr*)utarray_next(cmdline->cmds, cmd);
-    List *list = token_val(&cmd->args, VAR_LIST);
-    Token *word = (Token*)utarray_back(list->items);
-    if (!word)
-      continue;
-    if (MAX(0, MIN(ed, word->end) - MAX(st, word->start)) > 0)
-      break;
-  }
-  return cmd;
-}
-
 Token* cmdline_tokindex(Cmdline *cmdline, int idx)
 {
   if (!cmdline->cmds)

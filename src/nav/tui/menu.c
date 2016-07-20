@@ -120,16 +120,16 @@ void path_list()
     return fs_read(cur_menu->fs, path);
   }
 
-  char *path = &ex_cmd_line()[compl_arg_pos()];
+  char *path = ex_cmd_curline();
   log_msg("MENU", "path %s", path);
 
   if (path[0] == '@') {
     marklbl_list();
     compl_filter(ex_cmd_curstr());
+    free(path);
     return;
   }
 
-  path = strdup(path);
   bool exec = expand_path(&path);
 
   if (compl_validate(ex_cmd_curpos()) || ex_cmd_curch() != '/') {

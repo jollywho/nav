@@ -273,6 +273,7 @@ static void ex_tab(void *none, Keyarg *arg)
   else if (ed == -1)
     ed = slen - st;
 
+  //TODO: scan forward until next char isnt tokenchar
   if (ex.line[st] == '|')
     st++;
   if (ex.line[st] == ' ')
@@ -598,6 +599,24 @@ char* ex_cmd_curstr()
   if (tok)
     return token_val(tok, VAR_STRING);
   return "";
+}
+
+char* ex_cmd_curline()
+{
+  int st = compl_arg_pos();
+  int ed = st;
+  bool quote = false;
+  char ch;
+  while ((ch = ex.line[ed])) {
+    if (ch == '|' && !quote)
+      break;
+    if (ch == '\'' || ch == '\"')
+      quote = !quote;
+    ed++;
+  }
+  char *buf = strdup(&ex.line[st]);
+  buf[ed - st] = '\0';
+  return buf;
 }
 
 int ex_cmd_state()
