@@ -395,11 +395,6 @@ char* cmdline_cont_line(Cmdline *cmdline)
   return cmdline->line;
 }
 
-char* cmdline_line_tok(Cmdline *cmdline, Token *word)
-{
-  return &cmdline->line[word->end];
-}
-
 bool cmdline_push_var(Token *token, Cmdline *cmdline)
 {
   Token *word = token;
