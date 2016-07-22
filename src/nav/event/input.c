@@ -241,6 +241,9 @@ static void ttimeout_cb(uv_timer_t *handle)
 
 bool try_do_map(Keyarg *ca)
 {
+  if (op_pending(ca))
+    return false;
+
   keybuf[keypos++] = ca->key;
   keybuf[keypos] = '\0';
 
