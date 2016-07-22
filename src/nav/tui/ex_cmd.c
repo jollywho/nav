@@ -262,28 +262,31 @@ static void ex_tab(void *none, Keyarg *arg)
   if (!line)
     return;
 
-  int st = compl_cur_pos() - 1;
-  int ed = compl_next_pos();
   char *instr = escape_shell(line);
   int len = strlen(instr);
   int slen = strlen(ex.line);
+  int st = compl_cur_pos() - 1;
+  int ed = 0;
 
   if (st == -1)
     st = 0;
-  else if (ed == -1)
-    ed = slen - st;
-
-  //TODO: scan forward until next char isnt tokenchar
-  if (ex.line[st] == '|')
-    st++;
   if (ex.line[st] == ' ')
     st++;
 
-  if (slen + (ed - st) >= ex.maxpos)
+  bool quote = false;
+  char ch;
+  while ((ch = ex.line[st+ed])) {
+    if ((ch == '|' || ch == ' ') && !quote)
+      break;
+    if (ch == '\'' || ch == '\"')
+      quote = !quote;
+    ed++;
+  }
+
+  if (slen + len >= ex.maxpos)
     ex.line = realloc(ex.line, ex.maxpos = (2*ex.maxpos)+len);
 
   str_ins(ex.line, instr, st, ed);
-  //TODO: strcat trailing from ed + set next compl pos
   ex.curofs = st + len;
   ex.curpos = st + cell_len(instr);
   ex.state = EX_CYCLE;
