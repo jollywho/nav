@@ -286,15 +286,6 @@ char* strncat_shell(char *dest, const char *src)
   return dest;
 }
 
-void trans_char(char *src, char from, char to)
-{
-  while (*src) {
-    if (*src == from)
-      *src = to;
-    src++;
-  }
-}
-
 int count_strstr(const char *str, char *fnd)
 {
   int count = 0;

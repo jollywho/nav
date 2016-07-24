@@ -15,6 +15,8 @@ hi BufSelActive 178 1
 hi BufSelInactive 131 233
 hi BufDir 15 -1
 hi BufSz 14 -1
+hi BufStdout 8 -1
+hi BufStderr 1 -1
 hi MsgError 0 9
 hi MsgAsk 3 -1
 

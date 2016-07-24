@@ -433,7 +433,7 @@ int compl_arg_pos()
 int compl_root_pos()
 {
   compl_state *cs = cmpl.cs;
-  while (cs && cs->cx != cmpl.cxroot) {
+  while (TAILQ_NEXT(cs, ent) && cs->cx != cmpl.cxroot) {
     cs = TAILQ_NEXT(cs, ent);
   }
   return cs->st;

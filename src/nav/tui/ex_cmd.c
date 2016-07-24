@@ -464,13 +464,13 @@ void ex_cmdinvert()
   int ed = st;
   while (ex.line[ed++] == ' ');
 
+  //FIXME: find compl_root_pos for curs position
   Token *cur = cmdline_tokbtwn(&ex.cmd, st, ed);
   Token *tok = (Token*)utarray_next(ex.cmd.tokens, cur);
   char *symb = token_val(tok, VAR_STRING);
   if (!cur)
     return;
 
-  //TODO: rebuild compl
   if (symb && *symb == '!') {
     str_ins(ex.line, "", tok->start, 1);
     ex.curofs--, ex.curpos--;
@@ -479,6 +479,11 @@ void ex_cmdinvert()
     str_ins(ex.line, "!", cur->end, 0);
     ex.curofs++, ex.curpos++;
   }
+
+  int old = ex.curofs;
+  ex.curofs = 0;
+  menu_rebuild(ex.menu);
+  ex.curofs = old;
 }
 
 static void ex_menuhints()

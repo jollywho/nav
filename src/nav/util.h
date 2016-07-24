@@ -3,7 +3,6 @@
 
 #include <ncurses.h>
 
-bool exparg_isset();
 wchar_t* str2wide(char *src);
 char* wide2str(wchar_t *src);
 int cell_len(char *str);
@@ -15,7 +14,6 @@ void conspath_buf(char *buf, char *base, char *name);
 char* escape_shell(char *src);
 char* strip_shell(const char *src);
 char* strip_whitespace(char *);
-void trans_char(char *src, char from, char to);
 int count_strstr(const char *str, char *fnd);
 int rev_strchr_pos(char *src, int n, char *accept);
 int count_lines(char *src);
