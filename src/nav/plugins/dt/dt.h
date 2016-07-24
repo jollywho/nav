@@ -8,8 +8,9 @@ typedef struct DT DT;
 struct DT {
   Plugin *base;
   FILE *f;
-  char *filename;
-  Model *m;
+  char *path;
+  char *tbl;
+  char *delm;
 };
 
 void dt_new(Plugin *plugin, Buffer *buf, char *arg);

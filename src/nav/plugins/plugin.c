@@ -223,7 +223,7 @@ void type_list()
   int types = tbl_types(plug->hndl->tn);
 
   if (types & TYP_STR)
-    compl_list_add("%s", "name");
+    compl_list_add("%s", "name"); //TODO: use field0
   if (types & TYP_STAT) {
     compl_list_add("%s", "size");
     compl_list_add("%s", "type");

@@ -156,8 +156,7 @@ static nv_line* find_linear(Model *m, const char *val)
 
 void model_init(Handle *hndl)
 {
-  Model *m = malloc(sizeof(Model));
-  memset(m, 0, sizeof(Model));
+  Model *m = calloc(1, sizeof(Model));
   m->hndl = hndl;
   hndl->model = m;
 

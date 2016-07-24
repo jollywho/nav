@@ -133,8 +133,7 @@ void tbl_mk_fld(const char *tn, const char *name, int type)
 {
   log_msg("TABLE", "making {%s} field {%s} ...", tn, name);
   Table *t = get_tbl(tn);
-  TblFld *fld = malloc(sizeof(TblFld));
-  memset(fld, 0, sizeof(TblFld));
+  TblFld *fld = calloc(1, sizeof(TblFld));
   fld->key = strdup(name);
   fld->type = type;
   t->srt_types |= type;
@@ -274,6 +273,16 @@ int tbl_fld_count(const char *tn)
 int tbl_ent_count(Ventry *e)
 {
   return e->val->count;
+}
+
+char* tbl_fld_str(const char *tn, const char *fld)
+{
+  Table *t = get_tbl(tn);
+  TblFld *f;
+  HASH_FIND_STR(t->fields, fld, f);
+  if (f)
+    return f->key;
+  return NULL;
 }
 
 char* ent_str(Ventry *ent)
