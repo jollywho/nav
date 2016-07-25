@@ -147,12 +147,12 @@ static void create_proc(nv_group *grp, char *line)
   add_pid(grp->key, proc->proc.pid);
 }
 
+//FIXME: should use first item in selection or get_syn each item
 static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("OP", "fileopen_cb");
-  char *path = hka->arg;
-//FIXME: should use first item in selection or get_syn each item
   char *name = model_curs_value(host->hndl->model, "name");
+  char *path = model_curs_value(host->hndl->model, "fullpath");
   log_msg("OP", "path %s %s", path, name);
   log_msg("OP", "ext %s ", file_ext(name));
   nv_syn *syn = get_syn(file_ext(path));

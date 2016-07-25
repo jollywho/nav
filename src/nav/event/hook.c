@@ -290,9 +290,6 @@ void send_hook_msg(char *msg, Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("HOOK", "(<%s>) msg sent", msg);
   call_hooks(find_evh(msg), host, caller, hka);
-
-  if (!host)
-    return;
 }
 
 void event_list()

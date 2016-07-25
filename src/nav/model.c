@@ -1,9 +1,3 @@
-#include <malloc.h>
-#include <sys/time.h>
-#include <uv.h>
-
-#include "nav/lib/utarray.h"
-
 #include "nav/model.h"
 #include "nav/log.h"
 #include "nav/table.h"

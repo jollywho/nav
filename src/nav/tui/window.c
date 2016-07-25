@@ -19,6 +19,7 @@ struct Window {
   bool dirty;
   int refs;
   Plugin *term;
+  Buffer *alt_focus;
 };
 
 static Cmdret win_version();
@@ -35,28 +36,30 @@ static Cmdret win_reload();
 static Cmdret win_direct();
 static Cmdret win_edit();
 static Cmdret win_filter();
+static Cmdret win_doautocmd();
 static void win_layout();
 static void window_ex_cmd();
 static void window_reg_cmd();
 static void window_fltr_cmd();
 
 static Cmd_T cmdtable[] = {
-  {"bdelete","bd",   "Close a buffer.",         win_bdel,      0},
-  {"buffer","bu",    "Change a buffer.",        win_buf,       0},
-  {"cd",0,           "Change directory.",       win_cd,        0},
-  {"close","q",      "Close a window.",         win_close,     0},
-  {"delmark","delm", "Delete a mark.",          win_mark,      1},
-  {"direct","di",    "Direct at window.",       win_direct,    0},
-  {"echo","ec",      "Print expression.",       win_echo,      0},
-  {"edit","ed",      "Edit selection",          win_edit,      0},
-  {"filter","fil",   "Filter buffer.",          win_filter,    0},
-  {"mark","m",       "Mark a directory.",       win_mark,      0},
-  {"new",0,          "Open horizontal window.", win_new,       MOVE_UP},
-  {"qa",0,           "Quit all.",               win_shut,      0},
-  {"reload","rel",   "Set option value.",       win_reload,    0},
-  {"sort","sor",     "Sort lines.",             win_sort,      1},
-  {"version","ver",  "Print version number.",   win_version,   0},
-  {"vnew","vne",     "Open vertical window.",   win_new,       MOVE_LEFT},
+  {"bdelete","bd",      "Close a buffer.",         win_bdel,      0},
+  {"buffer","bu",       "Change a buffer.",        win_buf,       0},
+  {"cd",0,              "Change directory.",       win_cd,        0},
+  {"close","q",         "Close a window.",         win_close,     0},
+  {"delmark","delm",    "Delete a mark.",          win_mark,      1},
+  {"direct","di",       "Direct at window.",       win_direct,    0},
+  {"doautocmd","doau",  "Generate event.",         win_doautocmd, 0},
+  {"echo","ec",         "Print expression.",       win_echo,      0},
+  {"edit","ed",         "Edit selection",          win_edit,      0},
+  {"filter","fil",      "Filter buffer.",          win_filter,    0},
+  {"mark","m",          "Mark a directory.",       win_mark,      0},
+  {"new",0,             "Open horizontal window.", win_new,       MOVE_UP},
+  {"qa",0,              "Quit all.",               win_shut,      0},
+  {"reload","rel",      "Set option value.",       win_reload,    0},
+  {"sort","sor",        "Sort lines.",             win_sort,      1},
+  {"version","ver",     "Print version number.",   win_version,   0},
+  {"vnew","vne",        "Open vertical window.",   win_new,       MOVE_LEFT},
 };
 
 static nv_key key_defaults[] = {
@@ -110,6 +113,7 @@ void window_init(void)
   win.ex = false;
   win.dirty = false;
   win.refs = 0;
+  win.alt_focus = NULL;
 
   signal(SIGINT,   sigint_handler);
   signal(SIGWINCH, sigwinch_handler);
@@ -160,7 +164,7 @@ void window_input(Keyarg *ca)
 
   bool ret = try_do_map(ca);
   if (!ret && window_get_focus())
-    ret = buf_input(layout_buf(&win.layout), ca);
+    ret = buf_input(window_get_focus(), ca);
   if (!ret)
     ret = find_do_key(&key_tbl, ca, &win);
 }
@@ -194,7 +198,14 @@ char* window_cur_dir()
 
 Buffer* window_get_focus()
 {
+  if (win.alt_focus)
+    return win.alt_focus;
   return layout_buf(&win.layout);
+}
+
+void window_alt_focus(Buffer *buf)
+{
+  win.alt_focus = buf;
 }
 
 Plugin* window_get_plugin()
@@ -207,16 +218,16 @@ Plugin* window_get_plugin()
 
 int window_focus_attached()
 {
-  if (!layout_buf(&win.layout))
+  if (!window_get_focus())
     return 0;
-  return buf_attached(layout_buf(&win.layout));
+  return buf_attached(window_get_focus());
 }
 
 Cmdret win_cd(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_cd");
   Plugin *plugin = NULL;
-  Buffer *buf = layout_buf(&win.layout);
+  Buffer *buf = window_get_focus();
   char *path = cmdline_line_from(ca->cmdline, 1);
 
   if (buf)
@@ -248,7 +259,7 @@ Cmdret win_mark(List *args, Cmdarg *ca)
   if (!label)
     return NORET;
 
-  Plugin *plugin = buf_plugin(layout_buf(&win.layout));
+  Plugin *plugin = buf_plugin(window_get_focus());
   if (plugin)
     mark_label_dir(label, window_cur_dir());
   return NORET;
@@ -269,7 +280,7 @@ Cmdret win_sort(List *args, Cmdarg *ca)
   char *fld = list_arg(args, 1, VAR_STRING);
   if (!fld)
     return NORET;
-  buf_sort(layout_buf(&win.layout), fld, ca->cmdstr->rev);
+  buf_sort(window_get_focus(), fld, ca->cmdstr->rev);
   return NORET;
 }
 
@@ -300,7 +311,7 @@ Cmdret win_new(List *args, Cmdarg *ca)
   window_add_buffer(ca->flags);
 
   char *path_arg = cmdline_line_from(ca->cmdline, 2);
-  int id = plugin_open(name, layout_buf(&win.layout), path_arg);
+  int id = plugin_open(name, window_get_focus(), path_arg);
   return (Cmdret){RET_INT, .val.v_int = id};
 }
 
@@ -308,7 +319,7 @@ Cmdret win_close(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_close");
 
-  Buffer *buf = layout_buf(&win.layout);
+  Buffer *buf = window_get_focus();
   if (!buf)
     return win_shut();
 
@@ -413,6 +424,35 @@ Cmdret win_direct(List *args, Cmdarg *ca)
   return NORET;
 }
 
+Cmdret win_doautocmd(List *args, Cmdarg *ca)
+{
+  log_msg("WINDOW", "doautocmd");
+  //TODO: [window] [group] event
+  Buffer *buf = window_get_focus();
+  Plugin *plug = buf_plugin(buf);
+  if (!plug)
+    return NORET;
+
+  int argidx = 1;
+  char *arg = list_arg(args, argidx, VAR_STRING);
+  int wnum;
+  if (str_num(arg, &wnum)) {
+    buf = buf_from_id(wnum);
+    if (!buf) {
+      nv_err("invalid buffer %s", arg);
+      return NORET;
+    }
+    argidx++;
+    plug = buf_plugin(buf);
+    window_alt_focus(buf);
+  }
+  char *event = list_arg(args, argidx, VAR_STRING);
+
+  send_hook_msg(event, plug, NULL, &(HookArg){NULL,NULL});
+  window_alt_focus(NULL);
+  return NORET;
+}
+
 Cmdret win_edit(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_edit");
@@ -447,7 +487,7 @@ void win_move(void *_w, Keyarg *ca)
 
 void window_close_focus()
 {
-  Buffer *buf = layout_buf(&win.layout);
+  Buffer *buf = window_get_focus();
   Plugin *plug = buf_plugin(buf);
   plugin_close(plug);
   window_remove_buffer(buf);

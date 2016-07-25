@@ -1,12 +1,7 @@
-#include <unistd.h>
-
 #include "nav/plugins/dt/dt.h"
 #include "nav/tui/buffer.h"
 #include "nav/tui/window.h"
-#include "nav/event/event.h"
-#include "nav/event/hook.h"
 #include "nav/log.h"
-#include "nav/table.h"
 #include "nav/model.h"
 #include "nav/cmdline.h"
 #include "nav/event/fs.h"
@@ -161,6 +156,8 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   dt_readfile(dt);
 
   //TODO: fileopen user command
+  //au %b right * "doau fileopen"
+  //
   //TODO: VFM navscript plugin
 }
 

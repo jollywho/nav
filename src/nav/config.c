@@ -24,8 +24,8 @@ static Cmdret conf_op();
 static Cmdret conf_source();
 
 static Cmd_T cmdtable[] = {
-  {"augroup","aug",  "Execute command for event.",  conf_augroup,    0},
-  {"autocmd","au",   "Define autocmd group.",       conf_autocmd,    0},
+  {"augroup","aug",  "Define autocmd group.",       conf_augroup,    0},
+  {"autocmd","au",   "Add command to an event.",    conf_autocmd,    0},
   {"highlight","hi", "Define a highlight group.",   conf_color,      0},
   {"let",0,          "Set variable to expression.", conf_variable,   0},
   {"kill",0,         "Kill a pid.",                 op_kill,         0},
