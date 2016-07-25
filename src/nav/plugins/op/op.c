@@ -1,6 +1,4 @@
 #include <sys/wait.h>
-#include <errno.h>
-
 #include "nav/lib/utarray.h"
 #include "nav/tui/window.h"
 #include "nav/plugins/op/op.h"
@@ -135,7 +133,6 @@ static void create_proc(nv_group *grp, char *line)
   proc->proc.data = proc;
   proc->opts.cwd = window_cur_dir();
 
-  uv_signal_start(&mainloop()->children_watcher, chld_handler, SIGCHLD);
   int ret = uv_spawn(eventloop(), &proc->proc, &proc->opts);
 
   if (ret < 0) {
@@ -261,6 +258,7 @@ void op_new(Plugin *plugin, Buffer *buf, char *arg)
     tbl_mk_fld("op_procs", "pid",   TYP_STR);
     //tbl_mk_fld("op_procs", "status", typSTRING);
   }
+  uv_signal_start(&mainloop()->children_watcher, chld_handler, SIGCHLD);
 }
 
 void op_delete(Plugin *plugin)

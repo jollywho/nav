@@ -175,8 +175,12 @@ static void ed_start_term(Ed *ed, varg_T *arg)
 
   ed_dump_contents(ed, arg);
 
+  char *editor = getenv("EDITOR");
+  if (!editor)
+    editor = "vi";
+
   char *line;
-  asprintf(&line, "%s %s", getenv("EDITOR"), ed->tmp_name);
+  asprintf(&line, "%s %s", editor, ed->tmp_name);
   term_new(ed->base, ed->buf, line);
   free(line);
 
