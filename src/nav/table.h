@@ -50,7 +50,7 @@ Ventry* lis_get_val(TblLis *lis, const char *);
 void lis_save(TblLis *lis, int index, int lnum, const char *);
 void* rec_fld(TblRec *rec, const char *);
 char* ent_str(Ventry *ent);
-char* tbl_fld_str(const char *tn, const char *fld);
+char* tbl_fld(Table*, int);
 Ventry* ent_head(Ventry *ent);
 Ventry* ent_rec(TblRec *rec, const char *);
 TblRec* tbl_iter(TblRec *next);

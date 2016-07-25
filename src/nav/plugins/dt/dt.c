@@ -20,26 +20,54 @@ static void dt_signal_model(void **data)
   buf_move(h->buf, 0, 0);
 }
 
+static char* read_line(DT *dt)
+{
+  int length = 0, size = 128;
+  char *string = malloc(size);
+
+  while (1) {
+    int c = getc(dt->f);
+    if (c == EOF || c == '\n' || c == '\0')
+      break;
+    if (c == '\r')
+      continue;
+
+    string[length++] = c;
+    if (length >= size)
+      string = realloc(string, size *= 2);
+  }
+  string[length] = '\0';
+  return string;
+}
+
 static void dt_readfile(DT *dt)
 {
-  Handle *h = dt->base->hndl;
   dt->f = fopen(dt->path, "rw");
-
   if (!dt->f)
     return;
 
-  char *line = NULL;
-  size_t len = 0;
-  ssize_t size;
+  int fcount = tbl_fld_count(dt->tbl);
+  Table *t = get_tbl(dt->tbl);
 
-  //TODO: split line on delim
-  while ((size = getline(&line, &len, dt->f)) != -1) {
-    trans_rec *r = mk_trans_rec(tbl_fld_count(dt->tbl));
-    edit_trans(r, h->fname, (char*)line, NULL);
+  while (!feof(dt->f)) {
+    trans_rec *r = mk_trans_rec(fcount);
+    char *line = read_line(dt);
+    char *str = line;
+    char *next = line;
+
+    for (int i = 0; i < fcount; i++) {
+      if (str && fcount - i > 1) {
+        next = strchr(str, dt->delm);
+        if (next)
+          *next++ = '\0';
+      }
+      char *val = str ? str : "";
+      edit_trans(r, tbl_fld(t, i), val, NULL);
+      str = next;
+    }
     CREATE_EVENT(eventq(), commit, 2, dt->tbl, r);
+    free(line);
   }
-
-  free(line);
   CREATE_EVENT(eventq(), dt_signal_model, 1, dt);
 }
 
@@ -54,8 +82,8 @@ static bool dt_getopts(DT *dt, char *line)
   Handle *h = dt->base->hndl;
   List *flds = NULL;
   dt->tbl = "filename"; //TODO: use name scheme
+  dt->delm = ' ';
   const char *fname = "name";
-  dt->delm = " ";
   char *tmp;
 
   Cmdline cmd;
@@ -70,7 +98,8 @@ static bool dt_getopts(DT *dt, char *line)
         fname = list_arg(flds, 0, VAR_STRING);
         break;
       case VAR_PAIR:
-        dt->delm = token_val(&tok->var.vval.v_pair->value, VAR_STRING);
+        tmp = token_val(&tok->var.vval.v_pair->value, VAR_STRING);
+        dt->delm = *tmp;
         break;
       case VAR_STRING:
         tmp = valid_full_path(window_cur_dir(), token_val(tok, VAR_STRING));
@@ -80,8 +109,9 @@ static bool dt_getopts(DT *dt, char *line)
           dt->tbl = token_val(tok, VAR_STRING);
     }
   }
-  log_err("DT", "%s %s %s", dt->path, dt->tbl, dt->delm);
+  log_err("DT", "%s %s %c", dt->path, dt->tbl, dt->delm);
 
+  dt->tbl = strdup(dt->tbl);
   bool succ = validate_opts(dt);
   if (!succ)
     goto cleanup;
@@ -95,8 +125,7 @@ static bool dt_getopts(DT *dt, char *line)
       tbl_mk_fld(dt->tbl, fname, TYP_STR);
   }
 
-  dt->tbl = strdup(dt->tbl);
-  h->fname = tbl_fld_str(dt->tbl, fname);
+  h->fname = tbl_fld(get_tbl(dt->tbl), 0);
   h->kname = h->fname;
   h->tn = dt->tbl;
   h->key_fld = h->fname;

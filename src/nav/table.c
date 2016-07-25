@@ -124,11 +124,6 @@ Table* get_tbl(const char *tn)
   return ret;
 }
 
-int fld_sort(TblFld *a, TblFld *b)
-{
-  return strcmp(a->key, b->key);
-}
-
 void tbl_mk_fld(const char *tn, const char *name, int type)
 {
   log_msg("TABLE", "making {%s} field {%s} ...", tn, name);
@@ -138,7 +133,6 @@ void tbl_mk_fld(const char *tn, const char *name, int type)
   fld->type = type;
   t->srt_types |= type;
   HASH_ADD_STR(t->fields, key, fld);
-  HASH_SORT(t->fields, fld_sort);
   log_msg("TABLE", "made %s", fld->key);
 }
 
@@ -275,14 +269,14 @@ int tbl_ent_count(Ventry *e)
   return e->val->count;
 }
 
-char* tbl_fld_str(const char *tn, const char *fld)
+char* tbl_fld(Table *t, int idx)
 {
-  Table *t = get_tbl(tn);
-  TblFld *f;
-  HASH_FIND_STR(t->fields, fld, f);
-  if (f)
-    return f->key;
-  return NULL;
+  TblFld *it = t->fields;
+  for (int i = 0; i < idx; i++) {
+    if (it->hh.next)
+      it = it->hh.next;
+  }
+  return it->key;
 }
 
 char* ent_str(Ventry *ent)

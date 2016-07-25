@@ -10,7 +10,7 @@ struct DT {
   FILE *f;
   char *path;
   char *tbl;
-  char *delm;
+  char delm;
 };
 
 void dt_new(Plugin *plugin, Buffer *buf, char *arg);
