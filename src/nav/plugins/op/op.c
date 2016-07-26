@@ -144,7 +144,7 @@ static void create_proc(nv_group *grp, char *line)
   add_pid(grp->key, proc->proc.pid);
 }
 
-//FIXME: should use first item in selection or get_syn each item
+//TODO: get_syn each item in buffer list. clump items together when opened.
 static void fileopen_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("OP", "fileopen_cb");

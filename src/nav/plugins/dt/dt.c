@@ -5,6 +5,7 @@
 #include "nav/model.h"
 #include "nav/cmdline.h"
 #include "nav/event/fs.h"
+#include "nav/event/hook.h"
 
 static void dt_signal_model(void **data)
 {
@@ -74,6 +75,9 @@ static bool validate_opts(DT *dt)
 
 static bool dt_getopts(DT *dt, char *line)
 {
+  if (!line)
+    return false;
+
   Handle *h = dt->base->hndl;
   List *flds = NULL;
   dt->tbl = "filename"; //TODO: use name scheme
@@ -130,11 +134,14 @@ cleanup:
   return succ;
 }
 
+static void pipe_attach_cb(Plugin *host, Plugin *caller, HookArg *hka)
+{
+  log_msg("DT", "pipe_attach_cb");
+}
+
 void dt_new(Plugin *plugin, Buffer *buf, char *arg)
 {
   log_msg("DT", "init");
-  if (!arg)
-    return;
 
   DT *dt = calloc(1, sizeof(DT));
   dt->base = plugin;
@@ -154,6 +161,8 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   model_init(hndl);
   model_open(hndl);
   dt_readfile(dt);
+  int id = id_from_plugin(plugin);
+  hook_add_intl(id, plugin, NULL, pipe_attach_cb, "pipe");
 
   //TODO: fileopen user command
   //au %b right * "doau fileopen"

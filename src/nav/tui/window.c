@@ -33,7 +33,7 @@ static Cmdret win_cd();
 static Cmdret win_mark();
 static Cmdret win_echo();
 static Cmdret win_reload();
-static Cmdret win_direct();
+static Cmdret win_pipe();
 static Cmdret win_edit();
 static Cmdret win_filter();
 static Cmdret win_doautocmd();
@@ -48,7 +48,7 @@ static Cmd_T cmdtable[] = {
   {"cd",0,              "Change directory.",       win_cd,        0},
   {"close","q",         "Close a window.",         win_close,     0},
   {"delmark","delm",    "Delete a mark.",          win_mark,      1},
-  {"direct","di",       "Direct at window.",       win_direct,    0},
+  {"pipe","pi",         "Pipe to window.",         win_pipe,      0},
   {"doautocmd","doau",  "Generate event.",         win_doautocmd, 0},
   {"echo","ec",         "Print expression.",       win_echo,      0},
   {"edit","ed",         "Edit selection",          win_edit,      0},
@@ -401,26 +401,33 @@ Cmdret win_bdel(List *args, Cmdarg *ca)
   return NORET;
 }
 
-Cmdret win_direct(List *args, Cmdarg *ca)
+Cmdret win_pipe(List *args, Cmdarg *ca)
 {
-  log_msg("WINDOW", "win_direct");
+  log_msg("WINDOW", "win_pipe");
   if (utarray_len(args->items) < 1)
     return NORET;
-  char *arg = list_arg(args, 1, VAR_STRING);
+
   int wnum;
-  if (!str_num(arg, &wnum))
-    return NORET;
+  int argidx = 1;
+  Plugin *src = focus_plugin();
+  Plugin *dst = NULL;
 
-  Plugin *lhs = focus_plugin();
-  Plugin *rhs = plugin_from_id(wnum);
-  if (!rhs)
-    return NORET;
+  char *arg = list_arg(args, argidx++, VAR_STRING);
+  if (str_num(arg, &wnum))
+    dst = plugin_from_id(wnum);
+  arg = list_arg(args, argidx, VAR_STRING);
+  if (str_num(arg, &wnum))
+    src = plugin_from_id(wnum);
 
-  log_msg("WINDOW", "%d", wnum);
+  if (!src || !dst) {
+    nv_err("invalid buffer");
+    return NORET;
+  }
+
   if (ca->cmdstr->rev)
-    send_hook_msg("pipe_remove", lhs, rhs, NULL);
+    send_hook_msg("pipe_remove", dst, src, NULL);
   else
-    send_hook_msg("pipe_left", lhs, rhs, NULL);
+    send_hook_msg("pipe", dst, src, NULL);
   return NORET;
 }
 

@@ -66,7 +66,7 @@ static char *cmd_defs[][3] = {
   {"cd",        "PATH",                         "_path"},
   {"close",     "-WINDOW",                      "_win"},
   {"delmark",   "LABEL",                        "_mrklbl"},
-  {"direct",    "WINDOW",                       "_win"},
+  {"pipe",      "DEST:-SRC",                    "_win:_win"},
   {"doautocmd", "-WINDOW:EVENT",                "_win:_event"},
   {"echo",      "*{EXPR}",                      ""},
   {"highlight", "GROUP",                        "_group"},

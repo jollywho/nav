@@ -39,7 +39,7 @@ typedef struct {
 
 static const char *events_list[] = {
   "open","fileopen","cursor_change","window_resize",
-  "diropen","pipe_left","pipe_right","left","right","paste",
+  "diropen","pipe","left","right","paste",
   "remove","execopen","execclose","pipe_remove","jump",
 };
 
