@@ -380,9 +380,8 @@ static char* default_select_cb(void *data)
 varg_T buf_select(Buffer *buf, const char *fld, select_cb cb)
 {
   log_msg("BUFFER", "buf_select");
+  log_err("BUFFER", "%s", fld);
   Model *m = buf->hndl->model;
-  if (strcmp(buf->plugin->name, "fm"))
-    fld = buf->hndl->fname;
   if (!cb)
     cb = default_select_cb;
 

@@ -19,6 +19,7 @@ static void readfd_ready(uv_poll_t *, int, int);
 static void plugin_resize(Plugin *, Plugin *, HookArg *);
 static void plugin_focus(Plugin *);
 static void plugin_cancel(Plugin *plugin);
+static void pipe_cb(Plugin *, Plugin *, HookArg *);
 
 void term_new(Plugin *plugin, Buffer *buf, char *arg)
 {
@@ -61,6 +62,7 @@ void term_new(Plugin *plugin, Buffer *buf, char *arg)
   window_start_override(plugin);
 
   hook_add_intl(buf->id, plugin, plugin, plugin_resize, "window_resize");
+  hook_add_intl(buf->id, plugin, NULL, pipe_cb, "pipe");
 }
 
 void term_set_editor(Plugin *plugin, Ed *ed)
@@ -181,6 +183,14 @@ static void plugin_resize(Plugin *host, Plugin *none, HookArg *hka)
   mvwin(buf_ncwin(term->buf), ofs.lnum, ofs.col);
   vt_resize(term->vt, sz.lnum, sz.col);
   term_draw(term);
+}
+
+static void pipe_cb(Plugin *host, Plugin *caller, HookArg *hka)
+{
+  log_msg("TERM", "pipe_cb");
+  Term *term = host->top;
+  //TODO: parse with convert_key for <KEY>
+  vt_write(term->vt, hka->arg, strlen(hka->arg));
 }
 
 static void readfd_ready(uv_poll_t *handle, int status, int events)

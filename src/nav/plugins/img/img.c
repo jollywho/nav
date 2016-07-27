@@ -199,16 +199,15 @@ void img_new(Plugin *plugin, Buffer *buf, char *arg)
   img->sh_clear = shell_new(plugin);
   shell_args(img->sh_clear, (char**)args, NULL);
 
-  int id = id_from_plugin(plugin);
-  hook_add_intl(id, plugin, NULL,   pipe_cb, "pipe");
-  hook_add_intl(id, plugin, NULL,   pipe_remove_cb, "pipe_remove");
-  hook_add_intl(id, plugin, plugin, try_refresh,    "window_resize");
+  hook_add_intl(buf->id, plugin, NULL,   pipe_cb, "pipe");
+  hook_add_intl(buf->id, plugin, NULL,   pipe_remove_cb, "pipe_remove");
+  hook_add_intl(buf->id, plugin, plugin, try_refresh,    "window_resize");
 
   if (arg) {
     int wnum;
     if (str_num(arg, &wnum)) {
       Plugin *rhs = plugin_from_id(wnum);
-      if (rhs && wnum != id)
+      if (rhs && wnum != buf->id)
         send_hook_msg("pipe", plugin, rhs, NULL);
     }
   }

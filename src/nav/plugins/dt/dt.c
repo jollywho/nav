@@ -142,6 +142,9 @@ static void pipe_cb(Plugin *host, Plugin *caller, HookArg *hka)
   //get list of records for caller's selection
   //copy values from matching fields in each record
   //commit record to table
+  //ALT:
+  //buf_select fields -> delimited string -> DT reader
+  //pipe arg (as delimited string)        -> DT reader
 
   DT *dt = host->top;
   Model *m = caller->hndl->model;
@@ -182,8 +185,7 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   model_init(hndl);
   model_open(hndl);
   dt_readfile(dt);
-  int id = id_from_plugin(plugin);
-  hook_add_intl(id, plugin, NULL, pipe_cb, "pipe");
+  hook_add_intl(buf->id, plugin, NULL, pipe_cb, "pipe");
 
   //TODO: VFM navscript plugin
   //au %b right * "doau fileopen"

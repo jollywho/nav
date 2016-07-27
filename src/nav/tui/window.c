@@ -416,18 +416,21 @@ Cmdret win_pipe(List *args, Cmdarg *ca)
   if (str_num(arg, &wnum))
     dst = plugin_from_id(wnum);
   arg = list_arg(args, argidx, VAR_STRING);
-  if (str_num(arg, &wnum))
+  if (str_num(arg, &wnum)) {
     src = plugin_from_id(wnum);
+    argidx++;
+  }
 
   if (!src || !dst) {
     nv_err("invalid buffer");
     return NORET;
   }
+  arg = cmdline_line_from(ca->cmdline, argidx);
 
   if (ca->cmdstr->rev)
     send_hook_msg("pipe_remove", dst, src, NULL);
   else
-    send_hook_msg("pipe", dst, src, NULL);
+    send_hook_msg("pipe", dst, src, &(HookArg){NULL,arg});
   return NORET;
 }
 
