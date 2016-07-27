@@ -1,6 +1,7 @@
 #include "nav/plugins/dt/dt.h"
 #include "nav/tui/buffer.h"
 #include "nav/tui/window.h"
+#include "nav/util.h"
 #include "nav/log.h"
 #include "nav/model.h"
 #include "nav/cmdline.h"
@@ -134,9 +135,29 @@ cleanup:
   return succ;
 }
 
-static void pipe_attach_cb(Plugin *host, Plugin *caller, HookArg *hka)
+static void pipe_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
-  log_msg("DT", "pipe_attach_cb");
+  log_msg("DT", "pipe_cb");
+  //TODO:
+  //get list of records for caller's selection
+  //copy values from matching fields in each record
+  //commit record to table
+
+  DT *dt = host->top;
+  Model *m = caller->hndl->model;
+
+  int fcount = tbl_fld_count(dt->tbl);
+  Table *t = get_tbl(dt->tbl);
+  trans_rec *r = mk_trans_rec(fcount);
+
+  for (int i = 0; i < fcount; i++) {
+    char *fld = tbl_fld(t, i);
+    char *val = model_curs_value(m, fld);
+    edit_trans(r, fld, val ? val : "", NULL);
+  }
+
+  CREATE_EVENT(eventq(), commit, 2, dt->tbl, r);
+  CREATE_EVENT(eventq(), dt_signal_model, 1, dt);
 }
 
 void dt_new(Plugin *plugin, Buffer *buf, char *arg)
@@ -162,12 +183,10 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   model_open(hndl);
   dt_readfile(dt);
   int id = id_from_plugin(plugin);
-  hook_add_intl(id, plugin, NULL, pipe_attach_cb, "pipe");
+  hook_add_intl(id, plugin, NULL, pipe_cb, "pipe");
 
-  //TODO: fileopen user command
-  //au %b right * "doau fileopen"
-  //
   //TODO: VFM navscript plugin
+  //au %b right * "doau fileopen"
 }
 
 void dt_delete(Plugin *plugin)

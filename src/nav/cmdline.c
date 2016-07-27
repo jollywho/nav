@@ -495,7 +495,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
 {
   char ch;
   bool seek;
-  Cmdstr cmd = {.flag = 0, .ed = 0};
+  Cmdstr cmd = {.ed = 0};
   if (word)
     cmd.st = word->start;
 
@@ -546,7 +546,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
         break;
       case '|':
         if (cmdline->lvl < 1) {
-          cmd.flag = PIPE;
+          cmd.bar = true;
           cmd.ed = word->start;
           goto breakout;
         }
@@ -653,10 +653,10 @@ void cmdline_req_run(Cmdstr *caller, Cmdline *cmdline)
     char *line = &full_line[cmd->st];
     if (line < last && waspipe)
       line++;
-    if (cmd->flag == PIPE)
+    if (cmd->bar)
       full_line[cmd->ed] = '\0';
 
     cmd_eval(NULL, line);
-    waspipe = cmd->flag == PIPE;
+    waspipe = cmd->bar;
   }
 }

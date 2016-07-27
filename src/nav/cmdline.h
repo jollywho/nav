@@ -49,7 +49,7 @@ struct Cmdret {
 };
 
 struct Cmdstr {
-  int flag;            /* pipe flag types */
+  bool bar;            /* '|' cmd separator */
   bool rev;            /* reverse flag */
   QUEUE stack;
   Token args;
@@ -61,8 +61,6 @@ struct Cmdstr {
   Cmdstr *caller;      //used for returning values
   UT_array *chlds;     //list of cmdstr subexpressions
 };
-
-#define PIPE         1
 
 struct Cmdline {
   UT_array *cmds;      //list of cmdstr

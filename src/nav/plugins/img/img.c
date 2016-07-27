@@ -153,9 +153,9 @@ static void try_refresh(Plugin *host, Plugin *none, HookArg *hka)
   shell_start(img->sh_size);
 }
 
-static void pipe_attach_cb(Plugin *host, Plugin *caller, HookArg *hka)
+static void pipe_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
-  log_msg("IMG", "pipe_attach_cb");
+  log_msg("IMG", "pipe_cb");
   if (strcmp(caller->name, "fm"))
     return;
   int id = id_from_plugin(host);
@@ -200,7 +200,7 @@ void img_new(Plugin *plugin, Buffer *buf, char *arg)
   shell_args(img->sh_clear, (char**)args, NULL);
 
   int id = id_from_plugin(plugin);
-  hook_add_intl(id, plugin, NULL,   pipe_attach_cb, "pipe");
+  hook_add_intl(id, plugin, NULL,   pipe_cb, "pipe");
   hook_add_intl(id, plugin, NULL,   pipe_remove_cb, "pipe_remove");
   hook_add_intl(id, plugin, plugin, try_refresh,    "window_resize");
 
