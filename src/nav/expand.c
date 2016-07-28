@@ -76,6 +76,24 @@ static varg_T fm_type(const char *name, enum fm_fmt fmt)
   return buf_select(buf, name, cb);
 }
 
+static varg_T tbl_type(const char *name)
+{
+  varg_T arg = {};
+  if (!name)
+    return arg;
+
+  //TODO: do for entire selection + reuseable for FM -> DT pipe
+  Buffer *buf = window_get_focus();
+  char *val = model_curs_value(buf->hndl->model, name);
+  if (!val)
+    return arg;
+
+  arg.argc = 1;
+  arg.argv = malloc(sizeof(char*));
+  arg.argv[0] = strdup(val);
+  return arg;
+}
+
 static varg_T op_type(const char *name)
 {
   varg_T arg = {};
@@ -139,6 +157,8 @@ static varg_T get_type(const char *key, const char *alt)
       return fm_type("name",     FM_GROUP);
     case 'k':
       return fm_type("stat",     FM_KIND);
+    case '_':
+      return tbl_type(alt);
     case 'o':
       return op_type(alt);
     case '\0':
