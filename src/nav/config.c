@@ -22,6 +22,7 @@ static Cmdret conf_variable();
 static Cmdret conf_mapping();
 static Cmdret conf_op();
 static Cmdret conf_source();
+static Cmdret conf_table();
 
 static Cmd_T cmdtable[] = {
   {"augroup","aug",  "Define autocmd group.",       conf_augroup,    0},
@@ -36,6 +37,7 @@ static Cmd_T cmdtable[] = {
   {"set",0,          "Set option value.",           conf_setting,    0},
   {"source","so",    "Read from file.",             conf_source,     0},
   {"syntax","syn",   "Define syntax group.",        conf_syntax,     0},
+  {"table","tbl",    "Create nav table.",           conf_table,      0},
 };
 
 static const char *config_paths[] = {
@@ -460,5 +462,26 @@ static Cmdret conf_source(List *args, Cmdarg *ca)
   }
 
   free(path);
+  return NORET;
+}
+
+static Cmdret conf_table(List *args, Cmdarg *ca)
+{
+  log_msg("CONFIG", "conf_table");
+  char *tbl = list_arg(args, 1, VAR_STRING);
+  List *flds = list_arg(args, 2, VAR_LIST);
+
+  //TODO: rev flag: delete table
+  if (!tbl)
+    return NORET;
+
+  if (tbl_mk(tbl)) {
+    if (flds) {
+      for (int i = 0; i < utarray_len(flds->items); i++)
+        tbl_mk_fld(tbl, list_arg(flds, i, VAR_STRING), TYP_STR);
+    }
+    else
+      tbl_mk_fld(tbl, "name", TYP_STR);
+  }
   return NORET;
 }

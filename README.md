@@ -29,6 +29,7 @@ nav is a **work in progress**.
 * file executor/opener with 'before/after' cmds.
 * strong [ctrlp](http://kien.github.io/ctrlp.vim/)-inspired autocomplete menu
 * menu hint keys
+* datatables (adhoc buffer content)
 
 ## Installation
 
@@ -55,7 +56,7 @@ With w3mimgdisplay installed
 ```viml
 :new fm
 :vnew img
-:di #BUFFER_ID
+:pipe #BUFFER_ID
 ```
 ```viml
 :vnew img #BUFFER_ID
@@ -87,7 +88,6 @@ See [Wiki](https://github.com/jollywho/nav/wiki#expansion-symbols)
 ## Future
 
 * parser remake for more advanced features
-* 'datatable' buffers for aggregate content
 * command pipes
 
 ## Contributing

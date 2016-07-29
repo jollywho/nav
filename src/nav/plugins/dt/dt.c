@@ -68,68 +68,45 @@ static void dt_readfile(DT *dt)
   CREATE_EVENT(eventq(), dt_signal_model, 1, dt);
 }
 
-static bool validate_opts(DT *dt)
-{
-  //TODO: if no file and tbl doesnt exist, error
-  return (dt->path && dt->tbl);
-}
-
+//new dt [table] [file] [delim:ch] #open table; open file into table
+//table[!] name [fields...]        #mk or del table
 static bool dt_getopts(DT *dt, char *line)
 {
+  bool succ = false;
   if (!line)
-    return false;
+    return succ;
+
+  log_err("DT", "%s", line);
 
   Handle *h = dt->base->hndl;
-  List *flds = NULL;
-  dt->tbl = "filename"; //TODO: use name scheme
   dt->delm = ' ';
-  const char *fname = "name";
-  char *tmp;
 
   Cmdline cmd;
   cmdline_build(&cmd, line);
+  int argidx = 0;
 
   List *lst = cmdline_lst(&cmd);
-  for (int i = 0; i < utarray_len(lst->items); i++) {
-    Token *tok = tok_arg(lst, i);
-    switch (tok->var.v_type) {
-      case VAR_LIST:
-        flds = tok->var.vval.v_list;
-        fname = list_arg(flds, 0, VAR_STRING);
-        break;
-      case VAR_PAIR:
-        tmp = token_val(&tok->var.vval.v_pair->value, VAR_STRING);
-        dt->delm = *tmp;
-        break;
-      case VAR_STRING:
-        tmp = valid_full_path(window_cur_dir(), token_val(tok, VAR_STRING));
-        if (tmp)
-          dt->path = tmp;
-        else
-          dt->tbl = token_val(tok, VAR_STRING);
-    }
-  }
-  log_err("DT", "%s %s %c", dt->path, dt->tbl, dt->delm);
-
-  dt->tbl = strdup(dt->tbl);
-  bool succ = validate_opts(dt);
-  if (!succ)
+  dt->tbl = list_arg(lst, argidx++, VAR_STRING);
+  if (!get_tbl(dt->tbl))
     goto cleanup;
 
-  if (tbl_mk(dt->tbl)) {
-    if (flds) {
-      for (int i = 0; i < utarray_len(flds->items); i++)
-        tbl_mk_fld(dt->tbl, list_arg(flds, i, VAR_STRING), TYP_STR);
-    }
-    else
-      tbl_mk_fld(dt->tbl, fname, TYP_STR);
+  dt->path = list_arg(lst, argidx++, VAR_STRING);
+  dt->path = valid_full_path(window_cur_dir(), dt->path);
+
+  Pair *p = list_arg(lst, argidx, VAR_PAIR);
+  if (p) {
+    char *val = token_val(&p->value, VAR_STRING);
+    if (val)
+      dt->delm = *val;
   }
 
+  dt->tbl = strdup(dt->tbl);
   h->fname = tbl_fld(get_tbl(dt->tbl), 0);
   h->kname = h->fname;
   h->tn = dt->tbl;
   h->key_fld = h->fname;
   h->key = "";
+  succ = true;
 cleanup:
   cmdline_cleanup(&cmd);
   return succ;
@@ -139,12 +116,8 @@ static void pipe_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   log_msg("DT", "pipe_cb");
   //TODO:
-  //get list of records for caller's selection
-  //copy values from matching fields in each record
-  //commit record to table
-  //ALT:
   //buf_select fields -> delimited string -> DT reader
-  //pipe arg (as delimited string)        -> DT reader
+  //pipe arg (dict fld:val)               -> DT reader
 
   DT *dt = host->top;
   Model *m = caller->hndl->model;
