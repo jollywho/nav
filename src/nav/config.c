@@ -471,9 +471,13 @@ static Cmdret conf_table(List *args, Cmdarg *ca)
   char *tbl = list_arg(args, 1, VAR_STRING);
   List *flds = list_arg(args, 2, VAR_LIST);
 
-  //TODO: rev flag: delete table
   if (!tbl)
     return NORET;
+
+  if (ca->cmdstr->rev) {
+    tbl_del(tbl);
+    return NORET;
+  }
 
   if (tbl_mk(tbl)) {
     if (flds) {

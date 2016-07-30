@@ -54,8 +54,6 @@ void tables_cleanup()
   Table *it, *tmp;
   HASH_ITER(hh, NV_MASTER, it, tmp) {
     tbl_del(it->key);
-    free(it->key);
-    free(it);
   }
 }
 
@@ -113,6 +111,8 @@ void tbl_del(const char *name)
     free(f);
   }
   HASH_DEL(NV_MASTER, t);
+  free(t->key);
+  free(t);
 }
 
 Table* get_tbl(const char *tn)

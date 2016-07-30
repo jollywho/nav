@@ -890,9 +890,9 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
   log_msg("CMD", "%s", cmdline->line);
   List *args = token_val(&cmdstr->args, VAR_LIST);
   char *word = list_arg(args, 0, VAR_STRING);
-  Cmd_T *fun = cmd_find(word);
+  Cmd_T *fn = cmd_find(word);
 
-  if (!fun || !fun->bflags) {
+  if (!fn || !fn->bflags) {
     if (utarray_len(cmdstr->chlds) > 0)
       return cmd_sub(cmdstr, cmdline);
 
@@ -906,11 +906,11 @@ void cmd_run(Cmdstr *cmdstr, Cmdline *cmdline)
   if (cmdline_can_exec(cmdstr, word))
     return exec_line(cmdstr, cmdline->line);
 
-  if (!fun)
+  if (!fn)
     return ret2caller(cmdstr, (Cmdret){STRING, .val.v_str = cmdline->line});
 
-  Cmdarg flags = {fun->flags, 0, cmdstr, cmdline};
-  return ret2caller(cmdstr, fun->cmd_func(args, &flags));
+  Cmdarg flags = {fn->flags, 0, cmdstr, cmdline};
+  return ret2caller(cmdstr, fn->cmd_func(args, &flags));
 }
 
 nv_block* cmd_callstack()
