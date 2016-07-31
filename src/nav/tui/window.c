@@ -234,7 +234,7 @@ Cmdret win_cd(List *args, Cmdarg *ca)
     plugin = buf_plugin(buf);
 
   if (!plugin) {
-    char *newpath = valid_full_path(window_cur_dir(), path);
+    char *newpath = fs_trypath(path);
     if (newpath) {
       window_ch_dir(newpath);
       free(newpath);

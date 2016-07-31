@@ -136,7 +136,6 @@ void config_load(const char *file)
   free(path);
 }
 
-//TODO: relative path to current file
 void config_start(char *default_path)
 {
   config_load(default_path);
@@ -424,6 +423,7 @@ static Cmdret conf_op(List *args, Cmdarg *ca)
   char *group  = list_arg(args, 1, VAR_STRING);
   char *before = list_arg(args, 2, VAR_STRING);
   char *after  = list_arg(args, 3, VAR_STRING);
+
   if (!group || !before)
     return NORET;
   if (!after)
@@ -444,13 +444,23 @@ static Cmdret conf_op(List *args, Cmdarg *ca)
 
 static Cmdret conf_source(List *args, Cmdarg *ca)
 {
-  log_msg("CONFIG", "conf_op");
-  char *file  = list_arg(args, 1, VAR_STRING);
+  log_msg("CONFIG", "conf_source");
+  char *arg  = list_arg(args, 1, VAR_STRING);
   char *scope = list_arg(args, 2, VAR_STRING);
-  if (!file || (ca->flags && !scope))
+
+  if (!ca->flags) {
+    arg = cmdline_line_from(ca->cmdline, 1);
+    scope = "";
+  }
+
+  if (!arg || (ca->flags && !scope))
     return NORET;
 
-  char *path = fs_expand_path(file);
+  //TODO: try load from config_paths, loaded path, window path, base file
+  char *file = strip_quotes(arg);
+  char *path = fs_trypath(file);
+  log_err("CONFIG", "%s", path);
+
   if (path && file_exists(path)) {
     if (ca->flags) {
       nv_module mod = {.key = strdup(scope), .path = strdup(path)};
@@ -461,6 +471,7 @@ static Cmdret conf_source(List *args, Cmdarg *ca)
     cmd_unload(ca->flags);
   }
 
+  free(file);
   free(path);
   return NORET;
 }

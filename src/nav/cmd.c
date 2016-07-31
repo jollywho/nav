@@ -922,6 +922,8 @@ nv_block* cmd_callstack()
 
 void cmd_load(const char *key)
 {
+  if (!key)
+    return;
   nv_module *mod = get_module(key);
   if (mod) {
     nvs.scope = (Cmdblock){.brk = 0, .blk = &mod->blk};

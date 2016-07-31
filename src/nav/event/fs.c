@@ -5,6 +5,7 @@
 #include <wordexp.h>
 #include <unistd.h>
 
+#include "nav/tui/window.h"
 #include "nav/event/fs.h"
 #include "nav/model.h"
 #include "nav/event/event.h"
@@ -170,8 +171,9 @@ char* fs_current_dir()
   return get_current_dir_name();
 }
 
-char* valid_full_path(char *base, char *path)
+char* fs_trypath(char *path)
 {
+  char *base = window_cur_dir();
   if (!path)
     return strdup(base);
 

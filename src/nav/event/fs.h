@@ -43,7 +43,7 @@ time_t rec_ctime(TblRec *rec);
 off_t rec_stsize(TblRec *rec);
 mode_t rec_stmode(TblRec *rec);
 char* fs_expand_path(const char *);
-char* valid_full_path(char *, char *);
+char* fs_trypath(char *);
 char* fs_parent_dir(char *);
 char* conspath(const char *, const char *);
 const char* file_ext(const char *filename);

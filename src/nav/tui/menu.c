@@ -90,7 +90,7 @@ void menu_ch_dir(void **args)
 
 static int expand_path(char **path)
 {
-  char *dir = valid_full_path(window_cur_dir(), *path);
+  char *dir = fs_trypath(*path);
   if (!dir)
     return 0;
 

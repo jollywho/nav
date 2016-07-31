@@ -151,10 +151,10 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
   DO_EVENTS_UNTIL(!fs_blocking(self->fs));
 
   char *trypath = add_quotes(req);
-  char *path = valid_full_path(window_cur_dir(), trypath);
+  char *path = fs_trypath(trypath);
   if (!path) {
     free(path);
-    path = valid_full_path(window_cur_dir(), req);
+    path = fs_trypath(req);
   }
 
   if (path)
@@ -287,7 +287,7 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   plugin->fmt_name = "FM";
 
   /* check manually because won't be initialized to use req_dir */
-  char *path = valid_full_path(window_cur_dir(), arg);
+  char *path = fs_trypath(arg);
   if (path)
     fm->cur_dir = path;
   else {

@@ -120,7 +120,7 @@ Table* get_tbl(const char *tn)
   Table *ret;
   HASH_FIND_STR(NV_MASTER, tn, ret);
   if (!ret)
-    log_msg("ERROR", "::get_tbl %s does not exist", tn);
+    log_msg("ERROR", "::table %s does not exist", tn);
   return ret;
 }
 

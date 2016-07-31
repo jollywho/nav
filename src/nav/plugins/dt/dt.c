@@ -91,7 +91,7 @@ static bool dt_getopts(DT *dt, char *line)
     goto cleanup;
 
   dt->path = list_arg(lst, argidx++, VAR_STRING);
-  dt->path = valid_full_path(window_cur_dir(), dt->path);
+  dt->path = fs_trypath(dt->path);
 
   Pair *p = list_arg(lst, argidx, VAR_PAIR);
   if (p) {
