@@ -960,6 +960,11 @@ void cmd_popfile()
     nvs.filestack = nvs.filestack->parent;
 }
 
+ConfFile* cmd_curfile()
+{
+  return nvs.filestack;
+}
+
 bool cmd_conditional()
 {
   return nvs.condition;

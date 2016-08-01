@@ -455,11 +455,16 @@ static Cmdret conf_source(List *args, Cmdarg *ca)
   if (!arg || (ca->flags && !scope))
     return NORET;
 
-  //TODO: try load from window_path, loaded path, config_path, base file
   char *file = strip_quotes(arg);
   char *path = fs_trypath(file);
 
-  if (path && file_exists(path)) {
+  /* try relative path to loaded file */
+  if (!path && file) {
+    ConfFile *cnf = cmd_curfile();
+    path = conspath(fs_parent_dir(cnf->path), file);
+  }
+
+  if (path) {
     if (ca->flags) {
       nv_module mod = {.key = strdup(scope), .path = strdup(path)};
       set_module(&mod);

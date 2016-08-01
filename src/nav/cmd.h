@@ -48,6 +48,7 @@ void cmd_load(const char *);
 void cmd_unload(bool);
 void cmd_pushfile(ConfFile *);
 void cmd_popfile();
+ConfFile* cmd_curfile();
 
 bool cmd_conditional();
 void cmd_list();
