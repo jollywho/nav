@@ -285,7 +285,7 @@ static bool ed_prepare(Ed *ed)
 
   Buffer *buf = lis->hndl->buf;
   ed->src = buf_select(buf, "name", NULL);
-  sprintf(ed->curdir, "%s", window_cur_dir());
+  sprintf(ed->curdir, "%s", fs_pwd());
 
   sprintf(ed->tmp_name, "/tmp/navedit-XXXXXX");
   ed->fd = mkstemp(ed->tmp_name);

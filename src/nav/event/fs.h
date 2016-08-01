@@ -49,6 +49,7 @@ char* conspath(const char *, const char *);
 const char* file_ext(const char *filename);
 const char* file_base(char *filename);
 
-char* fs_current_dir();
+char* fs_pwd();
+void  fs_cwd(char *);
 
 #endif

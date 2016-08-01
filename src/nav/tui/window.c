@@ -78,7 +78,6 @@ static nv_keytbl key_tbl;
 static short cmd_idx[LENGTH(key_defaults)];
 static const uint64_t RFSH_RATE = 10;
 static Window win;
-static char *cur_dir;
 
 void sigwinch_handler(int sig)
 {
@@ -109,7 +108,6 @@ void window_init(void)
 
   uv_timer_init(eventloop(), &win.draw_timer);
 
-  cur_dir = fs_current_dir();
   win.ex = false;
   win.dirty = false;
   win.refs = 0;
@@ -186,16 +184,6 @@ int window_curs(Plugin *plug)
   return plug == window_get_plugin();
 }
 
-void window_ch_dir(char *dir)
-{
-  SWAP_ALLOC_PTR(cur_dir, strdup(dir));
-}
-
-char* window_cur_dir()
-{
-  return cur_dir;
-}
-
 Buffer* window_get_focus()
 {
   if (win.alt_focus)
@@ -236,7 +224,7 @@ Cmdret win_cd(List *args, Cmdarg *ca)
   if (!plugin) {
     char *newpath = fs_trypath(path);
     if (newpath) {
-      window_ch_dir(newpath);
+      fs_cwd(newpath);
       free(newpath);
     }
     else {
@@ -261,7 +249,7 @@ Cmdret win_mark(List *args, Cmdarg *ca)
 
   Plugin *plugin = buf_plugin(window_get_focus());
   if (plugin)
-    mark_label_dir(label, window_cur_dir());
+    mark_label_dir(label, fs_pwd());
   return NORET;
 }
 
@@ -287,7 +275,7 @@ Cmdret win_sort(List *args, Cmdarg *ca)
 Cmdret win_reload(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_reload");
-  char *path = window_cur_dir();
+  char *path = fs_pwd();
   fs_clr_cache(path);
   fs_reload(path);
   return NORET;

@@ -7,6 +7,7 @@
 #include "nav/event/event.h"
 #include "nav/event/hook.h"
 #include "nav/event/input.h"
+#include "nav/event/fs.h"
 #include "nav/tui/buffer.h"
 #include "nav/log.h"
 #include "nav/ascii.h"
@@ -40,7 +41,7 @@ void term_new(Plugin *plugin, Buffer *buf, char *arg)
   term->vt = vt_create(1, 1, SCROLL_HISTORY);
   const char *shell = getenv("SHELL");
   const char *pargs[4] = { shell, NULL };
-  char *cwd = window_cur_dir();
+  char *pwd = fs_pwd();
 
   char *args = arg;
   if (args && args[0]) {
@@ -51,7 +52,7 @@ void term_new(Plugin *plugin, Buffer *buf, char *arg)
 
   SLIST_INSERT_HEAD(&mainloop()->subterms, term, ent);
 
-  term->pid = vt_forkpty(term->vt, shell, pargs, cwd, NULL, NULL, NULL);
+  term->pid = vt_forkpty(term->vt, shell, pargs, pwd, NULL, NULL, NULL);
   if (term->closed) {
     return;
   }

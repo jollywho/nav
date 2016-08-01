@@ -1,11 +1,7 @@
 #include <time.h>
-#include <malloc.h>
-#include <sys/time.h>
 #include <libgen.h>
 #include <wordexp.h>
-#include <unistd.h>
 
-#include "nav/tui/window.h"
 #include "nav/event/fs.h"
 #include "nav/model.h"
 #include "nav/event/event.h"
@@ -44,6 +40,7 @@ typedef struct {
 
 static fentry   *ent_tbl;
 static cachedir *cache_tbl;
+static char *g_curdir;
 
 static fentry* fs_mux(nv_fs *fs)
 {
@@ -166,16 +163,20 @@ char* fs_expand_path(const char *path)
   return strdup(path);
 }
 
-char* fs_current_dir()
+char* fs_pwd()
 {
-  return get_current_dir_name();
+  return g_curdir;
+}
+
+void fs_cwd(char *path)
+{
+  SWAP_ALLOC_PTR(g_curdir, strdup(path));
 }
 
 char* fs_trypath(char *path)
 {
-  char *base = window_cur_dir();
   if (!path)
-    return strdup(base);
+    return strdup(g_curdir);
 
   char *dir = fs_expand_path(path);
   if (path[0] == '@') {
@@ -183,8 +184,9 @@ char* fs_trypath(char *path)
     if (tmp)
       SWAP_ALLOC_PTR(dir, strdup(tmp));
   }
+
   if (dir[0] != '/')
-    SWAP_ALLOC_PTR(dir, conspath(base, dir));
+    SWAP_ALLOC_PTR(dir, conspath(g_curdir, dir));
 
   char *valid = realpath(dir, NULL);
   if (!valid) {
@@ -319,9 +321,7 @@ void fs_signal_handle(void **data)
 
 bool fs_blocking(nv_fs *fs)
 {
-  if (!fs->ent)
-    return false;
-  return fs->ent->running;
+  return fs->ent ? fs->ent->running : false;
 }
 
 void fs_read(nv_fs *fs, const char *dir)
@@ -470,7 +470,7 @@ static void fs_reopen(fentry *ent)
 
   ent->running = true;
   ent->reopen = true;
-  uv_fs_lstat(eventloop(), &ent->uv_fs, ent->key, stat_cb);
+  uv_fs_stat(eventloop(), &ent->uv_fs, ent->key, stat_cb);
   uv_fs_event_start(&ent->watcher, watch_cb, ent->key, 1);
 }
 

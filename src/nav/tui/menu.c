@@ -116,7 +116,7 @@ void path_list()
   compl_set_escapes("@/");
 
   if (pos >= ex_cmd_curpos() || len < 1) {
-    char *path = window_cur_dir();
+    char *path = fs_pwd();
     return fs_read(cur_menu->fs, path);
   }
 
@@ -135,11 +135,11 @@ void path_list()
   if (compl_validate(ex_cmd_curpos()) || ex_cmd_curch() != '/') {
     exec = true;
 
-    char *cur = window_cur_dir();
+    char *cur = fs_pwd();
     if (strcmp(path, cur) && !strcmp(path, ".."))
       cur = fs_parent_dir(path);
     if (*cur == '.')
-      cur = window_cur_dir();
+      cur = fs_pwd();
 
     SWAP_ALLOC_PTR(path, strdup(cur));
   }

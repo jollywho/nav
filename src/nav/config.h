@@ -5,11 +5,11 @@
 #include <stdbool.h>
 
 void config_init();
-void config_load(const char *);
 void config_start(char *);
-void config_write_info();
 bool config_read(FILE *);
-bool info_read(FILE *);
+void config_load(const char *);
+bool config_load_info();
+void config_write_info();
 
 typedef struct ConfFile ConfFile;
 struct ConfFile {

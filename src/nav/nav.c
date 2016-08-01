@@ -53,7 +53,8 @@ void init(int debug, char *config_path)
 
   config_init();
   hist_init();
-  config_start(config_path);
+  config_load_info();
+  config_load(config_path);
 
   screen_init();
   cmd_sort_cmds();

@@ -161,11 +161,6 @@ Plugin* focus_plugin()
   return buf->plugin;
 }
 
-char* focus_dir()
-{
-  return window_cur_dir();
-}
-
 Buffer* buf_from_id(int id)
 {
   Cid *cid;

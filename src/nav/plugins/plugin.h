@@ -63,7 +63,6 @@ Buffer* buf_from_id(int id);
 Plugin* plugin_from_id(int id);
 int id_from_plugin(Plugin *plug);
 int plugin_requires_buf(const char *);
-char *focus_dir();
 
 void plugin_list();
 void win_list();

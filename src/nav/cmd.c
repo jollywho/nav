@@ -1,4 +1,3 @@
-#include <sys/queue.h>
 #include "nav/cmd.h"
 #include "nav/log.h"
 #include "nav/compl.h"
@@ -7,6 +6,7 @@
 #include "nav/util.h"
 #include "nav/model.h"
 #include "nav/event/shell.h"
+#include "nav/event/fs.h"
 #include "nav/tui/message.h"
 
 enum CTLCMD { CTL_NOP, CTL_IF, CTL_ELSEIF, CTL_ELSE, CTL_END, CTL_FUNC, };
@@ -361,6 +361,7 @@ static void cmd_sub(Cmdstr *caller, Cmdline *cmdline)
     strcpy(base+pos, retline);
     pos += retlen;
   }
+
   int nlen = caller->ed;
   if (maxlen < pos + nlen)
     base = realloc(base, maxlen += nlen + 2);
@@ -877,7 +878,7 @@ void exec_line(Cmdstr *cmd, char *line)
   char *str = strstr(line, "!");
   ++str;
   char *pidstr;
-  int pid = shell_exec(str, focus_dir());
+  int pid = shell_exec(str, fs_pwd());
 
   asprintf(&pidstr, "%d", pid);
   ret2caller(cmd, (Cmdret){STRING, .val.v_str = pidstr});

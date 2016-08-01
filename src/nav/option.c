@@ -1,5 +1,3 @@
-#include <curses.h>
-
 #include "nav/log.h"
 #include "nav/option.h"
 #include "nav/cmdline.h"

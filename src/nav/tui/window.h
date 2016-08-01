@@ -21,9 +21,6 @@ Plugin* window_get_plugin();
 int window_focus_attached();
 void win_move(void *, Keyarg *);
 
-char* window_cur_dir();
-void window_ch_dir(char *);
-
 void window_start_override(Plugin *);
 void window_stop_override();
 

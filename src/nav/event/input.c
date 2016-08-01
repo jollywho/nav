@@ -10,6 +10,7 @@
 #include "nav/log.h"
 #include "nav/option.h"
 #include "nav/event/shell.h"
+#include "nav/event/fs.h"
 #include "nav/util.h"
 #include "nav/compl.h"
 
@@ -538,7 +539,7 @@ void reg_yank(char *str)
 {
   char *cpy;
   asprintf(&cpy, "echo -n \"%s\" | %s", str, get_opt_str("copy-pipe"));
-  shell_exec(cpy, focus_dir());
+  shell_exec(cpy, fs_pwd());
   free(str);
   free(cpy);
 }

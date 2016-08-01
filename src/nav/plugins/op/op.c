@@ -1,6 +1,5 @@
 #include <sys/wait.h>
 #include "nav/lib/utarray.h"
-#include "nav/tui/window.h"
 #include "nav/plugins/op/op.h"
 #include "nav/plugins/term/term.h"
 #include "nav/log.h"
@@ -131,7 +130,7 @@ static void create_proc(nv_group *grp, char *line)
   proc->opts.file = args[0];
   proc->opts.args = args;
   proc->proc.data = proc;
-  proc->opts.cwd = window_cur_dir();
+  proc->opts.cwd = fs_pwd();
 
   int ret = uv_spawn(eventloop(), &proc->proc, &proc->opts);
 

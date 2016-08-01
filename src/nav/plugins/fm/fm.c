@@ -11,7 +11,6 @@
 #include "nav/compl.h"
 #include "nav/event/shell.h"
 #include "nav/info.h"
-#include "nav/tui/window.h"
 #include "nav/tui/message.h"
 #include "nav/event/file.h"
 #include "nav/util.h"
@@ -43,7 +42,7 @@ void plugin_focus(Plugin *plugin)
 {
   log_msg("FM", "plugin_focus");
   FM *self = (FM*)plugin->top;
-  window_ch_dir(self->cur_dir);
+  fs_cwd(self->cur_dir);
   model_ch_focus(plugin->hndl);
   buf_refresh(plugin->hndl->buf);
 }
@@ -113,7 +112,7 @@ static int fm_opendir(Plugin *plugin, char *path, short arg)
   fs_close(self->fs);
   fs_open(self->fs, cur_dir);
   self->cur_dir = cur_dir;
-  window_ch_dir(self->cur_dir);
+  fs_cwd(self->cur_dir);
   send_hook_msg("diropen", plugin, NULL, &(HookArg){NULL,self->cur_dir});
   return 1;
 }
@@ -256,7 +255,7 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
   char *cmdstr;
   asprintf(&cmdstr, "%s %s", p_rm, src);
   fs_fastreq(self->fs);
-  shell_exec(cmdstr, focus_dir());
+  shell_exec(cmdstr, fs_pwd());
   free(cmdstr);
 cleanup:
   del_param_list(args.argv, args.argc);
@@ -292,7 +291,7 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
     fm->cur_dir = path;
   else {
     nv_err("not a valid path: %s", arg);
-    fm->cur_dir = strdup(window_cur_dir());
+    fm->cur_dir = strdup(fs_pwd());
   }
 
   jump_init(fm);
@@ -313,7 +312,7 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   fm->fs->stat_cb = fm_ch_dir;
   fm->fs->data = plugin;
   fm_req_dir(plugin, NULL, &(HookArg){NULL,fm->cur_dir});
-  window_ch_dir(fm->cur_dir);
+  fs_cwd(fm->cur_dir);
 }
 
 void fm_delete(Plugin *plugin)

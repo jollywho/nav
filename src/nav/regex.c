@@ -1,10 +1,10 @@
 #include <pcre.h>
 #include "nav/lib/utarray.h"
 
+#include "nav/tui/buffer.h"
 #include "nav/regex.h"
 #include "nav/log.h"
 #include "nav/model.h"
-#include "nav/tui/window.h"
 
 #define NSUBEXP  5
 

@@ -53,6 +53,9 @@ static const char *info_paths[] = {
 
 void config_init()
 {
+  char *cwd = get_current_dir_name();
+  fs_cwd(cwd);
+  free(cwd);
   for (int i = 0; i < LENGTH(cmdtable); i++)
     cmd_add(&cmdtable[i]);
 }
@@ -136,24 +139,6 @@ void config_load(const char *file)
   free(path);
 }
 
-void config_start(char *default_path)
-{
-  config_load(default_path);
-  char *path = config_path(NULL, info_paths);
-  if (!path)
-    return;
-
-  FILE *f = fopen(path, "r");
-  if (!f) {
-    path = fs_expand_path(info_paths[0]);
-    f = fopen(path, "w+");
-  }
-
-  info_read(f);
-  fclose(f);
-  free(path);
-}
-
 void config_write_info()
 {
   log_msg("CONFIG", "config_write_info");
@@ -169,12 +154,22 @@ void config_write_info()
   free(path);
 }
 
-bool info_read(FILE *file)
+bool config_load_info()
 {
+  char *path = config_path(NULL, info_paths);
+  if (!path)
+    return false;
+
+  FILE *f = fopen(path, "r");
+  if (!f) {
+    path = fs_expand_path(info_paths[0]);
+    f = fopen(path, "w+");
+  }
+
   int line_number = 0;
   char *line;
-  while (!feof(file)) {
-    line = read_line(file);
+  while (!feof(f)) {
+    line = read_line(f);
     line_number++;
     if (line[0] == '#' || !strpbrk(&line[0], "?/:'@")) {
       free(line);
@@ -183,7 +178,11 @@ bool info_read(FILE *file)
     info_parse(line);
     free(line);
   }
-  return 1;
+
+  fclose(f);
+  free(path);
+
+  return true;
 }
 
 bool config_read(FILE *file)
@@ -456,10 +455,9 @@ static Cmdret conf_source(List *args, Cmdarg *ca)
   if (!arg || (ca->flags && !scope))
     return NORET;
 
-  //TODO: try load from config_paths, loaded path, window path, base file
+  //TODO: try load from window_path, loaded path, config_path, base file
   char *file = strip_quotes(arg);
   char *path = fs_trypath(file);
-  log_err("CONFIG", "%s", path);
 
   if (path && file_exists(path)) {
     if (ca->flags) {

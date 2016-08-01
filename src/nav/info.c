@@ -1,11 +1,9 @@
-#include <unistd.h>
 #include "nav/lib/uthash.h"
 
 #include "nav/info.h"
 #include "nav/ascii.h"
 #include "nav/log.h"
 #include "nav/compl.h"
-#include "nav/tui/window.h"
 #include "nav/tui/history.h"
 #include "nav/tui/ex_cmd.h"
 

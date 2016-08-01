@@ -1,6 +1,5 @@
 #include "nav/plugins/dt/dt.h"
 #include "nav/tui/buffer.h"
-#include "nav/tui/window.h"
 #include "nav/util.h"
 #include "nav/log.h"
 #include "nav/model.h"
