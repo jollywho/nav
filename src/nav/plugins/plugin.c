@@ -63,7 +63,6 @@ void plugin_init()
 void plugin_cleanup()
 {
   fs_clr_all_cache();
-  //TODO: need way to access bg plugin for close
 }
 
 static int find_plugin(const char *name)

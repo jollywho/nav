@@ -16,13 +16,13 @@ static void dt_signal_model(void **data)
   buf_move(h->buf, 0, 0);
 }
 
-static char* read_line(DT *dt)
+static char* read_line(DT *dt, FILE *f)
 {
   int length = 0, size = 128;
   char *string = malloc(size);
 
   while (1) {
-    int c = getc(dt->f);
+    int c = getc(f);
     if (c == EOF || c == '\n' || c == '\0')
       break;
     if (c == '\r')
@@ -38,16 +38,17 @@ static char* read_line(DT *dt)
 
 static void dt_readfile(DT *dt)
 {
-  dt->f = fopen(dt->path, "rw");
-  if (!dt->f)
+  FILE *f = fopen(dt->path, "rw");
+  if (!f)
     return;
 
-  int fcount = tbl_fld_count(dt->tbl);
-  Table *t = get_tbl(dt->tbl);
+  Handle *h = dt->base->hndl;
+  int fcount = tbl_fld_count(h->tn);
+  Table *t = get_tbl(h->tn);
 
-  while (!feof(dt->f)) {
+  while (!feof(f)) {
     trans_rec *r = mk_trans_rec(fcount);
-    char *line = read_line(dt);
+    char *line = read_line(dt, f);
     char *str = line;
     char *next = line;
 
@@ -61,10 +62,11 @@ static void dt_readfile(DT *dt)
       edit_trans(r, tbl_fld(t, i), val, NULL);
       str = next;
     }
-    CREATE_EVENT(eventq(), commit, 2, dt->tbl, r);
+    CREATE_EVENT(eventq(), commit, 2, h->tn, r);
     free(line);
   }
   CREATE_EVENT(eventq(), dt_signal_model, 1, dt);
+  fclose(f);
 }
 
 //new dt [table] [file] [delim:ch] #open table; open file into table
@@ -85,11 +87,14 @@ static bool dt_getopts(DT *dt, char *line)
   int argidx = 0;
 
   List *lst = cmdline_lst(&cmd);
-  dt->tbl = list_arg(lst, argidx++, VAR_STRING);
-  if (!get_tbl(dt->tbl))
+  char *tn = list_arg(lst, argidx++, VAR_STRING);
+  if (!get_tbl(tn))
     goto cleanup;
 
   dt->path = list_arg(lst, argidx++, VAR_STRING);
+  if (!dt->path)
+    goto cleanup;
+
   dt->path = fs_trypath(dt->path);
 
   Pair *p = list_arg(lst, argidx, VAR_PAIR);
@@ -99,10 +104,9 @@ static bool dt_getopts(DT *dt, char *line)
       dt->delm = *val;
   }
 
-  dt->tbl = strdup(dt->tbl);
-  h->fname = tbl_fld(get_tbl(dt->tbl), 0);
+  h->fname = tbl_fld(get_tbl(tn), 0);
   h->kname = h->fname;
-  h->tn = dt->tbl;
+  h->tn = strdup(tn);
   h->key_fld = h->fname;
   h->key = "";
   succ = true;
@@ -119,10 +123,11 @@ static void pipe_cb(Plugin *host, Plugin *caller, HookArg *hka)
   //pipe arg (dict fld:val)               -> DT reader
 
   DT *dt = host->top;
-  Model *m = caller->hndl->model;
+  Handle *h = caller->hndl;
+  Model *m = h->model;;
 
-  int fcount = tbl_fld_count(dt->tbl);
-  Table *t = get_tbl(dt->tbl);
+  int fcount = tbl_fld_count(h->tn);
+  Table *t = get_tbl(h->tn);
   trans_rec *r = mk_trans_rec(fcount);
 
   for (int i = 0; i < fcount; i++) {
@@ -131,7 +136,7 @@ static void pipe_cb(Plugin *host, Plugin *caller, HookArg *hka)
     edit_trans(r, fld, val ? val : "", NULL);
   }
 
-  CREATE_EVENT(eventq(), commit, 2, dt->tbl, r);
+  CREATE_EVENT(eventq(), commit, 2, h->tn, r);
   CREATE_EVENT(eventq(), dt_signal_model, 1, dt);
 }
 
@@ -152,15 +157,12 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
     return buf_set_plugin(buf, plugin, SCR_NULL);
 
   buf_set_plugin(buf, plugin, SCR_SIMPLE);
-  buf_set_status(buf, 0, dt->tbl, 0);
+  buf_set_status(buf, 0, hndl->tn, 0);
 
   model_init(hndl);
   model_open(hndl);
   dt_readfile(dt);
   hook_add_intl(buf->id, plugin, NULL, pipe_cb, "pipe");
-
-  //TODO: VFM navscript plugin
-  //au %b right * "doau fileopen"
 }
 
 void dt_delete(Plugin *plugin)
@@ -173,7 +175,7 @@ void dt_delete(Plugin *plugin)
     model_cleanup(h);
   }
   free(dt->path);
-  free(dt->tbl);
+  free(h->tn);
   free(h);
   free(dt);
 }

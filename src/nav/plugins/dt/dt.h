@@ -7,9 +7,7 @@ typedef struct DT DT;
 
 struct DT {
   Plugin *base;
-  FILE *f;
   char *path;
-  char *tbl;
   char delm;
 };
 
