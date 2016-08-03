@@ -319,19 +319,16 @@ static void cmdline_tokenize(Cmdline *cmdline)
   cmdline->cont = esc;
 }
 
-static void check_flags(Cmdline *cmdline, Cmdstr *cmd, Token *word)
+static void check_flags(Cmdline *cmdline, Cmdstr *cmd)
 {
-  /* first token or first token in cmdstr */
-  if (word)
-    word = (Token*)utarray_next(cmdline->tokens, word);
-  else
-    word = (Token*)utarray_front(cmdline->tokens);
-  if (!word)
+  Token *fst = (Token*)utarray_front(cmdline->tokens);
+  char *exstr = token_val(fst, VAR_STRING);
+
+  if (!exstr || cmd_conditional())
     return;
 
-  char *str = token_val(word, VAR_STRING);
-  if (str[0] == '!' && !cmd_conditional())
-    cmd->exec = 1;
+  if (exstr[0] == '!')
+    cmd->exec = true;
 }
 
 Token* cmdline_tokbtwn(Cmdline *cmdline, int st, int ed)
@@ -491,6 +488,16 @@ static bool valid_arry(Cmdline *cmdline, QUEUE *stack, Token *headref)
   return valid;
 }
 
+static bool valid_exec(Cmdline *cmdline, Cmdstr *cmd, Token *token)
+{
+  if (utarray_eltidx(cmdline->tokens, token) != 1)
+    return false;
+
+  Token *prev = (Token*)utarray_prev(cmdline->tokens, token);
+  cmd->rev = prev->end == token->start;
+  return cmd->rev;
+}
+
 static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
 {
   char ch;
@@ -507,7 +514,7 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
   Token *headref = stack_head(stack);
   utarray_new(cmd.chlds, &chld_icd);
 
-  check_flags(cmdline, &cmd, word);
+  check_flags(cmdline, &cmd);
 
   int idx = 0;
   while ((word = (Token*)utarray_next(cmdline->tokens, word))) {
@@ -556,10 +563,8 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
       case ',':
         break;
       case '!':
-        if (utarray_eltidx(cmdline->tokens, word) == 1) {
-          cmd.rev = 1;
+        if (valid_exec(cmdline, &cmd, word))
           break;
-        }
       /*FALLTHROUGH*/
       default:
         seek = seek_ahead(cmdline, stack, word);

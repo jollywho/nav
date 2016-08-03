@@ -7,6 +7,7 @@
 #include "nav/option.h"
 #include "nav/event/hook.h"
 #include "nav/event/event.h"
+#include "nav/event/shell.h"
 #include "nav/event/fs.h"
 #include "nav/cmdline.h"
 #include "nav/cmd.h"
@@ -26,6 +27,12 @@ typedef struct {
 void pid_list()
 {
   record_list("op_procs", "pid", "group");
+}
+
+void op_set_exec_line(char *line, void *grp)
+{
+  SWAP_ALLOC_PTR(op.last_line, strdup(line));
+  op.lastgrp = grp;
 }
 
 static void add_pid(char *name, int pid)
@@ -139,6 +146,8 @@ static void create_proc(nv_group *grp, char *line)
     free(proc);
     return;
   }
+
+  op_set_exec_line(line, grp);
   uv_unref((uv_handle_t*)&proc->proc);
   add_pid(grp->key, proc->proc.pid);
 }
@@ -209,6 +218,7 @@ void op_delgrp(Op_group *opgrp)
 {
   if (!opgrp)
     return;
+
   free(opgrp->before);
   free(opgrp->after);
   free(opgrp);
@@ -238,12 +248,23 @@ char* op_status_last()
   return str;
 }
 
+int op_repeat_last_exec()
+{
+  if (op.lastgrp)
+    run_group(op.lastgrp, op.last_line, true);
+  else
+    return shell_exec(op.last_line, fs_pwd());
+
+  return op.last_pid;
+}
+
 void op_new(Plugin *plugin, Buffer *buf, char *arg)
 {
   log_msg("OP", "INIT");
   op.base = plugin;
   op.curgrp = NULL;
   op.last_pid = 0;
+  op.last_line = strdup("");
   plugin->top = &op;
   plugin->name = "op";
   hook_add_intl(-1, plugin, plugin, fileopen_cb,  "fileopen");
@@ -255,7 +276,6 @@ void op_new(Plugin *plugin, Buffer *buf, char *arg)
   if (tbl_mk("op_procs")) {
     tbl_mk_fld("op_procs", "group", TYP_STR);
     tbl_mk_fld("op_procs", "pid",   TYP_STR);
-    //tbl_mk_fld("op_procs", "status", typSTRING);
   }
   uv_signal_start(&mainloop()->children_watcher, chld_handler, SIGCHLD);
 }

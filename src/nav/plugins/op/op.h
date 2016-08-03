@@ -16,9 +16,11 @@ struct Op_group {
 struct Op {
   Plugin *base;
   Handle *hndl;
-  void *curgrp; /* nv_group* */
+  void *curgrp;  /* nv_group* */
+  void *lastgrp; /* nv_group* */
   int last_pid;
   int last_status;
+  char *last_line;
 };
 
 void op_new(Plugin *plugin, Buffer *buf, char *arg);
@@ -30,8 +32,11 @@ void      op_delgrp(Op_group *);
 Cmdret op_kill();
 void pid_list();
 void op_set_exit_status(int);
+void op_set_exec_line(char *, void *);
 char* op_pid_last();
 char* op_status_last();
 void* op_active_group();
+
+int op_repeat_last_exec();
 
 #endif

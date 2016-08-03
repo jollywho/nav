@@ -5,6 +5,7 @@
 #include "nav/log.h"
 #include "nav/option.h"
 #include "nav/plugins/out/out.h"
+#include "nav/plugins/op/op.h"
 
 static void out_data_cb(Stream *, RBuffer *, size_t, void *,  bool);
 static void shell_write_cb(Stream *, void *, int);
@@ -86,6 +87,8 @@ void shell_start(Shell *sh)
       process_exit(&sh->uvproc.process, 0, 0);
     return;
   }
+
+  op_set_exec_line(proc->argv[2], NULL);
   sh->blocking = true;
   wstream_init(proc->in, 0);
   rstream_init(proc->out, 0);

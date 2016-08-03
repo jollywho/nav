@@ -880,10 +880,14 @@ void exec_line(Cmdstr *cmd, char *line)
 {
   log_msg("CMD", "exec_line");
   char *str = strstr(line, "!");
-  ++str;
-  char *pidstr;
-  int pid = shell_exec(str, fs_pwd());
 
+  int pid = -1;
+  if (++str && *str == '!')          // :!!
+    pid = op_repeat_last_exec();
+  else                               // :!
+    pid = shell_exec(str, fs_pwd());
+
+  char *pidstr;
   asprintf(&pidstr, "%d", pid);
   ret2caller(cmd, (Cmdret){STRING, .val.v_str = pidstr});
   free(pidstr);

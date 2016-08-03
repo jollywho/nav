@@ -24,10 +24,10 @@ typedef struct {
 #define VAR_LIST    4       /* "v_list" is used            */
 
 struct Token {
-  int start;                /* start pos of token in line */
-  int end;                  /* start pos of token in line */
   bool quoted;
   typ_T var;
+  int start;                /* start pos of token in line */
+  int end;                  /* start pos of token in line */
 };
 
 struct Pair {
@@ -49,12 +49,12 @@ struct Cmdret {
 };
 
 struct Cmdstr {
+  QUEUE stack;
+  Cmdret ret;          //return value
+  Token args;
   bool bar;            /* '|' cmd separator */
   bool rev;            /* reverse flag */
-  QUEUE stack;
-  Token args;
-  int exec;            //exec flag
-  Cmdret ret;          //return value
+  bool exec;           //exec flag
   int st;              //start pos of cmdstr
   int ed;              //end   pos of cmdstr
   int idx;             //index in cmdline
@@ -63,16 +63,16 @@ struct Cmdstr {
 };
 
 struct Cmdline {
+  QUEUE refs;          //queue of token refs to avoid recursive cleanup
+  bool cont;           //line continuation
+  bool err;
+  int len;
+  int lvl;             //subexpression level
   UT_array *cmds;      //list of cmdstr
   UT_array *tokens;    //list of tokens
   UT_array *vars;      //list of vars
   UT_array *arys;      //list of arys
-  QUEUE refs;          //queue of token refs to avoid recursive cleanup
   char *line;          //the raw string being built upon
-  int len;
-  int lvl;             //subexpression level
-  bool cont;           //line continuation
-  bool err;
 };
 
 void cmdline_build(Cmdline *cmdline, char *line);

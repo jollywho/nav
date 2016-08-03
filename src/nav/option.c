@@ -246,11 +246,11 @@ char* opt_var(Token *word, nv_block *blk)
     }
   }
 
-  if (!key || !key[0])
+  if (!key)
     return strdup("");
-  if (*key == '%')
+  else if (*key == '%')
     return expand_symbol(key+1, alt);
-  if (*key == '$')
+  else if (*key == '$')
     key++;
 
   nv_var *var = NULL;

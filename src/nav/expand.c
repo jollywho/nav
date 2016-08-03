@@ -110,7 +110,7 @@ static char* human_time(time_t const *t)
   if (!tm)
     return strdup("*** invalid date/time ***");
 
-  strftime(str, sizeof str, "%Y-%m-%d %H:%M:%S", tm);
+  strftime(str, sizeof(str), "%Y-%m-%d %H:%M:%S", tm);
   return strdup(str);
 }
 
@@ -122,10 +122,12 @@ static varg_T stat_type(const char *name)
   if (!buf_attached(buf))
     return arg;
 
+  struct stat *sb = model_curs_value(buf->hndl->model, "stat");
+  if (!sb)
+    return arg;
+
   arg.argc = 1;
   arg.argv = malloc(sizeof(char*));
-
-  struct stat *sb = model_curs_value(buf->hndl->model, "stat");
 
   if (!strcmp("mtime", name))
     arg.argv[0] = human_time(&sb->st_mtim.tv_sec);
@@ -138,7 +140,7 @@ static varg_T stat_type(const char *name)
   else if (!strcmp("inode", name))
     asprintf(&arg.argv[0], "%ld", sb->st_ino);
   else if (!strcmp("device", name))
-    asprintf(&arg.argv[0], "%ld", sb->st_ino);
+    asprintf(&arg.argv[0], "%ld", sb->st_dev);
   else if (!strcmp("nlink", name))
     asprintf(&arg.argv[0], "%ld", sb->st_nlink);
   else if (!strcmp("size", name))
@@ -217,6 +219,9 @@ char* yank_symbol(const char *key, const char *alt)
 char* expand_symbol(const char *key, const char *alt)
 {
   log_msg("EXPAND", "expand symb {%s:%s}", key, alt);
+  //TODO: use %% over %:%
+  //if key[0] == '%' && !key[1]
+  //  get_type()
 
   varg_T ret = get_type(key, alt);
   if (!ret.argc)
