@@ -57,7 +57,7 @@ static char* fm_group(void *arg)
 static char* fm_kind(void *arg)
 {
   struct stat *sb = arg;
-  return strdup(stat_type(sb));
+  return strdup(stat_kind(sb));
 }
 
 static varg_T fm_type(const char *name, enum fm_fmt fmt)
@@ -99,6 +99,52 @@ static varg_T op_type(const char *name)
     arg.argv = malloc(sizeof(char*));
     arg.argv[0] = strdup(ret);
   }
+
+  return arg;
+}
+
+static char* human_time(time_t const *t)
+{
+  static char str[80];
+  struct tm *tm = localtime(t);
+  if (!tm)
+    return strdup("*** invalid date/time ***");
+
+  strftime(str, sizeof str, "%Y-%m-%d %H:%M:%S", tm);
+  return strdup(str);
+}
+
+//TODO: modify buf_select for extra data field
+static varg_T stat_type(const char *name)
+{
+  varg_T arg = {};
+  Buffer *buf = window_get_focus();
+  if (!buf_attached(buf))
+    return arg;
+
+  arg.argc = 1;
+  arg.argv = malloc(sizeof(char*));
+
+  struct stat *sb = model_curs_value(buf->hndl->model, "stat");
+
+  if (!strcmp("mtime", name))
+    arg.argv[0] = human_time(&sb->st_mtim.tv_sec);
+  else if (!strcmp("ctime", name))
+    arg.argv[0] = human_time(&sb->st_ctim.tv_sec);
+  else if (!strcmp("atime", name))
+    arg.argv[0] = human_time(&sb->st_atim.tv_sec);
+  else if (!strcmp("mode", name))
+    asprintf(&arg.argv[0], "%o", sb->st_mode & (S_IRWXU | S_IRWXG | S_IRWXO));
+  else if (!strcmp("inode", name))
+    asprintf(&arg.argv[0], "%ld", sb->st_ino);
+  else if (!strcmp("device", name))
+    asprintf(&arg.argv[0], "%ld", sb->st_ino);
+  else if (!strcmp("nlink", name))
+    asprintf(&arg.argv[0], "%ld", sb->st_nlink);
+  else if (!strcmp("size", name))
+    asprintf(&arg.argv[0], "%ld", sb->st_size);
+  else
+    arg.argv[0] = strdup("");
 
   return arg;
 }
@@ -149,6 +195,8 @@ static varg_T get_type(const char *key, const char *alt)
       return tbl_type(alt);
     case 'o':
       return op_type(alt);
+    case 's':
+      return stat_type(alt);
     case '\0':
       return proc_type(alt);
     default:

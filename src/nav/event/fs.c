@@ -238,7 +238,7 @@ const char* file_base(char *filename)
   return filename;
 }
 
-const char* stat_type(struct stat *sb)
+const char* stat_kind(struct stat *sb)
 {
   switch (sb->st_mode & S_IFMT) {
     case S_IFDIR:  return "directory";

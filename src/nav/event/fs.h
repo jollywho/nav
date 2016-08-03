@@ -35,7 +35,7 @@ void fs_cancel(nv_fs *fs);
 void fs_fastreq(nv_fs *fs);
 bool fs_blocking(nv_fs *fs);
 
-const char* stat_type(struct stat *);
+const char* stat_kind(struct stat *);
 bool isrecdir(TblRec *);
 bool isreclnk(TblRec *rec);
 bool isrecreg(TblRec *rec);
