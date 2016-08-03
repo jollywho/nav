@@ -360,16 +360,18 @@ int get_opt_int(const char *name)
 void options_list()
 {
   log_msg("INFO", "setting_list");
-  nv_option *it;
+  nv_option *optgrps[] = {options, focus_opts(), 0};
 
   int i = 0;
-  for (it = options; it != NULL; it = it->hh.next) {
-    compl_list_add("%s", it->key);
-    if (it->type == OPTION_STRING)
-      compl_set_col(i, "%s", (char*)it->value);
-    else if (it->type == OPTION_INT || it->type == OPTION_UINT)
-      compl_set_col(i, "%d", *(int*)it->value);
-    i++;
+  for (int j = 0; optgrps[j]; j++) {
+    for (nv_option *it = optgrps[j]; it != NULL; it = it->hh.next) {
+      compl_list_add("%s", it->key);
+      if (it->type == OPTION_STRING)
+        compl_set_col(i, "%s", (char*)it->value);
+      else if (it->type == OPTION_INT || it->type == OPTION_UINT)
+        compl_set_col(i, "%d", *(int*)it->value);
+      i++;
+    }
   }
 }
 
