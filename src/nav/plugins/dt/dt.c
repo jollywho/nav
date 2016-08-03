@@ -6,6 +6,7 @@
 #include "nav/cmdline.h"
 #include "nav/event/fs.h"
 #include "nav/event/hook.h"
+#include "nav/option.h"
 
 static void dt_signal_model(void **data)
 {
@@ -152,6 +153,8 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   Handle *hndl = calloc(1, sizeof(Handle));
   hndl->buf = buf;
   plugin->hndl = hndl;
+
+  add_opt(&plugin->opts, "table", OPTION_STRING);
 
   if (!dt_getopts(dt, arg))
     return buf_set_plugin(buf, plugin, SCR_NULL);

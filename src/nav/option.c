@@ -8,8 +8,6 @@
 #include "nav/util.h"
 #include "nav/expand.h"
 
-enum opt_type { OPTION_STRING, OPTION_INT, OPTION_UINT };
-
 static const char *default_groups[] = {
   [BUF_SEL_ACTIVE]       = "BufSelActive",
   [BUF_SEL_INACTIVE]     = "BufSelInactive",
@@ -47,7 +45,6 @@ char *p_rm = "rm -r";
 char *p_xc = "xclip -i";
 char *sep_chr = "│";
 
-typedef struct nv_option nv_option;
 static struct nv_option {
   char *key;
   enum opt_type type;
@@ -121,13 +118,7 @@ void option_cleanup()
   CLEAR_OPT(nv_syn,    syntaxes,  {});
   CLEAR_OPT(nv_group,  groups,    op_delgrp(it->opgrp));
   CLEAR_OPT(nv_module, modules,   { free(it->path); clear_block(&it->blk); });
-
-  nv_option *it, *tmp;
-  HASH_ITER(hh, options, it, tmp) {
-    HASH_DEL(options, it);
-    if (it->type == OPTION_STRING)
-      free(it->value);
-  }
+  clear_opts(&options);
 }
 
 void clear_block(nv_block *blk)
@@ -137,6 +128,18 @@ void clear_block(nv_block *blk)
     del_param_list(it->argv, it->argc);
     utarray_free(it->lines);
   });
+}
+
+void clear_opts(nv_option **opts)
+{
+  nv_option *it, *tmp;
+  HASH_ITER(hh, *opts, it, tmp) {
+    HASH_DEL(*opts, it);
+    if (it->type == OPTION_STRING)
+      free(it->value);
+    if (*opts != options) //nonglobal
+      free(it);
+  }
 }
 
 void set_color(nv_group *grp, int fg, int bg)
@@ -289,10 +292,21 @@ nv_func* opt_func(const char *name, nv_block *blk)
   return fn;
 }
 
+void add_opt(nv_option **opts, char *key, enum opt_type type)
+{
+  nv_option *opt = malloc(sizeof(nv_option));
+  opt->key = key;
+  opt->type = type;
+  opt->value = NULL;
+  HASH_ADD_STR(*opts, key, opt);
+}
+
 void set_opt(const char *name, const char *val)
 {
   nv_option *opt;
-  HASH_FIND_STR(options, name, opt);
+  HASH_FIND_STR(focus_opts(), name, opt);
+  if (!opt)
+    HASH_FIND_STR(options, name, opt);
   if (!opt)
     return;
 
@@ -347,6 +361,7 @@ void options_list()
 {
   log_msg("INFO", "setting_list");
   nv_option *it;
+
   int i = 0;
   for (it = options; it != NULL; it = it->hh.next) {
     compl_list_add("%s", it->key);

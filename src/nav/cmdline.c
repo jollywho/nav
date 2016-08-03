@@ -495,6 +495,7 @@ static bool valid_exec(Cmdline *cmdline, Cmdstr *cmd, Token *token)
 
   Token *prev = (Token*)utarray_prev(cmdline->tokens, token);
   cmd->rev = prev->end == token->start;
+
   return cmd->rev;
 }
 

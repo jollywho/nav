@@ -154,7 +154,7 @@ static varg_T stat_type(const char *name)
 static varg_T proc_type(const char *name)
 {
   varg_T arg = {};
-  if (!name || !strchr("%!?", *name))
+  if (name[1])
     return arg;
 
   arg.argc = 1;
@@ -163,7 +163,9 @@ static varg_T proc_type(const char *name)
     case '%':
       asprintf(&arg.argv[0], "%d", getpid());
       break;
-    case '!':
+    case '!': //FIXME: %! are separate tokens
+              //fix: process '$' also as a token
+              //find usable logic to use for both
       arg.argv[0] = op_pid_last();
       break;
     case '?':
@@ -199,8 +201,10 @@ static varg_T get_type(const char *key, const char *alt)
       return op_type(alt);
     case 's':
       return stat_type(alt);
-    case '\0':
-      return proc_type(alt);
+    case '!':
+    case '?':
+    case '%':
+      return proc_type(key);
     default:
       return (varg_T){};
   }
@@ -219,9 +223,6 @@ char* yank_symbol(const char *key, const char *alt)
 char* expand_symbol(const char *key, const char *alt)
 {
   log_msg("EXPAND", "expand symb {%s:%s}", key, alt);
-  //TODO: use %% over %:%
-  //if key[0] == '%' && !key[1]
-  //  get_type()
 
   varg_T ret = get_type(key, alt);
   if (!ret.argc)

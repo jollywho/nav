@@ -97,8 +97,10 @@ void set_var(nv_var *, nv_block *);
 char* opt_var(Token *, nv_block *);
 void set_func(nv_func *, nv_block *);
 void clear_block(nv_block *);
-
 nv_func* opt_func(const char *, nv_block *);
+
+void clear_opts(nv_option **);
+void add_opt(nv_option **, char *, enum opt_type);
 void set_opt(const char *, const char *);
 char* get_opt_str(const char *);
 uint get_opt_uint(const char *);

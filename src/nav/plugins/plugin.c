@@ -143,6 +143,7 @@ void plugin_close(Plugin *plugin)
     return;
 
   plugin_table[i].close_cb(plugin);
+  clear_opts(&plugin->opts);
   free(plugin);
   plugin = NULL;
 }
@@ -150,6 +151,12 @@ void plugin_close(Plugin *plugin)
 int plugin_isloaded(const char *name)
 {
   return find_plugin(name) + 1;
+}
+
+nv_option* focus_opts()
+{
+  Buffer *buf = window_get_focus();
+  return buf ? buf->plugin->opts : NULL;
 }
 
 Plugin* focus_plugin()

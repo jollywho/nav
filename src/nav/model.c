@@ -174,7 +174,7 @@ void model_cleanup(Handle *hndl)
 
 void model_inherit(Handle *hndl)
 {
-  hndl->model->sort = focus;
+  hndl->model->sort = focus; //TODO: use option value
 }
 
 void model_open(Handle *hndl)

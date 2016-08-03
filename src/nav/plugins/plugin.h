@@ -4,6 +4,9 @@
 #include "nav/nav.h"
 #include "nav/config.h"
 
+typedef struct nv_option nv_option;
+enum opt_type { OPTION_STRING, OPTION_INT, OPTION_UINT };
+
 typedef struct Window Window;
 typedef struct Plugin Plugin;
 typedef struct Table Table;
@@ -33,6 +36,7 @@ struct Plugin {
   char *fmt_name;
   char *compl_key;
   Handle *hndl;
+  nv_option *opts;
   void *top;
   void (*_cancel)(Plugin *plugin);
   void (*_focus)(Plugin *plugin);
@@ -58,6 +62,7 @@ void forefit_id(Buffer *buf);
 int plugin_open(const char *name, Buffer *buf, char *line);
 void plugin_close(Plugin *plugin);
 
+nv_option* focus_opts();
 Plugin* focus_plugin();
 Buffer* buf_from_id(int id);
 Plugin* plugin_from_id(int id);
