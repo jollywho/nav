@@ -197,6 +197,7 @@ static char* replace_termcodes(char *from)
   char buf[strlen(from)];
   int i = 0;
   while (*from) {
+    //FIXME: some characters cannot translate correctly
     buf[i] = trans_special(&from);
     i++;
     from++;

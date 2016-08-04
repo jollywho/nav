@@ -156,6 +156,9 @@ static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
     path = fs_trypath(req);
   }
 
+  //NOTE: files could potentially be opened at this stage from their extension.
+  //      the extra FS operations cause extra delay, especially noticeable on
+  //      slow networks. could possibly resolve entering an unresponsive state.
   if (path)
     fs_read(self->fs, path);
   else

@@ -232,12 +232,10 @@ char* hook_group_name(char *key)
 {
   if (!key)
     return NULL;
-
   Augroup *find;
   HASH_FIND_STR(aug_tbl, key, find);
   if (find)
     return key;
-
   return NULL;
 }
 

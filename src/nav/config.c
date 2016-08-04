@@ -30,7 +30,6 @@ static Cmd_T cmdtable[] = {
   {"highlight","hi", "Define a highlight group.",   conf_color,      0},
   {"let",0,          "Set variable to expression.", conf_variable,   0},
   {"kill",0,         "Kill a pid.",                 op_kill,         0},
-  {"local","lo",     "Define a local variable.",    conf_variable,   1},
   {"map",0,          "Map {lhs} to {rhs}.",         conf_mapping,    0, 1},
   {"opcmd","op",     "Set open command for group.", conf_op,         0},
   {"plugin","plug",  "Load a plugin",               conf_source,     1},
@@ -265,7 +264,7 @@ static Cmdret conf_setting(List *args, Cmdarg *ca)
   char *name = list_arg(args, 1, VAR_STRING);
   Token *oper = tok_arg(args, 2);
   Token *rhs = tok_arg(args, 3);
-  if (!name|| !oper || !rhs)
+  if (!name || !oper || !rhs)
     return NORET;
   char *value = cmdline_line_from(ca->cmdline, 3);
   set_opt(name, value);
