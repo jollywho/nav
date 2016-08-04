@@ -30,8 +30,8 @@ static void buf_draw(void **);
 #define EV_RIGHT  3
 #define EV_JUMP   4
 
-static char *buf_events[] = {
-  "paste","remove","left","right","jump",
+static int buf_events[] = {
+  EVENT_PASTE, EVENT_REMOVE, EVENT_LEFT, EVENT_RIGHT, EVENT_JUMP,
 };
 
 static nv_key key_defaults[] = {
@@ -239,7 +239,7 @@ void buf_draw(void **argv)
 
   if (!buf->attached) {
     wnoutrefresh(buf->nc_win);
-    send_hook_msg("window_resize", buf->plugin, NULL, NULL);
+    send_hook_msg(EVENT_WINDOW_RESIZE, buf->plugin, NULL, NULL);
     return;
   }
   overlay_lnum(buf->ov, buf_index(buf), model_count(buf->hndl->model));
@@ -253,7 +253,7 @@ static void buf_curs_move(Buffer *buf, Model *m)
   model_set_curs(m, buf->top + buf->lnum);
   select_enter(buf, buf_index(buf));
   buf_refresh(buf);
-  send_hook_msg("cursor_change", buf->plugin, NULL, &(HookArg){NULL,curval});
+  send_hook_msg(EVENT_CURSOR_CHANGE, buf->plugin, NULL, &(HookArg){NULL,curval});
 }
 
 void buf_move_invalid(Buffer *buf, int index, int lnum)
@@ -463,7 +463,7 @@ void buf_gomark(void *_b, Keyarg *ca)
     return;
   path = strdup(path);
   mark_chr_str('\'', buf->hndl->key);
-  send_hook_msg("open", buf->plugin, NULL, &(HookArg){NULL,path});
+  send_hook_msg(EVENT_OPEN, buf->plugin, NULL, &(HookArg){NULL,path});
   free(path);
 }
 

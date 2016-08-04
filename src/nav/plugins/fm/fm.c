@@ -113,7 +113,7 @@ static int fm_opendir(Plugin *plugin, char *path, short arg)
   fs_open(self->fs, cur_dir);
   self->cur_dir = cur_dir;
   fs_cwd(self->cur_dir);
-  send_hook_msg("diropen", plugin, NULL, &(HookArg){NULL,self->cur_dir});
+  send_hook_msg(EVENT_DIROPEN, plugin, NULL, &(HookArg){NULL,self->cur_dir});
   return 1;
 }
 
@@ -135,7 +135,7 @@ static void fm_ch_dir(void **args)
     fm_opendir(plugin, path, FORWARD);
   }
   else
-    send_hook_msg("fileopen", plugin, NULL, &(HookArg){NULL,path});
+    send_hook_msg(EVENT_FILEOPEN, plugin, NULL, &(HookArg){NULL,path});
 }
 
 static void fm_req_dir(Plugin *plugin, Plugin *caller, HookArg *hka)
@@ -301,12 +301,12 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   model_open(plugin->hndl);
   buf_set_plugin(buf, plugin, SCR_FILE);
   buf_set_status(buf, 0, fm->cur_dir, 0);
-  hook_add_intl(buf->id, plugin, plugin, fm_paste,   "paste" );
-  hook_add_intl(buf->id, plugin, plugin, fm_remove,  "remove");
-  hook_add_intl(buf->id, plugin, plugin, fm_left,    "left"  );
-  hook_add_intl(buf->id, plugin, plugin, fm_right,   "right" );
-  hook_add_intl(buf->id, plugin, plugin, fm_req_dir, "open"  );
-  hook_add_intl(buf->id, plugin, plugin, fm_jump,    "jump"  );
+  hook_add_intl(buf->id, plugin, plugin, fm_paste,   EVENT_PASTE );
+  hook_add_intl(buf->id, plugin, plugin, fm_remove,  EVENT_REMOVE);
+  hook_add_intl(buf->id, plugin, plugin, fm_left,    EVENT_LEFT  );
+  hook_add_intl(buf->id, plugin, plugin, fm_right,   EVENT_RIGHT );
+  hook_add_intl(buf->id, plugin, plugin, fm_req_dir, EVENT_OPEN  );
+  hook_add_intl(buf->id, plugin, plugin, fm_jump,    EVENT_JUMP  );
 
   fm->fs = fs_init(plugin->hndl);
   fm->fs->stat_cb = fm_ch_dir;

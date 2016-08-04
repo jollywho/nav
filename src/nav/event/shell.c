@@ -30,7 +30,7 @@ static void process_exit(Process *proc, int status, void *data)
   }
   if (sh->reg)
     free(sh);
-  send_hook_msg("execclose", NULL, NULL, &(HookArg){NULL,&pid});
+  send_hook_msg(EVENT_EXEC_CLOSE, NULL, NULL, &(HookArg){NULL,&pid});
 }
 
 Shell* shell_new(Plugin *plugin)
@@ -197,6 +197,6 @@ int shell_exec(char *line, char *cwd)
   free(rv);
 
   int pid = sh->uvproc.process.pid;
-  send_hook_msg("execopen", NULL, NULL, &(HookArg){NULL,&pid});
+  send_hook_msg(EVENT_EXEC_OPEN, NULL, NULL, &(HookArg){NULL,&pid});
   return pid;
 }

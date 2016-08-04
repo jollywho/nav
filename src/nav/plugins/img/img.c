@@ -159,13 +159,13 @@ static void pipe_cb(Plugin *host, Plugin *caller, HookArg *hka)
   if (strcmp(caller->name, "fm"))
     return;
   int id = id_from_plugin(host);
-  hook_add_intl(id, caller, host, cursor_change_cb, "cursor_change");
+  hook_add_intl(id, caller, host, cursor_change_cb, EVENT_CURSOR_CHANGE);
   cursor_change_cb(caller, host, NULL);
 }
 
 static void pipe_remove_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
-  hook_rm_intl(caller, host, cursor_change_cb, "cursor_change");
+  hook_rm_intl(caller, host, cursor_change_cb, EVENT_CURSOR_CHANGE);
 }
 
 void img_new(Plugin *plugin, Buffer *buf, char *arg)
@@ -199,16 +199,16 @@ void img_new(Plugin *plugin, Buffer *buf, char *arg)
   img->sh_clear = shell_new(plugin);
   shell_args(img->sh_clear, (char**)args, NULL);
 
-  hook_add_intl(buf->id, plugin, NULL,   pipe_cb, "pipe");
-  hook_add_intl(buf->id, plugin, NULL,   pipe_remove_cb, "pipe_remove");
-  hook_add_intl(buf->id, plugin, plugin, try_refresh,    "window_resize");
+  hook_add_intl(buf->id, plugin, NULL,   pipe_cb,        EVENT_PIPE);
+  hook_add_intl(buf->id, plugin, NULL,   pipe_remove_cb, EVENT_PIPE_REMOVE);
+  hook_add_intl(buf->id, plugin, plugin, try_refresh,    EVENT_WINDOW_RESIZE);
 
   if (arg) {
     int wnum;
     if (str_num(arg, &wnum)) {
       Plugin *rhs = plugin_from_id(wnum);
       if (rhs && wnum != buf->id)
-        send_hook_msg("pipe", plugin, rhs, NULL);
+        send_hook_msg(EVENT_PIPE, plugin, rhs, NULL);
     }
   }
 }

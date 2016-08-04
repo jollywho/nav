@@ -141,6 +141,18 @@ static void pipe_cb(Plugin *host, Plugin *caller, HookArg *hka)
   CREATE_EVENT(eventq(), dt_signal_model, 1, dt);
 }
 
+static void opt_cb(Plugin *host, Plugin *caller, HookArg *hka)
+{
+  char *name = hka->arg;
+  log_msg("DT", "opt_cb %s", name);
+  if (!strcmp(name, "table")) {
+    char *tbl = get_opt_str("table");
+    log_msg("DT", "new table name %s", tbl);
+    //close table
+    //reopen file + read
+  }
+}
+
 void dt_new(Plugin *plugin, Buffer *buf, char *arg)
 {
   log_msg("DT", "init");
@@ -155,6 +167,7 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   plugin->hndl = hndl;
 
   add_opt(&plugin->opts, "table", OPTION_STRING);
+  hook_add_intl(buf->id, plugin, NULL, opt_cb,  EVENT_OPTION_SET);
 
   if (!dt_getopts(dt, arg))
     return buf_set_plugin(buf, plugin, SCR_NULL);
@@ -165,7 +178,7 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   model_init(hndl);
   model_open(hndl);
   dt_readfile(dt);
-  hook_add_intl(buf->id, plugin, NULL, pipe_cb, "pipe");
+  hook_add_intl(buf->id, plugin, NULL, pipe_cb, EVENT_PIPE);
 }
 
 void dt_delete(Plugin *plugin)

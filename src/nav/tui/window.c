@@ -234,7 +234,7 @@ Cmdret win_cd(List *args, Cmdarg *ca)
   }
 
   if (plugin)
-    send_hook_msg("open", plugin, NULL, &(HookArg){NULL,path});
+    send_hook_msg(EVENT_OPEN, plugin, NULL, &(HookArg){NULL,path});
 
   return NORET;
 }
@@ -416,9 +416,9 @@ Cmdret win_pipe(List *args, Cmdarg *ca)
   arg = cmdline_line_from(ca->cmdline, argidx);
 
   if (ca->cmdstr->rev)
-    send_hook_msg("pipe_remove", dst, src, NULL);
+    send_hook_msg(EVENT_PIPE_REMOVE, dst, src, NULL);
   else
-    send_hook_msg("pipe", dst, src, &(HookArg){NULL,arg});
+    send_hook_msg(EVENT_PIPE, dst, src, &(HookArg){NULL,arg});
   return NORET;
 }
 
@@ -446,7 +446,7 @@ Cmdret win_doautocmd(List *args, Cmdarg *ca)
   }
   char *event = list_arg(args, argidx, VAR_STRING);
 
-  send_hook_msg(event, plug, NULL, &(HookArg){NULL,NULL});
+  send_hook_msg(event_idx(event), plug, NULL, &(HookArg){NULL,NULL});
   window_alt_focus(NULL);
   return NORET;
 }

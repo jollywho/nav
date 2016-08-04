@@ -267,12 +267,12 @@ void op_new(Plugin *plugin, Buffer *buf, char *arg)
   op.last_line = strdup("");
   plugin->top = &op;
   plugin->name = "op";
-  hook_add_intl(-1, plugin, plugin, fileopen_cb,  "fileopen");
-  hook_add_intl(-1, plugin, plugin, execopen_cb,  "execopen");
-  hook_add_intl(-1, plugin, plugin, execclose_cb, "execclose");
-  hook_set_tmp("fileopen");
-  hook_set_tmp("execopen");
-  hook_set_tmp("execclose");
+  hook_add_intl(-1, plugin, plugin, fileopen_cb,  EVENT_FILEOPEN);
+  hook_add_intl(-1, plugin, plugin, execopen_cb,  EVENT_EXEC_OPEN);
+  hook_add_intl(-1, plugin, plugin, execclose_cb, EVENT_EXEC_CLOSE);
+  hook_set_tmp(EVENT_FILEOPEN);
+  hook_set_tmp(EVENT_EXEC_OPEN);
+  hook_set_tmp(EVENT_EXEC_CLOSE);
   if (tbl_mk("op_procs")) {
     tbl_mk_fld("op_procs", "group", TYP_STR);
     tbl_mk_fld("op_procs", "pid",   TYP_STR);

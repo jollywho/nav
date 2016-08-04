@@ -201,7 +201,7 @@ static char* replace_termcodes(char *from)
     i++;
     from++;
   }
-  char *to = malloc((i)*sizeof(char*));
+  char *to = malloc(i*sizeof(char*));
   strncpy(to, buf, i);
   to[i] = '\0';
   return to;

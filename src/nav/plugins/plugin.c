@@ -153,10 +153,10 @@ int plugin_isloaded(const char *name)
   return find_plugin(name) + 1;
 }
 
-nv_option* focus_opts()
+nv_option* local_opts()
 {
   Buffer *buf = window_get_focus();
-  return buf ? buf->plugin->opts : NULL;
+  return buf && buf->plugin ? buf->plugin->opts : NULL;
 }
 
 Plugin* focus_plugin()

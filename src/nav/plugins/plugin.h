@@ -62,7 +62,7 @@ void forefit_id(Buffer *buf);
 int plugin_open(const char *name, Buffer *buf, char *line);
 void plugin_close(Plugin *plugin);
 
-nv_option* focus_opts();
+nv_option* local_opts();
 Plugin* focus_plugin();
 Buffer* buf_from_id(int id);
 Plugin* plugin_from_id(int id);

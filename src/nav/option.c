@@ -4,6 +4,7 @@
 #include "nav/cmd.h"
 #include "nav/vt/vt.h"
 #include "nav/event/input.h"
+#include "nav/event/hook.h"
 #include "nav/compl.h"
 #include "nav/util.h"
 #include "nav/expand.h"
@@ -93,7 +94,8 @@ static nv_func   *gbl_funcs;
 static nv_option *options;
 static nv_module *modules;
 
-const char *builtin_color(enum nv_color_group col) {
+const char* builtin_color(enum nv_color_group col)
+{
   return col < LENGTH(default_groups) ? default_groups[col] : NULL;
 }
 
@@ -301,12 +303,18 @@ void add_opt(nv_option **opts, char *key, enum opt_type type)
   HASH_ADD_STR(*opts, key, opt);
 }
 
-void set_opt(const char *name, const char *val)
+static nv_option* get_opt(const char *name)
 {
   nv_option *opt;
-  HASH_FIND_STR(focus_opts(), name, opt);
+  HASH_FIND_STR(local_opts(), name, opt);
   if (!opt)
     HASH_FIND_STR(options, name, opt);
+  return opt;
+}
+
+void set_opt(const char *name, const char *val)
+{
+  nv_option *opt = get_opt(name);
   if (!opt)
     return;
 
@@ -325,13 +333,15 @@ void set_opt(const char *name, const char *val)
       return;
     *(uint*)opt->value = v_uint;
   }
+
+  send_hook_msg(EVENT_OPTION_SET, focus_plugin(), NULL,
+      &(HookArg){NULL,opt->key});
 }
 
 char* get_opt_str(const char *name)
 {
-  nv_option *opt;
-  HASH_FIND_STR(options, name, opt);
-  if (opt->type == OPTION_STRING)
+  nv_option *opt = get_opt(name);
+  if (opt && opt->type == OPTION_STRING)
     return opt->value;
   else
     return NULL;
@@ -339,9 +349,8 @@ char* get_opt_str(const char *name)
 
 uint get_opt_uint(const char *name)
 {
-  nv_option *opt;
-  HASH_FIND_STR(options, name, opt);
-  if (opt->type == OPTION_UINT)
+  nv_option *opt = get_opt(name);
+  if (opt && opt->type == OPTION_UINT)
     return *(uint*)opt->value;
   else
     return 0;
@@ -349,9 +358,8 @@ uint get_opt_uint(const char *name)
 
 int get_opt_int(const char *name)
 {
-  nv_option *opt;
-  HASH_FIND_STR(options, name, opt);
-  if (opt->type == OPTION_INT)
+  nv_option *opt = get_opt(name);
+  if (opt && opt->type == OPTION_INT)
     return *(int*)opt->value;
   else
     return 0;
@@ -360,7 +368,7 @@ int get_opt_int(const char *name)
 void options_list()
 {
   log_msg("INFO", "setting_list");
-  nv_option *optgrps[] = {options, focus_opts(), 0};
+  nv_option *optgrps[] = {options, local_opts(), 0};
 
   int i = 0;
   for (int j = 0; optgrps[j]; j++) {

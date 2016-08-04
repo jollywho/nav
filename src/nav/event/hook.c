@@ -37,29 +37,52 @@ typedef struct {
   UT_array *hooks;   /* Hook */
 } EventHandler;
 
-static const char *events_list[] = {
-  "open","fileopen","cursor_change","window_resize",
-  "diropen","pipe","left","right","paste",
-  "remove","execopen","execclose","pipe_remove","jump",
+static EventHandler default_events[] = {
+  [EVENT_CURSOR_CHANGE]  = { "cursorchange" },
+  [EVENT_DIROPEN]        = { "diropen"      },
+  [EVENT_EXEC_CLOSE]     = { "execclose"    },
+  [EVENT_EXEC_OPEN]      = { "execopen"     },
+  [EVENT_FILEOPEN]       = { "fileopen"     },
+  [EVENT_JUMP]           = { "jump"         },
+  [EVENT_LEFT]           = { "left"         },
+  [EVENT_OPEN]           = { "open"         },
+  [EVENT_OPTION_SET]     = { "optionset"    },
+  [EVENT_PASTE]          = { "paste"        },
+  [EVENT_PIPE]           = { "pipe"         },
+  [EVENT_PIPE_REMOVE]    = { "piperemove"   },
+  [EVENT_REMOVE]         = { "remove"       },
+  [EVENT_RIGHT]          = { "right"        },
+  [EVENT_WINDOW_RESIZE]  = { "windowresize" },
 };
 
 static UT_icd hook_icd = { sizeof(Hook),NULL,NULL,NULL };
-static EventHandler *events_tbl;
 static Augroup *aug_tbl;
 
 void hook_init()
 {
-  for (int i = 0; i < LENGTH(events_list); i++) {
-    EventHandler *evh = malloc(sizeof(EventHandler));
-    evh->msg = strdup(events_list[i]);
+  for (int i = 0; i < LENGTH(default_events); i++) {
+    EventHandler *evh = &default_events[i];
     utarray_new(evh->hooks, &hook_icd);
-    HASH_ADD_STR(events_tbl, msg, evh);
   }
 }
 
 void hook_cleanup()
 {
   //TODO: hook_remove each entry in events_tbl
+}
+
+static EventHandler* get_event(enum nv_event ev)
+{
+  return ev < LENGTH(default_events) ? &default_events[ev] : NULL;
+}
+
+int event_idx(char *key)
+{
+  for (int i = 0; i < LENGTH(default_events); i++) {
+    if (!strcmp(default_events[i].msg, key))
+      return i;
+  }
+  return LENGTH(default_events)+1;
 }
 
 void augroup_add(char *key)
@@ -104,8 +127,7 @@ void hook_add(char *group, char *event, char *pattern, char *expr, int id)
   log_msg("HOOK", "ADD");
   log_msg("HOOK", "<%s> %s `%s`", event, pattern, expr);
 
-  EventHandler *evh;
-  HASH_FIND_STR(events_tbl, event, evh);
+  EventHandler *evh = get_event(event_idx(event));
   if (!evh)
     return;
 
@@ -141,15 +163,14 @@ void hook_remove(char *group, char *event, char *pattern)
     HASH_FIND_STR(aug_tbl, group, aug);
 
   if (event) {
-    EventHandler *evh;
-    HASH_FIND_STR(events_tbl, event, evh);
+    EventHandler *evh = get_event(event_idx(event));
     if (!evh)
       return;
     return hook_delete(evh, aug);
   }
 
   EventHandler *it;
-  for (it = events_tbl; it != NULL; it = it->hh.next)
+  for (it = default_events; it != NULL; it = it->hh.next)
     hook_delete(it, aug);
 }
 
@@ -157,7 +178,7 @@ void hook_clear_host(int id)
 {
   log_msg("HOOK", "CLEAR HOST");
   EventHandler *evh;
-  for (evh = events_tbl; evh != NULL; evh = evh->hh.next) {
+  for (evh = default_events; evh != NULL; evh = evh->hh.next) {
     for (int i = 0; i < utarray_len(evh->hooks); i++) {
       Hook *it = (Hook*)utarray_eltptr(evh->hooks, i);
       if (it->bufno == id) {
@@ -169,13 +190,10 @@ void hook_clear_host(int id)
   }
 }
 
-void hook_add_intl(int id, Plugin *host, Plugin *caller, hook_cb fn, char *msg)
+void hook_add_intl(int id, Plugin *host, Plugin *caller, hook_cb fn, int ev)
 {
   log_msg("HOOK", "ADD_INTL");
-  EventHandler *evh;
-  HASH_FIND_STR(events_tbl, msg, evh);
-  if (!evh)
-    return;
+  EventHandler *evh = get_event(ev);
 
   Hook hook = { id, HK_INTL, NULL, caller, host, NULL, .data.fn = fn };
   utarray_push_back(evh->hooks, &hook);
@@ -192,33 +210,22 @@ static void hook_rm_container(UT_array *ary, Plugin *host, Plugin *caller)
   }
 }
 
-void hook_rm_intl(Plugin *host, Plugin *caller, hook_cb fn, char *msg)
+void hook_rm_intl(Plugin *host, Plugin *caller, hook_cb fn, int ev)
 {
   log_msg("HOOK", "RM_INTL");
-  EventHandler *evh;
-  HASH_FIND_STR(events_tbl, msg, evh);
+  EventHandler *evh = get_event(ev);
   if (!evh)
     return;
   hook_rm_container(evh->hooks, host, caller);
 }
 
-void hook_set_tmp(char *msg)
+void hook_set_tmp(int id)
 {
-  EventHandler *evh;
-  HASH_FIND_STR(events_tbl, msg, evh);
-  if (!evh) {
-    log_err("HOOK", "not a supported event: %s", msg);
+  EventHandler *evh = get_event(id);
+  if (!evh)
     return;
-  }
   Hook *hk = (Hook*)utarray_back(evh->hooks);
   hk->type = HK_TMP;
-}
-
-EventHandler* find_evh(char *msg)
-{
-  EventHandler *evh;
-  HASH_FIND_STR(events_tbl, msg, evh);
-  return evh;
 }
 
 char* hook_group_name(char *key)
@@ -238,10 +245,9 @@ char* hook_event_name(char *key)
 {
   if (!key)
     return NULL;
-
-  if (find_evh(key))
-    return key;
-
+  EventHandler *evh = get_event(event_idx(key));
+  if (evh)
+    return evh->msg;
   return NULL;
 }
 
@@ -286,16 +292,16 @@ void call_hooks(EventHandler *evh, Plugin *host, Plugin *caller, HookArg *hka)
   }
 }
 
-void send_hook_msg(char *msg, Plugin *host, Plugin *caller, HookArg *hka)
+void send_hook_msg(int ev, Plugin *host, Plugin *caller, HookArg *hka)
 {
-  log_msg("HOOK", "(<%s>) msg sent", msg);
-  call_hooks(find_evh(msg), host, caller, hka);
+  log_msg("HOOK", "(<%d>) msg sent", ev);
+  call_hooks(get_event(ev), host, caller, hka);
 }
 
 void event_list()
 {
-  for (int i = 0; i < LENGTH(events_list); i++)
-    compl_list_add("%s", events_list[i]);
+  for (int i = 0; i < LENGTH(default_events); i++)
+    compl_list_add("%s", default_events[i]);
 }
 
 void augs_list()
