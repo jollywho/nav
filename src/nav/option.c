@@ -44,6 +44,7 @@ static char *hintskey = "wasgd";
 static char *p_sh = "/bin/sh";
 static bool sort_inherit = true;
 static bool sort_reverse = false;
+static bool edit_staged = false;
 char *p_rm = "rm -r";
 char *p_xc = "xclip -i";
 char *sep_chr = "│";
@@ -66,6 +67,7 @@ static struct nv_option {
   {"sort",          OPTION_STRING,    &sort_fld},
   {"sortinherit",   OPTION_BOOLEAN,   &sort_inherit},
   {"sortreverse",   OPTION_BOOLEAN,   &sort_reverse},
+  {"editstaged",    OPTION_BOOLEAN,   &edit_staged},
   {"copy-pipe",     OPTION_STRING,    &p_xc},
 };
 
@@ -352,7 +354,8 @@ void set_opt(const char *name, const char *val, int tgl)
     *(uint*)opt->value = tgl;
   }
 
-  send_hook_msg(EVENT_OPTION_SET, focus_plugin(), NULL, &(HookArg){NULL,opt->key});
+  send_hook_msg(EVENT_OPTION_SET, focus_plugin(), NULL,
+      &(HookArg){NULL, opt->key});
 }
 
 char* get_opt_str(const char *name)

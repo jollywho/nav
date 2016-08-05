@@ -160,7 +160,6 @@ void dt_new(Plugin *plugin, Buffer *buf, char *arg)
   DT *dt = calloc(1, sizeof(DT));
   dt->base = plugin;
   plugin->top = dt;
-  plugin->name = "dt";
   plugin->fmt_name = "DT";
   Handle *hndl = calloc(1, sizeof(Handle));
   hndl->buf = buf;

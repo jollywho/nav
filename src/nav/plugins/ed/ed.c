@@ -6,6 +6,7 @@
 #include "nav/plugins/ed/ed.h"
 #include "nav/plugins/term/term.h"
 #include "nav/event/event.h"
+#include "nav/tui/message.h"
 #include "nav/tui/buffer.h"
 #include "nav/tui/window.h"
 #include "nav/event/hook.h"
@@ -15,7 +16,7 @@
 #include "nav/log.h"
 #include "nav/table.h"
 #include "nav/util.h"
-#include "nav/tui/message.h"
+#include "nav/option.h"
 
 #define ED_PASSVE 1
 #define ED_RENAME 2
@@ -25,6 +26,11 @@
 static const char* ED_MSG =
   "# This file will be executed when you close the editor.\n"
   "# Please double-check everything, clear the file to abort.";
+
+typedef struct {
+  varg_T src;
+  char *dst;
+} ed_data;
 
 static void ed_chown_plugin(Ed *ed)
 {
@@ -236,6 +242,9 @@ static void ed_do_rename(Ed *ed)
   log_msg("ED", "ed_do_rename");
   char from[PATH_MAX];
   char to[PATH_MAX];
+  char curdir[PATH_MAX];
+
+  sprintf(curdir, "%s", fs_pwd());
 
   for (int i = 0; i < ed->dest.argc; i++) {
     char *src = ed->src.argv[i];
@@ -247,8 +256,8 @@ static void ed_do_rename(Ed *ed)
       //error
       continue;
     }
-    conspath_buf(from, ed->curdir, src);
-    conspath_buf(to,   ed->curdir, str);
+    conspath_buf(from, curdir, src);
+    conspath_buf(to,   curdir, str);
     file_move_str(from, to, NULL);
   }
   ed->state &= ~ED_CLOSED;
@@ -277,24 +286,98 @@ void ed_close_cb(Plugin *plugin, Ed *ed, bool closed)
     return ed_do_rename(ed);
 }
 
-static bool ed_prepare(Ed *ed)
+static bool ed_pull_source(varg_T *arg, Plugin *caller)
 {
-  Plugin *lis = plugin_from_id(ed->bufno);
-  if (!lis || !lis->hndl)
+  if (!caller || !caller->hndl)
     return false;
 
-  Buffer *buf = lis->hndl->buf;
-  ed->src = buf_select(buf, "name", NULL);
-  sprintf(ed->curdir, "%s", fs_pwd());
-
-  sprintf(ed->tmp_name, "/tmp/navedit-XXXXXX");
-  ed->fd = mkstemp(ed->tmp_name);
-  log_err("ED", "%d:::::::::::%s", ed->fd, ed->tmp_name);
+  Buffer *buf = caller->hndl->buf;
+  *arg = buf_select(buf, "name", NULL);
+  buf_end_sel(buf);
   return true;
 }
 
-//new ED  : idle pipe target
-//edit    : open with selection
+static void ed_prepare(Ed *ed)
+{
+  sprintf(ed->tmp_name, "/tmp/navedit-XXXXXX");
+  ed->fd = mkstemp(ed->tmp_name);
+  log_err("ED", "%d:::::::::::%s", ed->fd, ed->tmp_name);
+}
+
+static void pipe_cb(Plugin *host, Plugin *caller, HookArg *hka)
+{
+  log_msg("ED", "pipe_cb");
+  Ed *ed = host->top;
+
+  if (!ed_pull_source(&ed->src, caller))
+    return;
+
+  ed_prepare(ed);
+  ed_start_term(ed, &ed->src);
+}
+
+static void ed_direct_prompt(void **args)
+{
+  ed_data *data = args[0];
+
+  //TODO: open ed in buffer for editstaged option
+  if (get_opt_int("editstaged") || data->src.argc < 1)
+    goto cleanup;
+
+  if (!confirm("Rename %s %s ?", data->src.argv[0], data->dst))
+    goto cleanup;
+
+  char from[PATH_MAX];
+  char to[PATH_MAX];
+  char curdir[PATH_MAX];
+
+  sprintf(curdir, "%s", fs_pwd());
+
+  //NOTE: multiargs rename all to same dest
+  //FIXME: filemove resolves name collision with src.
+  //when multiple items have the same dest, they resolve incorrectly.
+  for (int i = 0; i < data->src.argc; i++) {
+    log_err("ED", "[%s] [%s]", data->src.argv[i], data->dst);
+    conspath_buf(from, curdir, data->src.argv[i]);
+    conspath_buf(to,   curdir, data->dst);
+    file_move_str(from, to, NULL);
+  }
+cleanup:
+  del_param_list(data->src.argv,  data->src.argc);
+  free(data->dst);
+  free(data);
+}
+
+void ed_direct_rename(Plugin *caller, char *source, char *dest)
+{
+  log_msg("ED", "ed_direct_rename");
+  log_msg("ED", "%s,  %s", source, dest);
+
+  /* use source as dest. get source from buffer */
+  if (!dest) {
+    dest = source;
+    source = NULL;
+  }
+
+  varg_T src;
+  if (source) {
+    src.argc = 1;
+    src.argv = malloc(sizeof(char*));
+    src.argv[0] = strdup(source);
+  }
+  else if (!ed_pull_source(&src, caller))
+    return;
+
+  log_msg("ED", "%s,  %s", source, dest);
+  ed_data *data = malloc(sizeof(ed_data));
+  data->src = src;
+  data->dst = strdup(dest);
+
+  CREATE_EVENT(eventq(), ed_direct_prompt, 1, data);
+}
+
+//new ed  : await pipe data to start
+//edit    : new ed dest
 void ed_new(Plugin *plugin, Buffer *buf, char *arg)
 {
   log_msg("ED", "init");
@@ -303,11 +386,11 @@ void ed_new(Plugin *plugin, Buffer *buf, char *arg)
   ed->base = plugin;
   ed->buf = buf;
   ed->state = ED_PASSVE;
-
-  if (arg && str_num(arg, &ed->bufno)) {
-    if (ed_prepare(ed))
-      ed_start_term(ed, &ed->src);
-  }
+  ed->fd = -1;
+  plugin->top = ed;
+  buf_set_plugin(ed->buf, ed->base, SCR_NULL);
+  buf_set_status(ed->buf, "ED", NULL, NULL);
+  hook_add_intl(buf->id, plugin, NULL, pipe_cb, EVENT_PIPE);
 }
 
 void ed_delete(Plugin *plugin)

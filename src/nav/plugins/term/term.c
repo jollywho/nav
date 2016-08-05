@@ -30,7 +30,6 @@ void term_new(Plugin *plugin, Buffer *buf, char *arg)
   term->closed = false;
   term->ed = NULL;
   plugin->top = term;
-  plugin->name = "term";
   plugin->fmt_name = "VT";
   plugin->_focus = plugin_focus;
   plugin->_cancel = plugin_cancel;

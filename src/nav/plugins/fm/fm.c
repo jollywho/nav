@@ -295,7 +295,6 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   log_msg("FM", "init");
   FM *fm = malloc(sizeof(FM));
   fm->base = plugin;
-  plugin->name = "fm";
   plugin->fmt_name = "FM";
 
   /* check manually because won't be initialized to use req_dir */

@@ -33,7 +33,6 @@ void out_new(Plugin *plugin, Buffer *buf, char *arg)
 
   out.base = plugin;
   plugin->top = &out;
-  plugin->name = "out";
   plugin->fmt_name = "OUT";
 
   Handle *hndl = out.hndl;

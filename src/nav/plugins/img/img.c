@@ -178,7 +178,6 @@ void img_new(Plugin *plugin, Buffer *buf, char *arg)
   hndl->key = " ";
   plugin->hndl = hndl;
 
-  plugin->name = "img";
   plugin->fmt_name = "IMG";
   plugin->top = img;
   img->buf = buf;
@@ -203,13 +202,11 @@ void img_new(Plugin *plugin, Buffer *buf, char *arg)
   hook_add_intl(buf->id, plugin, NULL,   pipe_remove_cb, EVENT_PIPE_REMOVE);
   hook_add_intl(buf->id, plugin, plugin, try_refresh,    EVENT_WINDOW_RESIZE);
 
-  if (arg) {
-    int wnum;
-    if (str_num(arg, &wnum)) {
-      Plugin *rhs = plugin_from_id(wnum);
-      if (rhs && wnum != buf->id)
-        send_hook_msg(EVENT_PIPE, plugin, rhs, NULL);
-    }
+  int wnum;
+  if (arg && str_num(arg, &wnum)) {
+    Plugin *rhs = plugin_from_id(wnum);
+    if (rhs && wnum != buf->id)
+      send_hook_msg(EVENT_PIPE, plugin, rhs, NULL);
   }
 }
 

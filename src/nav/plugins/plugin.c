@@ -129,6 +129,7 @@ int plugin_open(const char *name, Buffer *buf, char *line)
   log_msg("PLUG", "%s", plugin_table[i].name);
   Plugin *plugin = calloc(1, sizeof(Plugin));
   plugin_table[i].open_cb(plugin, buf, line);
+  plugin->name = plugin_table[i].name;
   int id = buf ? buf->id : -1;
   return id;
 }

@@ -454,17 +454,20 @@ Cmdret win_doautocmd(List *args, Cmdarg *ca)
 Cmdret win_edit(List *args, Cmdarg *ca)
 {
   log_msg("WINDOW", "win_edit");
-  Buffer *buf = window_get_focus();
-  if (!buf)
+  Plugin *plug = window_get_plugin();
+  if (!plug)
     return NORET;
 
-  int id = buf_id(buf);
-  char *line;
-  asprintf(&line, "new ed %d", id);
-  cmd_eval(NULL, line);
-  free(line);
-  buf_end_sel(buf);
+  //TODO: strip quotes? to support %expansions
+  char *src = list_arg(args, 1, VAR_STRING);
+  char *dst = list_arg(args, 2, VAR_STRING);
+  if (src) {
+    ed_direct_rename(plug, src, dst);
+    return NORET;
+  }
 
+  cmd_eval(NULL, "new ed");
+  send_hook_msg(EVENT_PIPE, window_get_plugin(), plug, &(HookArg){NULL,NULL});
   return NORET;
 }
 

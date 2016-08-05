@@ -266,7 +266,6 @@ void op_new(Plugin *plugin, Buffer *buf, char *arg)
   op.last_pid = 0;
   op.last_line = strdup("");
   plugin->top = &op;
-  plugin->name = "op";
   hook_add_intl(-1, plugin, plugin, fileopen_cb,  EVENT_FILEOPEN);
   hook_add_intl(-1, plugin, plugin, execopen_cb,  EVENT_EXEC_OPEN);
   hook_add_intl(-1, plugin, plugin, execclose_cb, EVENT_EXEC_CLOSE);

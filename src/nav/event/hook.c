@@ -274,8 +274,9 @@ void call_hooks(EventHandler *evh, Plugin *host, Plugin *caller, HookArg *hka)
   if (!evh)
     return;
 
-  Hook *it = NULL;
-  while ((it = (Hook*)utarray_next(evh->hooks, it))) {
+  int count = utarray_len(evh->hooks);
+  for (int i = 0; i < count; i++) {
+    Hook *it = (Hook*)utarray_eltptr(evh->hooks, i);
 
     if (it->type == HK_CMD) {
       int id = id_from_plugin(host);
