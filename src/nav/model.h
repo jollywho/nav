@@ -10,7 +10,6 @@ void model_cleanup(Handle *hndl);
 void model_open(Handle *hndl);
 void model_close(Handle *hndl);
 bool model_blocking(Handle *hndl);
-void model_inherit(Handle *hndl);
 
 void model_ch_focus(Handle *);
 void model_sort(Model *m, char *, int);

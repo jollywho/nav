@@ -265,6 +265,16 @@ cleanup:
   free(src);
 }
 
+static void opt_cb(Plugin *host, Plugin *caller, HookArg *hka)
+{
+  char *name = hka->arg;
+  log_msg("FM", "opt_cb %s", name);
+  if (!strcmp(name, "sort")) {
+    char *fld = get_opt_str("sort");
+    buf_sort(host->hndl->buf, fld, 0);
+  }
+}
+
 static void init_fm_hndl(FM *fm, Buffer *b, Plugin *c, char *val)
 {
   Handle *hndl = malloc(sizeof(Handle));
@@ -300,7 +310,6 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   jump_init(fm);
   init_fm_hndl(fm, buf, plugin, fm->cur_dir);
   model_init(plugin->hndl);
-  model_inherit(plugin->hndl);
   model_open(plugin->hndl);
   buf_set_plugin(buf, plugin, SCR_FILE);
   buf_set_status(buf, 0, fm->cur_dir, 0);
@@ -310,6 +319,7 @@ void fm_new(Plugin *plugin, Buffer *buf, char *arg)
   hook_add_intl(buf->id, plugin, plugin, fm_right,   EVENT_RIGHT );
   hook_add_intl(buf->id, plugin, plugin, fm_req_dir, EVENT_OPEN  );
   hook_add_intl(buf->id, plugin, plugin, fm_jump,    EVENT_JUMP  );
+  hook_add_intl(buf->id, plugin, NULL,   opt_cb,     EVENT_OPTION_SET);
 
   fm->fs = fs_init(plugin->hndl);
   fm->fs->stat_cb = fm_ch_dir;

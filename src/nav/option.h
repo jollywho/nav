@@ -101,7 +101,7 @@ nv_func* opt_func(const char *, nv_block *);
 
 void clear_opts(nv_option **);
 void add_opt(nv_option **, char *, enum opt_type);
-void set_opt(const char *, const char *);
+void set_opt(const char *, const char *, int);
 char* get_opt_str(const char *);
 uint get_opt_uint(const char *);
 int get_opt_int(const char *);

@@ -264,10 +264,11 @@ static Cmdret conf_setting(List *args, Cmdarg *ca)
   char *name = list_arg(args, 1, VAR_STRING);
   Token *oper = tok_arg(args, 2);
   Token *rhs = tok_arg(args, 3);
-  if (!name || !oper || !rhs)
+  bool toggle = !ca->cmdstr->rev;
+  if (!name || ((!oper || !rhs) && toggle))
     return NORET;
   char *value = cmdline_line_from(ca->cmdline, 3);
-  set_opt(name, value);
+  set_opt(name, value, toggle);
   return NORET;
 }
 

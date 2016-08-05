@@ -197,7 +197,8 @@ static char* replace_termcodes(char *from)
   char buf[strlen(from)];
   int i = 0;
   while (*from) {
-    //FIXME: some characters cannot translate correctly
+  //FIXME: some characters cannot translate correctly.
+  //storing 3 separate bytes for special keys conflicts with map prefixing.
     buf[i] = trans_special(&from);
     i++;
     from++;

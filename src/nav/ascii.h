@@ -95,6 +95,7 @@
 #define K_ZERO          TERMCAP2KEY(KS_ZERO, KE_FILLER)
 #define HC_S_TAB            ("S-Tab")
 
+#define K_SPECIAL               (0x80)
 #define K_UP            TERMCAP2KEY('k', 'u')
 #define K_DOWN          TERMCAP2KEY('k', 'd')
 #define K_LEFT          TERMCAP2KEY('k', 'l')

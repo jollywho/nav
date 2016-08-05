@@ -159,6 +159,26 @@ void model_init(Handle *hndl)
   Buffer *buf = hndl->buf;
   buf->matches = regex_new(hndl);
   buf->filter = filter_new(hndl);
+
+  //TODO: sort setting
+  //if sortinherit
+  //  if !sortfield
+  //    use default sort num
+  //  else
+  //    set sort num from field name, incl fail num
+  //    set rev
+  //else
+  //  if !sortfield
+  //    use default sort num
+  //  else
+  //    set sort num from field name, incl fail num
+  //    set rev
+  char *fld = get_opt_str("sort");
+  int rev = get_opt_int("sortreverse");
+
+  if (fld)
+    get_sort_type(m, fld);
+  focus = m->sort = (sort_ent){m->sort.i, rev};
 }
 
 void model_cleanup(Handle *hndl)
@@ -170,11 +190,6 @@ void model_cleanup(Handle *hndl)
   if (m->pfval)
     free(m->pfval);
   free(m);
-}
-
-void model_inherit(Handle *hndl)
-{
-  hndl->model->sort = focus; //TODO: use option value
 }
 
 void model_open(Handle *hndl)

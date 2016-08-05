@@ -42,9 +42,12 @@ static int default_syn_color;
 static int ask_delete = 1;
 static char *hintskey = "wasgd";
 static char *p_sh = "/bin/sh";
+static bool sort_inherit = true;
+static bool sort_reverse = false;
 char *p_rm = "rm -r";
 char *p_xc = "xclip -i";
 char *sep_chr = "│";
+char *sort_fld = "name";
 
 static struct nv_option {
   char *key;
@@ -60,6 +63,9 @@ static struct nv_option {
   {"hintkeys",      OPTION_STRING,    &hintskey},
   {"shell",         OPTION_STRING,    &p_sh},
   {"sepchar",       OPTION_STRING,    &sep_chr},
+  {"sort",          OPTION_STRING,    &sort_fld},
+  {"sortinherit",   OPTION_BOOLEAN,   &sort_inherit},
+  {"sortreverse",   OPTION_BOOLEAN,   &sort_reverse},
   {"copy-pipe",     OPTION_STRING,    &p_xc},
 };
 
@@ -312,7 +318,7 @@ static nv_option* get_opt(const char *name)
   return opt;
 }
 
-void set_opt(const char *name, const char *val)
+void set_opt(const char *name, const char *val, int tgl)
 {
   nv_option *opt = get_opt(name);
   if (!opt)
@@ -333,9 +339,20 @@ void set_opt(const char *name, const char *val)
       return;
     *(uint*)opt->value = v_uint;
   }
+  else if (opt->type == OPTION_BOOLEAN) {
+    if (val) {
+      if (!strcmp("yes", val))        tgl = true;
+      else if (!strcmp("no", val))    tgl = false;
+      else if (!strcmp("1", val))     tgl = true;
+      else if (!strcmp("0", val))     tgl = false;
+      else if (!strcmp("true", val))  tgl = true;
+      else if (!strcmp("false", val)) tgl = false;
+      else return;
+    }
+    *(uint*)opt->value = tgl;
+  }
 
-  send_hook_msg(EVENT_OPTION_SET, focus_plugin(), NULL,
-      &(HookArg){NULL,opt->key});
+  send_hook_msg(EVENT_OPTION_SET, focus_plugin(), NULL, &(HookArg){NULL,opt->key});
 }
 
 char* get_opt_str(const char *name)
@@ -361,6 +378,8 @@ int get_opt_int(const char *name)
   nv_option *opt = get_opt(name);
   if (opt && opt->type == OPTION_INT)
     return *(int*)opt->value;
+  else if (opt && opt->type == OPTION_BOOLEAN)
+    return *(int*)opt->value;
   else
     return 0;
 }
@@ -378,6 +397,8 @@ void options_list()
         compl_set_col(i, "%s", (char*)it->value);
       else if (it->type == OPTION_INT || it->type == OPTION_UINT)
         compl_set_col(i, "%d", *(int*)it->value);
+      else if (it->type == OPTION_BOOLEAN)
+        compl_set_col(i, "%s", *(int*)it->value ? "true" : "false");
       i++;
     }
   }

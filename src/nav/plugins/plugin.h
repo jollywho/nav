@@ -5,7 +5,7 @@
 #include "nav/config.h"
 
 typedef struct nv_option nv_option;
-enum opt_type { OPTION_STRING, OPTION_INT, OPTION_UINT };
+enum opt_type { OPTION_STRING, OPTION_INT, OPTION_UINT, OPTION_BOOLEAN };
 
 typedef struct Window Window;
 typedef struct Plugin Plugin;
