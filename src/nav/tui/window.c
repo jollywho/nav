@@ -458,7 +458,7 @@ Cmdret win_edit(List *args, Cmdarg *ca)
   if (!plug)
     return NORET;
 
-  //TODO: strip quotes? to support %expansions
+  //FIXME: %expansion adds quotes which break arguments
   char *src = list_arg(args, 1, VAR_STRING);
   char *dst = list_arg(args, 2, VAR_STRING);
   if (src) {

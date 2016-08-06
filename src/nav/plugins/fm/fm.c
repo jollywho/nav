@@ -242,7 +242,7 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
   char *src = lines2argv(args.argc, args.argv);
   log_msg("FM", "src |%s|", src);
 
-  if (get_opt_int("ask_delete")) {
+  if (get_opt_int("askdelete")) {
     bool ans = 0;
 
     if (count > 1)

@@ -183,7 +183,7 @@ static void scan_cb(uv_fs_t *req)
     exit(1);
   }
   char *path = strdup(file.cur->src);
-  char *base = basename(path);
+  char *base = strdup(basename(file.cur->dest));
   char *dir = dirname(path);
   int baselen = strlen(base);
   int max_ver = 0;
@@ -198,6 +198,7 @@ static void scan_cb(uv_fs_t *req)
   free(file.cur->dest);
   asprintf(&file.cur->dest, "%s/%s_%d", dir, base, max_ver+1);
   free(path);
+  free(base);
   log_msg("FILE", "NEWVER: %s", file.cur->dest);
 
   uv_fs_req_cleanup(req);
@@ -206,7 +207,9 @@ static void scan_cb(uv_fs_t *req)
 
 static void find_dest_name()
 {
-  uv_fs_scandir(eventloop(), &file.m1, dirname(file.cur->dest), 0, scan_cb);
+  char *dir = dirname(strdup(file.cur->dest));
+  uv_fs_scandir(eventloop(), &file.m1, dir, 0, scan_cb);
+  free(dir);
 }
 
 static void try_sendfile()

@@ -294,7 +294,7 @@ static bool ed_pull_source(varg_T *arg, Plugin *caller)
   Buffer *buf = caller->hndl->buf;
   *arg = buf_select(buf, "name", NULL);
   buf_end_sel(buf);
-  return true;
+  return arg->argc;
 }
 
 static void ed_prepare(Ed *ed)
@@ -320,22 +320,23 @@ static void ed_direct_prompt(void **args)
 {
   ed_data *data = args[0];
 
-  //TODO: open ed in buffer for editstaged option
-  if (get_opt_int("editstaged") || data->src.argc < 1)
-    goto cleanup;
+  if (get_opt_int("askrename")) {
+    bool ans = 0;
 
-  if (!confirm("Rename %s %s ?", data->src.argv[0], data->dst))
-    goto cleanup;
+    if (data->src.argc > 1)
+      ans = confirm("Rename %d items to %s ?", data->src.argc, data->dst);
+    else
+      ans = confirm("Rename %s to %s ?", data->src.argv[0], data->dst);
+
+    if (!ans)
+      goto cleanup;
+  }
 
   char from[PATH_MAX];
   char to[PATH_MAX];
-  char curdir[PATH_MAX];
-
-  sprintf(curdir, "%s", fs_pwd());
+  char *curdir = fs_pwd();
 
   //NOTE: multiargs rename all to same dest
-  //FIXME: filemove resolves name collision with src.
-  //when multiple items have the same dest, they resolve incorrectly.
   for (int i = 0; i < data->src.argc; i++) {
     log_err("ED", "[%s] [%s]", data->src.argv[i], data->dst);
     conspath_buf(from, curdir, data->src.argv[i]);

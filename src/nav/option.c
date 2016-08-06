@@ -39,12 +39,12 @@ static uint history = 50;
 static uint jumplist = 20;
 static int menu_rows = 5;
 static int default_syn_color;
-static int ask_delete = 1;
 static char *hintskey = "wasgd";
 static char *p_sh = "/bin/sh";
 static bool sort_inherit = true;
 static bool sort_reverse = false;
-static bool edit_staged = false;
+static bool ask_delete = true;
+static bool ask_rename = true;
 char *p_rm = "rm -r";
 char *p_xc = "xclip -i";
 char *sep_chr = "│";
@@ -57,7 +57,6 @@ static struct nv_option {
   UT_hash_handle hh;
 } default_options[] = {
   {"dummy",         OPTION_INT,       &dummy},
-  {"ask_delete",    OPTION_INT,       &ask_delete},
   {"history",       OPTION_UINT,      &history},
   {"jumplist",      OPTION_UINT,      &jumplist},
   {"menu_rows",     OPTION_INT,       &menu_rows},
@@ -67,7 +66,8 @@ static struct nv_option {
   {"sort",          OPTION_STRING,    &sort_fld},
   {"sortinherit",   OPTION_BOOLEAN,   &sort_inherit},
   {"sortreverse",   OPTION_BOOLEAN,   &sort_reverse},
-  {"editstaged",    OPTION_BOOLEAN,   &edit_staged},
+  {"askdelete",     OPTION_BOOLEAN,   &ask_delete},
+  {"askrename",     OPTION_BOOLEAN,   &ask_rename},
   {"copy-pipe",     OPTION_STRING,    &p_xc},
 };
 
