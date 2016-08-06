@@ -6,7 +6,6 @@
 #include "nav/lib/utarray.h"
 #include "nav/plugins/op/op.h"
 
-extern char *p_rm;          /* 'remove    cmd' */
 extern char *p_xc;          /* 'clipboard cmd' */
 
 typedef struct nv_group nv_group;

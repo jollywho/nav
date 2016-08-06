@@ -135,7 +135,7 @@ FileItem* ftw_new(char *src, char *dest)
 {
   FileItem *item = malloc(sizeof(FileItem));
   item->src = strdup(src);
-  item->dest = strdup(dest);
+  item->dest = dest ? strdup(dest) : NULL;
   item->parent = NULL;
   item->refs = 0;
   return item;
@@ -168,6 +168,18 @@ void ftw_push_copy(char *src, char *dest, FileGroup *fg)
     ftw_start();
 }
 
+void ftw_push_remove(char *src, FileGroup *fg)
+{
+  log_msg("FTW", "pushed_remove");
+  FileItem *item = ftw_new(src, NULL);
+  TAILQ_INSERT_TAIL(&fg->p, item, ent);
+  TAILQ_INSERT_TAIL(&ftw.p, fg, ent);
+
+  fg->flags = F_UNLINK;
+  if (!ftw.running)
+    ftw_start();
+}
+
 //enqueue but don't start
 void ftw_add_again(char *src, char *dst, FileGroup *fg)
 {
@@ -188,6 +200,8 @@ void ftw_add(char *src, char *dst, FileGroup *fg)
   log_msg("FILE", "ftw add |%s|%s|", src, dst);
   if (fg->flags == F_MOVE)
     ftw_push_move(src, dst, fg);
+  else if (fg->flags == F_UNLINK)
+    ftw_push_remove(src, fg);
   else
     ftw_push_copy(src, dst, fg);
 }

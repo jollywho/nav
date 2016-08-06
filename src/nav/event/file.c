@@ -346,6 +346,10 @@ static void do_stat(const char *path, struct stat *sb)
   if (ret < 0)
     log_err("FILE", "%s", strerror(errno));
 
+  /* file is to be removed */
+  if (BITMASK_CHECK(F_UNLINK, file.fg->flags) && !file.cur->dest)
+    return file_stop();
+
   /* src exists, check dest */
   if (sb == &file.s1 && ret == 0) {
     get_cur_dest_name(file.cur->dest);
@@ -396,6 +400,7 @@ void file_start()
   file.fg = TAILQ_FIRST(&file.p);
   file.cur = TAILQ_FIRST(&file.fg->p);
   file.offset = 0;
+
   do_stat(file.cur->src, &file.s1);
 }
 
@@ -428,4 +433,10 @@ void file_copy(varg_T args, char *dest, Buffer *owner)
   log_msg("FILE", "copy |%d|%s|", args.argc, dest);
   for (int i = 0; i < args.argc; i++)
     ftw_add(args.argv[i], dest, fg_new(owner, F_COPY));
+}
+
+void file_remove(varg_T args, Buffer *owner)
+{
+  for (int i = 0; i < args.argc; i++)
+    ftw_add(args.argv[i], NULL, fg_new(owner, F_UNLINK));
 }

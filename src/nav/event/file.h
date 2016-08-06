@@ -36,6 +36,7 @@ void file_cleanup();
 void file_move_str(char *src, char *dst, Buffer *);
 void file_copy(varg_T, char *dest, Buffer *);
 void file_move(varg_T, char *dest, Buffer *);
+void file_remove(varg_T, Buffer *);
 void file_push(FileGroup *fg);
 void file_start();
 void file_cancel(Buffer *);

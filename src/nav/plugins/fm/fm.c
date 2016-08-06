@@ -254,12 +254,7 @@ static void fm_remove(Plugin *host, Plugin *caller, HookArg *hka)
       goto cleanup;
   }
   buf_end_sel(host->hndl->buf);
-
-  char *cmdstr;
-  asprintf(&cmdstr, "%s %s", p_rm, src);
-  fs_fastreq(self->fs);
-  shell_exec(cmdstr, fs_pwd());
-  free(cmdstr);
+  file_remove(args, NULL);
 cleanup:
   del_param_list(args.argv, args.argc);
   free(src);
