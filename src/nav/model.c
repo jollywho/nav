@@ -63,8 +63,8 @@ static int cmp_str(const void *a, const void *b, void *arg)
   nv_line l2 = *(nv_line*)b;
   char *s1 = rec_fld(l1.rec, "name");
   char *s2 = rec_fld(l2.rec, "name");
+  return strverscmp(s1, s2);
   //FIXME: handle string fields with other names
-  return strcmp(s2, s1);
 }
 
 static int cmp_dir(const void *a, const void *b, void *arg)
@@ -111,7 +111,7 @@ static int cmp_type(const void *a, const void *b, void *arg)
   else if (sy2)
     s2 = sy2->key;
 
-  return strcmp(s2, s1);
+  return strverscmp(s2, s1);
 }
 
 static int sort_by_type(const void *a, const void *b, void *arg)

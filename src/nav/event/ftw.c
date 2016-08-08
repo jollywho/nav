@@ -144,10 +144,6 @@ FileItem* ftw_new(char *src, char *dest)
 void ftw_push_move(char *src, char *dest, FileGroup *fg)
 {
   log_msg("FTW", "pushed_move");
-  struct stat sb;
-  if (lstat(src, &sb) == -1)
-    return;
-
   FileItem *item = ftw_new(src, dest);
   TAILQ_INSERT_TAIL(&fg->p, item, ent);
   fg->flags = F_MOVE|F_VERSIONED;

@@ -34,7 +34,6 @@ static const char *default_groups[] = {
   [OVERLAY_TEXTINACTIVE] = "OverlayTextInactive",
 };
 
-static int dummy = 0;
 static uint history = 50;
 static uint jumplist = 20;
 static int menu_rows = 5;
@@ -56,7 +55,6 @@ static struct nv_option {
   void *value;
   UT_hash_handle hh;
 } default_options[] = {
-  {"dummy",         OPTION_INT,       &dummy},
   {"history",       OPTION_UINT,      &history},
   {"jumplist",      OPTION_UINT,      &jumplist},
   {"menu_rows",     OPTION_INT,       &menu_rows},
