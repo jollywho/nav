@@ -396,8 +396,9 @@ static void cmd_vars(Cmdstr *caller, Cmdline *cmdline)
   char base[size];
   int pos = 0, prevst = 0;
   for (int i = 0; i < count; i++) {
-    strncpy(base+pos, &cmdline->line[prevst], tok_lst[i]->start - prevst);
-    pos += tok_lst[i]->start - prevst;
+    int st = tok_lst[i]->start - 1;
+    strncpy(base+pos, &cmdline->line[prevst], st - prevst);
+    pos += st - prevst;
     prevst = tok_lst[i]->end;
     strcpy(base+pos, var_lst[i]);
     pos += len_lst[i];

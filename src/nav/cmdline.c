@@ -392,11 +392,11 @@ char* cmdline_cont_line(Cmdline *cmdline)
   return cmdline->line;
 }
 
-bool cmdline_push_var(Token *token, Cmdline *cmdline)
+void cmdline_push_var(Cmdline *cmdline, Token *token)
 {
   Token *word = token;
   if (word->quoted)
-    return false;
+    return;
 
   if (word->var.v_type == VAR_PAIR) {
     Pair *p = token_val(word, VAR_PAIR);
@@ -406,14 +406,8 @@ bool cmdline_push_var(Token *token, Cmdline *cmdline)
       word = &p->key;
   }
 
-  if (word->var.v_type == VAR_STRING) {
-    char *str = token_val(word, VAR_STRING);
-    if (str[0] == '$' || str[0] == '%') {
-      utarray_push_back(cmdline->vars, token);
-      return true;
-    }
-  }
-  return false;
+  if (word->var.v_type == VAR_STRING)
+    utarray_push_back(cmdline->vars, token);
 }
 
 static void pop(QUEUE *stack, Cmdline *cmdline, int *idx)
@@ -423,8 +417,10 @@ static void pop(QUEUE *stack, Cmdline *cmdline, int *idx)
   Token *p;
 
   if (parent->var.v_type == VAR_LIST) {
-    if (!cmdline_push_var(&token, cmdline))
-      utarray_push_back(parent->var.vval.v_list->items, &token);
+    if (token.symb)
+      return cmdline_push_var(cmdline, &token);
+
+    utarray_push_back(parent->var.vval.v_list->items, &token);
     parent->end = token.end;
   }
   else if ((p = stack_prevprev(stack))->var.v_type == VAR_PAIR) {
@@ -435,10 +431,11 @@ static void pop(QUEUE *stack, Cmdline *cmdline, int *idx)
     p->end = token.end;
     token = stack_pop(stack);
 
-    if (!cmdline_push_var(&token, cmdline)) {
-      Token *pt = stack_head(stack);
-      utarray_push_back(pt->var.vval.v_list->items, &token);
-    }
+    if (key.symb)
+      return cmdline_push_var(cmdline, &token);
+
+    Token *pt = stack_head(stack);
+    utarray_push_back(pt->var.vval.v_list->items, &token);
   }
   (*idx)++;
 }
@@ -455,11 +452,16 @@ static bool seek_ahead(Cmdline *cmdline, QUEUE *stack, Token *token)
   if (!next || stack_head(stack)->var.v_type != VAR_LIST)
     return false;
 
+
   char *str = token_val(next, VAR_STRING);
   if (str && str[0] == ':') {
     push(pair_new(cmdline), stack, token->start);
+
+    Pair *p = stack_head(stack)->var.vval.v_pair;
     if (cmdline->line[token->end+1] == ':')
-      stack_head(stack)->var.vval.v_pair->scope = true;
+      p->scope = true;
+
+    p->key.symb = token->symb; //copy variable symb
     return true;
   }
 
@@ -497,6 +499,24 @@ static bool valid_exec(Cmdline *cmdline, Cmdstr *cmd, Token *token)
   cmd->rev = prev->end == token->start;
 
   return cmd->rev;
+}
+
+static Token* valid_var(Cmdline *cmdline, Token *token, char ch)
+{
+  Token *next = (Token*)utarray_next(cmdline->tokens, token);
+  char *str = token_val(next, VAR_STRING);
+  if (!str)
+    return token;
+
+  if (next->start != token->end)
+    return token;
+
+  if (!strpbrk(str, EXPANCHARS))
+    if (strpbrk(str, TOKENCHARS))
+      return token;
+
+  next->symb = ch;
+  return next;
 }
 
 static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
@@ -563,6 +583,9 @@ static Token* cmdline_parse(Cmdline *cmdline, Token *word, UT_array *parent)
       case ':':
       case ',':
         break;
+      case '%':
+      case '$':
+        word = valid_var(cmdline, word, ch);
       case '!':
         if (valid_exec(cmdline, &cmd, word))
           break;

@@ -245,6 +245,7 @@ char* opt_var(Token *word, nv_block *blk)
   log_msg("OPT", "opt_var");
   char *key = token_val(word, VAR_STRING);
   char *alt = NULL;
+  char symb = word->symb;
   if (!key) {
     Pair *p = token_val(word, VAR_PAIR);
     key = token_val(&p->key, VAR_STRING);
@@ -255,14 +256,13 @@ char* opt_var(Token *word, nv_block *blk)
       if (mod)
         blk = &mod->blk;
     }
+    symb = p->key.symb;
   }
 
-  if (!key)
+  if (!key || !symb)
     return strdup("");
-  else if (*key == '%')
-    return expand_symbol(key+1, alt);
-  else if (*key == '$')
-    key++;
+  else if (symb == '%')
+    return expand_symbol(key, alt);
 
   nv_var *var = NULL;
 

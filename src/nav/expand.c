@@ -163,9 +163,7 @@ static varg_T proc_type(const char *name)
     case '%':
       asprintf(&arg.argv[0], "%d", getpid());
       break;
-    case '!': //FIXME: %! are separate tokens
-              //fix: process '$' also as a token
-              //find usable logic to use for both
+    case '!':
       arg.argv[0] = op_pid_last();
       break;
     case '?':

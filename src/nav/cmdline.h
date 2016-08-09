@@ -1,7 +1,6 @@
 #ifndef NV_CMDLINE_H
 #define NV_CMDLINE_H
 
-#include "nav.h"
 #include "nav/plugins/plugin.h"
 #include "nav/lib/queue.h"
 #include "nav/lib/utarray.h"
@@ -16,7 +15,8 @@ typedef struct {
   } vval;
 } typ_T;
 
-#define TOKENCHARS "~!/;:|<>,[]{}() "
+#define TOKENCHARS "~%$!/;:|<>,[]{}() "
+#define EXPANCHARS  "%!?$"
 
 #define VAR_NUMBER  1       /* "v_number" is used          */
 #define VAR_STRING  2       /* "v_string" is used          */
@@ -25,6 +25,7 @@ typedef struct {
 
 struct Token {
   bool quoted;
+  char symb;
   typ_T var;
   int start;                /* start pos of token in line */
   int end;                  /* start pos of token in line */
