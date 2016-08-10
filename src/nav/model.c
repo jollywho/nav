@@ -27,65 +27,44 @@ struct Model {
   int plnum;        //prev lnum
   int ptop;         //prev top
   sort_ent sort;    //current sort type
+  int (*sortfn)();
   UT_array *lines;
 };
 static sort_ent focus = {0,1};
 
-static int cmp_str(const void *, const void *, void *);
-static int cmp_time(const void *, const void *, void *);
-static int cmp_dir(const void *, const void *, void *);
-static int cmp_size(const void *, const void *, void *);
-static int cmp_type(const void *, const void *, void *);
+static int cmp_str (TblRec *, TblRec *);
+static int cmp_time(TblRec *, TblRec *);
+static int cmp_size(TblRec *, TblRec *);
+static int cmp_type(TblRec *, TblRec *);
 typedef struct Sort_T Sort_T;
 static struct Sort_T {
   char *key;
-  int (*cmp)(const void *, const void *, void *);
+  int (*cmp)();
 } sort_tbl[] = {
   {"name",   cmp_str},
   {"ctime",  cmp_time},
-  {"dir",    cmp_dir},
   {"size",   cmp_size},
   {"type",   cmp_type},
 };
 
-static int cmp_time(const void *a, const void *b, void *arg)
+static int cmp_time(TblRec *r1, TblRec *r2)
 {
-  nv_line l1 = *(nv_line*)a;
-  nv_line l2 = *(nv_line*)b;
-  time_t t1 = rec_ctime(l1.rec);
-  time_t t2 = rec_ctime(l2.rec);
+  time_t t1 = rec_ctime(r1);
+  time_t t2 = rec_ctime(r2);
   return difftime(t1, t2);
 }
 
-static int cmp_str(const void *a, const void *b, void *arg)
+static int cmp_str(TblRec *r1, TblRec *r2)
 {
-  nv_line l1 = *(nv_line*)a;
-  nv_line l2 = *(nv_line*)b;
-  char *s1 = rec_fld(l1.rec, "name");
-  char *s2 = rec_fld(l2.rec, "name");
-  return strverscmp(s1, s2);
-  //FIXME: handle string fields with other names
+  char *s1 = rec_fld(r1, "name");
+  char *s2 = rec_fld(r2, "name");
+  return strverscmp(s2, s1);
 }
 
-static int cmp_dir(const void *a, const void *b, void *arg)
+static int cmp_size(TblRec *r1, TblRec *r2)
 {
-  nv_line l1 = *(nv_line*)a;
-  nv_line l2 = *(nv_line*)b;
-  int b1 = rec_stmode(l1.rec);
-  int b2 = rec_stmode(l2.rec);
-  if (b1 < b2)
-    return 1;
-  if (b1 > b2)
-    return -1;
-  return 0;
-}
-
-static int cmp_size(const void *a, const void *b, void *arg)
-{
-  nv_line l1 = *(nv_line*)a;
-  nv_line l2 = *(nv_line*)b;
-  off_t t1 = rec_stsize(l1.rec);
-  off_t t2 = rec_stsize(l2.rec);
+  off_t t1 = rec_stsize(r1);
+  off_t t2 = rec_stsize(r2);
   if (t1 < t2)
     return -1;
   if (t1 > t2)
@@ -93,31 +72,42 @@ static int cmp_size(const void *a, const void *b, void *arg)
   return 0;
 }
 
-static int cmp_type(const void *a, const void *b, void *arg)
+static int cmp_type(TblRec *r1, TblRec *r2)
 {
-  nv_line l1 = *(nv_line*)a;
-  nv_line l2 = *(nv_line*)b;
-  char *s1 = rec_fld(l1.rec, "name");
-  char *s2 = rec_fld(l2.rec, "name");
+  char *s1 = rec_fld(r1, "name");
+  char *s2 = rec_fld(r2, "name");
 
   nv_syn *sy1 = get_syn(file_ext(s1));
   nv_syn *sy2 = get_syn(file_ext(s2));
-  if (isrecdir(l1.rec))
-    s1 = "";
-  else if (sy1)
-    s1 = sy1->key;
-  if (isrecdir(l2.rec))
-    s2 = "";
-  else if (sy2)
-    s2 = sy2->key;
+  if (sy1)
+    s1 = sy1->group->key;
+  if (sy2)
+    s2 = sy2->group->key;
 
   return strverscmp(s2, s1);
 }
 
-static int sort_by_type(const void *a, const void *b, void *arg)
+static int sort_with_stat(const void *a, const void *b, void *arg)
 {
   sort_ent *srt = (sort_ent*)arg;
-  int ret = sort_tbl[srt->i].cmp(a,b,0);
+  TblRec *r1 = ((nv_line*)a)->rec;
+  TblRec *r2 = ((nv_line*)b)->rec;
+
+  int ret = isrecdir(r1) - isrecdir(r2);
+
+  if (ret == 0)
+    ret = sort_tbl[srt->i].cmp(r1, r2, 0);
+  if (ret == 0)
+    return 0;
+  return srt->rev ? ret : -ret;
+}
+
+static int sort_basic(const void *a, const void *b, void *arg)
+{
+  sort_ent *srt = (sort_ent*)arg;
+  TblRec *r1 = ((nv_line*)a)->rec;
+  TblRec *r2 = ((nv_line*)b)->rec;
+  int ret = sort_tbl[srt->i].cmp(r1, r2, 0);
   if (ret == 0)
     return 0;
   return srt->rev ? ret : -ret;
@@ -135,7 +125,7 @@ static void get_sort_type(Model *m, char *key)
 
 static nv_line* find_by_type(Model *m, nv_line *ln)
 {
-  return utarray_find(m->lines, ln, sort_by_type, &m->sort);
+  return utarray_find(m->lines, ln, m->sortfn, &m->sort);
 }
 
 static nv_line* find_linear(Model *m, const char *val)
@@ -179,6 +169,11 @@ void model_init(Handle *hndl)
   if (fld)
     get_sort_type(m, fld);
   focus = m->sort = (sort_ent){m->sort.i, rev};
+
+  if (tbl_types(hndl->tn) & TYP_STAT)
+    m->sortfn = sort_with_stat;
+  else
+    m->sortfn = sort_basic;
 }
 
 void model_cleanup(Handle *hndl)
@@ -326,7 +321,7 @@ void model_sort(Model *m, char *key, int flags)
     focus = m->sort = (sort_ent){m->sort.i, flags};
   }
 
-  utarray_sort(m->lines, sort_by_type, &m->sort);
+  utarray_sort(m->lines, m->sortfn, &m->sort);
   refind_line(m);
   refit(m, m->hndl->buf);
   buf_full_invalidate(m->hndl->buf, m->ptop, m->plnum);

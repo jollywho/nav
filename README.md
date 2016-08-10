@@ -21,6 +21,7 @@ nav is a **work in progress**.
 * w3mimgdisplay buffers
 * embedded dvtm terminal
 * async event-driven core
+* fast and simple metadata ([expansions](#expansion-symbols))
 * simple script language (Navscript)
 * vim-style autocmds, marks, maps, syntax, colors
 * multi-selection: move, remove, copy
@@ -30,6 +31,7 @@ nav is a **work in progress**.
 * strong [ctrlp](http://kien.github.io/ctrlp.vim/)-inspired autocomplete menu
 * menu hint keys
 * datatables (adhoc buffer content)
+* buffer signaling with :pipe
 
 ## Installation
 
@@ -83,12 +85,12 @@ See [Wiki](https://github.com/jollywho/nav/wiki#expansion-symbols)
 ## Non Goals
 
 * text editor
-* making Navscript into a full-featured language
+* Navscript as a full-featured language
 
 ## Future
 
-* parser remake for more advanced features
-* command pipes
+* plugins
+* dictionaries
 
 ## Contributing
 

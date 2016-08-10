@@ -15,7 +15,7 @@ typedef struct {
   } vval;
 } typ_T;
 
-#define TOKENCHARS "~%$!/;:|<>,[]{}() "
+#define TOKENCHARS "~=%$!/;:|<>,[]{}() "
 #define EXPANCHARS  "%!?$"
 
 #define VAR_NUMBER  1       /* "v_number" is used          */
@@ -71,8 +71,8 @@ struct Cmdline {
   int lvl;             //subexpression level
   UT_array *cmds;      //list of cmdstr
   UT_array *tokens;    //list of tokens
-  UT_array *vars;      //list of vars
-  UT_array *arys;      //list of arys
+  UT_array *vars;      //list of tokens (variables)
+  UT_array *arys;      //list of ints   (array indices)
   char *line;          //the raw string being built upon
 };
 

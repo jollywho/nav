@@ -230,6 +230,5 @@ void type_list()
     compl_list_add("%s", "size");
     compl_list_add("%s", "type");
     compl_list_add("%s", "ctime");
-    compl_list_add("%s", "dir");
   }
 }
