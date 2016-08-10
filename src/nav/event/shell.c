@@ -88,7 +88,9 @@ void shell_start(Shell *sh)
     return;
   }
 
-  op_set_exec_line(proc->argv[2], NULL);
+  if (sh->reg)
+    op_set_exec_line(proc->argv[2], NULL);
+
   sh->blocking = true;
   wstream_init(proc->in, 0);
   rstream_init(proc->out, 0);
