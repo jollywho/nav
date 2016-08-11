@@ -264,8 +264,8 @@ static void opt_cb(Plugin *host, Plugin *caller, HookArg *hka)
 {
   char *name = hka->arg;
   log_msg("FM", "opt_cb %s", name);
-  if (!strcmp(name, "sort")) {
-    char *fld = get_opt_str("sort");
+  if (!strcmp(name, "sortfield")) {
+    char *fld = get_opt_str("sortfield");
     int rev = get_opt_int("sortreverse");
     buf_sort(host->hndl->buf, fld, rev);
   }

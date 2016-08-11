@@ -500,7 +500,8 @@ void buf_sort(Buffer *buf, char *fld, int flags)
   if (!buf->hndl)
     return;
   DO_EVENTS_UNTIL(!model_blocking(buf->hndl));
-  model_sort(buf->hndl->model, fld, flags);
+  model_set_sort(buf->hndl->model, fld, flags);
+  model_sort(buf->hndl->model);
 }
 
 /* public fields */

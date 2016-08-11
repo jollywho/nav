@@ -30,7 +30,7 @@ struct Model {
   int (*sortfn)();
   UT_array *lines;
 };
-static sort_ent focus = {0,1};
+static sort_ent sort_default = {-1,-1};
 
 static int cmp_str (TblRec *, TblRec *);
 static int cmp_time(TblRec *, TblRec *);
@@ -113,16 +113,6 @@ static int sort_basic(const void *a, const void *b, void *arg)
   return srt->rev ? ret : -ret;
 }
 
-static void get_sort_type(Model *m, char *key)
-{
-  for (int i = 0; i < LENGTH(sort_tbl); i++) {
-    if (!strcmp(key, sort_tbl[i].key)) {
-      m->sort.i = i;
-      break;
-    }
-  }
-}
-
 static nv_line* find_by_type(Model *m, nv_line *ln)
 {
   return utarray_find(m->lines, ln, m->sortfn, &m->sort);
@@ -150,25 +140,14 @@ void model_init(Handle *hndl)
   buf->matches = regex_new(hndl);
   buf->filter = filter_new(hndl);
 
-  //TODO: sort setting
-  //if sortinherit
-  //  if !sortfield
-  //    use default sort num
-  //  else
-  //    set sort num from field name, incl fail num
-  //    set rev
-  //else
-  //  if !sortfield
-  //    use default sort num
-  //  else
-  //    set sort num from field name, incl fail num
-  //    set rev
-  char *fld = get_opt_str("sort");
-  int rev = get_opt_int("sortreverse");
-
-  if (fld)
-    get_sort_type(m, fld);
-  focus = m->sort = (sort_ent){m->sort.i, rev};
+  if (get_opt_int("sortinherit") && sort_default.i != -1)
+    m->sort = sort_default;
+  else {
+    char *fld = get_opt_str("sortfield");
+    bool rev = get_opt_int("sortreverse");
+    model_set_sort(m, fld, rev);
+  }
+  sort_default = m->sort;
 
   if (tbl_types(hndl->tn) & TYP_STAT)
     m->sortfn = sort_with_stat;
@@ -210,6 +189,12 @@ void model_close(Handle *hndl)
   model_save(m);
   m->blocking = true;
   utarray_clear(m->lines);
+}
+
+void model_ch_focus(Handle *hndl)
+{
+  if (hndl && hndl->model)
+    sort_default = hndl->model->sort;
 }
 
 bool model_blocking(Handle *hndl)
@@ -304,22 +289,26 @@ static void model_set_prev(Model *m)
   m->plnum = buf_line(buf);
 }
 
-void model_ch_focus(Handle *hndl)
+void model_set_sort(Model *m, char *key, bool rev)
 {
-  if (hndl && hndl->model)
-    focus = hndl->model->sort;
+  if (!key)
+    return;
+
+  for (int i = 0; i < LENGTH(sort_tbl); i++) {
+    if (!strcmp(key, sort_tbl[i].key)) {
+      m->sort.i = i;
+      m->sort.rev = rev;
+      break;
+    }
+  }
+  sort_default = m->sort;
 }
 
-void model_sort(Model *m, char *key, int flags)
+void model_sort(Model *m)
 {
   log_msg("MODEL", "model_sort");
   if (!m->blocking)
     model_set_prev(m);
-
-  if (key) {
-    get_sort_type(m, key);
-    focus = m->sort = (sort_ent){m->sort.i, flags};
-  }
 
   utarray_sort(m->lines, m->sortfn, &m->sort);
   refind_line(m);
@@ -416,7 +405,7 @@ void model_read_entry(Model *m, TblLis *lis, Ventry *head)
   m->lis = lis;
   generate_lines(m);
   filter_apply(m->hndl);
-  model_sort(m, NULL, 0);
+  model_sort(m);
   m->blocking = false;
 }
 

@@ -47,7 +47,7 @@ static bool ask_rename = true;
 char *p_rm = "rm -r";
 char *p_xc = "xclip -i";
 char *sep_chr = "│";
-char *sort_fld = "name";
+char *sort_field = "name";
 
 static struct nv_option {
   char *key;
@@ -61,7 +61,7 @@ static struct nv_option {
   {"hintkeys",      OPTION_STRING,    &hintskey},
   {"shell",         OPTION_STRING,    &p_sh},
   {"sepchar",       OPTION_STRING,    &sep_chr},
-  {"sort",          OPTION_STRING,    &sort_fld},
+  {"sortfield",     OPTION_STRING,    &sort_field},
   {"sortinherit",   OPTION_BOOLEAN,   &sort_inherit},
   {"sortreverse",   OPTION_BOOLEAN,   &sort_reverse},
   {"askdelete",     OPTION_BOOLEAN,   &ask_delete},

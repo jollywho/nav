@@ -12,7 +12,8 @@ void model_close(Handle *hndl);
 bool model_blocking(Handle *hndl);
 
 void model_ch_focus(Handle *);
-void model_sort(Model *m, char *, int);
+void model_set_sort(Model *m, char *, bool);
+void model_sort(Model *m);
 void model_flush(Handle *, bool);
 void model_recv(Model *m);
 void refind_line(Model *m);

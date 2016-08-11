@@ -56,7 +56,7 @@ void filter_build(Filter *fil, const char *line)
 void filter_update(Filter *fil)
 {
   Model *m = fil->hndl->model;
-  model_sort(m, NULL, 0);
+  model_sort(m);
 }
 
 void filter_apply(Handle *hndl)
