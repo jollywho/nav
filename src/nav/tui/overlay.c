@@ -118,14 +118,6 @@ static void set_string(char **from, char *to)
   *from = strdup(to);
 }
 
-void overlay_clear(Overlay *ov)
-{
-  werase(ov->nc_sep);
-  wnoutrefresh(ov->nc_sep);
-  werase(ov->nc_st);
-  wnoutrefresh(ov->nc_st);
-}
-
 void overlay_erase(Overlay *ov)
 {
   if (ov->del)
@@ -134,7 +126,6 @@ void overlay_erase(Overlay *ov)
   set_string(&ov->pipe_in, "");
   memset(ov->name,   ' ', SZ_LBL);
   memset(ov->lineno, ' ', SZ_LN);
-  overlay_clear(ov);
 }
 
 void overlay_focus(Overlay *ov)
@@ -157,7 +148,6 @@ void overlay_set(Overlay *ov, pos_T size, pos_T ofs, int sep)
   ov->separator = sep;
   ov->redraw = true;
 
-  overlay_clear(ov);
   ov->ov_size = (pos_T){size.lnum, size.col};
   ov->ov_ofs  = (pos_T){ofs.lnum + size.lnum, ofs.col };
 

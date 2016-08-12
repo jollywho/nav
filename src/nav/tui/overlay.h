@@ -15,7 +15,6 @@ void overlay_filter(Overlay *ov, int max, bool enable);
 void overlay_edit(Overlay *ov, char *, char *, char *);
 void overlay_progress(Overlay *ov, long);
 void overlay_draw(void **argv);
-void overlay_clear(Overlay *ov);
 void overlay_erase(Overlay *ov);
 void overlay_focus(Overlay *ov);
 void overlay_unfocus(Overlay *ov);
