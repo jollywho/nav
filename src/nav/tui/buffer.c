@@ -387,19 +387,19 @@ varg_T buf_select(Buffer *buf, const char *fld, select_cb cb)
   if (!cb)
     cb = default_select_cb;
 
-  if (!select_active()) {
+  int count = 0;
+  for (int i = 0; i < model_count(m); ++i) {
+    if (select_has_line(buf, i))
+      count++;
+  }
+
+  if (count < 2) {
     char *val = model_curs_value(m, fld);
     if (!val)
       val = "";
     char **str = malloc(sizeof(char*));
     str[0] = cb(val);
     return (varg_T){1,str};
-  }
-
-  int count = 0;
-  for (int i = 0; i < model_count(m); ++i) {
-    if (select_has_line(buf, i))
-      count++;
   }
 
   int j = 0;
